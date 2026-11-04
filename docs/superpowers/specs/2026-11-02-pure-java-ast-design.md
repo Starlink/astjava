@@ -97,19 +97,22 @@ First phase (the prototype):
 - Success for the prototype: the jniast-matching API plus the core Frames and Mappings, for developers to examine.
 - TimeFrame and TimeMap are in the first phase, because FitsChan turns MJD-OBS and DATE-OBS into a TDB epoch by converting between TimeFrames (C `ChooseEpoch`/`TDBConv`, Rust `fitschan/epoch.rs`), and most real headers carry a date.
 - License LGPL-3.0-or-later.
-- Java 21 is the baseline (see The case for Java 21); whether the SPLAT, TOPCAT and Firefly developers agree is an open question.
+- Java 8 is the baseline, agreed with the starjava developer, because about 30% of users still run Java 8 (see Java version).
 
 ## Constraints
 
 - Pure Java with no runtime dependencies beyond the JDK.
-- Java 21 language level and runtime.
+- Java 8 language level and APIs (`--release 8`); the library runs on Java 8 and every later runtime.
 - Licensed LGPL-3.0-or-later.
   jniast's hand-written Java is GPL and is not copied; its public signatures are matched, and implementations and documentation are written from the C (LGPL) and Rust (LGPL) sources.
   jniast's generated Javadoc text came from the AST C prologue comments, so documentation can be drawn from those prologues directly.
-- Built with Maven; tests use the current major version of JUnit.
+- Built with Maven; tests use JUnit 5, whose releases still run on Java 8 (JUnit 6 needs Java 17), so the whole suite can run on a Java 8 runtime as well as a current one.
 - `mvn test` runs every test without needing the C library or the Rust toolchain.
+- The test suite is run on both a Java 8 runtime and a current one, because the JIT's elementary functions (`Math.sin` and friends) may differ in the last bit between runtimes.
 - Code layout, naming and formatting follow ordinary Java conventions; public names follow jniast.
-- Environment found on Tim's Mac: no default JDK (`/usr/libexec/java_home` finds none), but Homebrew has OpenJDK 27 at `/opt/homebrew/opt/openjdk` and Maven at `/opt/homebrew/bin/mvn`; compile with `--release 21`.
+- Environment found on Tim's Mac: no default JDK (`/usr/libexec/java_home` finds none), but Homebrew has OpenJDK 27 at `/opt/homebrew/opt/openjdk` and Maven at `/opt/homebrew/bin/mvn`.
+  JDK 27's `javac --release 8` works but warns that the option is obsolete and will be removed in a future release, so builds should use a JDK that still supports it (a long-term-support JDK such as 21 or 25 is the safer pin).
+  No Java 8 runtime is installed.
 
 ## Design
 
@@ -118,7 +121,7 @@ First phase (the prototype):
 - Class hierarchy as in jniast: `AstObject` → `Mapping` → `Frame` → `FrameSet`; `Frame` → `SkyFrame`, `CmpFrame`; `Mapping` → each Mapping class; `AstObject` → `Channel` → `FitsChan`; `AstObject` → `Axis` → `SkyAxis`.
 - Rust traits become Java classes and overridable methods.
   Every per-class extension point in C (a virtual method a subclass overrides) stays an overridable method in Java, even where Rust merged it; see the Rust repo's `docs/porting-hazards.md`.
-- Internal Rust enums become Java enums, or sealed interfaces with records where the variants carry data, handled with exhaustive pattern-matching `switch`.
+- Internal Rust enums become Java enums where the variants carry no data, and small class hierarchies where they do; see Java version for how `match` is translated.
 - Shared versus copied objects follow C, not Rust.
   Java references behave like C pointers with the garbage collector doing the reference counting, so Java shares where C calls `astClone` and copies where C calls `astCopy`.
   For example CmpMap shares its components and records each one's Invert flag at construction (`cmpmap.c:4848`), while `FrameSet.addFrame` stores copies of the Frame and Mapping (`frameset.c:1427`).
@@ -211,58 +214,33 @@ jniast classes outside the scope are absent from the first-phase jar.
 
 SPLAT and astgui can switch once phases 1–7 are done; Firefly's needs are mostly met by phases 1–2.
 
-## The case for Java 21
+## Java version
 
-The port targets Java 21, the long-term-support release from September 2023.
-starjava currently compiles at Java 1.8, so this needs the agreement of the SPLAT, TOPCAT and Firefly developers.
+The baseline is Java 8, agreed with the starjava developer, because about 30% of users still run Java 8.
+Java 21 was considered; its main benefit for this port was that the compiler checks a `switch` over a sealed type handles every case, as Rust's `match` does, and the Rust source has 86 enums and over 900 `match` expressions.
+The rules below keep as much of that safety as Java 8 allows, and mark the places a later Java would simplify.
 
-### It makes the port more faithful
+### Translating Rust enums and `match`
 
-- The Rust source has 86 enums and over 900 `match` expressions, and the port follows that code closely.
-- Java 21 has direct equivalents: sealed interfaces, records, and pattern-matching `switch` with record patterns.
-  A `switch` over a sealed type must handle every case or it does not compile, which is the same safety Rust's `match` gives.
-  When a later phase adds a variant (a new encoding or card type, for example), the compiler lists every place that must handle it.
-- In Java 8 each enum becomes a hand-written class hierarchy, and each `match` becomes a chain of `instanceof` tests and casts.
-  Nothing checks that every case is handled, so a missed case becomes a silent wrong answer at run time, found late (if at all) by the comparisons with C rather than immediately by the compiler.
-- Records give the many small value types (points, card values, axis bounds) immutability, `equals` and `hashCode` with no hand-written code to get wrong.
+- Where a `match` chooses behavior by variant, prefer an abstract method on the variant classes, so the compiler makes every new variant implement it.
+- A `match` on a data-free enum becomes a `switch` statement.
+- A `match` that must test classes becomes an `instanceof` chain.
+- Every `switch` has a `default`, and every `instanceof` or `if`/`else` chain that stands in for a `match` ends with a final `else`; that branch throws an `AstException` with status `AST__INTER` (internal programming error) naming the unexpected value.
+  No branch silently ignores a value it does not expect.
 
-### It guarantees the arithmetic the tests depend on
+### Marking where modern Java would simplify
 
-- Since Java 17 every floating-point operation follows strict IEEE 754 semantics on every platform (JEP 306); before that it was a per-class `strictfp` option.
-  The test strategy compares results with C to a few units in the last place, so this guarantee comes from the language rather than from luck with the hardware.
-- `Math.fma` (Java 9) is available where a calculation must reproduce a fused multiply-add explicitly.
+- Code that a later Java would simplify carries a comment tag in the form `// MODERN-JAVA(21): <what would replace it>`, for example `// MODERN-JAVA(21): sealed interface with pattern-matching switch`.
+- The tag goes on every `instanceof` chain or `switch` standing in for a `match`, every hand-written value class that would be a record, and anything else a newer feature would replace.
+- `rg 'MODERN-JAVA'` lists every such place, so the code can be modernized if the baseline later rises.
 
-### It serves the reason for the project
+### Other consequences of Java 8
 
-- The point of the port is easier distribution.
-  From Java 16, `jlink` and `jpackage` let SPLAT, TOPCAT or any other application ship as a self-contained bundle with a trimmed Java runtime inside, so users install nothing and the Java version stops being their concern.
-- Firefly, as a server, gains most from a modern runtime and is the user least tied to Java 8 (to be confirmed with the Firefly developers).
-
-### It gives a better runtime for free
-
-- Requiring Java 21 means every user runs a current just-in-time compiler and garbage collector.
-  Transform-heavy work, interactive display and server use all get faster without code changes, whereas a Java 8 baseline lets users stay on runtimes a decade old.
-
-### It avoids starting new code behind
-
-- Java 8 dates from 2014.
-  Current JUnit (6.x) and much of the Java library ecosystem require at least Java 17, so a library started at Java 8 begins with old tools and an upgrade already owed.
-
-### Why not another version
-
-- Java 17 has records and sealed types but not pattern-matching `switch` or record patterns, which are the features that matter most for this port.
-- Java 25, the next long-term-support release, adds little that matters here (the most useful is validating arguments before calling `super()`), and fewer users have it.
-
-### The cost and how to manage it
-
-- SPLAT and TOPCAT users would need a Java 21 runtime, unless the application bundles one with `jpackage`.
-- Adoption is per application: jniast stays available, so an application still on Java 8 keeps using it until it moves.
-- starjava's Ant build can use the jar while the rest of starjava still compiles at 1.8; only the runtime has to be Java 21.
-- The public API is jniast-shaped whatever the version, so the choice affects only the internals and the minimum runtime.
-
-## Open questions
-
-- Whether the SPLAT, TOPCAT and Firefly developers accept Java 21 as the baseline.
+- Small value types are final classes with final fields and hand-written `equals` and `hashCode`.
+- No `var`, switch expressions, text blocks or `List.of`.
+- No `Math.fma`; rows that differ from C because C used a fused multiply-add go on the deferred list (see Tests).
+- No `strictfp` is needed: on the 64-bit x86 and ARM platforms Java 8 runs on today, HotSpot's default double arithmetic is already IEEE 754, and Java 17 made that the language rule (JEP 306).
+- Users on newer runtimes still get the newer just-in-time compiler and garbage collector without any code change.
 
 ## Left to the builder
 
