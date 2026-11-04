@@ -73,7 +73,7 @@ First phase (the prototype):
 - Regions and STC.
 - Resampling and rebinning.
 - Plot, XmlChan, YamlChan.
-- Performance work.
+- Performance tuning beyond what the Rust port already does: its structural speed-ups are ported, and transform speed is measured but not tuned.
 - Being a drop-in replacement for any application.
 
 ## Anti-goals
@@ -98,6 +98,11 @@ First phase (the prototype):
 - TimeFrame and TimeMap are in the first phase, because FitsChan turns MJD-OBS and DATE-OBS into a TDB epoch by converting between TimeFrames (C `ChooseEpoch`/`TDBConv`, Rust `fitschan/epoch.rs`), and most real headers carry a date.
 - License LGPL-3.0-or-later.
 - Java 8 is the baseline, agreed with the starjava developer, because about 30% of users still run Java 8 (see Java version).
+- No test data is regenerated: the C probe output already committed in the Rust repo (`tests/*_oracle/cases.rs`) is converted to JSON for the Java tests.
+- cminpack is ported from C rather than using Apache Commons Math, with a note in the port that Commons Math's `LevenbergMarquardtOptimizer` (a translation of the same MINPACK routine) could replace it later.
+- The ERFA and PAL subset is ported from Rust, as the Rust port did, rather than using a third-party jar.
+- Rust's structural speed-ups (whole-array loops, the NaN protocol, bulk kernels) are ported; its hardware-SIMD paths, which Java 8 cannot express, are ported as their scalar fallbacks and tagged `MODERN-JAVA`.
+- `Frame extends Mapping` is kept because jniast's hierarchy needs it (FrameSet and later Region are Mappings); a plain Frame transforms as the identity, as in C, and nothing more of C's Frame-as-Mapping handling is ported.
 
 ## Constraints
 
@@ -181,7 +186,7 @@ jniast classes outside the scope are absent from the first-phase jar.
 
 - The C repo is a git submodule at `reference/starlink-ast`, pinned to the commit the Rust port pins, and tests read `ast_tester/fixtures` from it.
 - Expected values come from C only: the oracle files directly, and tables produced by the C probe programs.
-  How probe output reaches the Java tests is left to the builder, provided it is produced by C and can be regenerated.
+  Probe tables are the Rust repo's committed `cases.rs` files, converted to JSON.
 - The Rust tests for each in-scope class are translated to JUnit as the class is ported.
 - Every fixture and oracle section is accounted for: either in scope and tested, or named in a deferred list with the reason.
   A test fails if a deferred item starts passing, so the list stays accurate (the Rust port's `test_deferred_fixtures.rs` pattern).
@@ -245,7 +250,6 @@ The rules below keep as much of that safety as Java 8 allows, and mark the place
 ## Left to the builder
 
 - Internal package structure (for example package-private helpers in `uk.ac.starlink.ast`, or internal subpackages for the ERFA, PAL and wcslib ports).
-- How C probe output becomes Java test data.
 - Whether to use `Math` or `StrictMath` for the elementary functions.
 - Which jniast Mapping and Frame methods FitsChan reading needs, beyond those listed.
 
