@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test;
  * Translation of Rust {@code tests/test_matrixmap.rs}. A Rust matrix given as rows is jniast's
  * {@code double[nout][nin]}.
  *
- * <p>{@code matrix_rate_analytical} and {@code matrix_rate_analytical_inverted} test {@code rate},
- * and are translated in Task 8. The merge tests and {@code
+ * <p>A MatrixMap's rate is C's {@code Rate} (matrixmap.c): the element of the matrix applied
+ * forward. The merge tests and {@code
  * simplified_switches_full_to_diagonal_when_offdiagonals_are_zero} and {@code
  * merging_with_an_inverted_singular_matrix_is_an_error} test simplification, and are deferred;
  * {@code an_inverted_non_square_matrixmap_equals_its_copy} tests {@code astEqual}, which is outside
@@ -367,5 +367,38 @@ class MatrixMapTest {
         }) {
             assertEquals(ChannelText.dump(mm), ChannelText.dump(mm.copy()));
         }
+    }
+
+    @Test
+    void matrixRateAnalytical() {
+        MatrixMap mm = new MatrixMap(2, 2, new double[][] {{1.0, 2.0}, {3.0, 4.0}});
+        double[] at = {0.0, 0.0};
+        assertEquals(1.0, mm.rate(at, 1, 1));
+        assertEquals(2.0, mm.rate(at, 1, 2));
+        assertEquals(3.0, mm.rate(at, 2, 1));
+        assertEquals(4.0, mm.rate(at, 2, 2));
+    }
+
+    @Test
+    void matrixRateAnalyticalInverted() {
+        MatrixMap mm = new MatrixMap(2, 2, new double[][] {{2.0, 0.0}, {0.0, 4.0}});
+        mm.invert();
+        double[] at = {0.0, 0.0};
+        assertEquals(0.5, mm.rate(at, 1, 1), 1e-15);
+        assertEquals(0.0, mm.rate(at, 1, 2));
+        assertEquals(0.0, mm.rate(at, 2, 1));
+        assertEquals(0.25, mm.rate(at, 2, 2), 1e-15);
+    }
+
+    /** The rates of a unit and of a non-square full MatrixMap (matrixmap.c {@code Rate}). */
+    @Test
+    void unitAndNonSquareRates() {
+        MatrixMap unit = new MatrixMap(3, 2);
+        double[] at3 = {1.0, 2.0, 3.0};
+        assertEquals(1.0, unit.rate(at3, 2, 2));
+        assertEquals(0.0, unit.rate(at3, 1, 3));
+        MatrixMap full = new MatrixMap(3, 2, new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
+        assertEquals(6.0, full.rate(at3, 2, 3));
+        assertEquals(2.0, full.rate(at3, 1, 2));
     }
 }

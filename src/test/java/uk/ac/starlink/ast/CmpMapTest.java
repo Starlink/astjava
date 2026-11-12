@@ -18,8 +18,7 @@ import org.junit.jupiter.api.Test;
  * gives, which Rust, copying its components, has no counterpart for. Rust's {@code then} and
  * {@code alongside} are the constructor with {@code series} true and false.
  *
- * <p>{@code decompose_gives_components_and_invert_values_like_c} tests {@code decompose}, and is
- * translated in Task 8; {@code a_frameset_component_becomes_its_mapping} in Task 16. {@code
+ * <p>{@code a_frameset_component_becomes_its_mapping} is translated in Task 16. {@code
  * series_inverse_pair_of_mathmaps_cancels_to_unitmap} and {@code
  * parallel_with_inverted_cmpmap_child_canonicalises_for_serialisation} need a MathMap, and {@code
  * cmpmap_equality_compares_components_as_applied} tests {@code astEqual}: all are outside the first
@@ -206,5 +205,68 @@ class CmpMapTest {
                 " End CmpMap");
         AstException e = assertThrows(AstException.class, () -> ChannelText.read(text));
         assertEquals(AstException.AST__LDERR, e.getStatus());
+    }
+
+    /**
+     * cmpmap.c {@code Decompose}: an inverted series gives its components in reverse order with
+     * their Invert values reversed; an inverted parallel CmpMap reverses only the Invert values.
+     */
+    @Test
+    void decomposeGivesComponentsAndInvertValuesLikeC() {
+        boolean[] series = new boolean[1];
+        boolean[] inverts = new boolean[2];
+
+        CmpMap inSeries = new CmpMap(new ZoomMap(1, 2.0), invertedShift(), true);
+        Mapping[] d = inSeries.decompose(series, inverts);
+        assertTrue(series[0]);
+        assertInstanceOf(ZoomMap.class, d[0]);
+        assertInstanceOf(ShiftMap.class, d[1]);
+        assertArrayEquals(new boolean[] {false, true}, inverts);
+        inSeries.invert();
+        d = inSeries.decompose(series, inverts);
+        assertTrue(series[0]);
+        assertInstanceOf(ShiftMap.class, d[0]);
+        assertInstanceOf(ZoomMap.class, d[1]);
+        assertArrayEquals(new boolean[] {false, true}, inverts);
+
+        CmpMap inParallel = new CmpMap(new ZoomMap(1, 2.0), invertedShift(), false);
+        d = inParallel.decompose(series, inverts);
+        assertFalse(series[0]);
+        assertInstanceOf(ZoomMap.class, d[0]);
+        assertInstanceOf(ShiftMap.class, d[1]);
+        assertArrayEquals(new boolean[] {false, true}, inverts);
+        inParallel.invert();
+        d = inParallel.decompose(series, inverts);
+        assertFalse(series[0]);
+        assertInstanceOf(ZoomMap.class, d[0]);
+        assertInstanceOf(ShiftMap.class, d[1]);
+        assertArrayEquals(new boolean[] {true, false}, inverts);
+    }
+
+    private static ShiftMap invertedShift() {
+        ShiftMap s = new ShiftMap(new double[] {1.0});
+        s.invert();
+        return s;
+    }
+
+    /**
+     * The components {@code decompose} gives are the CmpMap's own, as C's are its cloned pointers
+     * (cmpmap.c {@code Decompose}), and the arrays for the flags may be null.
+     */
+    @Test
+    void decomposeSharesTheComponents() {
+        ZoomMap zm = new ZoomMap(1, 2.0);
+        UnitMap um = new UnitMap(1);
+        CmpMap cmp = new CmpMap(zm, um, true);
+        Mapping[] d = cmp.decompose(null, null);
+        assertEquals(2, d.length);
+        assertSame(zm, d[0]);
+        assertSame(um, d[1]);
+        CmpMap copy = (CmpMap) cmp.copy();
+        Mapping[] dc = copy.decompose(null, null);
+        assertNotSame(zm, dc[0]);
+        assertThrows(AstException.class, () -> ((ZoomMap) dc[0]).setZoom(3.0));
+        AstException e = assertThrows(AstException.class, () -> cmp.decompose(new boolean[0], null));
+        assertEquals(AstException.AST__DIMIN, e.getStatus());
     }
 }

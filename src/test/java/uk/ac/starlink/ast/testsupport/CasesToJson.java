@@ -3,6 +3,7 @@ package uk.ac.starlink.ast.testsupport;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -126,7 +127,7 @@ public final class CasesToJson {
             } else {
                 sb.append(Double.toString(d));
             }
-        } else if (v instanceof Long || v instanceof Boolean) {
+        } else if (v instanceof Long || v instanceof BigInteger || v instanceof Boolean) {
             sb.append(v);
         } else if (v instanceof String) {
             writeString(sb, (String) v);
@@ -141,6 +142,19 @@ public final class CasesToJson {
                 write(sb, o);
             }
             sb.append(']');
+        } else if (v instanceof Map) {
+            sb.append('{');
+            boolean first = true;
+            for (Map.Entry<?, ?> e : ((Map<?, ?>) v).entrySet()) {
+                if (!first) {
+                    sb.append(',');
+                }
+                first = false;
+                writeString(sb, (String) e.getKey());
+                sb.append(':');
+                write(sb, e.getValue());
+            }
+            sb.append('}');
         } else {
             // MODERN-JAVA(21): sealed value type with a pattern-matching switch
             throw new IllegalArgumentException(

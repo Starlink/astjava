@@ -1,6 +1,8 @@
 package uk.ac.starlink.ast;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -58,6 +60,11 @@ public class CmpMap extends Mapping {
      *     coordinates do not match
      */
     public CmpMap(Mapping map1, Mapping map2, boolean series) {
+        this(map1, map2, series, true);
+    }
+
+    /** Creates a CmpMap, marking its components shared if {@code share}. */
+    private CmpMap(Mapping map1, Mapping map2, boolean series, boolean share) {
         super(
                 count(map1, map2, series, true),
                 count(map1, map2, series, false),
@@ -65,11 +72,22 @@ public class CmpMap extends Mapping {
                 map1.getTranInverse() && map2.getTranInverse());
         this.map1 = map1;
         this.map2 = map2;
-        map1.markShared();
-        map2.markShared();
+        if (share) {
+            map1.markShared();
+            map2.markShared();
+        }
         this.series = series;
         invert1 = map1.getInvert();
         invert2 = map2.getInvert();
+    }
+
+    /**
+     * A CmpMap made within a computation, which C annuls before returning, so that its components'
+     * reference counts return to what they were: the components are not marked shared. The CmpMap
+     * must not be returned to a caller, other than as a copy.
+     */
+    static CmpMap transientCmpMap(Mapping map1, Mapping map2, boolean series) {
+        return new CmpMap(map1, map2, series, false);
     }
 
     /**
@@ -177,6 +195,267 @@ public class CmpMap extends Mapping {
     @Override
     boolean isLinear() {
         return map1.isLinear() && map2.isLinear();
+    }
+
+    // ------------------------------------------------------------------
+    // Decomposition and splitting
+    // ------------------------------------------------------------------
+
+    /**
+     * The components, as C's {@code Decompose} (cmpmap.c) gives them: an inverted series gives
+     * them in reverse order with their recorded Invert values reversed; an inverted parallel
+     * CmpMap gives them in order with the Invert values reversed.
+     */
+    @Override
+    Mapping[] decomposeInto(boolean[] flags) {
+        boolean inv = getInvert();
+        flags[0] = series;
+        if (series && inv) {
+            flags[1] = !invert2;
+            flags[2] = !invert1;
+            return new Mapping[] {map2, map1};
+        }
+        flags[1] = inv != invert1;
+        flags[2] = inv != invert2;
+        return new Mapping[] {map1, map2};
+    }
+
+    /**
+     * Appends the components, as C's {@code MapList} (cmpmap.c) does, when the CmpMap combines them
+     * as the list requires and may be simplified: each with its recorded Invert value, reversed if
+     * the CmpMap is applied inverted, and in reverse order for an inverted series. Otherwise the
+     * CmpMap is appended whole.
+     */
+    @Override
+    boolean mapList(boolean series, boolean invert, List<Mapping> maps, List<Boolean> inverts) {
+        if (this.series != series || doNotSimplify()) {
+            return super.mapList(series, invert, maps, inverts);
+        }
+        boolean inv1 = invert != invert1;
+        boolean inv2 = invert != invert2;
+        boolean r1;
+        boolean r2;
+        if (series && invert) {
+            r1 = map2.mapList(series, inv2, maps, inverts);
+            r2 = map1.mapList(series, inv1, maps, inverts);
+        } else {
+            r1 = map1.mapList(series, inv1, maps, inverts);
+            r2 = map2.mapList(series, inv2, maps, inverts);
+        }
+        return invert || r1 || r2;
+    }
+
+    /** C's {@code MapSplit} (cmpmap.c): {@link #mapSplit0} allowing the inverse search. */
+    @Override
+    MapSplit splitOff(int[] in) {
+        return mapSplit0(in, false);
+    }
+
+    /**
+     * C's {@code MapSplit0} (cmpmap.c). The CmpMap is decomposed into the Mappings it applies in
+     * series, or in parallel, with {@code astMapList}, and each, given the Invert value it had when
+     * it was combined for the duration, is split ({@link #mapSplit1}): in series, the outputs split
+     * from one are the inputs chosen from the next; in parallel, the chosen inputs, put in order by
+     * a PermMap if necessary, are shared among the Mappings they feed. If that fails, and unless
+     * {@code reentry}, the inverse is searched ({@link #mapSplit2}).
+     */
+    private MapSplit mapSplit0(int[] in, boolean reentry) {
+        int npin = getNin();
+        int npout = getNout();
+        MapSplit result = null;
+        if (MapSplit.allInputs(in, npin)) {
+            List<Mapping> maps = new ArrayList<>();
+            List<Boolean> inverts = new ArrayList<>();
+            mapList(series, getInvert(), maps, inverts);
+            int nmap = maps.size();
+            // C compares the pointers: the CmpMap itself was not decomposed.
+            @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
+            boolean whole = nmap == 1 && maps.get(0) == this;
+            if (whole) {
+                result = null;
+            } else if (series) {
+                result = splitSeries(in, maps, inverts);
+            } else {
+                result = splitParallel(in, maps, inverts, npout);
+            }
+        }
+        if (result == null && !reentry) {
+            result = mapSplit2(this, in);
+        }
+        return result;
+    }
+
+    /** The series part of {@link #mapSplit0}: the split of each Mapping feeds the next. */
+    private static MapSplit splitSeries(int[] in, List<Mapping> maps, List<Boolean> inverts) {
+        int[] cin = in.length == 0 ? null : in.clone();
+        Mapping map = null;
+        for (int imap = 0; imap < maps.size() && cin != null; imap++) {
+            Mapping m = maps.get(imap);
+            MapSplit split = withInvert(m, inverts.get(imap), cin);
+            if (split != null) {
+                cin = split.outputs;
+                map = map == null ? split.map : transientCmpMap(map, split.map, true);
+            } else {
+                cin = null;
+            }
+        }
+        return cin == null ? null : new MapSplit(cin, map);
+    }
+
+    /**
+     * The parallel part of {@link #mapSplit0}: the chosen inputs, in ascending order, are shared
+     * among the Mappings whose inputs they are, each Mapping from which inputs are chosen must
+     * split, and a PermMap puts the inputs in that order first if they were not.
+     */
+    // C's bubble sort swaps elements, which this rule takes for a copy.
+    @SuppressWarnings("PMD.AvoidArrayLoops")
+    private static MapSplit splitParallel(int[] in, List<Mapping> maps, List<Boolean> inverts, int npout) {
+        int nin = in.length;
+        // Sort the indices of the chosen inputs by input, as C's bubble sort does.
+        int[] outp = new int[nin];
+        for (int i = 0; i < nin; i++) {
+            outp[i] = i;
+        }
+        for (int j = nin - 1; j > 0; j--) {
+            for (int i = 0; i < j; i++) {
+                if (in[outp[i]] > in[outp[i + 1]]) {
+                    int t = outp[i];
+                    outp[i] = outp[i + 1];
+                    outp[i + 1] = t;
+                }
+            }
+        }
+        int[] inp = new int[nin];
+        boolean doperm = false;
+        for (int i = 0; i < nin; i++) {
+            if (outp[i] != i) {
+                doperm = true;
+            }
+            inp[outp[i]] = i;
+        }
+        PermMap pmap = doperm ? PermMap.fromInternal(nin, inp, nin, outp, null) : null;
+        for (int i = 0; i < nin; i++) {
+            inp[i] = in[outp[i]];
+        }
+        int itop = -1;
+        int ibotout = 0;
+        int iin = 0;
+        int ncout = 0;
+        int[] cout = new int[npout];
+        int[] cin = new int[nin];
+        Mapping map = null;
+        for (int imap = 0; imap < maps.size(); imap++) {
+            Mapping m = maps.get(imap);
+            boolean oldInv = m.getInvert();
+            m.setInvert(inverts.get(imap));
+            try {
+                int ibot = itop + 1;
+                itop += m.getNin();
+                int ncin = 0;
+                while (iin < nin && inp[iin] <= itop) {
+                    cin[ncin++] = inp[iin++] - ibot;
+                }
+                if (ncin > 0) {
+                    MapSplit split = mapSplit1(m, Arrays.copyOf(cin, ncin));
+                    if (split == null) {
+                        return null;
+                    }
+                    int naout = split.map.getNout();
+                    for (int iout = 0; iout < naout; iout++) {
+                        cout[ncout++] = split.outputs[iout] + ibotout;
+                    }
+                    map = map == null ? split.map : transientCmpMap(map, split.map, false);
+                }
+                ibotout += m.getNout();
+            } finally {
+                m.setInvert(oldInv);
+            }
+        }
+        if (ncout == 0) {
+            return null;
+        }
+        if (doperm) {
+            map = transientCmpMap(pmap, map, true);
+        }
+        return new MapSplit(Arrays.copyOf(cout, ncout), map);
+    }
+
+    /**
+     * {@link #mapSplit1} of a component with its Invert attribute set, for the duration, to the
+     * value it had when it was combined, as C's {@code MapSplit0} sets it and then sets it back
+     * (so that, as in C, the attribute is left set).
+     */
+    private static MapSplit withInvert(Mapping m, boolean invert, int[] in) {
+        boolean oldInv = m.getInvert();
+        m.setInvert(invert);
+        try {
+            return mapSplit1(m, in);
+        } finally {
+            m.setInvert(oldInv);
+        }
+    }
+
+    /**
+     * C's {@code MapSplit1} (cmpmap.c): a Mapping's split ({@code astMapSplit}), or, if there is
+     * none, the split its inverse gives ({@link #mapSplit2}).
+     */
+    private static MapSplit mapSplit1(Mapping m, int[] in) {
+        MapSplit result = m.mapSplit(in);
+        return result != null ? result : mapSplit2(m, in);
+    }
+
+    /**
+     * C's {@code MapSplit2} (cmpmap.c): searches the inverse of a Mapping for a set of its outputs
+     * which feeds exactly the chosen inputs, in the order chosen, trying every subset of fewer
+     * than all the outputs in turn, in every order; the split is then the inverse of the split of
+     * the inverse. A CmpMap's inverse is split without searching its own inverse again.
+     */
+    private static MapSplit mapSplit2(Mapping m, int[] in) {
+        int nin = in.length;
+        int nout = m.getNout();
+        Mapping this2 = (Mapping) m.copy();
+        this2.invert();
+        boolean iscmp = m instanceof CmpMap;
+        int[] out = new int[nout];
+        for (int mout = 1; mout < nout; mout++) {
+            Arrays.fill(out, 0, mout, 0);
+            while (true) {
+                boolean ok = true;
+                for (int i = 1; i < mout && ok; i++) {
+                    for (int j = 0; j < i; j++) {
+                        if (out[i] == out[j]) {
+                            ok = false;
+                            break;
+                        }
+                    }
+                }
+                if (ok) {
+                    int[] sel = Arrays.copyOf(out, mout);
+                    MapSplit result2 = iscmp ? ((CmpMap) this2).mapSplit0(sel, true) : this2.mapSplit(sel);
+                    if (result2 != null
+                            && result2.map.getNout() == nin
+                            && Arrays.equals(Arrays.copyOf(result2.outputs, nin), in)) {
+                        result2.map.invert();
+                        return new MapSplit(sel, result2.map);
+                    }
+                }
+                // Step to the next subset, the first index fastest.
+                int i = 0;
+                out[i]++;
+                while (out[i] == nout) {
+                    out[i++] = 0;
+                    if (i < mout) {
+                        out[i]++;
+                    } else {
+                        break;
+                    }
+                }
+                if (i == mout) {
+                    break;
+                }
+            }
+        }
+        return null;
     }
 
     // ------------------------------------------------------------------

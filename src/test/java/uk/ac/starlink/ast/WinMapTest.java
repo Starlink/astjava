@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
  * number of axes is refused, and a WinMap with no axes cannot transform ({@code AST__BADWM}, as
  * winmap.c {@code Transform} reports).
  *
- * <p>{@code winmap_rate_diagonal}, {@code winmap_rate_off_diagonal} and {@code
- * winmap_rate_inverted} test {@code rate}, and are translated in Task 8. The merge and
+ * <p>A WinMap's rate is C's {@code Rate} (winmap.c): the scale factor, or its reciprocal when
+ * inverted, where the output is the input, and zero elsewhere. The merge and
  * simplification tests are deferred ({@code needs simplification}), apart from {@code
  * winmap_non_uniform_stays_winmap}, which holds of a Mapping that is not restructured.
  */
@@ -180,5 +180,41 @@ class WinMapTest {
     void winmapNonUniformStaysWinmap() {
         WinMap wm = new WinMap(new double[] {1.0, 2.0}, new double[] {3.0, 4.0});
         assertInstanceOf(WinMap.class, wm.simplify());
+    }
+
+    @Test
+    void winmapRateDiagonal() {
+        WinMap m = new WinMap(new double[] {10.0, 20.0}, new double[] {2.0, 3.0});
+        assertEquals(2.0, m.rate(new double[] {1.0, 1.0}, 1, 1), 1e-10);
+        assertEquals(3.0, m.rate(new double[] {1.0, 1.0}, 2, 2), 1e-10);
+    }
+
+    @Test
+    void winmapRateOffDiagonal() {
+        WinMap m = new WinMap(new double[] {10.0, 20.0}, new double[] {2.0, 3.0});
+        assertEquals(0.0, m.rate(new double[] {1.0, 1.0}, 1, 2));
+        assertEquals(0.0, m.rate(new double[] {1.0, 1.0}, 2, 1));
+    }
+
+    @Test
+    void winmapRateInverted() {
+        WinMap m = new WinMap(new double[] {10.0, 20.0}, new double[] {2.0, 3.0});
+        m.invert();
+        assertEquals(0.5, m.rate(new double[] {1.0, 1.0}, 1, 1), 1e-10);
+        assertEquals(1.0 / 3.0, m.rate(new double[] {1.0, 1.0}, 2, 2), 1e-10);
+    }
+
+    /**
+     * An undefined axis has a bad scale factor, which C's {@code Rate} (winmap.c) gives as it is
+     * and, inverted, as bad.
+     */
+    @Test
+    void anUndefinedAxisHasABadRate() {
+        WinMap m = new WinMap(
+                2, new double[] {0.0, 0.0}, new double[] {0.0, 1.0}, new double[] {0.0, 0.0}, new double[] {1.0, 1.0});
+        assertEquals(AstObject.AST__BAD, m.rate(new double[] {1.0, 1.0}, 1, 1));
+        assertEquals(1.0, m.rate(new double[] {1.0, 1.0}, 2, 2));
+        m.invert();
+        assertEquals(AstObject.AST__BAD, m.rate(new double[] {1.0, 1.0}, 1, 1));
     }
 }

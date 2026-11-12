@@ -150,6 +150,53 @@ public class WinMap extends Mapping {
     }
 
     /**
+     * The rate of change: the scale factor of the axis, or its reciprocal when inverted, where the
+     * output is the input, and zero elsewhere ({@code Rate}, winmap.c). An undefined axis gives
+     * the bad value.
+     */
+    @Override
+    double rateAt(double[] at, int ax1, int ax2) {
+        if (ax1 != ax2) {
+            return 0.0;
+        }
+        double result = scales[ax1];
+        if (getInvert()) {
+            result = result != 0.0 && result != AST__BAD ? 1.0 / result : AST__BAD;
+        }
+        return result;
+    }
+
+    /**
+     * Splits off a WinMap of the chosen inputs, as C's {@code MapSplit} (winmap.c) does: its terms
+     * are those this WinMap applies in its current orientation ({@code astWinTerms}), so it is not
+     * inverted. An input that does not exist gives no split.
+     */
+    @Override
+    MapSplit splitOff(int[] in) {
+        if (in.length == 0 || !MapSplit.allInputs(in, getNin())) {
+            return null;
+        }
+        boolean inv = getInvert();
+        double[] a = new double[in.length];
+        double[] b = new double[in.length];
+        for (int i = 0; i < in.length; i++) {
+            double shift = shifts[in[i]];
+            double scale = scales[in[i]];
+            if (!inv) {
+                a[i] = shift;
+                b[i] = scale;
+            } else if (shift != AST__BAD && scale != 0.0 && scale != AST__BAD) {
+                b[i] = 1.0 / scale;
+                a[i] = shift * -b[i];
+            } else {
+                a[i] = AST__BAD;
+                b[i] = AST__BAD;
+            }
+        }
+        return new MapSplit(in.clone(), new WinMap(a, b));
+    }
+
+    /**
      * The error winmap.c {@code Transform} reports for a WinMap with no axes, which has no window
      * information.
      */

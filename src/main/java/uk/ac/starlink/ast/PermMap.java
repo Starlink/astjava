@@ -72,6 +72,27 @@ public class PermMap extends Mapping {
         }
     }
 
+    /**
+     * Creates a PermMap from permutations already in C's internal form (zero-based, a negative
+     * value selecting a constant and a value beyond the coordinates giving the bad value), as C's
+     * protected {@code astPermMap} does. Only the constants the permutations select are kept.
+     *
+     * @param inperm the inverse permutation, of {@code nin} elements, or null
+     * @param outperm the forward permutation, of {@code nout} elements, or null
+     * @param constant the constants, or null
+     */
+    static PermMap fromInternal(int nin, int[] inperm, int nout, int[] outperm, double[] constant) {
+        PermMap pm = new PermMap(nin, null, nout, null, null);
+        pm.inperm = inperm == null || nin <= 0 ? null : Arrays.copyOf(inperm, nin);
+        pm.outperm = outperm == null || nout <= 0 ? null : Arrays.copyOf(outperm, nout);
+        if (constant != null) {
+            int neg = Math.min(mostNegative(pm.inperm, nin), mostNegative(pm.outperm, nout));
+            int nconst = Math.min(constant.length, -neg);
+            pm.constant = nconst > 0 ? Arrays.copyOf(constant, nconst) : null;
+        }
+        return pm;
+    }
+
     /** {@code nin}, after checking that each permutation given has an element for each coordinate. */
     private static int checkedNin(int nin, int[] inperm, int nout, int[] outperm) {
         if (inperm != null && nin >= 0 && inperm.length < nin) {
@@ -287,6 +308,105 @@ public class PermMap extends Mapping {
     void clearPermSplit() {
         clearIsSimple();
         permSplit = UNSET_FLAG;
+    }
+
+    // ------------------------------------------------------------------
+    // Rate and splitting
+    // ------------------------------------------------------------------
+
+    /**
+     * The rate of change: one if the output takes the input, and zero otherwise, from the
+     * permutation the forward transformation applies in the current orientation ({@code Rate},
+     * permmap.c). A null permutation takes the input with the same number.
+     */
+    @Override
+    double rateAt(double[] at, int ax1, int ax2) {
+        int[] perm = getInvert() ? inperm : outperm;
+        if (perm != null) {
+            return ax2 == perm[ax1] ? 1.0 : 0.0;
+        }
+        return ax2 == ax1 ? 1.0 : 0.0;
+    }
+
+    /**
+     * Splits the PermMap as C's {@code MapSplit} (permmap.c) does. An input that does not exist
+     * gives no split. Normally, the outputs the forward permutation feeds from the chosen inputs
+     * are kept, an output fed by a constant being dropped, and the split needs each chosen input
+     * to be fed, in the inverse permutation, by a constant or a kept output. When the PermSplit
+     * attribute is set, only the inverse permutation is used, the forward one being taken as its
+     * exact inverse: each chosen input must be fed by an output, a different one for each, and the
+     * split is a UnitMap.
+     */
+    @Override
+    MapSplit splitOff(int[] in) {
+        int nin = in.length;
+        int npin = getNin();
+        int npout = getNout();
+        if (!MapSplit.allInputs(in, npin)) {
+            return null;
+        }
+        int[] outp = getInvert() ? inperm : outperm;
+        int[] inp = getInvert() ? outperm : inperm;
+        if (!getPermSplit()) {
+            int[] result = new int[npout];
+            int[] inpm = new int[nin];
+            int[] outpm = new int[npout];
+            int nout = 0;
+            for (int iout = 0; iout < npout; iout++) {
+                int iin = permVal(outp, iout, npin);
+                if (iin >= 0 && iin < npin) {
+                    for (int i = 0; i < nin; i++) {
+                        if (in[i] == iin) {
+                            outpm[nout] = i;
+                            result[nout] = iout;
+                            nout++;
+                            break;
+                        }
+                    }
+                }
+            }
+            for (int i = 0; i < nin; i++) {
+                int iout = permVal(inp, in[i], npout);
+                boolean ok = false;
+                if (iout >= 0 && iout < npout) {
+                    for (int j = 0; j < nout; j++) {
+                        if (result[j] == iout) {
+                            ok = true;
+                            inpm[i] = j;
+                            break;
+                        }
+                    }
+                } else {
+                    inpm[i] = iout;
+                    ok = true;
+                }
+                if (!ok) {
+                    return null;
+                }
+            }
+            if (nout == 0) {
+                return null;
+            }
+            return new MapSplit(
+                    Arrays.copyOf(result, nout), fromInternal(nin, inpm, nout, Arrays.copyOf(outpm, nout), constant));
+        }
+        // C's astMalloc gives no array, and so no split, for no inputs.
+        if (nin == 0) {
+            return null;
+        }
+        int[] result = new int[nin];
+        for (int i = 0; i < nin; i++) {
+            result[i] = permVal(inp, in[i], npout);
+            if (result[i] < 0) {
+                return null;
+            }
+            for (int j = 0; j < i; j++) {
+                if (result[j] == result[i]) {
+                    return null;
+                }
+            }
+        }
+        return new MapSplit(result, new UnitMap(nin));
     }
 
     // ------------------------------------------------------------------

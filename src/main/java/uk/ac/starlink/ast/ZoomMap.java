@@ -66,6 +66,37 @@ public class ZoomMap extends Mapping {
         return true;
     }
 
+    /**
+     * The rate of change: the zoom factor, or its reciprocal when inverted, where the output is the
+     * input, and zero elsewhere ({@code Rate}, zoommap.c).
+     */
+    @Override
+    double rateAt(double[] at, int ax1, int ax2) {
+        if (ax1 != ax2) {
+            return 0.0;
+        }
+        double result = getZoom();
+        if (getInvert()) {
+            result = result != AST__BAD && result != 0.0 ? 1.0 / result : AST__BAD;
+        }
+        return result;
+    }
+
+    /**
+     * Splits off a ZoomMap of the chosen inputs, with the same zoom factor and its Invert attribute
+     * set to this one's, as C's {@code MapSplit} (zoommap.c) does; an input that does not exist
+     * gives no split.
+     */
+    @Override
+    MapSplit splitOff(int[] in) {
+        if (in.length == 0 || !MapSplit.allInputs(in, getNin())) {
+            return null;
+        }
+        ZoomMap map = new ZoomMap(in.length, getZoom());
+        map.setInvert(getInvert());
+        return new MapSplit(in.clone(), map);
+    }
+
     // ------------------------------------------------------------------
     // Zoom
     // ------------------------------------------------------------------

@@ -304,6 +304,103 @@ public class MatrixMap extends Mapping {
     }
 
     /**
+     * The rate of change: the element of the matrix the forward transformation applies, in the
+     * current orientation ({@code Rate}, matrixmap.c). An inverted MatrixMap with no inverse
+     * matrix, whose rate C would read from a null matrix, gives the bad value.
+     */
+    @Override
+    double rateAt(double[] at, int ax1, int ax2) {
+        if (form == UNIT) {
+            return ax1 == ax2 ? 1.0 : 0.0;
+        }
+        double[] matrix = getInvert() ? iMatrix : fMatrix;
+        if (matrix == null) {
+            return AST__BAD;
+        }
+        if (form == FULL) {
+            return matrix[ax1 * getNin() + ax2];
+        }
+        return ax1 == ax2 ? matrix[ax1] : 0.0;
+    }
+
+    /**
+     * Splits the MatrixMap as C's {@code MapSplit} (matrixmap.c) does: first as the base class
+     * does, and otherwise into the rows of the matrix applied forward that depend only on the
+     * chosen inputs, which needs that no other row depends on any of them, and that a kept row has
+     * no bad element in a chosen column. A zero or bad element is no dependence. As in C, the
+     * MatrixMap is expanded to full form and compressed again.
+     */
+    @Override
+    MapSplit splitOff(int[] in) {
+        MapSplit parent = super.splitOff(in);
+        if (parent != null) {
+            return parent;
+        }
+        int nin = in.length;
+        int ncol = getNin();
+        int nrow = getNout();
+        if (!MapSplit.allInputs(in, ncol)) {
+            return null;
+        }
+        expandMatrix();
+        try {
+            double[] mat = getInvert() ? iMatrix : fMatrix;
+            if (mat == null) {
+                return null;
+            }
+            int[] result = new int[nrow];
+            double[] rmat = new double[nrow * ncol];
+            int nout = 0;
+            int pmat = 0;
+            boolean good = false;
+            int iel = 0;
+            for (int irow = 0; irow < nrow; irow++) {
+                boolean sel = false;
+                boolean unsel = false;
+                int prow = iel;
+                for (int icol = 0; icol < ncol; icol++) {
+                    double el = mat[iel++];
+                    if (el != 0.0 && el != AST__BAD) {
+                        boolean isel = false;
+                        for (int i = 0; i < nin; i++) {
+                            if (in[i] == icol) {
+                                isel = true;
+                                break;
+                            }
+                        }
+                        if (isel) {
+                            sel = true;
+                        } else {
+                            unsel = true;
+                        }
+                    }
+                }
+                if (sel && !unsel) {
+                    result[nout++] = irow;
+                    for (int i = 0; i < nin; i++) {
+                        double v = mat[prow + in[i]];
+                        if (v == AST__BAD || !Double.isFinite(v)) {
+                            return null;
+                        }
+                        rmat[pmat++] = v;
+                        good = true;
+                    }
+                }
+                if (sel && unsel) {
+                    return null;
+                }
+            }
+            if (nout == 0 || !good) {
+                return null;
+            }
+            return new MapSplit(
+                    Arrays.copyOf(result, nout), new MatrixMap(nin, nout, FULL, Arrays.copyOf(rmat, nin * nout)));
+        } finally {
+            compressMatrix();
+        }
+    }
+
+    /**
      * Gets the TranForward attribute. A unit MatrixMap is defined in both directions; otherwise the
      * matrix the forward transformation applies must exist (matrixmap.c {@code GetTranForward}).
      *
