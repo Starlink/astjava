@@ -1,5 +1,6 @@
 package uk.ac.starlink.ast;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static uk.ac.starlink.ast.MappingTestData.fromRows;
@@ -11,9 +12,7 @@ import org.junit.jupiter.api.Test;
  * Mapping#transformNanProtocol}) gives the results of {@link Mapping#transform}.
  *
  * <p>The tests of other classes are translated in the tasks that port them: {@code
- * nan_protocol_matrixmap}, {@code nan_protocol_matrixmap_zero_coefficient_masks_bad} and {@code
- * nan_protocol_permmap} in Task 7; {@code nan_protocol_slamap_matches_transform} and {@code
- * nan_protocol_timemap} in Task 13; {@code nan_protocol_forward_matches_transform}, {@code
+ * nan_protocol_slamap_matches_transform} and {@code nan_protocol_timemap} in Task 13; {@code nan_protocol_forward_matches_transform}, {@code
  * nan_protocol_inverse_matches_transform} and {@code nan_protocol_propagates_bad_and_nan_inputs},
  * which read {@code lsst.ast}, in Task 20. The others need classes outside the first phase and are
  * deferred.
@@ -76,5 +75,54 @@ class NanProtocolTest {
         double[][] pts = fromRows(rows);
         assertNanProtocolMatchesTransform(map, pts, 64, true, 0.0);
         assertNanProtocolMatchesTransform(map, pts, 64, false, 0.0);
+    }
+
+    @Test
+    void nanProtocolMatrixmap() {
+        // Both rows have non-zero coefficients in both columns.
+        MatrixMap map = new MatrixMap(2, 2, new double[][] {{1.5, 0.2}, {-0.3, 1.1}});
+        double[][] rows = new double[64][];
+        for (int i = 0; i < 64; i++) {
+            rows[i] = new double[] {i * 0.1, -i * 0.2};
+        }
+        rows[3][0] = BAD;
+        rows[8][1] = Double.NaN;
+        assertNanProtocolMatchesTransform(map, fromRows(rows), 64, true, 1e-14);
+    }
+
+    @Test
+    void nanProtocolMatrixmapZeroCoefficientMasksBad() {
+        // Row 0 has a zero coefficient in column 1, so output 0 must not see a bad input 1.
+        MatrixMap map = new MatrixMap(2, 2, new double[][] {{2.0, 0.0}, {1.0, 3.0}});
+        double[][] rows = new double[16][];
+        for (int i = 0; i < 16; i++) {
+            rows[i] = new double[] {i, 10.0 + i};
+        }
+        rows[5][1] = BAD;
+        rows[7][1] = Double.NaN;
+        double[][] pts = fromRows(rows);
+        double[][] regular = map.transform(pts, 16, true);
+        double[][] viaNan = map.transformNanProtocol(pts, 16, true);
+        for (int badIx : new int[] {5, 7}) {
+            assertEquals(BAD, regular[1][badIx]);
+            assertEquals(BAD, viaNan[1][badIx]);
+            assertTrue(Double.isFinite(regular[0][badIx]) && regular[0][badIx] != BAD);
+            assertTrue(Double.isFinite(viaNan[0][badIx]) && viaNan[0][badIx] != BAD);
+            assertEquals(regular[0][badIx], viaNan[0][badIx], 1e-14);
+        }
+    }
+
+    @Test
+    void nanProtocolPermmap() {
+        PermMap map = new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
+        double[][] rows = new double[32][];
+        for (int i = 0; i < 32; i++) {
+            rows[i] = new double[] {i, -i};
+        }
+        rows[2][0] = BAD;
+        rows[6][1] = Double.NaN;
+        double[][] pts = fromRows(rows);
+        assertNanProtocolMatchesTransform(map, pts, 32, true, 0.0);
+        assertNanProtocolMatchesTransform(map, pts, 32, false, 0.0);
     }
 }

@@ -20,12 +20,20 @@ final class ObjectRegistry {
         switch (node.className) {
             case "Channel":
                 return new Channel(node);
+            case "CmpMap":
+                return new CmpMap(node);
             case "KeyMap":
                 return new KeyMap(node);
+            case "MatrixMap":
+                return new MatrixMap(node);
+            case "PermMap":
+                return new PermMap(node);
             case "ShiftMap":
                 return new ShiftMap(node);
             case "UnitMap":
                 return new UnitMap(node);
+            case "WinMap":
+                return new WinMap(node);
             case "ZoomMap":
                 return new ZoomMap(node);
             default:

@@ -2,6 +2,7 @@ package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -20,21 +21,42 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * tools/oracle_fixtures/object_id_probe.c}) is made, compared with C's, read back and dumped again.
  *
  * <p>{@code dumps_match_c} runs here the cases whose classes are ported: {@code zoommap}, {@code
- * zoommap_blank}, {@code keymap}, {@code channel}, {@code zoommap_copy} and {@code
- * zoommap_simplified}. {@code simplify} returns the ZoomMap itself, as C's {@code astSimplify}
- * returns a Mapping it cannot simplify, recording it as simplified. The others are added by the
- * tasks that port their classes: {@code cmpmap}, {@code cmpmap_copy}, {@code cmpmap_simplified} and {@code
- * cmpmap_unsimplifiable} in Task 7; {@code frame} in Task 15; {@code frameset}, {@code
- * frameset_frame_id} and {@code frameset_part_ids} in Task 16; {@code skyframe} in Task 18; {@code
- * cmpframe} in Task 20; {@code fitschan} in Task 21. {@code excluded_cases_still_differ} is
- * translated with the first excluded case. The remaining cases need classes outside the first
- * phase.
+ * zoommap_blank}, {@code keymap}, {@code channel}, {@code zoommap_copy}, {@code
+ * zoommap_simplified}, {@code cmpmap} and {@code cmpmap_copy}. {@code simplify} returns the
+ * ZoomMap itself, as C's {@code astSimplify} returns a Mapping it cannot simplify, recording it as
+ * simplified, and a CmpMap shares its components, as C's does, so the Rust test's exclusions for
+ * copies do not arise for them. {@code cmpmap_simplified} is C's simplification of two ZoomMaps
+ * into one, which this version does not make: it is in {@link #EXCLUDED}, and {@code
+ * excluded_cases_still_differ} fails when it matches. The others are added by the tasks that port
+ * their classes: {@code frame} in Task 15; {@code frameset}, {@code frameset_frame_id} and {@code
+ * frameset_part_ids} in Task 16; {@code skyframe} in Task 18; {@code cmpframe} in Task 20; {@code
+ * fitschan} in Task 21. {@code cmpmap_unsimplifiable} needs a LutMap, and the remaining cases
+ * other classes outside the first phase.
  */
 class ObjectIdOracleTest {
 
     /** The cases {@link #dumpsMatchC} runs. */
-    private static final List<String> CASES =
-            Arrays.asList("zoommap", "zoommap_blank", "keymap", "channel", "zoommap_copy", "zoommap_simplified");
+    private static final List<String> CASES = Arrays.asList(
+            "zoommap",
+            "zoommap_blank",
+            "keymap",
+            "channel",
+            "zoommap_copy",
+            "zoommap_simplified",
+            "cmpmap",
+            "cmpmap_copy");
+
+    /** The cases whose dump differs from C's, with the reason. */
+    private static final String[][] EXCLUDED = {
+        {"cmpmap_simplified", "needs simplification: C merges the two ZoomMaps into one"},
+    };
+
+    /** A series CmpMap of two ZoomMaps, with IDs. */
+    private static CmpMap cmpmap() {
+        CmpMap m = new CmpMap(zoom(2.0, "a"), zoom(3.0, "b"), true);
+        m.setID("c");
+        return m;
+    }
 
     /** A 1-dimensional ZoomMap of factor {@code factor} with ID {@code id}. */
     private static ZoomMap zoom(double factor, String id) {
@@ -65,6 +87,12 @@ class ObjectIdOracleTest {
                 return zoom(2.0, "orig").copy();
             case "zoommap_simplified":
                 return zoom(2.0, "orig").simplify();
+            case "cmpmap":
+                return cmpmap();
+            case "cmpmap_copy":
+                return cmpmap().copy();
+            case "cmpmap_simplified":
+                return cmpmap().simplify();
             default:
                 throw new IllegalArgumentException("no case " + name);
         }
@@ -104,6 +132,22 @@ class ObjectIdOracleTest {
         }
         assertEquals(CASES.size(), run, "cases missing from object_id.json");
         assertTrue(failed.isEmpty(), String.join("\n", failed));
+    }
+
+    @Test
+    void excludedCasesStillDiffer() {
+        for (String[] excluded : EXCLUDED) {
+            JsonNode found = null;
+            for (JsonNode c : ProbeData.load("object_id").get("DUMPS")) {
+                if (c.get(0).asText().equals(excluded[0])) {
+                    found = c;
+                }
+            }
+            assertNotNull(found, "no case " + excluded[0]);
+            assertNotNull(
+                    difference(excluded[0], found.get(1), found.get(2)),
+                    excluded[0] + " now matches C; remove it from EXCLUDED (" + excluded[1] + ")");
+        }
     }
 
     @Test

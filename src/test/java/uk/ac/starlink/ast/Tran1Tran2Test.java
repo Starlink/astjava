@@ -12,8 +12,7 @@ import org.junit.jupiter.api.Test;
  * Translation of Rust {@code tests/test_tran1_tran2.rs}: {@code tran1} and {@code tran2}, with the
  * checks of C's {@code ValidateMapping} (mapping.c) they make.
  *
- * <p>{@code tran2_respects_axis_order} uses a PermMap and is translated in Task 7. {@code
- * tran_rejects_an_undefined_direction} uses a RateMap, which is outside the first phase; here a
+ * <p>{@code tran_rejects_an_undefined_direction} uses a RateMap, which is outside the first phase; here a
  * Mapping whose inverse is undefined, as a RateMap's is, stands in for it. The Java methods take
  * the number of points as jniast's do, so the arrays may be longer than it; one shorter than it is
  * C's {@code AST__DIMIN} (mapping.c {@code TranN}), where the Rust test of arrays of different
@@ -97,6 +96,16 @@ class Tran1Tran2Test {
         double[][] want = shift.transform(new double[][] {xin, yin}, 3, true);
         assertArrayEquals(want[0], out[0]);
         assertArrayEquals(want[1], out[1]);
+    }
+
+    @Test
+    void tran2RespectsAxisOrder() {
+        // A swap PermMap proves the two output vectors are not transposed: the x output must come
+        // from the y input.
+        PermMap swap = new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
+        double[][] out = swap.tran2(2, new double[] {1.0, 2.0}, new double[] {30.0, 40.0}, true);
+        assertArrayEquals(new double[] {30.0, 40.0}, out[0]);
+        assertArrayEquals(new double[] {1.0, 2.0}, out[1]);
     }
 
     @Test

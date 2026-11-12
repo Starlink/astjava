@@ -24,10 +24,13 @@ import uk.ac.starlink.ast.testsupport.CValues;
 /**
  * Translation of Rust {@code tests/test_channel.rs}, the port of {@code testchannel.c}.
  *
- * <p>The tests that write and read CmpMaps, Frames, SkyFrames and FrameSets are translated in the
- * tasks that port them: {@code
- * to_native_string_matches_a_channel_set_as_ast_to_string_sets_it} in Task 7 (CmpMap); {@code
- * config_full_minus_one_shorter_output} in Task 15 (Frame); {@code
+ * <p>Rust's {@code to_native_string} is C's {@code astToString}, which jniast does not have; {@code
+ * to_native_string_matches_a_channel_set_as_ast_to_string_sets_it} checks instead that jniast's
+ * {@code toString}, which writes as a default Channel does, matches a Channel for the same nested
+ * Object.
+ *
+ * <p>The tests that write and read Frames, SkyFrames and FrameSets are translated in the tasks
+ * that port them: {@code config_full_minus_one_shorter_output} in Task 15 (Frame); {@code
  * round_trip_skyframe_via_file} and {@code default_skyframe_file_round_trip_is_equal} in Task 18
  * (SkyFrame); {@code round_trip_multiple_types}, {@code write_and_read_frameset_via_channel} and
  * {@code converted_frameset_string_round_trip} in Task 20 (FrameSet).
@@ -204,6 +207,24 @@ class ChannelTest {
                 zoomIndent(wide) > zoomIndent(dflt),
                 "Indent=6 should give wider indentation (" + zoomIndent(wide) + " vs " + zoomIndent(dflt) + ")");
         assertEquals(1, readMapping(wide).getNin());
+    }
+
+    /**
+     * A CmpMap of a ZoomMap with an ID and a ShiftMap: nested objects and a set Object attribute,
+     * which the text must keep.
+     */
+    private static CmpMap nestedObject() {
+        ZoomMap zoom = new ZoomMap(2, 4.0);
+        zoom.setID("zoom_id");
+        return new CmpMap(zoom, new ShiftMap(new double[] {100.0, -200.0}), true);
+    }
+
+    @Test
+    void toNativeStringMatchesAChannelSetAsAstToStringSetsIt() throws IOException {
+        CmpMap obj = nestedObject();
+        String want = channelWrite(obj, ch -> {});
+        assertTrue(want.contains("zoom_id"), want);
+        assertEquals(want, obj.toString());
     }
 
     @Test
