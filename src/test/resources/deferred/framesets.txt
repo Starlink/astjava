@@ -21,7 +21,7 @@ serialisation/skyframe.ast | needs SkyAxis, SkyFrame
 serialisation/skyframe_galactic.ast | needs SkyAxis, SkyFrame
 serialisation/specframe.ast | needs Axis, SpecFrame
 serialisation/timeframe.ast | needs Axis, TimeFrame
-serialisation/timj.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SlaMap
+serialisation/timj.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/expected/jan.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/a20070718_00010_02_cube-ast.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecMap
 wcsconv/framesets/ait-highlatpole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
@@ -138,7 +138,7 @@ wcsconv/framesets/tidy-pole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, Sky
 wcsconv/framesets/timeplot-head.ast | needs Axis, CmpFrame, Frame, TimeFrame
 wcsconv/framesets/timesys-tdb-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/timesys-tt-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
-wcsconv/framesets/timj-ast.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SlaMap
+wcsconv/framesets/timj-ast.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/tnx-cheb-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/tnx-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/tsc-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
@@ -168,4 +168,4 @@ wcsconv/inputs/dss.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/inputs/lsst.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/inputs/lsst2.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SplineMap
 wcsconv/inputs/specflux.ast | needs Axis, CmpFrame, Frame, SpecFrame
-wcsconv/inputs/timj.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SlaMap
+wcsconv/inputs/timj.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame

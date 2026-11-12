@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
  * Translation of Rust {@code tests/test_constructor_checks.rs}: constructors and setters refuse
  * arguments C refuses, with C's status.
  *
- * <p>{@code a_conversion_takes_exactly_its_arguments} is translated with SlaMap and TimeMap in Task
- * 13; the others need classes outside the first phase.
+ * <p>{@code a_conversion_takes_exactly_its_arguments} is translated for SlaMap and TimeMap; its
+ * SpecMap part, and the other tests, need classes outside the first phase.
  */
 class ConstructorChecksTest {
 
@@ -35,5 +35,24 @@ class ConstructorChecksTest {
             e = assertThrows(AstException.class, () -> new PolyMap(1, 1, 1, good, 1, bad));
             assertEquals(AstException.AST__BADCI, e.getStatus(), "inverse, output " + outAxis);
         }
+    }
+
+    /**
+     * slamap.c AddSlaCvt and timemap.c AddTimeCvt: each conversion takes exactly its number of
+     * arguments, or it is AST__TIMIN.
+     */
+    @Test
+    void aConversionTakesExactlyItsArguments() {
+        SlaMap sla = new SlaMap();
+        AstException e = assertThrows(AstException.class, () -> sla.add("PREC", new double[] {1950.0}));
+        assertEquals(AstException.AST__TIMIN, e.getStatus());
+        e = assertThrows(AstException.class, () -> sla.add("PREC", new double[] {1950.0, 2000.0, 1.0}));
+        assertEquals(AstException.AST__TIMIN, e.getStatus());
+        sla.add("PREC", new double[] {1950.0, 2000.0});
+
+        TimeMap time = new TimeMap();
+        e = assertThrows(AstException.class, () -> time.timeAdd("MJDTOMJD", new double[] {0.0}));
+        assertEquals(AstException.AST__TIMIN, e.getStatus());
+        time.timeAdd("MJDTOMJD", new double[] {0.0, 1.0});
     }
 }

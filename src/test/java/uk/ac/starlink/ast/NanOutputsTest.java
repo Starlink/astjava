@@ -14,10 +14,8 @@ import org.junit.jupiter.api.Test;
  * NaN input is taken to be bad. Each Mapping is given points with a NaN on one input axis at a
  * time, and transformed in each direction it defines.
  *
- * <p>The Mappings of the other first-phase classes are added to {@link #mappings} by the tasks that
- * port them: SlaMap and TimeMap in Task 13.
- * Those of the Rust test's LutMap, MathMap, UnitNormMap, SpecMap, PcdMap and TranMap are outside
- * the first phase.
+ * <p>The Rust test's LutMap, MathMap, UnitNormMap, SpecMap, PcdMap and TranMap are outside the
+ * first phase.
  */
 class NanOutputsTest {
 
@@ -31,7 +29,13 @@ class NanOutputsTest {
         m.put("MatrixMap diagonal", new MatrixMap(2, 2, new double[][] {{2.0, 0.0}, {0.0, 3.0}}));
         m.put("MatrixMap full", new MatrixMap(2, 2, new double[][] {{1.0, 0.5}, {0.25, 2.0}}));
         m.put("CmpMap", new CmpMap(new ZoomMap(1, 2.0), new UnitMap(1), false));
+        SlaMap sla = new SlaMap();
+        sla.add("EQGAL", new double[0]);
+        m.put("SlaMap", sla);
         m.put("SphMap", new SphMap());
+        TimeMap time = new TimeMap();
+        time.timeAdd("MJDTOJD", new double[] {0.0, 0.0});
+        m.put("TimeMap", time);
         m.put("WcsMap", new WcsMap(2, WcsMap.AST__TAN, 1, 2));
         m.put("PolyMap", new PolyMap(2, 2, 2, new double[] {1.0, 1.0, 1.0, 0.0, 2.0, 2.0, 0.0, 1.0}, 0, null));
         return m;

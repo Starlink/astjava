@@ -38,8 +38,12 @@ final class ObjectRegistry {
                 return PolyMap::new;
             case "ShiftMap":
                 return ShiftMap::new;
+            case "SlaMap":
+                return SlaMap::new;
             case "SphMap":
                 return SphMap::new;
+            case "TimeMap":
+                return TimeMap::new;
             case "UnitMap":
                 return UnitMap::new;
             case "WcsMap":
