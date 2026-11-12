@@ -1,0 +1,7 @@
+# jniast members of in-scope classes that this library deliberately lacks.
+# One line per member: <Class>.<name>(<parameter types>) for methods and
+# constructors, <Class>.<name> for fields, then | and the reason.
+# JniastApiTest fails if an excluded member exists, so the list stays accurate.
+AstObject.pointer | the address of the C object behind a JNI wrapper; there is no C object
+AstObject.finalize() | releases the C object behind a JNI wrapper; there is no C object
+AstObject.getAstConstantI(String) | reads constants from the C library; they are ordinary static final fields
