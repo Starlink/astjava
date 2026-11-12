@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="astjava"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+  <description>
+    Bug patterns and code-health rules for the AST port.
+    Rules are excluded where they conflict with the project's conventions
+    (every switch has a default, public signatures follow jniast) or where
+    code ported from C and Rust trips them by design (numeric loops, array
+    parameters, reassigned parameters). Layout is left to the formatter.
+  </description>
+
+  <rule ref="category/java/errorprone.xml">
+    <!-- Numeric code compares against literals and repeats them by nature. -->
+    <exclude name="AvoidLiteralsInIfCondition"/>
+    <exclude name="AvoidDuplicateLiterals"/>
+    <!-- AST's API returns and assigns null where C uses NULL. -->
+    <exclude name="NullAssignment"/>
+    <exclude name="ReturnEmptyCollectionRatherThanNull"/>
+    <!-- C reading loops: while ((c = next()) != -1). -->
+    <exclude name="AssignmentInOperand"/>
+  </rule>
+
+  <rule ref="category/java/bestpractices.xml">
+    <!-- Conflicts with the project rule that every switch has a default, even over an enum. -->
+    <exclude name="ExhaustiveSwitchHasDefault"/>
+    <!-- jniast signatures take and return arrays, and transforms work on caller-owned arrays. -->
+    <exclude name="ArrayIsStoredDirectly"/>
+    <exclude name="MethodReturnsInternalArray"/>
+    <exclude name="UseVarargs"/>
+    <!-- Ported C and Rust code reassigns parameters. -->
+    <exclude name="AvoidReassigningParameters"/>
+    <!-- Java 8 synthetic accessors are not worth restructuring nested classes for. -->
+    <exclude name="AccessorClassGeneration"/>
+    <exclude name="AccessorMethodGeneration"/>
+    <!-- Tests translated from Rust check many values per test, without messages. -->
+    <exclude name="UnitTestAssertionsShouldIncludeMessage"/>
+    <exclude name="UnitTestContainsTooManyAsserts"/>
+  </rule>
+
+  <rule ref="category/java/multithreading.xml">
+    <!-- Tests run several threads, each on its own copy of a FrameSet. -->
+    <exclude name="DoNotUseThreads"/>
+    <!-- Objects are never shared between threads; maps need no concurrency. -->
+    <exclude name="UseConcurrentHashMap"/>
+  </rule>
+
+  <rule ref="category/java/performance.xml">
+    <exclude name="AvoidInstantiatingObjectsInLoops"/>
+    <exclude name="InsufficientStringBufferDeclaration"/>
+    <!-- Explicit initial values mirror the C and Rust initializers. -->
+    <exclude name="RedundantFieldInitializer"/>
+    <!-- A translated Rust match may have one case plus the default that throws AST__INTER. -->
+    <exclude name="TooFewBranchesForSwitch"/>
+  </rule>
+
+  <rule ref="category/java/security.xml"/>
+
+  <rule ref="category/java/design.xml/AvoidRethrowingException"/>
+  <rule ref="category/java/design.xml/AvoidThrowingNewInstanceOfSameException"/>
+  <rule ref="category/java/design.xml/AvoidThrowingNullPointerException"/>
+  <rule ref="category/java/design.xml/AvoidThrowingRawExceptionTypes"/>
+  <rule ref="category/java/design.xml/ClassWithOnlyPrivateConstructorsShouldBeFinal"/>
+  <rule ref="category/java/design.xml/CollapsibleIfStatements"/>
+  <rule ref="category/java/design.xml/DoNotExtendJavaLangError"/>
+  <rule ref="category/java/design.xml/FinalFieldCouldBeStatic"/>
+  <rule ref="category/java/design.xml/ImmutableField"/>
+  <rule ref="category/java/design.xml/LogicInversion"/>
+  <rule ref="category/java/design.xml/MutableStaticState"/>
+  <rule ref="category/java/design.xml/SimplifiedTernary"/>
+  <rule ref="category/java/design.xml/SimplifyBooleanReturns"/>
+  <rule ref="category/java/design.xml/SimplifyConditional"/>
+  <rule ref="category/java/design.xml/SingularField"/>
+  <rule ref="category/java/design.xml/UselessOverridingMethod"/>
+
+  <rule ref="category/java/codestyle.xml/EmptyControlStatement"/>
+  <rule ref="category/java/codestyle.xml/ExtendsObject"/>
+  <rule ref="category/java/codestyle.xml/ForLoopShouldBeWhileLoop"/>
+  <rule ref="category/java/codestyle.xml/IdenticalCatchBranches"/>
+  <rule ref="category/java/codestyle.xml/UnnecessaryBoxing"/>
+  <rule ref="category/java/codestyle.xml/UnnecessaryCast"/>
+  <rule ref="category/java/codestyle.xml/UnnecessaryFullyQualifiedName"/>
+  <rule ref="category/java/codestyle.xml/UnnecessaryImport"/>
+  <rule ref="category/java/codestyle.xml/UnnecessaryModifier"/>
+  <rule ref="category/java/codestyle.xml/UnnecessaryReturn"/>
+  <rule ref="category/java/codestyle.xml/UnnecessarySemicolon"/>
+  <rule ref="category/java/codestyle.xml/UseDiamondOperator"/>
+  <rule ref="category/java/codestyle.xml/UselessQualifiedThis"/>
+
+  <rule ref="category/java/documentation.xml/DanglingJavadoc"/>
+</ruleset>

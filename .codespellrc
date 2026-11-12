@@ -1,0 +1,6 @@
+[codespell]
+builtin = clear,rare
+skip = ./reference,./target,./.git,*.json
+# AST abbreviations (nin = number of inputs) and tool and annotation names
+# (Error Prone, JUnit @AfterAll).
+ignore-words-list = nin,errorprone,afterall

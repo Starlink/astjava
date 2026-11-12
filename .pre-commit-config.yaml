@@ -1,0 +1,101 @@
+# Git hooks, run by prek (https://github.com/j178/prek); upstream pre-commit
+# also reads this file.
+#
+#   prek install                # install the git hook
+#   prek run --all-files        # check the whole repository
+#
+# The Java hooks call Maven, so the formatter and linters are the versions
+# pinned in pom.xml, the same ones `mvn verify` runs. They need JDK 21 to 26
+# (see CLAUDE.md).
+
+# The reference submodules are upstream code, and generated test data must
+# stay exactly as its generator wrote it.
+exclude: |
+  (?x)^(
+    reference/.*|
+    src/test/resources/oracle/.*\.json|
+    src/test/resources/jniast-api\.txt
+  )$
+
+repos:
+  # prek runs these with its built-in Rust implementations.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: fix-byte-order-marker
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-illegal-windows-names
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-yaml
+      - id: check-xml
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=2048]
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: [--branch, main]
+
+  # The project uses British spelling, like AST and starjava. The first hook
+  # finds typos in every file (settings in .codespellrc). The second rejects
+  # American spellings (color, behavior) in prose files. It skips Java, whose
+  # JDK names (Color, finalize, synchronized) are American, and skips
+  # `inline code` in Markdown.
+  # config/codespell-british.txt is codespell's en-GB_to_en-US dictionary
+  # reversed, without the US forms that are also British usage (license as
+  # a verb, practice as a noun, program, meter, dialog, judgment, analog,
+  # biased, writable), and math, which is Java's Math class.
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+      - id: codespell
+        name: codespell (British spelling)
+        alias: codespell-british
+        args: [--dictionary=config/codespell-british.txt, '--ignore-regex=`[^`\n]*`']
+        types_or: [markdown, yaml, xml]
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: local
+    hooks:
+      # Prose uses one sentence per line. Flags a sentence end followed by
+      # another sentence on the same line; numbered list items are not
+      # matched because a digit before the full stop is allowed.
+      - id: one-sentence-per-line
+        name: one sentence per line
+        language: pygrep
+        entry: '[a-z)`]\.\s+[A-Z]'
+        types: [markdown]
+
+      # Rewrites Java sources with palantir-java-format. A rewrite fails the
+      # hook; stage the reformatted files and commit again.
+      - id: spotless-apply
+        name: format Java (palantir-java-format via Spotless)
+        language: system
+        entry: mvn -q spotless:apply
+        types: [java]
+        pass_filenames: false
+
+      # The Java counterpart of clippy: compiles main and test code with
+      # Error Prone and javac lint/doclint as errors, then runs Checkstyle
+      # and PMD. Rules: pom.xml (static-analysis profile) and config/.
+      # Logging at warn shows compiler warnings (which -q would hide) but
+      # not Maven's progress messages.
+      - id: java-lint
+        name: lint Java (Error Prone, javac -Xlint, Checkstyle, PMD)
+        language: system
+        entry: mvn -B -ntp -Dorg.slf4j.simpleLogger.defaultLogLevel=warn process-test-classes
+        files: (\.java|^pom\.xml|^config/.*\.xml)$
+        pass_filenames: false
