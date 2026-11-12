@@ -1,0 +1,36 @@
+version: 2
+updates:
+  # Keeps the actions in .github/workflows current, including the ones
+  # pinned by commit SHA (Dependabot updates the SHA and its version comment).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Test dependencies and build plugins in pom.xml.
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      maven:
+        patterns:
+          - "*"
+    ignore:
+      # JUnit 6 needs Java 17, and the tests must also run on Java 8.
+      - dependency-name: "org.junit*"
+        update-types: ["version-update:semver-major"]
+
+  # Hook revisions in .pre-commit-config.yaml.
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      pre-commit:
+        patterns:
+          - "*"
