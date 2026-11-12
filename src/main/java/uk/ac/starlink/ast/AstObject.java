@@ -55,6 +55,19 @@ public class AstObject implements Cloneable {
     /** The UseDefs attribute: 0, 1, or {@link #UNSET_FLAG}. */
     private int useDefs = UNSET_FLAG;
 
+    /**
+     * Whether this Object is shared with a holder, standing for C's reference count exceeding 1.
+     * A holder marks the Objects it takes by reference wherever C takes a clone with {@code
+     * astClone}: a CmpMap its components, a KeyMap the Objects stored in it and those it returns,
+     * and {@code decompose} the Mappings it returns. While it is set, the attributes C defines with
+     * {@code astMAKE_SET1} and {@code astMAKE_CLEAR1} (such as a ZoomMap's Zoom) cannot be changed,
+     * and setting or clearing one raises {@code AST__IMMUT}, as C does when the count exceeds 1, so
+     * that a change cannot alter an Object another one depends on. A {@link #copy} is not shared,
+     * since the holder keeps the original. Unlike C's count, the mark is never cleared: an Object
+     * stays immutable after its holders are gone.
+     */
+    private boolean shared;
+
     /** Constructs an Object. */
     protected AstObject() {}
 
@@ -134,6 +147,55 @@ public class AstObject implements Cloneable {
     void deepCopy() {
         // C's Copy (object.c) does not copy the ID.
         id = null;
+        shared = false;
+    }
+
+    /** Marks this Object as shared with a holder that took it where C calls {@code astClone}. */
+    final void markShared() {
+        shared = true;
+    }
+
+    /** Whether this Object is shared with a holder (see {@link #shared}). */
+    final boolean isShared() {
+        return shared;
+    }
+
+    /**
+     * The check C's {@code astMAKE_SET1} makes before setting an attribute: a shared Object
+     * cannot have the attribute changed.
+     *
+     * @param attribute the name of the attribute, as in C's {@code astSet<attribute>}
+     * @throws AstException with status {@code AST__IMMUT} if this Object is shared
+     */
+    final void checkSet1(String attribute) {
+        if (shared) {
+            throw immutable("astSet", attribute, "changed");
+        }
+    }
+
+    /**
+     * The check C's {@code astMAKE_CLEAR1} makes before clearing an attribute: a shared Object
+     * cannot have the attribute cleared.
+     *
+     * @param attribute the name of the attribute, as in C's {@code astClear<attribute>}
+     * @throws AstException with status {@code AST__IMMUT} if this Object is shared
+     */
+    final void checkClear1(String attribute) {
+        if (shared) {
+            throw immutable("astClear", attribute, "cleared");
+        }
+    }
+
+    /**
+     * The error of {@code astMAKE_SET1} and {@code astMAKE_CLEAR1} (object.h), whose message
+     * joins the attribute name to the word "attribute" without a space.
+     */
+    private AstException immutable(String method, String attribute, String verb) {
+        String cls = astClass();
+        return Ast.err(
+                AstException.AST__IMMUT,
+                method + "(" + cls + "): The " + attribute + "attribute of the supplied " + cls + " cannot be " + verb
+                        + " because the " + cls + " has been cloned (programming error).");
     }
 
     /**

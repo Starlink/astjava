@@ -33,8 +33,9 @@ import java.util.Objects;
  * the KeyError attribute is set.
  *
  * <p>An Object stored in a KeyMap is the Object given, not a copy, and reading it gives that same
- * Object. A copy of a KeyMap holds copies of its Objects. A KeyMap cannot be stored in itself, or
- * in a KeyMap it holds.
+ * Object. Being shared, an Object stored or read in this way can no longer have the attributes
+ * changed that C makes immutable once cloned (such as a ZoomMap's Zoom). A copy of a KeyMap holds
+ * copies of its Objects. A KeyMap cannot be stored in itself, or in a KeyMap it holds.
  *
  * <p>The attributes of a KeyMap are:
  *
@@ -715,6 +716,21 @@ public class KeyMap extends AstObject {
             checkCircle((AstObject) value, method);
         }
         insertEntry(convertKey(key, method), KeyMapEntry.scalar(type, value, comment), method);
+        if (type == AST__OBJECTTYPE) {
+            shared(value);
+        }
+    }
+
+    /**
+     * Marks an Object the KeyMap stores or returns as shared, since C clones it (keymap.c
+     * {@code astMapPut0A}, {@code astMapPut1A}, {@code astMapPutElemA} and the conversion of an
+     * entry to an Object).
+     */
+    private static Object shared(Object value) {
+        if (value != null) {
+            ((AstObject) value).markShared();
+        }
+        return value;
     }
 
     private void putVector(String key, int type, List<Object> values, String comment, String method) {
@@ -730,6 +746,11 @@ public class KeyMap extends AstObject {
             }
         }
         insertEntry(convertKey(key, method), KeyMapEntry.vector(type, values, comment), method);
+        if (type == AST__OBJECTTYPE) {
+            for (Object o : values) {
+                shared(o);
+            }
+        }
     }
 
     /**
@@ -934,6 +955,9 @@ public class KeyMap extends AstObject {
             List<Object> one = new ArrayList<>(1);
             one.add(value.value);
             insertEntry(converted, KeyMapEntry.vector(value.type, one, null), "astMapPut1" + letter);
+            if (value.type == AST__OBJECTTYPE) {
+                shared(value.value);
+            }
             return;
         }
         if (entry.nel == 0) {
@@ -950,6 +974,9 @@ public class KeyMap extends AstObject {
         }
         int n = entry.len();
         entry.setElement(elem >= n || elem < 0 ? n : elem, conv.value);
+        if (value.type == AST__OBJECTTYPE) {
+            shared(value.value);
+        }
     }
 
     /** Stores element {@code elem} of an {@code int} vector ({@code astMapPutElemI}). */
@@ -1074,7 +1101,7 @@ public class KeyMap extends AstObject {
      */
     public AstObject mapGet0A(String key) {
         KeyMapConvert.Raw v = getScalar(key, AST__OBJECTTYPE, "astMapGet0A");
-        return v == null ? null : (AstObject) v.value;
+        return v == null ? null : (AstObject) shared(v.value);
     }
 
     /** A scalar as a {@code short} ({@code astMapGet0S}), or null. */
@@ -1110,7 +1137,7 @@ public class KeyMap extends AstObject {
         if (v == null) {
             return false;
         }
-        out[0] = (AstObject) v.value;
+        out[0] = (AstObject) shared(v.value);
         return true;
     }
 
@@ -1222,7 +1249,13 @@ public class KeyMap extends AstObject {
      */
     public AstObject[] mapGet1A(String key) {
         List<Object> v = getVector(key, AST__OBJECTTYPE, "astMapGet1A");
-        return v == null ? null : v.toArray(new AstObject[0]);
+        if (v == null) {
+            return null;
+        }
+        for (Object o : v) {
+            shared(o);
+        }
+        return v.toArray(new AstObject[0]);
     }
 
     /** A vector as {@code short}s ({@code astMapGet1S}), or null. */
@@ -1370,7 +1403,7 @@ public class KeyMap extends AstObject {
         if (v == null) {
             return false;
         }
-        out[0] = (AstObject) v.value;
+        out[0] = (AstObject) shared(v.value);
         return true;
     }
 

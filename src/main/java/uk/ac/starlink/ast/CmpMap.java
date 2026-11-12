@@ -14,7 +14,8 @@ import java.util.Objects;
  * Mappings of any complexity can be built from simple ones.
  *
  * <p>A CmpMap does not copy its components: it holds the Mappings it is given, as C's holds
- * cloned pointers to them, and {@link #copy} copies them. It records each component's Invert
+ * cloned pointers to them, and {@link #copy} copies them. Being shared, a component's attributes
+ * that C makes immutable once cloned (such as a ZoomMap's Zoom) can no longer be changed. It records each component's Invert
  * attribute when it is made, and applies each component in that orientation whatever is later
  * done to the Mapping it shares; the Invert attribute of a component therefore does not change the
  * CmpMap. Its other attributes do, so a component should not be changed while the CmpMap is in
@@ -64,6 +65,8 @@ public class CmpMap extends Mapping {
                 map1.getTranInverse() && map2.getTranInverse());
         this.map1 = map1;
         this.map2 = map2;
+        map1.markShared();
+        map2.markShared();
         this.series = series;
         invert1 = map1.getInvert();
         invert2 = map2.getInvert();
