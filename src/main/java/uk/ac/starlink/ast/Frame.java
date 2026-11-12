@@ -32,6 +32,12 @@ public class Frame extends Mapping {
     /** The System value of a Cartesian coordinate system, the only one a plain Frame has ({@code AST__CART}). */
     static final int AST__CART = 0;
 
+    /**
+     * The Frame flag set while a FrameSet restores its integrity, for the conversion it finds
+     * ({@code AST__INTFLAG}).
+     */
+    static final int AST__INTFLAG = 1;
+
     /** The value of an unset integer attribute (C's {@code -INT_MAX}). */
     private static final int UNSET = Axis.UNSET_INT;
 
@@ -72,7 +78,7 @@ public class Frame extends Mapping {
     private int flags;
 
     /** The FrameSet of variant Frames, or null. */
-    private AstObject variants;
+    private FrameSet variants;
 
     /**
      * Creates a Frame with the given number of axes, each with default attributes.
@@ -223,7 +229,14 @@ public class Frame extends Mapping {
         }
         NativeNode vdesc = part.readObject("Vrnts");
         if (vdesc != null) {
-            variants = ObjectRegistry.load(vdesc);
+            AstObject obj = ObjectRegistry.load(vdesc);
+            if (!(obj instanceof FrameSet)) {
+                throw Ast.err(
+                        AstException.AST__LDERR,
+                        "astLoadFrame(" + astClass() + "): The variant Frames are held in a " + obj.astClass()
+                                + ", not a FrameSet.");
+            }
+            variants = (FrameSet) obj;
         }
     }
 
@@ -442,7 +455,7 @@ public class Frame extends Mapping {
         axes = copied;
         perm = perm.clone();
         if (variants != null) {
-            variants = variants.copy();
+            variants = (FrameSet) variants.copy();
         }
     }
 
@@ -625,6 +638,20 @@ public class Frame extends Mapping {
         return this;
     }
 
+    /**
+     * The conversion from this Frame to {@code to}, as a FrameSet whose base Frame is this
+     * Frame's coordinate system and whose current Frame is that of {@code to}, or null if there
+     * is none (C's {@code astConvert}). This version cannot find conversions.
+     *
+     * @param to the Frame to convert to
+     * @param domainlist the Domains through which to convert, separated by commas
+     * @throws UnsupportedOperationException always
+     */
+    FrameSet convertFrames(Frame to, String domainlist) {
+        throw new UnsupportedOperationException(
+                "Finding the conversion between two Frames (astConvert) is not available in this version");
+    }
+
     /** The Protected flags of the Frame (C's {@code astGetFrameFlags}). */
     int getFrameFlags() {
         return flags;
@@ -636,12 +663,12 @@ public class Frame extends Mapping {
     }
 
     /** The FrameSet of variant Frames, or null (C's {@code astGetFrameVariants}). */
-    AstObject getFrameVariants() {
+    FrameSet getFrameVariants() {
         return variants;
     }
 
     /** Sets the FrameSet of variant Frames, which is held, not copied (C's {@code astSetFrameVariants}). */
-    void setFrameVariants(AstObject value) {
+    void setFrameVariants(FrameSet value) {
         variants = value;
     }
 
@@ -2757,7 +2784,7 @@ public class Frame extends Mapping {
      * The value from its first character that is not white space, if it is one word with white
      * space around it, as C's {@code " %n%*s %n"} reads all of it; otherwise null.
      */
-    private static String oneWord(String value) {
+    static String oneWord(String value) {
         int i = 0;
         while (i < value.length() && CScan.isCSpace(value.charAt(i))) {
             i++;

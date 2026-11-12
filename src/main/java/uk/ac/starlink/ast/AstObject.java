@@ -575,9 +575,10 @@ public class AstObject implements Cloneable {
      * C's {@code VSet} (object.c) for a settings string {@code head} with {@code value} substituted
      * after it, as {@code astSet} substitutes the values of a format's conversions. Commas in
      * {@code head} separate assignments when it holds more than one '=' (outside quotes); commas
-     * in the substituted value never do.
+     * in the substituted value never do. A class that must act around a whole set of settings
+     * overrides it, as its C class overrides {@code VSet}.
      */
-    private void vset(String head, String value) {
+    void vset(String head, String value) {
         if (head.isEmpty() && value.isEmpty()) {
             return;
         }

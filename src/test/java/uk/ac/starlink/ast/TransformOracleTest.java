@@ -47,8 +47,7 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  * Frame is a Mapping, as in C, so Rust's list of untransformable fixtures has no counterpart: a
  * bare Frame's sections are compared like any other.
  *
- * <p>Left to later tasks: Task 16 adds the FrameSet case of {@link #angularFlags} (C's {@code
- * axis_is_cyclic} on the current or base Frame); Task 20 translates {@code
+ * <p>Left to later tasks: Task 20 translates {@code
  * bare_frame_is_untransformable_and_says_why} as a check that a bare Frame transforms as the
  * identity; Task 23 loads {@code .head} fixtures through a FitsChan (until then every {@code .head}
  * fixture is deferred as {@value #HEAD_NEEDS}) and translates {@code
@@ -189,16 +188,45 @@ class TransformOracleTest {
     }
 
     /**
-     * Which output axes of a section are angular. A bare Mapping has no Frame to ask, so every axis
-     * is, as in C.
+     * Which output axes of a section are angular. For a FrameSet they are the cyclic axes of the
+     * Frame the section's output is in, the current Frame for a forward section and the base Frame
+     * for an inverse one. A bare Mapping has no Frame to ask, so every axis is, as in C.
      */
     static boolean[] angularFlags(Mapping map, OracleSection s) {
-        if ("FrameSet".equals(map.astClass())) {
-            throw new IllegalStateException("the FrameSet case of angularFlags is not translated");
-        }
         boolean[] flags = new boolean[s.nout];
+        if (map instanceof FrameSet) {
+            FrameSet fs = (FrameSet) map;
+            Frame frame = fs.getFrame(s.forward ? FrameSet.AST__CURRENT : FrameSet.AST__BASE);
+            for (int axis = 0; axis < s.nout; axis++) {
+                flags[axis] = axisIsCyclic(frame, axis);
+            }
+            return flags;
+        }
         Arrays.fill(flags, true);
         return flags;
+    }
+
+    /**
+     * Whether an axis of a Frame, numbered from 0, is cyclic: whether the Frame normalises a value
+     * and the value one turn on from it to the same value.
+     */
+    static boolean axisIsCyclic(Frame frame, int axis) {
+        int naxes = frame.getNaxes();
+        if (axis >= naxes) {
+            return false;
+        }
+        double[] p = new double[naxes];
+        double[] q = new double[naxes];
+        Arrays.fill(p, 0.1);
+        Arrays.fill(q, 0.1);
+        q[axis] += TWO_PI;
+        try {
+            frame.norm(p);
+            frame.norm(q);
+        } catch (AstException e) {
+            return false;
+        }
+        return Math.abs(p[axis] - q[axis]) < 1e-6;
     }
 
     /** A transform that could not be made: a changed arity or an error. */
@@ -1050,6 +1078,20 @@ class TransformOracleTest {
         boolean[] flags = angularFlags(l.map, s);
         assertTrue(flags[0] && flags[1]);
         assertEquals(2, flags.length);
+    }
+
+    /** A FrameSet's plain Frames do not wrap their axes, so none of its output axes is angular. */
+    @Test
+    void framesetOfPlainFramesHasNoAngularAxes() {
+        FrameSet fs = new FrameSet(new Frame(2));
+        fs.addFrame(FrameSet.AST__BASE, new ZoomMap(2, 2.0), new Frame(2));
+        for (String dir : new String[] {"forward", "inverse"}) {
+            OracleSection s = OracleFile.parseText(TOL_LINE + "[x.ast nin=2 nout=2 dir=" + dir + "]\n", "test")
+                    .get(0);
+            boolean[] flags = angularFlags(fs, s);
+            assertEquals(2, flags.length);
+            assertFalse(flags[0] || flags[1], dir);
+        }
     }
 
     @Test
