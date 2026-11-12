@@ -3,6 +3,7 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
@@ -13,8 +14,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Translation of Rust {@code tests/test_zoommap.rs}.
  *
- * <p>{@code zoom_map_rate} and {@code zoom_rate_analytical} test {@code rate}, and are translated
- * in Task 8. {@code
+ * <p>A ZoomMap's rate is C's {@code Rate} (zoommap.c): the zoom factor, or its reciprocal when
+ * inverted, where the output is the input, and zero elsewhere. {@code
  * zoom_parallel_merge_different_factors}, {@code zoom_parallel_merge_same_factor} and {@code
  * a_merged_zoom_that_underflows_to_zero_is_an_error} test simplification, and are deferred.
  */
@@ -176,5 +177,41 @@ class ZoomMapTest {
         assertThrows(AstException.class, () -> held.setZoom(3.0));
         ZoomMap heldInVector = (ZoomMap) fresh.mapGet1A("vec")[0];
         assertThrows(AstException.class, () -> heldInVector.setZoom(3.0));
+    }
+
+    @Test
+    void zoomMapRate() {
+        ZoomMap m = new ZoomMap(2, 3.0);
+        assertEquals(3.0, m.rate(new double[] {1.0, 1.0}, 1, 1), 1e-4);
+    }
+
+    @Test
+    void zoomRateAnalytical() {
+        double[] at = {1.0, 2.0};
+        ZoomMap zm = new ZoomMap(2, 3.0);
+        assertEquals(3.0, zm.rate(at, 1, 1));
+        assertEquals(0.0, zm.rate(at, 1, 2));
+        assertEquals(3.0, zm.rate(at, 2, 2));
+
+        ZoomMap zmInv = new ZoomMap(2, 3.0);
+        zmInv.invert();
+        assertEquals(1.0 / 3.0, zmInv.rate(at, 1, 1), 1e-15);
+        assertEquals(0.0, zmInv.rate(at, 1, 2));
+    }
+
+    /** {@code decompose} of a Mapping that is not compound gives it, which C clones (mapping.c Decompose). */
+    @Test
+    void aDecomposedZoomMapIsShared() {
+        ZoomMap zm = new ZoomMap(1, 2.0);
+        zm.invert();
+        boolean[] series = new boolean[1];
+        boolean[] inverts = new boolean[2];
+        Mapping[] parts = zm.decompose(series, inverts);
+        assertEquals(1, parts.length);
+        assertSame(zm, parts[0]);
+        assertTrue(series[0]);
+        assertTrue(inverts[0]);
+        assertFalse(inverts[1]);
+        assertThrows(AstException.class, () -> zm.setZoom(3.0));
     }
 }

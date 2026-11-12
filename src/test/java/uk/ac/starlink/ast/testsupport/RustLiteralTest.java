@@ -48,6 +48,45 @@ class RustLiteralTest {
     }
 
     @Test
+    void enumVariantsOfADeclaredEnum() {
+        Map<String, Object> m = RustLiteral.parse("#[derive(Debug)]\npub enum Outcome {\n"
+                + "    /// An error.\n    Err(&'static str),\n    None,\n    Split(&'static [usize], &'static str),\n}\n"
+                + "pub const C: &[Outcome] = &[Outcome::Err(\"AST__AXIIN\"), Outcome::None,"
+                + " Outcome::Split(&[2, 1], \"x\")];\n");
+        List<?> c = (List<?>) m.get("C");
+        Map<String, Object> err = new java.util.LinkedHashMap<>();
+        err.put("variant", "Err");
+        err.put("value", "AST__AXIIN");
+        assertEquals(err, c.get(0));
+        Map<String, Object> none = new java.util.LinkedHashMap<>();
+        none.put("variant", "None");
+        assertEquals(none, c.get(1));
+        Map<String, Object> split = new java.util.LinkedHashMap<>();
+        split.put("variant", "Split");
+        split.put("value", Arrays.asList(Arrays.asList(2L, 1L), "x"));
+        assertEquals(split, c.get(2));
+        assertEquals(
+                "[{\"variant\":\"Err\",\"value\":\"AST__AXIIN\"},{\"variant\":\"None\"},"
+                        + "{\"variant\":\"Split\",\"value\":[[2,1],\"x\"]}]",
+                CasesToJson.toJson(c));
+    }
+
+    @Test
+    void aTypeItemWithAnArrayTypeIsSkipped() {
+        Map<String, Object> m =
+                RustLiteral.parse("pub type Quad = (&'static str, [f64; 2], usize);\npub const N: i32 = 3;\n");
+        assertEquals(3L, m.get("N"));
+    }
+
+    @Test
+    void anUnsignedIntegerBeyondALongIsABigInteger() {
+        Map<String, Object> m = RustLiteral.parse("pub const H: u64 = 13782637416320349453;\npub const L: u64 = 7;\n");
+        assertEquals(new java.math.BigInteger("13782637416320349453"), m.get("H"));
+        assertEquals(7L, m.get("L"));
+        assertEquals("13782637416320349453", CasesToJson.toJson(m.get("H")));
+    }
+
+    @Test
     void unknownConstructThrowsWithLineNumber() {
         IllegalArgumentException e = assertThrows(
                 IllegalArgumentException.class, () -> RustLiteral.parse("// x\n\npub const X: u8 = foo!();\n"));

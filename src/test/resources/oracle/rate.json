@@ -1,0 +1,8 @@
+{
+  "source": "crates/starlink-ast/tests/rate_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/rate_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "CASES": [["ratemap_zoommap_bad_input",3.0],["ratemap_unitmap_bad_other_axis",1.0],["ratemap_recorded_orientation",0.5],["tranmap_forward",2.0],["tranmap_inverted",0.3333333333333333],["switchmap_forward",10.0],["switchmap_inverted_no_selector","BAD"],["switchmap_inverted_route",0.1]]
+  }
+}

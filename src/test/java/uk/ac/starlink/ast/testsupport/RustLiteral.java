@@ -1,10 +1,13 @@
 package uk.ac.starlink.ast.testsupport;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A reader for the constants of a generated {@code cases.rs} file, the C probe tables committed in
@@ -15,11 +18,15 @@ import java.util.Map;
  * {@code &[...]} slices, {@code Some(x)} and {@code None}, negation, the {@code f64} constants
  * ({@code f64::NAN}, {@code f64::INFINITY}, {@code f64::NEG_INFINITY}, {@code f64::MAX}), AST's bad
  * value ({@code BAD_VALUE}, however qualified), and names of constants defined earlier in the same
- * file. {@code type} and {@code use} items, attributes and comments are skipped. Anything else
- * throws {@link IllegalArgumentException} naming its line.
+ * file, and the variants of an {@code enum} the file declares. {@code type} and {@code use} items,
+ * {@code enum} declarations, attributes and comments are skipped. Anything else throws {@link
+ * IllegalArgumentException} naming its line.
  *
- * <p>Values are {@link Double}, {@link Long}, {@link String}, {@link Boolean}, {@link List} (tuples,
- * arrays and slices) and null ({@code None}); {@code Some(x)} is read as {@code x}.
+ * <p>Values are {@link Double}, {@link Long}, {@link BigInteger} (an unsigned integer too large for
+ * a {@code long}), {@link String}, {@link Boolean}, {@link List} (tuples, arrays and slices), {@link
+ * Map} (an enum variant: key {@code variant} its name and, unless it is a unit variant, key {@code
+ * value} its field, or a list of its fields if it has more than one) and null ({@code None}); {@code
+ * Some(x)} is read as {@code x}.
  */
 public final class RustLiteral {
 
@@ -27,6 +34,7 @@ public final class RustLiteral {
     private int pos;
     private final Map<String, Object> consts = new LinkedHashMap<>();
     private final Map<String, Object> all = new HashMap<>();
+    private final Set<String> enums = new HashSet<>();
 
     private RustLiteral(String src) {
         this.src = src;
@@ -73,7 +81,15 @@ public final class RustLiteral {
             if ("const".equals(word)) {
                 constItem();
             } else if ("type".equals(word) || "use".equals(word)) {
-                skipPast(';');
+                skipItem();
+            } else if ("enum".equals(word)) {
+                skipSpace();
+                enums.add(ident());
+                skipSpace();
+                if (peek() != '{') {
+                    throw error("expected { after enum name");
+                }
+                skipBalanced();
             } else {
                 throw error("unsupported item \"" + word + "\"");
             }
@@ -205,6 +221,10 @@ public final class RustLiteral {
         }
         String p = sb.toString();
         String last = p.substring(p.lastIndexOf(':') + 1);
+        int sep = p.indexOf("::");
+        if (sep > 0 && enums.contains(p.substring(0, sep))) {
+            return variant(last);
+        }
         switch (p) {
             case "true":
                 return true;
@@ -238,6 +258,19 @@ public final class RustLiteral {
         }
     }
 
+    /** An enum variant named {@code name}, with its fields if any follow. */
+    private Map<String, Object> variant(String name) {
+        Map<String, Object> v = new LinkedHashMap<>();
+        v.put("variant", name);
+        skipSpace();
+        if (pos < src.length() && peek() == '(') {
+            pos++;
+            List<Object> fields = list(')').values;
+            v.put("value", fields.size() == 1 ? fields.get(0) : fields);
+        }
+        return v;
+    }
+
     private Object number() {
         int start = pos;
         while (pos < src.length() && (Character.isDigit(peek()) || peek() == '_')) {
@@ -269,7 +302,11 @@ public final class RustLiteral {
             throw error("unsupported number suffix");
         }
         try {
-            return isFloat ? (Object) Double.parseDouble(text) : (Object) Long.parseLong(text);
+            if (isFloat) {
+                return Double.parseDouble(text);
+            }
+            BigInteger big = new BigInteger(text);
+            return big.bitLength() < Long.SIZE ? (Object) big.longValue() : (Object) big;
         } catch (NumberFormatException e) {
             IllegalArgumentException err = error("bad number \"" + text + "\"");
             err.initCause(e);
@@ -394,16 +431,26 @@ public final class RustLiteral {
         } while (depth > 0 && pos < src.length());
     }
 
-    private void skipPast(char end) {
-        while (pos < src.length() && src.charAt(pos) != end) {
-            if (src.charAt(pos) == '"') {
+    /** Skips past the ';' ending an item, ignoring any inside brackets, as in {@code [f64; 2]}. */
+    private void skipItem() {
+        int depth = 0;
+        while (pos < src.length()) {
+            char c = src.charAt(pos);
+            if (c == '"') {
                 pos++;
                 string();
-            } else {
-                pos++;
+                continue;
+            }
+            pos++;
+            if (c == '[' || c == '(' || c == '{') {
+                depth++;
+            } else if (c == ']' || c == ')' || c == '}') {
+                depth--;
+            } else if (c == ';' && depth == 0) {
+                return;
             }
         }
-        expect(end);
+        throw error("unterminated item");
     }
 
     private void skipSpace() {

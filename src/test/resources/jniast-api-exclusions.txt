@@ -6,9 +6,3 @@ AstObject.pointer | the address of the C object behind a JNI wrapper; there is n
 AstObject.finalize() | releases the C object behind a JNI wrapper; there is no C object
 AstObject.getAstConstantI(String) | reads constants from the C library; they are ordinary static final fields
 Channel.finalize() | releases the C channel behind a JNI wrapper; there is no C object
-Mapping.decompose(boolean[],boolean[]) | generic Mapping algorithm ported in Task 8
-Mapping.mapSplit(int[],int[]) | generic Mapping algorithm ported in Task 8
-Mapping.tranGrid(int,int[],int[],double,int,boolean,int) | generic Mapping algorithm ported in Task 8
-Mapping.linearApprox(double[],double[],double) | generic Mapping algorithm ported in Task 8
-Mapping.mapBox(double[],double[],boolean,int,double[],double[]) | generic Mapping algorithm ported in Task 8
-Mapping.rate(double[],int,int) | generic Mapping algorithm ported in Task 8

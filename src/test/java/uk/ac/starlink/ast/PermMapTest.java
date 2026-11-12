@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
@@ -17,11 +18,7 @@ import org.junit.jupiter.api.Test;
  * and an empty constants array is C's NULL; {@code with_null_perms} is jniast's constructor given
  * a null permutation array.
  *
- * <p>{@code perm_rate_analytical} and {@code perm_rate_analytical_inverted} test {@code rate}, and
- * {@code perm_split_alternative_uses_inperm}, {@code
- * perm_split_alternative_rejects_constant_fed_input}, {@code
- * perm_split_alternative_rejects_duplicate_output} and the split after reloading in {@code
- * perm_split_roundtrips_through_native_dump} test {@code mapSplit}: Task 8 translates them. The
+ * <p>Rust's {@code map_split} is jniast's {@code mapSplit}, with the outputs returned in an array. The
  * {@code perm_equal_*} tests test {@code astEqual}, which is outside the first phase; {@code
  * perm_parallel_merge} and {@code perm_simplified_checks_both_perms} test simplification, and are
  * deferred. {@code perm_map_identity_simplifies}, {@code perm_map_non_identity_not_simplified},
@@ -160,6 +157,92 @@ class PermMapTest {
         PermMap reread = assertInstanceOf(PermMap.class, ChannelText.read(text));
         assertTrue(reread.getPermSplit());
         assertEquals(text, ChannelText.dump(reread));
+        // It still drives the alternative split after a round trip.
+        int[] outs = new int[2];
+        Mapping sub = reread.mapSplit(new int[] {1, 2}, outs);
+        assertInstanceOf(UnitMap.class, sub, "split after reload");
+        assertArrayEquals(new int[] {2, 1}, outs);
+    }
+
+    @Test
+    void permSplitAlternativeUsesInperm() {
+        PermMap pm = perm(new int[] {2, 1, -1}, new int[] {2, 1}, 99.0);
+        pm.setPermSplit(true);
+        assertTrue(pm.getPermSplit());
+
+        int[] outs = new int[2];
+        Mapping sub = pm.mapSplit(new int[] {1, 2}, outs);
+        assertInstanceOf(UnitMap.class, sub);
+        assertEquals(2, sub.getNin());
+        assertEquals(2, sub.getNout());
+        assertArrayEquals(new int[] {2, 1}, outs);
+
+        outs = new int[2];
+        sub = pm.mapSplit(new int[] {1}, outs);
+        assertInstanceOf(UnitMap.class, sub);
+        assertEquals(1, sub.getNin());
+        assertEquals(2, outs[0]);
+
+        sub = pm.mapSplit(new int[] {2}, outs);
+        assertInstanceOf(UnitMap.class, sub);
+        assertEquals(1, outs[0]);
+    }
+
+    @Test
+    void permSplitAlternativeRejectsConstantFedInput() {
+        PermMap pm = perm(new int[] {2, 1, -1}, new int[] {2, 1}, 99.0);
+        pm.setPermSplit(true);
+        assertNull(pm.mapSplit(new int[] {3}, new int[2]));
+    }
+
+    @Test
+    void permSplitAlternativeRejectsDuplicateOutput() {
+        PermMap pm = perm(new int[] {1, 1}, new int[] {1});
+        pm.setPermSplit(true);
+        assertNull(pm.mapSplit(new int[] {1, 2}, new int[1]));
+        int[] outs = new int[1];
+        Mapping sub = pm.mapSplit(new int[] {1}, outs);
+        assertInstanceOf(UnitMap.class, sub);
+        assertEquals(1, outs[0]);
+    }
+
+    // ------------------------------------------------------------------
+    // Rate
+    // ------------------------------------------------------------------
+
+    /** Analytical rate for PermMap: 1 if the output takes the input, else 0 (permmap.c {@code Rate}). */
+    @Test
+    void permRateAnalytical() {
+        PermMap pm = perm(new int[] {2, 1}, new int[] {2, 1});
+        double[] at = {0.0, 0.0};
+        assertEquals(0.0, pm.rate(at, 1, 1));
+        assertEquals(1.0, pm.rate(at, 1, 2));
+        assertEquals(1.0, pm.rate(at, 2, 1));
+        assertEquals(0.0, pm.rate(at, 2, 2));
+    }
+
+    /** An inverted PermMap's rate uses the inverse permutation. */
+    @Test
+    void permRateAnalyticalInverted() {
+        PermMap pm = perm(new int[] {2, 1}, new int[] {2, 1});
+        pm.invert();
+        double[] at = {0.0, 0.0};
+        assertEquals(0.0, pm.rate(at, 1, 1));
+        assertEquals(1.0, pm.rate(at, 1, 2));
+        assertEquals(1.0, pm.rate(at, 2, 1));
+        assertEquals(0.0, pm.rate(at, 2, 2));
+    }
+
+    /** A null forward permutation gives a rate of one where the output and input numbers agree. */
+    @Test
+    void aNullPermutationRateIsUnitOnTheDiagonal() {
+        PermMap pm = new PermMap(2, new int[] {2, 1}, 2, null, null);
+        double[] at = {0.0, 0.0};
+        assertEquals(1.0, pm.rate(at, 1, 1));
+        assertEquals(0.0, pm.rate(at, 1, 2));
+        pm.invert();
+        assertEquals(0.0, pm.rate(at, 1, 1));
+        assertEquals(1.0, pm.rate(at, 1, 2));
     }
 
     /**

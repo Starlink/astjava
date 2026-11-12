@@ -26,6 +26,8 @@ This reads `reference/starlink-ast-rs/crates/starlink-ast/tests/<x>_oracle/cases
 
 `consts` holds each `const` of the Rust file in order.
 Tuples, arrays and slices become JSON arrays; `Some(x)` becomes `x` and `None` becomes `null`.
+A variant of an `enum` the file declares becomes an object: `{"variant": "Split", "value": [[2, 1], "..."]}` for `Outcome::Split(&[2, 1], "...")`, the value being the variant's field, or an array of its fields when it has several; a unit variant such as `Outcome::None` has no `value`.
+An integer too large for a Java `long` (a `u64` hash) is written as it is, and is read with `JsonNode.bigIntegerValue()`.
 Doubles are written in Java's `Double.toString` form, so they read back to the same value; NaN, the infinities and C's bad value (`AST__BAD`) are the strings `"NaN"`, `"Infinity"`, `"-Infinity"` and `"BAD"`, which `ProbeData.toDouble` turns back into numbers.
 
 ## Refreshing

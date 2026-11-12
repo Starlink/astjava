@@ -68,6 +68,32 @@ public class ShiftMap extends Mapping {
         return true;
     }
 
+    /** The rate of change: one where the output is the input, zero elsewhere ({@code Rate}, shiftmap.c). */
+    @Override
+    double rateAt(double[] at, int ax1, int ax2) {
+        return ax1 == ax2 ? 1.0 : 0.0;
+    }
+
+    /**
+     * Splits off a ShiftMap of the chosen inputs' shifts, inverted if this one is, as C's {@code
+     * MapSplit} (shiftmap.c) does; an input that does not exist gives no split.
+     */
+    @Override
+    MapSplit splitOff(int[] in) {
+        if (in.length == 0 || !MapSplit.allInputs(in, getNin())) {
+            return null;
+        }
+        double[] shifts = new double[in.length];
+        for (int i = 0; i < in.length; i++) {
+            shifts[i] = shift[in[i]];
+        }
+        ShiftMap map = new ShiftMap(shifts);
+        if (getInvert()) {
+            map.invert();
+        }
+        return new MapSplit(in.clone(), map);
+    }
+
     @Override
     void transformInto(double[][] in, int npoint, boolean forward, double[][] out) {
         validateTransformInto(in, npoint, forward, out);

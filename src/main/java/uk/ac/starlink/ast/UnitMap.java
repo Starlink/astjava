@@ -41,6 +41,25 @@ public class UnitMap extends Mapping {
         return true;
     }
 
+    /** The rate of change: one where the output is the input, zero elsewhere ({@code Rate}, unitmap.c). */
+    @Override
+    double rateAt(double[] at, int ax1, int ax2) {
+        return ax1 == ax2 ? 1.0 : 0.0;
+    }
+
+    /**
+     * Splits off a UnitMap of the chosen inputs, as C's {@code MapSplit} (unitmap.c) does: any
+     * selection of inputs, a repeated one included, gives a UnitMap with as many axes; an input
+     * that does not exist gives no split.
+     */
+    @Override
+    MapSplit splitOff(int[] in) {
+        if (in.length == 0 || !MapSplit.allInputs(in, getNin())) {
+            return null;
+        }
+        return new MapSplit(in.clone(), new UnitMap(in.length));
+    }
+
     /** Copies the input, with a NaN, which is a bad value, made {@link #AST__BAD}. */
     @Override
     void transformInto(double[][] in, int npoint, boolean forward, double[][] out) {

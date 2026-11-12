@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Translation of Rust {@code tests/test_shiftmap.rs}.
  *
- * <p>{@code shift_map_rate} and {@code shift_rate_analytical} test {@code rate}, and are
- * translated in Task 8.
+ * <p>A ShiftMap's rate is C's {@code Rate} (shiftmap.c): one where the output is the input, zero
+ * elsewhere.
  */
 class ShiftMapTest {
 
@@ -64,5 +64,21 @@ class ShiftMapTest {
 
         double[][] inv = transformRows(sm, false, new double[] {BAD, 25.0, 33.0});
         assertArrayEquals(new double[] {BAD, 5.0, 3.0}, point(inv, 0));
+    }
+
+    @Test
+    void shiftMapRate() {
+        ShiftMap m = new ShiftMap(new double[] {10.0, 20.0});
+        assertEquals(1.0, m.rate(new double[] {1.0, 1.0}, 1, 1), 1e-6);
+    }
+
+    @Test
+    void shiftRateAnalytical() {
+        ShiftMap sm = new ShiftMap(new double[] {10.0, 20.0});
+        double[] at = {1.0, 2.0};
+        assertEquals(1.0, sm.rate(at, 1, 1));
+        assertEquals(0.0, sm.rate(at, 1, 2));
+        assertEquals(1.0, sm.rate(at, 2, 2));
+        assertEquals(0.0, sm.rate(at, 2, 1));
     }
 }

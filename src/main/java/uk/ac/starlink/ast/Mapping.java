@@ -1,6 +1,8 @@
 package uk.ac.starlink.ast;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * The base class of all Mappings: relationships between two coordinate systems.
@@ -659,7 +661,7 @@ public abstract class Mapping extends AstObject {
      * AST__NCPIN}). At least one point must be given ({@code AST__NPTIN}), as C's PointSet requires
      * (pointset.c {@code astInitPointSet}).
      */
-    private void validateMapping(boolean forward, int npoint, int ncoordIn, int ncoordOut, String method) {
+    final void validateMapping(boolean forward, int npoint, int ncoordIn, int ncoordOut, String method) {
         String cls = astClass();
         if (!(forward ? getTranForward() : getTranInverse())) {
             throw Ast.err(
@@ -691,7 +693,7 @@ public abstract class Mapping extends AstObject {
     }
 
     /** An {@code AST__DIMIN} error if {@code length}, the size of an array, is below {@code need}. */
-    private void checkDim(String method, String what, int length, long need) {
+    final void checkDim(String method, String what, int length, long need) {
         if (length < need) {
             throw Ast.err(
                     AstException.AST__DIMIN,
@@ -818,6 +820,286 @@ public abstract class Mapping extends AstObject {
             checkDim("astTranP", "input coordinate", rows[c].length, npoint);
         }
         return tran(rows, npoint, forward);
+    }
+
+    // ------------------------------------------------------------------
+    // Rates, fits, grids, bounds, splitting and decomposition
+    // ------------------------------------------------------------------
+
+    /**
+     * Finds the rate of change of one output of the Mapping with respect to one input, at a given
+     * input position: the derivative of output {@code ax1} with respect to input {@code ax2} at
+     * {@code at}. Classes whose rates are known exactly give them; otherwise the rate is estimated
+     * by evaluating the Mapping at points spaced over intervals of several sizes about {@code at}
+     * and choosing the interval over which the gradient is most consistent. This is accurate but
+     * may evaluate the Mapping 100 or more times.
+     *
+     * @param at the input position, one value per input; only the first {@code Nin} are used
+     * @param ax1 the output whose rate of change is wanted, numbered from 1
+     * @param ax2 the input that is varied, numbered from 1
+     * @return the rate of change, or {@link #AST__BAD} if it cannot be found, for instance because
+     *     {@code at} holds a bad value
+     * @throws AstException with status {@code AST__AXIIN} if {@code ax1} is not an output or {@code
+     *     ax2} not an input, {@code AST__NCPIN} if {@code at} holds fewer than {@code Nin} values, or
+     *     {@code AST__NODEF} if the rate must be estimated and the forward transformation is not
+     *     defined
+     */
+    public double rate(double[] at, int ax1, int ax2) {
+        String cls = astClass();
+        int nout = getNout();
+        int nin = getNin();
+        // The checks of astRate_ (mapping.c), given the indices astRateId_ makes zero-based.
+        if (ax1 < 1 || ax1 > nout) {
+            throw Ast.err(
+                    AstException.AST__AXIIN,
+                    "astRate(" + cls + "): Invalid output index (" + ax1 + ") specified - should be in the range 1 to "
+                            + nout + ".");
+        }
+        if (ax2 < 1 || ax2 > nin) {
+            throw Ast.err(
+                    AstException.AST__AXIIN,
+                    "astRate(" + cls + "): Invalid input index (" + ax2 + ") specified - should be in the range 1 to "
+                            + nin + ".");
+        }
+        if (at.length < nin) {
+            throw Ast.err(
+                    AstException.AST__NCPIN,
+                    "astRate(" + cls + "): " + at.length + " input values supplied; the " + cls + " has " + nin
+                            + " inputs.");
+        }
+        return rateAt(at, ax1 - 1, ax2 - 1);
+    }
+
+    /**
+     * The rate of change of output {@code ax1} with respect to input {@code ax2} at {@code at},
+     * both indices zero-based and already checked: C's per-class {@code Rate} method. This base
+     * version estimates it numerically ({@link Rate#numericRate}); a class whose rates are known
+     * exactly overrides it, as its C class does.
+     */
+    double rateAt(double[] at, int ax1, int ax2) {
+        return Rate.numericRate(this, at, ax1, ax2);
+    }
+
+    /**
+     * Finds a linear approximation to the forward transformation over a box of input coordinates,
+     * if the transformation is linear enough there: the fit must reproduce the Mapping, at a set
+     * of test points spread over the box, to within {@code tol}, a Cartesian distance in the
+     * output space. To fit the inverse transformation, invert the Mapping first.
+     *
+     * <p>The fit is returned as {@code Nout} constant terms followed by the {@code Nout} by {@code
+     * Nin} matrix of gradients, row by row: for two inputs and three outputs, output {@code X =
+     * fit[0] + fit[3]*x + fit[4]*y}, {@code Y = fit[1] + fit[5]*x + fit[6]*y} and {@code Z = fit[2]
+     * + fit[7]*x + fit[8]*y}. An output that is bad at any of the points tested has its
+     * coefficients set to {@link #AST__BAD}, without stopping the other outputs being fitted, so
+     * check the coefficients before using them.
+     *
+     * @param lbnd the lower bound of the box on each input, {@code Nin} values
+     * @param ubnd the upper bound of the box on each input, {@code Nin} values
+     * @param tol the largest acceptable deviation of the fit from the Mapping
+     * @return the {@code (Nin + 1) * Nout} coefficients of the fit, or null if the Mapping is not
+     *     linear enough over the box, or is bad on every output
+     * @throws AstException with status {@code AST__NCPIN} if a bound holds fewer than {@code Nin}
+     *     values, or any error transforming the test points, such as {@code AST__TRNND} if the
+     *     forward transformation is not defined
+     */
+    public double[] linearApprox(double[] lbnd, double[] ubnd, double tol) {
+        return LinearApprox.linearApprox(this, lbnd, ubnd, tol);
+    }
+
+    /**
+     * Transforms every position of a regular grid, applying the forward transformation if {@code
+     * forward} is true and the inverse otherwise. The grid holds the integer positions from {@code
+     * lbnd} to {@code ubnd} inclusive on each axis, each the centre of a pixel of unit extent.
+     *
+     * <p>When {@code tol} is positive, the Mapping is replaced by linear fits over sections of the
+     * grid wherever they are accurate to within {@code tol}, a distance in the output space, which
+     * is much faster for large grids. A fit is first tried over the whole grid; where it is not
+     * accurate enough, the section is divided in two along its longest axis and the fit tried
+     * again, until a fit is found or the section is too small to be worth fitting, when the
+     * Mapping is used directly. Before any fit is tried, the grid is divided until no section is
+     * longer than {@code maxpix} positions on any axis. A {@code tol} of zero transforms every
+     * position through the Mapping.
+     *
+     * @param ncoordIn the number of coordinates of each input position: the Mapping's Nin for the
+     *     forward transformation, its Nout for the inverse
+     * @param lbnd the lowest grid index on each axis, {@code ncoordIn} values
+     * @param ubnd the highest grid index on each axis, {@code ncoordIn} values
+     * @param tol the largest acceptable error of the linear fits, or zero for none
+     * @param maxpix the largest number of positions along any axis over which a fit is tried
+     * @param forward true for the forward transformation, false for the inverse
+     * @param ncoordOut the number of coordinates of each output position: the Mapping's Nout for
+     *     the forward transformation, its Nin for the inverse
+     * @return {@code ncoordOut} arrays, each with one value per grid position, the first axis
+     *     varying fastest
+     * @throws AstException with status {@code AST__DIMIN} if a bound array is too short, {@code
+     *     AST__GBDIN} if a lower bound exceeds its upper bound, {@code AST__EXSPIX} if the grid has
+     *     too many positions, {@code AST__TRNND} if the transformation is not defined, {@code
+     *     AST__NCPIN} if the coordinate counts are not the Mapping's, {@code AST__PATIN} if {@code
+     *     tol} is negative, or {@code AST__SSPIN} if {@code maxpix} is negative
+     */
+    public double[][] tranGrid(
+            int ncoordIn, int[] lbnd, int[] ubnd, double tol, int maxpix, boolean forward, int ncoordOut) {
+        return TranGrid.tranGrid(this, ncoordIn, lbnd, ubnd, tol, maxpix, forward, ncoordOut);
+    }
+
+    /**
+     * Finds the bounds of one output coordinate over a box of input coordinates: the lowest and
+     * highest values it takes as the input ranges over the box, and an input position (not
+     * necessarily unique) where each is reached. Calling this once per output gives the bounding
+     * box of the transformed input box, for instance the extent of an image after it has been
+     * transformed. With {@code forward} false the inverse transformation is used, and the inputs
+     * and outputs exchange roles. Input positions that give a bad value on any output are ignored.
+     *
+     * <p>Many positions are tested, using a global search for the extremes, so bounds are found
+     * unless good positions are confined to a very small part of the box.
+     *
+     * @param lbndIn the lower bound of the box on each input of the transformation used; a bound
+     *     above its partner is exchanged with it
+     * @param ubndIn the upper bound of the box on each input of the transformation used
+     * @param forward true for the forward transformation, false for the inverse
+     * @param coordOut the output whose bounds are wanted, numbered from 1
+     * @param xl null, or an array of at least one value per input, which receives a position where
+     *     the lower bound is reached
+     * @param xu null, or an array of at least one value per input, which receives a position where
+     *     the upper bound is reached
+     * @return the lower and upper bounds of output {@code coordOut}
+     * @throws AstException with status {@code AST__BADCI} if {@code coordOut} is not an output,
+     *     {@code AST__DIMIN} if an array is too short, or {@code AST__MBBNF} if no bounds are found,
+     *     typically because every position tested gave a bad value
+     */
+    public double[] mapBox(double[] lbndIn, double[] ubndIn, boolean forward, int coordOut, double[] xl, double[] xu) {
+        return MapBox.mapBox(this, lbndIn, ubndIn, forward, coordOut - 1, xl, xu);
+    }
+
+    /**
+     * Splits off the part of the Mapping that connects a chosen set of inputs to the outputs they
+     * feed. The result is a new Mapping whose inputs are the chosen ones, in the order given, and
+     * whose outputs are the outputs of this Mapping that depend only on them, in the order {@code
+     * out} gives. A split exists only if some subset of the outputs depends on the chosen inputs
+     * alone, and no other output depends on any of them. The new Mapping is a deep copy of the
+     * parts of this one it uses.
+     *
+     * @param in the inputs to pick, numbered from 1, in any order
+     * @param out an array of at least {@code Nout} elements, which receives the number (from 1)
+     *     of the output of this Mapping that each output of the returned Mapping corresponds to;
+     *     the elements after those are unchanged, as are all of them when there is no split
+     * @return the split Mapping, or null if there is no split
+     * @throws AstException with status {@code AST__DIMIN} if {@code out} is too short, or {@code
+     *     AST__AXIIN} for an input that does not exist, from the classes that check
+     */
+    public Mapping mapSplit(int[] in, int[] out) {
+        Objects.requireNonNull(in, "in");
+        checkDim("astMapSplit", "out", out.length, getNout());
+        // astMapSplitId_ (mapping.c): the protected method takes zero-based indices.
+        int[] inZero = new int[in.length];
+        for (int i = 0; i < in.length; i++) {
+            inZero[i] = in[i] - 1;
+        }
+        MapSplit split = mapSplit(inZero);
+        if (split == null) {
+            return null;
+        }
+        int nout = split.map.getNout();
+        for (int i = 0; i < nout; i++) {
+            out[i] = split.outputs[i] + 1;
+        }
+        return split.map;
+    }
+
+    /**
+     * C's protected {@code astMapSplit} (mapping.c {@code astMapSplit_}): the class's {@link
+     * #splitOff}, whose Mapping is then copied, so that the result is independent of this Mapping.
+     *
+     * @param in the inputs to pick, numbered from zero
+     * @return the split, with outputs numbered from zero, or null if there is none
+     */
+    final MapSplit mapSplit(int[] in) {
+        MapSplit split = splitOff(in);
+        if (split == null) {
+            return null;
+        }
+        return new MapSplit(split.outputs, (Mapping) split.map.copy());
+    }
+
+    /**
+     * C's per-class {@code MapSplit} method, with zero-based indices: the split of the inputs
+     * {@code in}, which the caller copies. This base version, C's, splits only a selection of
+     * every input, each once ({@link MapSplit#baseSplit}); classes that can split part of their
+     * inputs override it, as their C classes do.
+     *
+     * @throws AstException with status {@code AST__AXIIN} for an input that does not exist
+     */
+    MapSplit splitOff(int[] in) {
+        return MapSplit.baseSplit(this, in);
+    }
+
+    /**
+     * Decomposes the Mapping into two component Mappings which, applied in series or in parallel,
+     * are equivalent to it. A CmpMap gives the two Mappings it was made from; any other Mapping
+     * gives itself alone. The Mappings returned are the components themselves, not copies, so
+     * that a change made to one is reflected in this Mapping; being shared, they are no longer
+     * allowed the changes C forbids to an Object that has been cloned.
+     *
+     * <p>The Invert value returned for each component should be used in preference to the
+     * component's own Invert attribute, which may have changed since the Mappings were combined.
+     *
+     * @param series null, or an array of at least one element, whose first element is set true if
+     *     the components are applied in series (the first, then the second) and false if in
+     *     parallel (the first to the lower-numbered coordinates, the second to the others)
+     * @param inverts null, or an array of at least two elements, which receive the Invert values
+     *     to use with the first and second components
+     * @return the first component, and the second if there is one
+     * @throws AstException with status {@code AST__DIMIN} if an array is too short
+     */
+    public Mapping[] decompose(boolean[] series, boolean[] inverts) {
+        if (series != null) {
+            checkDim("astDecompose", "series", series.length, 1);
+        }
+        if (inverts != null) {
+            checkDim("astDecompose", "inverts", inverts.length, 2);
+        }
+        boolean[] flags = new boolean[3];
+        Mapping[] parts = decomposeInto(flags);
+        if (series != null) {
+            series[0] = flags[0];
+        }
+        if (inverts != null) {
+            inverts[0] = flags[1];
+            inverts[1] = flags[2];
+        }
+        for (Mapping m : parts) {
+            m.markShared();
+        }
+        return parts;
+    }
+
+    /**
+     * C's per-class {@code Decompose} method: the components, which the caller shares, with
+     * {@code flags} receiving whether they are applied in series and the Invert values to use with
+     * each. This base version, C's, gives the Mapping itself, in series, with its own Invert value.
+     *
+     * @param flags receives the series flag and the two Invert values
+     * @return one or two components
+     */
+    Mapping[] decomposeInto(boolean[] flags) {
+        flags[0] = true;
+        flags[1] = getInvert();
+        flags[2] = false;
+        return new Mapping[] {this};
+    }
+
+    /**
+     * C's per-class {@code MapList} method: appends to {@code maps} the Mappings which, applied in
+     * series if {@code series} and in parallel otherwise, are equivalent to this Mapping applied
+     * with the Invert value {@code invert}, and to {@code inverts} the Invert value to apply each
+     * with. This base version, C's, appends the Mapping itself.
+     *
+     * @return whether an inverted compound Mapping was decomposed
+     */
+    boolean mapList(boolean series, boolean invert, List<Mapping> maps, List<Boolean> inverts) {
+        inverts.add(invert);
+        maps.add(this);
+        return false;
     }
 
     // ------------------------------------------------------------------
