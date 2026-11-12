@@ -51,7 +51,8 @@ public class CmpMap extends Mapping {
      * <p>In series, the number of output coordinates of {@code map1} must equal the number of
      * input coordinates of {@code map2}; in parallel there is no restriction. Each direction of
      * the CmpMap is defined when it is defined for both components. A CmpMap is made even when it
-     * cannot transform in either direction.
+     * cannot transform in either direction. A FrameSet given as a component is replaced by its
+     * Mapping from its base Frame to its current Frame.
      *
      * @param map1 the first component Mapping
      * @param map2 the second component Mapping
@@ -70,15 +71,26 @@ public class CmpMap extends Mapping {
                 count(map1, map2, series, false),
                 map1.getTranForward() && map2.getTranForward(),
                 map1.getTranInverse() && map2.getTranInverse());
-        this.map1 = map1;
-        this.map2 = map2;
-        if (share) {
-            map1.markShared();
-            map2.markShared();
-        }
+        this.map1 = component(map1, share);
+        this.map2 = component(map2, share);
         this.series = series;
-        invert1 = map1.getInvert();
-        invert2 = map2.getInvert();
+        invert1 = this.map1.getInvert();
+        invert2 = this.map2.getInvert();
+    }
+
+    /**
+     * The Mapping a CmpMap holds for {@code map} (C's {@code astInitCmpMap}): for a FrameSet, its
+     * Mapping from its base Frame to its current Frame, which only the CmpMap refers to; for any
+     * other Mapping, the Mapping itself, marked shared if {@code share}.
+     */
+    private static Mapping component(Mapping map, boolean share) {
+        if (map instanceof FrameSet) {
+            return ((FrameSet) map).getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        }
+        if (share) {
+            map.markShared();
+        }
+        return map;
     }
 
     /**

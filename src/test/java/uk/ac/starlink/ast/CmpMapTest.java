@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
  * gives, which Rust, copying its components, has no counterpart for. Rust's {@code then} and
  * {@code alongside} are the constructor with {@code series} true and false.
  *
- * <p>{@code a_frameset_component_becomes_its_mapping} is translated in Task 16. {@code
+ * <p>{@code
  * series_inverse_pair_of_mathmaps_cancels_to_unitmap} and {@code
  * parallel_with_inverted_cmpmap_child_canonicalises_for_serialisation} need a MathMap, and {@code
  * cmpmap_equality_compares_components_as_applied} tests {@code astEqual}: all are outside the first
@@ -268,5 +268,33 @@ class CmpMapTest {
         assertThrows(AstException.class, () -> ((ZoomMap) dc[0]).setZoom(3.0));
         AstException e = assertThrows(AstException.class, () -> cmp.decompose(new boolean[0], null));
         assertEquals(AstException.AST__DIMIN, e.getStatus());
+    }
+
+    /**
+     * A FrameSet given as a component is replaced by its base-to-current Mapping, as C's {@code
+     * astInitCmpMap} does. The expected dump is C's for the same construction.
+     */
+    @Test
+    void aFramesetComponentBecomesItsMapping() {
+        FrameSet fs = new FrameSet(new Frame(2));
+        fs.addFrame(FrameSet.AST__BASE, new ZoomMap(2, 3.0), new Frame(2));
+        CmpMap cmp = new CmpMap(fs, new UnitMap(2), true);
+        String want = ChannelText.text(
+                " Begin CmpMap \t# Compound Mapping",
+                "    Nin = 2 \t# Number of input coordinates",
+                " IsA Mapping \t# Mapping between coordinate systems",
+                "    MapA = \t# First component Mapping",
+                "       Begin ZoomMap \t# Zoom about the origin",
+                "          Nin = 2 \t# Number of input coordinates",
+                "       IsA Mapping \t# Mapping between coordinate systems",
+                "          Zoom = 3 \t# Zoom factor",
+                "       End ZoomMap",
+                "    MapB = \t# Second component Mapping",
+                "       Begin UnitMap \t# Unit (null) Mapping",
+                "          Nin = 2 \t# Number of input coordinates",
+                "       IsA Mapping \t# Mapping between coordinate systems",
+                "       End UnitMap",
+                " End CmpMap");
+        assertEquals(want, ChannelText.dump(cmp));
     }
 }

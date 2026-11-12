@@ -314,3 +314,5 @@ tests/test_frame_equality.rs::skyframes_differing_in_system_are_not_equal | astE
 tests/test_frame_equality.rs::normmap_pair_over_cosmetically_different_frames_cancels | NormMap (out of scope)
 tests/test_frame_geometry.rs::match_axes_finds_sky_in_cmp | SpecFrame (out of scope)
 tests/test_norm_points.rs::a_circle_mesh_is_normalised_as_c_does | Circle (Region, out of scope)
+tests/test_frameset.rs::debug_formatting | Rust-only API (Debug)
+tests/test_frameset.rs::convert_stops_at_the_first_domain_that_gives_a_conversion | MathMap (out of scope)

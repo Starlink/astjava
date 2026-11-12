@@ -41,6 +41,7 @@ class JniastApiTest {
             "Channel",
             "CmpMap",
             "Frame",
+            "FrameSet",
             "KeyMap",
             "Mapping",
             "MatrixMap",

@@ -37,8 +37,8 @@ class NativeClassesTest {
 
     @Test
     void missingClassesAreSortedWithoutRepeats() {
-        assertEquals(Arrays.asList("FrameSet", "SkyAxis", "SkyFrame"), NativeClasses.missing(DUMP));
-        assertEquals("needs FrameSet, SkyAxis, SkyFrame", NativeClasses.needs(DUMP));
+        assertEquals(Arrays.asList("SkyAxis", "SkyFrame"), NativeClasses.missing(DUMP));
+        assertEquals("needs SkyAxis, SkyFrame", NativeClasses.needs(DUMP));
     }
 
     @Test

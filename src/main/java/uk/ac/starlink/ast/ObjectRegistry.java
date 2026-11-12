@@ -32,6 +32,8 @@ final class ObjectRegistry {
                 return CmpMap::new;
             case "Frame":
                 return Frame::new;
+            case "FrameSet":
+                return FrameSet::new;
             case "KeyMap":
                 return KeyMap::new;
             case "MatrixMap":

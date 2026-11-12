@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
  * package-private {@code mapSplit(int[])}, C's protected {@code astMapSplit} with zero-based
  * indices, and Rust's public {@code map_split} is jniast's {@code mapSplit(int[], int[])}.
  *
- * <p>{@code frameset_splits_its_base_to_current_mapping} is translated in Task 16. The {@code normmap_*}, {@code tranmap_*} and {@code ratemap_*} tests need classes
+ * <p>The {@code normmap_*}, {@code tranmap_*} and {@code ratemap_*} tests need classes
  * outside the first phase, as does {@code testcmpmap_split_of_splittest1}, whose Mapping holds
  * LutMaps.
  */
@@ -671,5 +671,23 @@ class MapSplitTest {
         assertNotNull(split(pm, 0, 1));
         assertNull(split(pm, 0));
         assertNull(split(pm, 1));
+    }
+
+    /** frameset.c {@code MapSplit}: a FrameSet splits its base-to-current Mapping, in whichever direction it runs. */
+    @Test
+    void framesetSplitsItsBaseToCurrentMapping() {
+        CmpMap map = new CmpMap(new ZoomMap(1, 2.0), new ShiftMap(new double[] {5.0}), false);
+        FrameSet fs = new FrameSet(new Frame(2));
+        fs.addFrame(FrameSet.AST__BASE, map, new Frame(2));
+        MapSplit s = split(fs, 1);
+        assertNotNull(s, "the second axis splits");
+        assertArrayEquals(new int[] {1}, s.outputs);
+        assertArrayEquals(new double[] {6.0}, fwdPoint(s.map, 1.0));
+
+        fs.invert();
+        s = split(fs, 1);
+        assertNotNull(s, "the inverse splits too");
+        assertArrayEquals(new int[] {1}, s.outputs);
+        assertArrayEquals(new double[] {1.0}, fwdPoint(s.map, 6.0));
     }
 }

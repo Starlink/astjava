@@ -15,9 +15,8 @@ import org.junit.jupiter.api.function.Executable;
  * a point.
  *
  * <p>{@code an_undefined_direction_is_trnnd} uses a RateMap, which is outside the first phase; a
- * Mapping whose inverse is undefined, as a RateMap's is, stands in for it. The FrameSet part of
- * {@code a_region_and_a_frameset_check_too} is translated in Task 16, and its Region part needs a
- * class outside the first phase. In {@code rate_checks_its_axes}, the same stand-in, inverted, has
+ * Mapping whose inverse is undefined, as a RateMap's is, stands in for it. The Region part of
+ * {@code a_region_and_a_frameset_check_too} needs a class outside the first phase. In {@code rate_checks_its_axes}, the same stand-in, inverted, has
  * no forward transformation for the numerical rate to use, as the RateMap does.
  */
 class TransformValidationTest {
@@ -46,6 +45,12 @@ class TransformValidationTest {
                     code(() -> map.transform(fromRows(new double[] {1.0, 2.0, 3.0}), 1, false)),
                     name);
         }
+    }
+
+    @Test
+    void aRegionAndAFramesetCheckToo() {
+        FrameSet frameset = new FrameSet(new Frame(2));
+        assertEquals(AstException.AST__NCPIN, code(() -> frameset.transform(fromRows(new double[] {1.0}), 1, true)));
     }
 
     @Test
