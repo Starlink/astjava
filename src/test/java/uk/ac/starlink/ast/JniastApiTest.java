@@ -45,9 +45,11 @@ class JniastApiTest {
             "PermMap",
             "ResampleFlags",
             "ShiftMap",
+            "SphMap",
             "UinterpCalculator",
             "Ukern1Calculator",
             "UnitMap",
+            "WcsMap",
             "WinMap",
             "ZoomMap");
 

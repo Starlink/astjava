@@ -121,6 +121,29 @@ public final class KernelInputs {
     }
 
     /**
+     * {@code n} random angles in degrees within ±720, then every multiple of 45 degrees in that
+     * range with each neighbour one ULP away, then {@link #specials}.
+     */
+    public static double[] degrees(int n) {
+        SplitMix64 rng = new SplitMix64(0x5eedde65L);
+        double[] sp = specials();
+        double[] out = new double[n + 33 * 3 + sp.length];
+        int j = 0;
+        for (int i = 0; i < n; i++) {
+            out[j++] = (rng.nextF64() * 2.0 - 1.0) * 720.0;
+        }
+        for (int k = -16; k <= 16; k++) {
+            double a = 45.0 * k;
+            long bits = Double.doubleToRawLongBits(a);
+            out[j++] = a;
+            out[j++] = Double.longBitsToDouble(bits + 1);
+            out[j++] = Double.longBitsToDouble(bits - 1);
+        }
+        System.arraycopy(sp, 0, out, j, sp.length);
+        return out;
+    }
+
+    /**
      * The distance between two doubles in units in the last place, or {@code Long.MAX_VALUE} when
      * their signs differ or either is NaN.
      */

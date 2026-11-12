@@ -20,9 +20,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * permutations refer to. The cases come from {@code oracle/mapping_load.json} (from {@code
  * tools/oracle_fixtures/mapping_load_probe.c}).
  *
- * <p>{@code loads_match_the_c_library} runs here the PermMap and MatrixMap cases; the WcsMap cases
- * ({@code wcsmap_*}) are added in Task 11. {@code a_dssmap_dump_needs_its_plate_solution} needs a
- * DssMap, which is outside the first phase.
+ * <p>{@code loads_match_the_c_library} runs every case: PermMap, MatrixMap and WcsMap. {@code
+ * a_dssmap_dump_needs_its_plate_solution} needs a DssMap, which is outside the first phase.
  */
 class MappingLoadTest {
 
@@ -52,9 +51,6 @@ class MappingLoadTest {
         int run = 0;
         for (JsonNode c : cases()) {
             String name = c.get(0).asText();
-            if (!name.startsWith("permmap") && !name.startsWith("matrixmap")) {
-                continue;
-            }
             run++;
             String dump = ChannelText.text(lines(c.get(1)));
             String redump = ChannelText.text(lines(c.get(2)));
@@ -87,7 +83,7 @@ class MappingLoadTest {
                 failures.add(name + " forward: " + Arrays.toString(flat) + ", C gives " + Arrays.toString(want));
             }
         }
-        assertEquals(5, run, "PermMap and MatrixMap cases in mapping_load.json");
+        assertEquals(8, run, "PermMap, MatrixMap and WcsMap cases in mapping_load.json");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

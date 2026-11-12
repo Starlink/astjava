@@ -13,8 +13,7 @@ import org.junit.jupiter.api.Test;
  * the tolerance of 1e-12 is the Rust tests' own. A fit is {@code Nout} constant terms followed by
  * the gradients, row by row.
  *
- * <p>{@code identity_polymap_2x2} is translated in Task 12, and {@code tan_tiny_box_fits} and
- * {@code tan_too_large_refuses} in Task 11. {@code returns_correct_type} tests a Rust type. In
+ * <p>{@code identity_polymap_2x2} is translated in Task 12. {@code returns_correct_type} tests a Rust type. In
  * {@code transform_error_is_reported}, a Mapping with no inverse, inverted, stands in for the
  * inverted RateMap, which is outside the first phase.
  */
@@ -91,5 +90,19 @@ class LinearApproxTest {
         assertEquals(AstObject.AST__BAD, fit[3]);
         PermMap allBad = new PermMap(1, new int[] {1}, 1, new int[] {0}, null);
         assertNull(allBad.linearApprox(new double[] {0.0}, new double[] {1.0}, 1e-3));
+    }
+
+    /** TAN over [-1e-3, 1e-3] radians at a tolerance of 1e-9: C gives no fit. */
+    @Test
+    void tanTinyBoxFits() {
+        WcsMap wm = new WcsMap(2, WcsMap.AST__TAN, 1, 2);
+        assertNull(wm.linearApprox(new double[] {-0.001, -0.001}, new double[] {0.001, 0.001}, 1.0e-9));
+    }
+
+    /** TAN over [-1, 1] radians is far from linear: C gives no fit. */
+    @Test
+    void tanTooLargeRefuses() {
+        WcsMap wm = new WcsMap(2, WcsMap.AST__TAN, 1, 2);
+        assertNull(wm.linearApprox(new double[] {-1.0, -1.0}, new double[] {1.0, 1.0}, 0.001));
     }
 }

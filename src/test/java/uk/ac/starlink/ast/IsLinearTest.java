@@ -11,8 +11,7 @@ import org.junit.jupiter.api.Test;
  * C's {@code GetIsLinear} overrides report, with C's answers from {@code astGetI(map,
  * "IsLinear")}.
  *
- * <p>The test's SphMap case is added in Task 11, its PolyMap case in Task 12 and its FrameSet case
- * in Task 16; its Circle case needs a class outside the first phase.
+ * <p>The test's PolyMap case is added in Task 12 and its FrameSet case in Task 16; its Circle case needs a class outside the first phase.
  */
 class IsLinearTest {
 
@@ -36,6 +35,8 @@ class IsLinearTest {
         want.put("cmpmap_linear", true);
         cases.put("cmpmap_with_permmap", new CmpMap(new ZoomMap(2, 2.0), perm(), true));
         want.put("cmpmap_with_permmap", false);
+        cases.put("sphmap", new SphMap());
+        want.put("sphmap", false);
         for (Map.Entry<String, Mapping> c : cases.entrySet()) {
             assertEquals(want.get(c.getKey()), c.getValue().getB("IsLinear"), c.getKey());
             assertEquals(want.get(c.getKey()), c.getValue().isLinear(), c.getKey());

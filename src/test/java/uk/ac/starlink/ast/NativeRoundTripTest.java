@@ -2,6 +2,7 @@ package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -14,9 +15,7 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Rust's file leaves the classes {@code test_serialisation.rs} covers (UnitMap, ShiftMap,
  * ZoomMap, MatrixMap, PermMap, CmpMap) to that file; here every class the library loads has a
- * case, each with non-default attributes. Later tasks add theirs: SphMap and WcsMap ({@code
- * round_trip_sphmap}, {@code round_trip_wcsmap_tan}, {@code round_trip_wcsmap_zpn}) in Task 11,
- * PolyMap ({@code round_trip_polymap_with_iter_inverse}) in Task 12, SlaMap and TimeMap ({@code
+ * case, each with non-default attributes. Later tasks add theirs: PolyMap ({@code round_trip_polymap_with_iter_inverse}) in Task 12, SlaMap and TimeMap ({@code
  * round_trip_slamap}, {@code round_trip_timemap}) in Task 13, and a case for each Frame and
  * FrameSet class as it is ported.
  */
@@ -171,5 +170,42 @@ class NativeRoundTripTest {
         assertTrue(r.getStrict());
         assertEquals(3, r.getReportLevel());
         assertEquals(5, r.getI("Indent"));
+    }
+
+    @Test
+    void roundTripSphmap() {
+        assertDoubleRoundTrip(new SphMap(), "SphMap");
+        SphMap m = new SphMap();
+        m.setUnitRadius(true);
+        m.setPolarLong(0.25);
+        m.invert();
+        SphMap r = (SphMap) assertDoubleRoundTrip(m, "SphMap with attributes");
+        assertTrue(r.getUnitRadius());
+        assertEquals(0.25, r.getPolarLong());
+        assertTrue(r.getInvert());
+    }
+
+    @Test
+    void roundTripWcsmapTan() {
+        assertDoubleRoundTrip(new WcsMap(2, WcsMap.AST__TAN, 1, 2), "WcsMap TAN");
+        WcsMap m = new WcsMap(4, WcsMap.AST__TAN, 4, 2);
+        m.set("PV4_1=10, PV4_2=80");
+        m.setFITSProj(false);
+        m.setLonCheck(false);
+        WcsMap r = (WcsMap) assertDoubleRoundTrip(m, "WcsMap TAN with attributes");
+        assertEquals(4, r.getWcsAxis(1));
+        assertEquals(2, r.getWcsAxis(2));
+        assertEquals(80.0, r.getD("PV4_2"));
+        assertFalse(r.getFITSProj());
+        assertFalse(r.getLonCheck());
+    }
+
+    @Test
+    void roundTripWcsmapZpn() {
+        WcsMap m = new WcsMap(2, WcsMap.AST__ZPN, 1, 2);
+        m.set("PV2_1=1, PV2_3=0.05");
+        WcsMap r = (WcsMap) assertDoubleRoundTrip(m, "WcsMap ZPN with PV");
+        assertEquals(0.05, r.getD("PV2_3"));
+        assertFalse(r.test("PV2_2"));
     }
 }

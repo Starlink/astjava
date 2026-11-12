@@ -218,3 +218,53 @@ src/erfa/fk54z.rs::fk54z_kernel_is_within_bound_of_fk54z | hardware SIMD
 src/pal/mod.rs::every_build_of_the_slice_loops_gives_the_same_bits | hardware SIMD
 src/pal/mod.rs::every_build_of_the_fk_slice_loops_gives_the_same_bits | hardware SIMD
 src/pal/mod.rs::eqgal_counts_by_symbol | Rust-only API (call counts)
+src/wcslib/trig.rs::kernel_trig_is_within_two_ulp_of_libm_where_it_covers | hardware SIMD
+src/wcslib/trig.rs::sincosd_covers_is_the_remainder_test_within_the_domain | hardware SIMD
+src/wcslib/trig.rs::sincosd_covers_is_the_rounding_test_for_every_input | hardware SIMD
+src/wcslib/trig.rs::atand_builds_agree_at_extreme_arguments | hardware SIMD
+src/wcslib/trig.rs::covers_rejects_wcstrig_exact_arguments | hardware SIMD
+src/wcslib/prj.rs::tan_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::tan_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::sin_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::sin_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::zpn_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::zpn_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::tpn_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::tpn_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::arc_zea_and_air_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::stg_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::azp_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::szp_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::stg_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::azp_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::szp_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::zenithal_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::cyp_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::cyp_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::cyp_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::ait_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::ait_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::ait_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::conic_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::cop_margins_cover_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::coe_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::conic_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::polyconic_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::polyconic_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::quadcube_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::cube_face_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::csc_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::quadcube_slice_builds_agree | hardware SIMD
+src/mappings/wcsmap.rs::inverse_longitudes_near_a_limit_are_decided_as_per_value | hardware SIMD
+src/mappings/sphmap.rs::counts_only_the_calls_c_makes | Rust-only API (call counts)
+tests/test_sphmap.rs::sphmap_inv_fwd_cancels_without_unit_radius | needs simplification
+tests/test_sphmap.rs::sphmap_fwd_inv_needs_unit_radius_on_first_only | needs simplification
+tests/test_sphmap.rs::sphmap_fwd_inv_fails_without_unit_radius | needs simplification
+tests/test_sphmap.rs::sphmap_cancellation_requires_matching_polar_long | needs simplification
+tests/test_wcsmap.rs::wcsmap_equal_different_params | astEqual (out-of-scope method)
+tests/test_wcsmap.rs::wcsmap_equal_same_params | astEqual (out-of-scope method)
+tests/test_wcsmap.rs::wcsmap_no_cancel_different_params | needs simplification
+tests/test_wcsmap.rs::wcsmap_cancel_same_params | needs simplification
+tests/test_wcsmap.rs::wcsmap_perm_swap_cancel_simplify | needs simplification
+tests/test_wcsmap.rs::wcsmap_perm_swap_simplify_constants | needs simplification
+tests/test_wcsmap.rs::wcsmap_absorbs_adjacent_permmap | needs simplification

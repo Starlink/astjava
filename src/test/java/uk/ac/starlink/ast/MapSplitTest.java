@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
 import static uk.ac.starlink.ast.MappingTestData.transformRows;
 
@@ -15,8 +17,7 @@ import org.junit.jupiter.api.Test;
  * package-private {@code mapSplit(int[])}, C's protected {@code astMapSplit} with zero-based
  * indices, and Rust's public {@code map_split} is jniast's {@code mapSplit(int[], int[])}.
  *
- * <p>The WcsMap tests ({@code wcs_split_*}) are translated in Task 11, {@code
- * polymap_split_full_inputs_only} in Task 12 and {@code frameset_splits_its_base_to_current_mapping}
+ * <p>{@code polymap_split_full_inputs_only} is translated in Task 12 and {@code frameset_splits_its_base_to_current_mapping}
  * in Task 16. The {@code normmap_*}, {@code tranmap_*} and {@code ratemap_*} tests need classes
  * outside the first phase, as does {@code testcmpmap_split_of_splittest1}, whose Mapping holds
  * LutMaps.
@@ -557,5 +558,103 @@ class MapSplitTest {
         assertEquals(3, m5.getNin(), "Error 2");
         assertEquals(3, m5.getNout(), "Error 3");
         assertArrayEquals(new int[] {3, 4, 6}, java.util.Arrays.copyOf(outs, 3), "Errors 4-6");
+    }
+
+    @Test
+    void wcsSplitFullInputsSucceeds() {
+        WcsMap wm = new WcsMap(2, WcsMap.AST__TAN, 1, 2);
+        MapSplit split = wm.mapSplit(new int[] {0, 1});
+        assertArrayEquals(new int[] {0, 1}, split.outputs);
+        assertEquals(2, split.map.getNin());
+        assertEquals(2, split.map.getNout());
+        double[] parent = fwdPoint(wm, 0.1, 1.4);
+        double[] child = fwdPoint(split.map, 0.1, 1.4);
+        assertTrue(Math.abs(parent[0] - child[0]) < 1e-12);
+        assertTrue(Math.abs(parent[1] - child[1]) < 1e-12);
+    }
+
+    /** A 2-axis WcsMap split to one celestial axis: C's nin > 1 test fails and there is no split. */
+    @Test
+    void wcsSplitDropsCelestialAxisReturnsNone2axis() {
+        WcsMap wm = new WcsMap(2, WcsMap.AST__TAN, 1, 2);
+        assertNull(wm.mapSplit(new int[] {0}));
+        assertNull(wm.mapSplit(new int[] {1}));
+    }
+
+    @Test
+    void wcsSplit3axisKeepsBothCelestialYieldsWcsmap() {
+        WcsMap wm = new WcsMap(3, WcsMap.AST__TAN, 1, 2);
+        MapSplit split = wm.mapSplit(new int[] {0, 1});
+        assertArrayEquals(new int[] {0, 1}, split.outputs);
+        assertEquals(2, split.map.getNin());
+        assertEquals(2, split.map.getNout());
+        double[] fwd = fwdPoint(split.map, 0.1, 1.4);
+        double[] back = point(transformRows(split.map, false, fwd), 0);
+        assertTrue(Math.abs(back[0] - 0.1) < 1e-10);
+        assertTrue(Math.abs(back[1] - 1.4) < 1e-10);
+    }
+
+    @Test
+    void wcsSplit3axisPassthroughOnlyYieldsUnitmap() {
+        WcsMap wm = new WcsMap(3, WcsMap.AST__TAN, 1, 2);
+        MapSplit split = wm.mapSplit(new int[] {2});
+        assertArrayEquals(new int[] {2}, split.outputs);
+        assertEquals(1, split.map.getNin());
+        assertEquals(1, split.map.getNout());
+        assertArrayEquals(new double[] {42.5}, fwdPoint(split.map, 42.5));
+    }
+
+    /** Only the longitude kept: C builds a PermMap dropping it (wcsmap.c MapSplit), whose inverse gives it bad. */
+    @Test
+    void wcsSplit3axisOnlyLonKeptDropsViaPermmap() {
+        WcsMap wm = new WcsMap(3, WcsMap.AST__TAN, 1, 2);
+        MapSplit split = wm.mapSplit(new int[] {2, 0});
+        assertArrayEquals(new int[] {2}, split.outputs);
+        assertEquals(2, split.map.getNin());
+        assertEquals(1, split.map.getNout());
+        assertEquals(123.0, fwdPoint(split.map, 123.0, 0.5)[0], 1e-12);
+        double[] inv = point(transformRows(split.map, false, new double[] {7.0}), 0);
+        assertEquals(7.0, inv[0], 1e-12);
+        assertEquals(AstObject.AST__BAD, inv[1]);
+    }
+
+    @Test
+    void wcsSplitPreservesInvertFullSet() {
+        WcsMap wm = new WcsMap(2, WcsMap.AST__TAN, 1, 2);
+        wm.invert();
+        assertTrue(wm.mapSplit(new int[] {0, 1}).map.getInvert());
+    }
+
+    @Test
+    void wcsSplitPreservesInvertSubset() {
+        WcsMap wm = new WcsMap(3, WcsMap.AST__TAN, 1, 2);
+        wm.invert();
+        MapSplit split = wm.mapSplit(new int[] {0, 1});
+        assertArrayEquals(new int[] {0, 1}, split.outputs);
+        assertTrue(split.map.getInvert());
+    }
+
+    /** wcsmap.c MapSplit calls the parent's first, which reports an index out of range as AST__AXIIN. */
+    @Test
+    void wcsSplitOutOfRangeIsAnError() {
+        WcsMap wm = new WcsMap(3, WcsMap.AST__TAN, 1, 2);
+        assertEquals(
+                AstException.AST__AXIIN,
+                assertThrows(AstException.class, () -> wm.mapSplit(new int[] {0, 1, 3}))
+                        .getStatus());
+    }
+
+    @Test
+    void wcsSplitFullSetPermutedSimplifiesThrough() {
+        WcsMap wm = new WcsMap(3, WcsMap.AST__TAN, 1, 2);
+        MapSplit split = wm.mapSplit(new int[] {2, 0, 1});
+        assertArrayEquals(new int[] {0, 1, 2}, split.outputs);
+        assertEquals(3, split.map.getNin());
+        assertEquals(3, split.map.getNout());
+        double[] sub = fwdPoint(split.map, 10.0, 0.1, 1.4);
+        double[] parent = fwdPoint(wm, 0.1, 1.4, 10.0);
+        for (int i = 0; i < 3; i++) {
+            assertTrue(Math.abs(sub[i] - parent[i]) < 1e-12, "axis " + i);
+        }
     }
 }

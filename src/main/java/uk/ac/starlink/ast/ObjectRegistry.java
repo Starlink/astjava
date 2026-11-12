@@ -36,8 +36,12 @@ final class ObjectRegistry {
                 return PermMap::new;
             case "ShiftMap":
                 return ShiftMap::new;
+            case "SphMap":
+                return SphMap::new;
             case "UnitMap":
                 return UnitMap::new;
+            case "WcsMap":
+                return WcsMap::new;
             case "WinMap":
                 return WinMap::new;
             case "ZoomMap":
