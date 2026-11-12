@@ -150,6 +150,28 @@ public class AstObject implements Cloneable {
         shared = false;
     }
 
+    /**
+     * Takes the parts of {@code src} that this Object's class defines, as C's {@code astCastCopy}
+     * does when it copies an Object as an instance of one of the classes it descends from: here
+     * the Ident and UseDefs attributes, since C's copy does not take the ID. Each class that can
+     * be the class of such a copy overrides it, calling {@code super.castCopyFrom(src)} first.
+     *
+     * @param src an Object of this Object's class or of a subclass of it
+     */
+    void castCopyFrom(AstObject src) {
+        ident = src.ident;
+        useDefs = src.useDefs;
+    }
+
+    /**
+     * Clears the attributes whose values this Object's class does not allow, after a copy of an
+     * Object of a subclass was made as an instance of this class (C's {@code astCleanAttribs}). The
+     * Object class has none.
+     */
+    void cleanAttribs() {
+        // C's Object class has no attributes to clean.
+    }
+
     /** Marks this Object as shared with a holder that took it where C calls {@code astClone}. */
     final void markShared() {
         shared = true;

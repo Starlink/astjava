@@ -638,18 +638,298 @@ public class Frame extends Mapping {
         return this;
     }
 
+    // ------------------------------------------------------------------
+    // Finding and converting between coordinate systems
+    // ------------------------------------------------------------------
+
     /**
-     * The conversion from this Frame to {@code to}, as a FrameSet whose base Frame is this
-     * Frame's coordinate system and whose current Frame is that of {@code to}, or null if there
-     * is none (C's {@code astConvert}). This version cannot find conversions.
+     * Finds a coordinate system with given characteristics, using a template Frame to search this
+     * Frame, the target. The coordinate systems searched are this Frame's and every system that
+     * can be reached from it by a built-in conversion, such as between celestial coordinate
+     * systems; for a FrameSet, those of all its Frames. The template is an instance of the kind of
+     * Frame wanted: an attribute set in the template must have the same value in the system found,
+     * while one left unset takes its value from one of the target's actual (not virtual) systems.
+     * The system found is so a hybrid Frame with the attributes set in the template and the rest
+     * from the target.
+     *
+     * <p>A template matches a Frame of its own class or of a more specialised one, and normally
+     * only one with as many axes as itself, which its MinAxes, MaxAxes and MatchEnd attributes
+     * change; its Permute and PreserveAxes attributes control whether a Frame with permuted axes
+     * matches and whether the permutation is kept in the result. A template with its Domain set
+     * matches only Frames of that Domain.
+     *
+     * <p>For a FrameSet target, each field of the domain list is taken in turn, and within it the
+     * template is matched against the current Frame, then the base Frame, then the others in
+     * order, and the first match whose Domain is in the field is taken. The Frame matched becomes
+     * the FrameSet's current Frame.
+     *
+     * @param template the template, an instance of the kind of Frame wanted
+     * @param domainlist a comma-separated list of Domains in order of priority: a system whose
+     *     Domain is the first is sought first, then the second, and so on, and an empty field (two
+     *     adjacent commas, or an empty list) accepts any Domain; case and white space are ignored
+     * @return a FrameSet whose base Frame is (the base Frame of) the target and whose current Frame
+     *     is the system found, related by the Mapping from the target's coordinates to it; or null
+     *     if no system is found
+     */
+    public FrameSet findFrame(Frame template, String domainlist) {
+        return FrameFinder.findFrame(this, template, domainlist);
+    }
+
+    /**
+     * Finds how to convert from this Frame's coordinate system to that of another Frame. The
+     * result describes the conversion: used as a Mapping, it converts coordinates in this Frame to
+     * coordinates in {@code to} with its forward transformation, and back with its inverse; used
+     * as a Frame, its attributes describe {@code to}. Alignment takes place in the coordinate
+     * system given by the AlignSystem attribute of {@code to}.
+     *
+     * <p>Either Frame may be a FrameSet, whose current Frame then describes its coordinate system.
+     * Every Frame of each FrameSet is then tried as a route to a common coordinate system: each
+     * field of the domain list is taken in turn, each FrameSet's base Frame is tried first, then
+     * its other Frames in ascending order (descending while it is inverted), then its current
+     * Frame, and a route with both transformations defined is preferred to one with only the
+     * forward one, and that to one with only the inverse. The base Frame of each FrameSet is set
+     * to the Frame through which the conversion was found. To convert between the base Frames of
+     * two FrameSets, invert both first.
      *
      * @param to the Frame to convert to
-     * @param domainlist the Domains through which to convert, separated by commas
-     * @throws UnsupportedOperationException always
+     * @param domainlist a comma-separated list of Domains in order of priority for the
+     *     intermediate coordinate system: an empty field (two adjacent commas, or an empty list)
+     *     accepts any Domain; case and white space are ignored
+     * @return a FrameSet whose base Frame describes this Frame's coordinate system and whose
+     *     current Frame describes that of {@code to}, related by the conversion; or null if there
+     *     is none
+     */
+    public FrameSet convert(Frame to, String domainlist) {
+        return convertFrames(to, domainlist);
+    }
+
+    /**
+     * The conversion from this Frame to {@code to}, or null if there is none (C's {@code
+     * astConvert}, a virtual function of {@code from}). A Frame has {@code to} find it, through
+     * {@link #convertX}, so that the class of either Frame chooses the search.
      */
     FrameSet convertFrames(Frame to, String domainlist) {
-        throw new UnsupportedOperationException(
-                "Finding the conversion between two Frames (astConvert) is not available in this version");
+        return to.convertX(this, domainlist);
+    }
+
+    /**
+     * The conversion from {@code from} to this Frame, or null if there is none (C's {@code
+     * astConvertX}, which {@code astConvert} calls with its Frames swapped): for a Frame that is
+     * not a FrameSet, frame.c's search through a common coordinate system.
+     */
+    FrameSet convertX(Frame from, String domainlist) {
+        return FrameFinder.convertX(this, from, domainlist);
+    }
+
+    /**
+     * Matches this Frame, a template, against a target (C's {@code Match}, a virtual function of
+     * the template, frame.c). The target must have between MinAxes and MaxAxes axes, and the
+     * Domain the template's if that is set. The result has the target's number of axes if
+     * PreserveAxes is set, otherwise the template's, and result axis {@code i} is associated with
+     * template and target axis {@code i}, counting from the last axis if MatchEnd is set; the
+     * target's {@link #subFrame} then selects the axes and overlays this template's attributes.
+     *
+     * @param target the target
+     * @param matchSub whether a template of a subclass may be cast into the target's class (used
+     *     by subclasses)
+     * @return the match, or null if there is none
+     */
+    FrameFinder.MatchResult match(Frame target, boolean matchSub) {
+        int targetNaxes = target.getNaxes();
+        int minAxes = getMinAxes();
+        int maxAxes = getMaxAxes();
+        if (targetNaxes < minAxes || targetNaxes > maxAxes) {
+            return null;
+        }
+        if (testDomain() && !getDomain().equals(target.getDomain())) {
+            return null;
+        }
+        boolean preserveAxes = getPreserveAxes();
+        boolean matchEnd = getMatchEnd();
+        int templateNaxes = getNaxes();
+        int resultNaxes = preserveAxes ? targetNaxes : templateNaxes;
+        int[] templateAxes = new int[resultNaxes];
+        int[] targetAxes = new int[resultNaxes];
+        for (int resultAxis = 0; resultAxis < resultNaxes; resultAxis++) {
+            templateAxes[resultAxis] = resultAxis;
+            targetAxes[resultAxis] = resultAxis;
+            if (matchEnd) {
+                templateAxes[resultAxis] += templateNaxes - resultNaxes;
+                targetAxes[resultAxis] += targetNaxes - resultNaxes;
+            }
+            if (templateAxes[resultAxis] < 0 || templateAxes[resultAxis] >= templateNaxes) {
+                templateAxes[resultAxis] = -1;
+            }
+            if (targetAxes[resultAxis] < 0 || targetAxes[resultAxis] >= targetNaxes) {
+                targetAxes[resultAxis] = -1;
+            }
+        }
+        Mapping[] map = new Mapping[1];
+        Frame[] result = new Frame[1];
+        if (!target.subFrame(this, resultNaxes, targetAxes, templateAxes, map, result)) {
+            return null;
+        }
+        return new FrameFinder.MatchResult(templateAxes, targetAxes, map[0], result[0]);
+    }
+
+    /**
+     * This Frame cast into the class of another (C's {@code astCast}, object.c {@code Cast}): a
+     * copy if both are of the same class; if this Frame's class is a subclass of {@code obj}'s, a
+     * copy of this Frame as an instance of that class ({@link #castCopy}); otherwise null.
+     *
+     * @param obj a Frame of the class wanted
+     * @return the cast Frame, or null if this Frame cannot be cast into that class
+     */
+    Frame cast(Frame obj) {
+        if (obj.getClass() == getClass()) {
+            return (Frame) copy();
+        }
+        if (obj.getClass().isAssignableFrom(getClass())) {
+            return castCopy(obj);
+        }
+        return null;
+    }
+
+    /**
+     * A deep copy of this Frame as an instance of the class of {@code obj}, one of its ancestors,
+     * with the attributes that class does not allow cleared (C's {@code astCastCopy} followed by
+     * {@code astCleanAttribs}). The ancestors of the Frame classes that are not FrameSets are
+     * Frame itself; the copy then has this Frame's Object, Mapping and Frame attributes, except
+     * the ID, as C's copy has, and copies of its Axis objects and variants.
+     *
+     * @throws AstException with status {@code AST__INTER} if {@code obj} is not a plain Frame
+     */
+    Frame castCopy(Frame obj) {
+        if (obj.getClass() != Frame.class) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    "astCastCopy(" + astClass() + "): Cannot cast a " + astClass() + " into a " + obj.astClass()
+                            + " (internal programming error).");
+        }
+        Frame plain = new Frame(0);
+        plain.castCopyFrom(this);
+        plain.cleanAttribs();
+        return plain;
+    }
+
+    /**
+     * Takes the Object, Mapping and Frame parts of {@code src}, as C's copy of an object cast into
+     * this class does: the Axis objects, permutation and variants are copied.
+     */
+    @Override
+    void castCopyFrom(AstObject src) {
+        super.castCopyFrom(src);
+        Frame f = (Frame) src;
+        naxes = f.naxes;
+        axes = new Axis[f.axes.length];
+        for (int axis = 0; axis < axes.length; axis++) {
+            axes[axis] = (Axis) f.axes[axis].copy();
+        }
+        perm = f.perm.clone();
+        title = f.title;
+        domain = f.domain;
+        epoch = f.epoch;
+        digits = f.digits;
+        matchEnd = f.matchEnd;
+        maxAxes = f.maxAxes;
+        minAxes = f.minAxes;
+        permute = f.permute;
+        preserveAxes = f.preserveAxes;
+        system = f.system;
+        alignSystem = f.alignSystem;
+        activeUnit = f.activeUnit;
+        obsLat = f.obsLat;
+        obsLon = f.obsLon;
+        obsAlt = f.obsAlt;
+        dtai = f.dtai;
+        dut1 = f.dut1;
+        flags = f.flags;
+        variants = f.variants == null ? null : (FrameSet) f.variants.copy();
+    }
+
+    /**
+     * Clears the System and AlignSystem if this class does not allow their values (C's {@code
+     * CleanAttribs}, frame.c, which sets each to its own value and clears it if that fails).
+     */
+    @Override
+    void cleanAttribs() {
+        if (testSystem()) {
+            try {
+                setSystemValue(systemValue());
+            } catch (AstException e) {
+                clearSystem();
+            }
+        }
+        if (testAlignSystem()) {
+            try {
+                setAlignSystemValue(alignSystemValue());
+            } catch (AstException e) {
+                clearAlignSystem();
+            }
+        }
+        super.cleanAttribs();
+    }
+
+    /**
+     * Finds the axes of this Frame that correspond to the axes of another (C's {@code
+     * astMatchAxes}, a virtual function of this Frame): {@code frm2} finds them, through {@link
+     * #matchAxesX}, so that the class of either Frame chooses how.
+     *
+     * @param frm2 the other Frame
+     * @return for each axis of {@code frm2}, the number of the corresponding axis of this Frame,
+     *     from 1, or 0 if there is none
+     */
+    int[] matchAxes(Frame frm2) {
+        return frm2.matchAxesX(this);
+    }
+
+    /**
+     * Finds the axes of {@code frm1} that correspond to the axes of this Frame (C's {@code
+     * astMatchAxesX}, frame.c): {@code frm1}, as a template that keeps the target's axes and
+     * matches any number of them, is matched, with the subclass retry, against the Frame holding
+     * each axis of this Frame, and the template axis associated with that axis is taken. Axes
+     * correspond when a Mapping can be found between them, so they need not be identical. The
+     * PreserveAxes, MaxAxes and MinAxes of {@code frm1} are changed during the search and put back
+     * afterwards.
+     *
+     * @param frm1 the Frame whose axes are reported
+     * @return for each axis of this Frame, the number of the corresponding axis of {@code frm1},
+     *     from 1, or 0 if there is none
+     */
+    int[] matchAxesX(Frame frm1) {
+        int preserveAxes = frm1.testPreserveAxes() ? (frm1.getPreserveAxes() ? 1 : 0) : -1;
+        frm1.setPreserveAxes(true);
+        int maxAxesValue = frm1.testMaxAxes() ? frm1.getMaxAxes() : -1;
+        frm1.setMaxAxes(10000);
+        int minAxesValue = frm1.testMinAxes() ? frm1.getMinAxes() : -1;
+        frm1.setMinAxes(1);
+        int nax2 = getNaxes();
+        int[] axes = new int[nax2];
+        try {
+            int[] pax = new int[1];
+            for (int ifirst = 0; ifirst < nax2; ifirst++) {
+                Frame pfrm = primaryFrame(ifirst + 1, pax);
+                FrameFinder.MatchResult m = FrameFinder.match(frm1, pfrm, true);
+                axes[ifirst] = m != null ? m.templateAxes[pax[0] - 1] + 1 : 0;
+            }
+        } finally {
+            if (preserveAxes == -1) {
+                frm1.clearPreserveAxes();
+            } else {
+                frm1.setPreserveAxes(preserveAxes != 0);
+            }
+            if (maxAxesValue == -1) {
+                frm1.clearMaxAxes();
+            } else {
+                frm1.setMaxAxes(maxAxesValue);
+            }
+            if (minAxesValue == -1) {
+                frm1.clearMinAxes();
+            } else {
+                frm1.setMinAxes(minAxesValue);
+            }
+        }
+        return axes;
     }
 
     /** The Protected flags of the Frame (C's {@code astGetFrameFlags}). */

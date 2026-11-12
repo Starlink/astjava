@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
@@ -24,15 +26,8 @@ import org.junit.jupiter.api.Test;
  * same FrameSet built and inverted, as C's {@code astInitFrameSet} takes the stored Base, Current
  * and Invert, rather than with the Rust repository's dump.
  *
- * <p>The tests that need {@code astConvert}, {@code astFindFrame} or {@code astAddVariant}, which
- * calls {@code astConvert}, are translated in Task 17: {@code
- * new_given_a_frameset_takes_its_variants_and_mirrors}, {@code with_integrity_noop_for_basicframe},
- * {@code convert_same_naxes_succeeds}, {@code convert_different_naxes_returns_none}, {@code
- * frameset_convert_delegates_to_current}, {@code add_variant_succeeds}, {@code
- * find_frame_stub_returns_none}, {@code
- * convert_takes_an_inverted_framesets_other_frames_in_descending_order}, {@code
- * convert_sets_the_base_of_a_frameset_argument_to_the_frame_used}, {@code
- * failed_convert_leaves_the_base_alone} and {@code find_frame_makes_the_frame_matched_current}.
+ * <p>Rust's {@code with_integrity} with a closure that changes nothing is translated as a setting
+ * of the current Frame's Title through the FrameSet, which records and restores its integrity.
  */
 class FrameSetTest {
 
@@ -725,5 +720,158 @@ class FrameSetTest {
         assertEquals(AstException.AST__ATTIN, status(() -> fs.set("Current=w")));
         assertEquals(1, fs.getBase());
         assertEquals(4, fs.getCurrent());
+    }
+
+    // ---- Variants ----
+
+    @Test
+    void newGivenAFramesetTakesItsVariantsAndMirrors() {
+        FrameSet old = xyzUnnamed();
+        old.addVariant(new ShiftMap(new double[] {5.0, 5.0}), "V2");
+        old.setCurrent(2);
+        old.mirrorVariants(3);
+        String expected = ChannelText.dump(old);
+        double[] before = fwd(old.getMapping(1, 3), 1.0, 1.0);
+
+        FrameSet fs = new FrameSet(old);
+        assertEquals(expected, ChannelText.dump(fs));
+        assertEquals("V2", fs.getVariant());
+        assertEquals("Z V2", fs.getAllVariants());
+        assertArrayEquals(before, fwd(fs.getMapping(1, 3), 1.0, 1.0));
+
+        // Selecting a variant through the mirror changes the mirrored Frame.
+        fs.setVariant("Z");
+        fs.setCurrent(3);
+        assertEquals("Z", fs.getVariant());
+        assertArrayEquals(new double[] {3.0, 4.0}, fwd(fs.getMapping(1, 3), 1.0, 1.0));
+    }
+
+    @Test
+    void addVariantSucceeds() {
+        FrameSet fs = new FrameSet(frame(2));
+        fs.addVariant(new ZoomMap(2, 2.0), "ZOOMED");
+        assertTrue(fs.testVariant());
+        assertEquals("ZOOMED", fs.getVariant());
+    }
+
+    // ---- Integrity ----
+
+    @Test
+    void withIntegrityNoopForBasicframe() {
+        FrameSet fs = new FrameSet(frame(2));
+        fs.addFrame(BASE, new ZoomMap(2, 2.0), frame(2));
+        fs.setTitle("Same system");
+        assertArrayEquals(new double[] {2.0, 4.0}, fwd(fs, 1.0, 2.0));
+    }
+
+    // ---- Convert and FindFrame ----
+
+    @Test
+    void convertSameNaxesSucceeds() {
+        FrameSet fs = frame(2).convert(frame(2), "");
+        assertNotNull(fs);
+        assertEquals(2, fs.getNframe());
+        assertArrayEquals(new double[] {42.0, 99.0}, fwd(fs, 42.0, 99.0));
+    }
+
+    @Test
+    void convertDifferentNaxesReturnsNone() {
+        assertNull(frame(2).convert(frame(3), ""));
+    }
+
+    @Test
+    void framesetConvertDelegatesToCurrent() {
+        FrameSet fs = new FrameSet(frame(2));
+        fs.addFrame(BASE, new ZoomMap(2, 2.0), frame(2));
+        assertNotNull(fs.convert(frame(2), ""));
+    }
+
+    @Test
+    void findFrameStubReturnsNone() {
+        FrameSet fs = new FrameSet(frame(2));
+        assertNull(fs.findFrame(frame(2), "SKY"));
+    }
+
+    private static double tranOne(FrameSet cvt) {
+        return cvt.tran1(1, new double[] {1.0}, true)[0];
+    }
+
+    // C probe of astConvert with this FrameSet inverted: its Frames 2 and 3 both have Domain Y,
+    // and C takes an inverted FrameSet's other Frames in descending order, so Frame 3 is used each
+    // way round (3 and 1/3).
+    @Test
+    void convertTakesAnInvertedFramesetsOtherFramesInDescendingOrder() {
+        Frame y = named(1, "Y");
+        FrameSet fs = fourDomains();
+        fs.invert();
+        assertEquals(3.0, tranOne(fs.convert(y, "")), 1e-15);
+        fs = fourDomains();
+        fs.invert();
+        assertEquals(1.0 / 3.0, tranOne(y.convert(fs, "")), 1e-15);
+
+        // Uninverted, the ascending order reaches Frame 2 first (C: 0.4, 2.5).
+        assertEquals(0.4, tranOne(fourDomains().convert(y, "")), 1e-15);
+        assertEquals(2.5, tranOne(y.convert(fourDomains(), "")), 1e-15);
+    }
+
+    // C probe: astConvert sets the Base of a FrameSet argument, either way round, to the Frame
+    // used (2 unchanged, 3 inverted), and leaves Current alone.
+    @Test
+    void convertSetsTheBaseOfAFramesetArgumentToTheFrameUsed() {
+        Frame y = named(1, "Y");
+        int[][] expected = {{2, 4}, {3, 1}};
+        for (int k = 0; k < 2; k++) {
+            boolean inverted = k == 1;
+            FrameSet from = fourDomains();
+            FrameSet to = fourDomains();
+            if (inverted) {
+                from.invert();
+                to.invert();
+            }
+            assertNotNull(from.convert(y, ""));
+            assertArrayEquals(expected[k], new int[] {from.getBase(), from.getCurrent()}, "from, inverted " + inverted);
+            assertNotNull(y.convert(to, ""));
+            assertArrayEquals(expected[k], new int[] {to.getBase(), to.getCurrent()}, "to, inverted " + inverted);
+        }
+    }
+
+    @Test
+    void failedConvertLeavesTheBaseAlone() {
+        FrameSet fs = fourDomains();
+        assertNull(fs.convert(named(1, "Q"), ""));
+        assertFalse(fs.testBase());
+        assertEquals(1, fs.getBase());
+    }
+
+    // C probe: astFindFrame with domain list "Y" makes the Frame matched the current Frame (2 both
+    // ways; the search ascends whether or not the FrameSet is inverted), and the Mapping runs from
+    // the base Frame to it (2 unchanged; 2/5 inverted, from Frame 4).
+    @Test
+    void findFrameMakesTheFrameMatchedCurrent() {
+        Frame template = frame(1);
+        int[] bases = {1, 4};
+        double[] values = {2.0, 0.4};
+        for (int k = 0; k < 2; k++) {
+            boolean inverted = k == 1;
+            FrameSet fs = fourDomains();
+            if (inverted) {
+                fs.invert();
+            }
+            FrameSet found = fs.findFrame(template, "Y");
+            assertNotNull(found);
+            assertArrayEquals(new int[] {bases[k], 2}, new int[] {fs.getBase(), fs.getCurrent()});
+            assertEquals(values[k], tranOne(found), 1e-15);
+
+            fs = fourDomains();
+            if (inverted) {
+                fs.invert();
+            }
+            assertNotNull(fs.findFrame(template, "Y"));
+            assertEquals(2, fs.getCurrent());
+
+            // No match leaves the Current alone.
+            assertNull(fs.findFrame(template, "Q"));
+            assertEquals(2, fs.getCurrent());
+        }
     }
 }

@@ -1814,6 +1814,223 @@ public class FrameSet extends Frame {
         return currentFrame().isUnitFrame();
     }
 
+    // ------------------------------------------------------------------
+    // Finding and converting between coordinate systems
+    // ------------------------------------------------------------------
+
+    /**
+     * A Frame of the FrameSet, the FrameSet's own and not marked as shared, for use while a search
+     * runs (C's {@code astGetFrame}, whose clone is annulled before the search returns).
+     */
+    private Frame frameAt(int iframe) {
+        return frames[validateFrameIndex(iframe, "astGetFrame") - 1];
+    }
+
+    /**
+     * Finds a coordinate system with given characteristics among the FrameSet's Frames (C's {@code
+     * FindFrame}, frameset.c). Each field of the domain list is taken in turn, and within it each
+     * Frame in the order current, base, then the others in ascending order, until a Frame's own
+     * search with that field finds a match. The result runs from the base Frame, through the
+     * Mapping to the Frame matched, to the system found, and the Frame matched becomes the current
+     * Frame; nothing is changed if there is no match.
+     *
+     * @param template the template, an instance of the kind of Frame wanted
+     * @param domainlist a comma-separated list of Domains in order of priority; an empty field
+     *     accepts any Domain, and case and white space are ignored
+     * @return a FrameSet whose base Frame is this FrameSet's base Frame and whose current Frame is
+     *     the system found, or null if no system is found
+     */
+    @Override
+    public FrameSet findFrame(Frame template, String domainlist) {
+        int targetNframe = nframe;
+        int targetCurrent = getCurrent();
+        int targetBase = getBase();
+        int[] targetOrder = new int[targetNframe];
+        int n = 0;
+        targetOrder[n++] = targetCurrent;
+        if (targetBase != targetCurrent) {
+            targetOrder[n++] = targetBase;
+        }
+        for (int targetIndex = 1; targetIndex <= targetNframe; targetIndex++) {
+            if (targetIndex != targetCurrent && targetIndex != targetBase) {
+                targetOrder[n++] = targetIndex;
+            }
+        }
+        FrameSet result = null;
+        int matched = 0;
+        for (String domain : FrameFinder.domainFields(domainlist)) {
+            if (result != null) {
+                break;
+            }
+            for (int targetNumber = 0; result == null && targetNumber < targetNframe; targetNumber++) {
+                int targetIndex = targetOrder[targetNumber];
+                FrameSet found = frameAt(targetIndex).findFrame(template, domain);
+                if (found != null) {
+                    matched = targetIndex;
+                    Mapping map = found.getMapping(AST__BASE, AST__CURRENT);
+                    Frame frame = found.frameAt(AST__CURRENT);
+                    Mapping prefix = getMapping(AST__BASE, targetIndex);
+                    map = CmpMap.transientCmpMap(prefix, map, true).simplify();
+                    result = new FrameSet(frameAt(AST__BASE));
+                    result.addFrame(AST__BASE, map, frame);
+                }
+            }
+        }
+        if (result != null) {
+            setCurrent(matched);
+        }
+        return result;
+    }
+
+    /** The conversion from this FrameSet to {@code to}, by frameset.c's search ({@code Convert}). */
+    @Override
+    FrameSet convertFrames(Frame to, String domainlist) {
+        return convertX(to, this, domainlist);
+    }
+
+    /** The conversion from {@code from} to this FrameSet, by frameset.c's search ({@code ConvertX}). */
+    @Override
+    FrameSet convertX(Frame from, String domainlist) {
+        return convertX(this, from, domainlist);
+    }
+
+    /** The indices of a FrameSet's Frames in the order a conversion tries them (frameset.c {@code ConvertX}). */
+    private static int[] searchOrder(FrameSet fs) {
+        int nfr = fs.getNframe();
+        int base = fs.getBase();
+        int current = fs.getCurrent();
+        int[] order = new int[nfr];
+        int n = 0;
+        order[n++] = base;
+        if (!fs.getInvert()) {
+            for (int index = 1; index <= nfr; index++) {
+                if (index != base && index != current) {
+                    order[n++] = index;
+                }
+            }
+        } else {
+            for (int index = nfr; index >= 1; index--) {
+                if (index != base && index != current) {
+                    order[n++] = index;
+                }
+            }
+        }
+        if (current != base) {
+            order[n] = current;
+        }
+        return order;
+    }
+
+    /**
+     * The conversion between two Frames either of which is a FrameSet (C's {@code ConvertX},
+     * frameset.c). Each field of the domain list is taken in turn; within it each Frame of {@code
+     * to} is tried against each Frame of {@code from}, in the order base Frame, the others in
+     * ascending order (descending while the FrameSet is inverted), then current Frame, through
+     * {@code convert} between the two Frames. The Mapping from the current Frame of {@code from}
+     * through the two Frames to the current Frame of {@code to} is simplified and scored, 2 for a
+     * forward transformation and 1 for an inverse, and the best is kept; a score of 3 ends the
+     * search. When a conversion is found, the base Frame of each FrameSet is set to the Frame it was
+     * found through.
+     *
+     * @return a FrameSet whose base Frame is the current Frame of {@code from} and whose current
+     *     Frame is that of {@code to}, or null if there is no conversion
+     */
+    private static FrameSet convertX(Frame to, Frame from, String domainlist) {
+        FrameSet fromSet = from instanceof FrameSet ? (FrameSet) from : null;
+        FrameSet toSet = to instanceof FrameSet ? (FrameSet) to : null;
+        int fromNframe = fromSet == null ? 1 : fromSet.getNframe();
+        int fromCurrent = fromSet == null ? 1 : fromSet.getCurrent();
+        int toNframe = toSet == null ? 1 : toSet.getNframe();
+        int toCurrent = toSet == null ? 1 : toSet.getCurrent();
+        int[] fromOrder = fromSet == null ? new int[] {1} : searchOrder(fromSet);
+        int[] toOrder = toSet == null ? new int[] {1} : searchOrder(toSet);
+
+        Mapping resultMap = null;
+        int iframeFrom = 0;
+        int iframeTo = 0;
+        boolean match = false;
+        for (String domain : FrameFinder.domainFields(domainlist)) {
+            if (match) {
+                break;
+            }
+            int bestScore = -1;
+            boolean perfect = false;
+            for (int toNumber = 0; !perfect && toNumber < toNframe; toNumber++) {
+                int toIndex = toOrder[toNumber];
+                Frame toFrame = toSet == null ? to : toSet.frameAt(toIndex);
+                for (int fromNumber = 0; !perfect && fromNumber < fromNframe; fromNumber++) {
+                    int fromIndex = fromOrder[fromNumber];
+                    Frame fromFrame = fromSet == null ? from : fromSet.frameAt(fromIndex);
+                    FrameSet cvt = fromFrame.convertFrames(toFrame, domain);
+                    if (cvt == null) {
+                        continue;
+                    }
+                    Mapping map = cvt.getMapping(AST__BASE, AST__CURRENT);
+                    if (fromIndex != fromCurrent) {
+                        Mapping fromMap = fromSet.getMapping(AST__CURRENT, fromIndex);
+                        map = CmpMap.transientCmpMap(fromMap, map, true);
+                    }
+                    if (toIndex != toCurrent) {
+                        Mapping toMap = toSet.getMapping(toIndex, AST__CURRENT);
+                        map = CmpMap.transientCmpMap(map, toMap, true);
+                    }
+                    map = map.simplify();
+                    int score = (map.getTranForward() ? 2 : 0) + (map.getTranInverse() ? 1 : 0);
+                    if (score > bestScore) {
+                        match = true;
+                        bestScore = score;
+                        perfect = bestScore >= 3;
+                        resultMap = map;
+                        iframeFrom = fromIndex;
+                        iframeTo = toIndex;
+                    }
+                }
+            }
+        }
+        if (resultMap == null) {
+            return null;
+        }
+        FrameSet result = new FrameSet(fromSet == null ? from : fromSet.frameAt(AST__CURRENT));
+        result.addFrame(AST__BASE, resultMap, toSet == null ? to : toSet.frameAt(AST__CURRENT));
+        if (fromSet != null) {
+            fromSet.setBase(iframeFrom);
+        }
+        if (toSet != null) {
+            toSet.setBase(iframeTo);
+        }
+        return result;
+    }
+
+    /** Matches the current Frame, as a template, against a target (C's {@code Match}, frameset.c). */
+    @Override
+    FrameFinder.MatchResult match(Frame target, boolean matchSub) {
+        return FrameFinder.match(currentFrame(), target, matchSub);
+    }
+
+    /**
+     * This FrameSet cast into the class of another Frame (C's {@code Cast}, frameset.c): a copy
+     * when cast into a FrameSet, otherwise its current Frame cast into that class.
+     */
+    @Override
+    Frame cast(Frame obj) {
+        if (obj instanceof FrameSet) {
+            return (Frame) copy();
+        }
+        return currentFrame().cast(obj);
+    }
+
+    /** The axes of the current Frame that correspond to those of {@code frm2} (C's {@code MatchAxes}, frameset.c). */
+    @Override
+    int[] matchAxes(Frame frm2) {
+        return frm2.matchAxesX(currentFrame());
+    }
+
+    /** The axes of {@code frm1} that correspond to those of the current Frame (C's {@code MatchAxesX}, frameset.c). */
+    @Override
+    int[] matchAxesX(Frame frm1) {
+        return currentFrame().matchAxesX(frm1);
+    }
+
     /**
      * Formats a coordinate value for an axis of the current Frame.
      *

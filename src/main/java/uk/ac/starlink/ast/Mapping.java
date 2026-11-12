@@ -225,6 +225,25 @@ public abstract class Mapping extends AstObject {
                 flag ? "Report coordinate transformations" : "Don't report coordinate transformations");
     }
 
+    /**
+     * Takes the Mapping part of {@code src}, as C's copy of an object cast into this class does:
+     * all of it but Report, which C's copy clears.
+     */
+    @Override
+    void castCopyFrom(AstObject src) {
+        super.castCopyFrom(src);
+        Mapping m = (Mapping) src;
+        nin = m.nin;
+        nout = m.nout;
+        tranForward = m.tranForward;
+        tranInverse = m.tranInverse;
+        invertValue = m.invertValue;
+        simpleForward = m.simpleForward;
+        simpleInverse = m.simpleInverse;
+        restrictedSimplify = m.restrictedSimplify;
+        allowSimplify = m.allowSimplify;
+    }
+
     /** Completes a copy as C's {@code Copy} (mapping.c) does: the copy's Report is cleared. */
     @Override
     void deepCopy() {
