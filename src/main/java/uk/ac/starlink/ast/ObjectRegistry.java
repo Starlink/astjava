@@ -34,6 +34,8 @@ final class ObjectRegistry {
                 return MatrixMap::new;
             case "PermMap":
                 return PermMap::new;
+            case "PolyMap":
+                return PolyMap::new;
             case "ShiftMap":
                 return ShiftMap::new;
             case "SphMap":

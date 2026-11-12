@@ -15,7 +15,7 @@ serialisation/frameset_3frame.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFra
 serialisation/frameset_simple.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 serialisation/frameset_skyspec.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
 serialisation/jan-dsb.ast | needs Axis, DSBSpecFrame
-serialisation/lsst.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame
+serialisation/lsst.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 serialisation/region_in_cmpframe.ast | needs Axis, Box, CmpFrame, Frame, PointSet
 serialisation/skyframe.ast | needs SkyAxis, SkyFrame
 serialisation/skyframe_galactic.ast | needs SkyAxis, SkyFrame
@@ -88,7 +88,7 @@ wcsconv/framesets/hpx-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/iraf-longpole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/jan-fits-class.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/longslit-fits-pc.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
-wcsconv/framesets/lsst-ast.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame
+wcsconv/framesets/lsst-ast.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/mercator-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/multi-wcs-dup-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/multi-wcs-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
@@ -117,11 +117,11 @@ wcsconv/framesets/serpens-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFr
 wcsconv/framesets/sfl-origin-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/sfl-pc-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/sin-plain-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
-wcsconv/framesets/sip-3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SpecFrame
-wcsconv/framesets/sip-3d-swap-head.ast | needs Axis, CmpFrame, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SpecFrame
-wcsconv/framesets/sip-alt-head.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame
-wcsconv/framesets/sip-head.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame
-wcsconv/framesets/sip2-head.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame
+wcsconv/framesets/sip-3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/sip-3d-swap-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/sip-alt-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/sip-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/sip2-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/skyref-alt-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/skyref-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/skyspec3d-class-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
@@ -165,7 +165,7 @@ wcsconv/framesets/zpx-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/inputs/a20070718_00010_02_cube.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecMap
 wcsconv/inputs/degen1.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/inputs/dss.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
-wcsconv/inputs/lsst.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame
-wcsconv/inputs/lsst2.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SplineMap
+wcsconv/inputs/lsst.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/inputs/lsst2.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SplineMap
 wcsconv/inputs/specflux.ast | needs Axis, CmpFrame, Frame, SpecFrame
 wcsconv/inputs/timj.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SlaMap

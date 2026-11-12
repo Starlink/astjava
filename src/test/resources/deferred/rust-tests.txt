@@ -268,3 +268,17 @@ tests/test_wcsmap.rs::wcsmap_cancel_same_params | needs simplification
 tests/test_wcsmap.rs::wcsmap_perm_swap_cancel_simplify | needs simplification
 tests/test_wcsmap.rs::wcsmap_perm_swap_simplify_constants | needs simplification
 tests/test_wcsmap.rs::wcsmap_absorbs_adjacent_permmap | needs simplification
+tests/test_polymap.rs::polymap_bad_powers_len_rejected | Rust-only API (PolyTerm power vectors; C's coefficient array has none)
+tests/test_polymap.rs::polymap_linear_decomposes_to_matrixmap | needs simplification
+tests/test_polymap.rs::polymap_affine_decomposes | needs simplification
+tests/test_polymap.rs::polymap_affine_diagonal_decomposes_to_winmap | needs simplification
+tests/test_polymap.rs::polymap_whose_terms_all_cancel_becomes_a_matrixmap | needs simplification
+tests/test_polymap.rs::polymap_does_not_cancel_against_a_different_inverse | needs simplification
+tests/test_polymap.rs::polymap_equal_compares_the_inverse_coefficients | astEqual (out-of-scope method)
+tests/test_polymap.rs::polymap_fitted_inverse_cancels_soundly | needs simplification
+tests/test_polymap.rs::polymap_with_more_outputs_than_inputs_equals_its_copy | astEqual (out-of-scope method)
+tests/test_polymap.rs::ident_set_polymap_nominated_in_a_list_is_left_alone | needs simplification
+tests/test_polymap.rs::c_simplify | needs simplification
+tests/test_polymap.rs::polymap_affine_general_merges_with_a_neighbour | needs simplification
+tests/test_polymap_simd.rs::simd_falls_back_below_threshold | hardware SIMD
+tests/test_polymap_simd.rs::simd_inverse_falls_back_below_threshold | hardware SIMD

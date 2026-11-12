@@ -20,8 +20,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * alike, so every value must equal C's.
  *
  * <p>{@code grids_match_c} runs the grids of the Mappings in the first phase; those of the FITS-WCS
- * FrameSet ({@code tan}) are added in Task 23 and of the PolyMap ({@code poly}) in Task 12, and the
- * MathMap grids ({@code cubic}) are outside the first phase. In {@code grid_errors_match_c}, a
+ * FrameSet ({@code tan}) are added in Task 23, and the MathMap grids ({@code cubic}) are outside the
+ * first phase. In {@code grid_errors_match_c}, a
  * Mapping with no inverse stands in for the MathMap whose inverse is undefined. {@code
  * quadratic_fits_match_c} and {@code quadratic_fit_needs_two_inputs} test {@code astQuadApprox},
  * which jniast does not have.
@@ -37,8 +37,18 @@ class TranGridOracleTest {
                 return cmp3();
             case "matrix23":
                 return new MatrixMap(2, 3, new double[][] {{1.0, 2.0}, {3.0, -4.0}, {0.5, 6.0}});
-            case "tan":
             case "poly":
+                return new PolyMap(
+                        2,
+                        1,
+                        6,
+                        new double[] {
+                            2.0, 1.0, 0.0, 0.0, 3.0, 1.0, 1.0, 0.0, 4.0, 1.0, 0.0, 1.0, 5.0, 1.0, 1.0, 1.0, 6.0, 1.0,
+                            2.0, 0.0, 7.0, 1.0, 0.0, 2.0
+                        },
+                        0,
+                        null);
+            case "tan":
             case "cubic":
             case "sqrt_part":
             case "second_bad":
@@ -118,7 +128,7 @@ class TranGridOracleTest {
             assertEquals(wantHash, hash(out), name + ": every position");
             ran++;
         }
-        assertEquals(12, ran, "grids run");
+        assertEquals(14, ran, "grids run");
     }
 
     @Test

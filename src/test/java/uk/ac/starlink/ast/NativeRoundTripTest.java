@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Rust's file leaves the classes {@code test_serialisation.rs} covers (UnitMap, ShiftMap,
  * ZoomMap, MatrixMap, PermMap, CmpMap) to that file; here every class the library loads has a
- * case, each with non-default attributes. Later tasks add theirs: PolyMap ({@code round_trip_polymap_with_iter_inverse}) in Task 12, SlaMap and TimeMap ({@code
+ * case, each with non-default attributes. Later tasks add theirs: SlaMap and TimeMap ({@code
  * round_trip_slamap}, {@code round_trip_timemap}) in Task 13, and a case for each Frame and
  * FrameSet class as it is ported.
  */
@@ -183,6 +183,21 @@ class NativeRoundTripTest {
         assertTrue(r.getUnitRadius());
         assertEquals(0.25, r.getPolarLong());
         assertTrue(r.getInvert());
+    }
+
+    /** Covers IterInverse, NiterInverse and TolInverse, which are not on the default path. */
+    @Test
+    void roundTripPolymapWithIterInverse() {
+        double[] cofs = {
+            1.0, 1.0, 1.0, 0.0, 0.05, 1.0, 0.0, 1.0, 0.02, 1.0, 2.0, 0.0, 1.0, 2.0, 0.0, 1.0, 0.05, 2.0, 1.0, 0.0, 0.02,
+            2.0, 0.0, 2.0
+        };
+        PolyMap m = new PolyMap(2, 2, 6, cofs, 0, null);
+        m.set("IterInverse=1, NiterInverse=10, TolInverse=1e-7");
+        PolyMap r = (PolyMap) assertDoubleRoundTrip(m, "PolyMap (iter inverse)");
+        assertEquals(10, r.getI("NiterInverse"));
+        assertEquals(1e-7, r.getD("TolInverse"));
+        assertTrue(r.getB("IterInverse"));
     }
 
     @Test

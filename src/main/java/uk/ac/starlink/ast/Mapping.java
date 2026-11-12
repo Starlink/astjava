@@ -605,12 +605,7 @@ public abstract class Mapping extends AstObject {
      */
     final void validateTransformInto(double[][] in, int npoint, boolean forward, double[][] out) {
         String cls = astClass();
-        if (!(forward ? getTranForward() : getTranInverse())) {
-            throw Ast.err(
-                    AstException.AST__TRNND,
-                    "astTransform(" + cls + "): " + (forward ? "A forward" : "An inverse")
-                            + " coordinate transformation is not defined by the " + cls + " supplied.");
-        }
+        requireDirection(forward);
         int ncoordIn = forward ? getNin() : getNout();
         int ncoordOut = forward ? getNout() : getNin();
         if (in.length != ncoordIn) {
@@ -651,6 +646,21 @@ public abstract class Mapping extends AstObject {
                         "astTransform(" + cls + "): Too few points (" + out[c].length + ") in output.\nThe " + cls
                                 + " needs space to hold " + npoint + " transformed point(s).");
             }
+        }
+    }
+
+    /**
+     * The first check of {@link #validateTransformInto}, which a class's {@link #transformIntoNan}
+     * makes when it does not call {@link #transformInto}: the transformation in direction {@code
+     * forward} must be defined ({@code AST__TRNND}).
+     */
+    final void requireDirection(boolean forward) {
+        if (!(forward ? getTranForward() : getTranInverse())) {
+            String cls = astClass();
+            throw Ast.err(
+                    AstException.AST__TRNND,
+                    "astTransform(" + cls + "): " + (forward ? "A forward" : "An inverse")
+                            + " coordinate transformation is not defined by the " + cls + " supplied.");
         }
     }
 
