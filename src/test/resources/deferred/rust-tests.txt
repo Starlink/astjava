@@ -282,3 +282,20 @@ tests/test_polymap.rs::c_simplify | needs simplification
 tests/test_polymap.rs::polymap_affine_general_merges_with_a_neighbour | needs simplification
 tests/test_polymap_simd.rs::simd_falls_back_below_threshold | hardware SIMD
 tests/test_polymap_simd.rs::simd_inverse_falls_back_below_threshold | hardware SIMD
+tests/test_slamap.rs::cvt_from_int | Rust-only API (SlaCvtType integer codes)
+tests/test_slamap.rs::slamap_merge_concatenates_steps | needs simplification
+tests/test_slamap.rs::slamap_merge_cancels_inverse_pairs | needs simplification
+tests/test_slamap.rs::slamap_merge_combines_precession | needs simplification
+tests/test_slamap.rs::slamap_merge_precession_to_identity | needs simplification
+tests/test_slamap.rs::simplify_inverted_map_step_swaps_date_and_equinox | needs simplification
+tests/test_timemap.rs::equality | astEqual (out-of-scope method)
+tests/test_timemap.rs::try_merge_cancellation | needs simplification
+tests/test_timemap.rs::cvt_type_codes_match_c | Rust-only API (TimeCvtType integer codes)
+tests/test_timemap.rs::cvt_type_from_int | Rust-only API (TimeCvtType integer codes)
+tests/test_timemap.rs::cvt_type_inverse | Rust-only API (TimeCvtType::inverse)
+tests/test_timemap.rs::timemap_merge_concatenates | needs simplification
+tests/test_timemap.rs::timemap_merge_cancels_inverse | needs simplification
+tests/test_timemap.rs::timemap_merge_eliminates_no_effect | needs simplification
+tests/test_timemap.rs::timemap_merge_mjd_to_jd_cancels | needs simplification
+tests/test_timemap.rs::timemap_merge_mjd_to_mjd_equal_offsets | needs simplification
+tests/test_timemap.rs::timemap_simplified_chain | needs simplification

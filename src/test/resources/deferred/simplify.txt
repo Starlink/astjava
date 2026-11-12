@@ -26,7 +26,6 @@ simplify/cap_cmpmap_01.map | needs MathMap, RateMap, SpecMap, TranMap
 simplify/cap_cmpmap_01.simp | needs MathMap, RateMap, SpecMap, TranMap
 simplify/cap_cmpmap_02.map | needs MathMap
 simplify/cap_cmpmap_02.simp | needs MathMap
-simplify/cap_cmpmap_03.map | needs SlaMap
 simplify/cap_cmpmap_04.map | needs MathMap, RateMap, SpecMap, TranMap
 simplify/cap_cmpmap_04.simp | needs MathMap, RateMap, SpecMap, TranMap
 simplify/cap_cmpperm_resume.map | needs MathMap
@@ -58,26 +57,12 @@ simplify/cap_poly_unc_frame.map | needs Axis, Box, Frame, FrameSet, PointSet, Po
 simplify/cap_poly_unc_frame.simp | needs Axis, Box, Frame, FrameSet, PointSet, Polygon
 simplify/cap_restricted_component_flags.map | needs MathMap
 simplify/cap_restricted_component_flags.simp | needs MathMap
-simplify/cap_slamap_01.map | needs SlaMap
-simplify/cap_slamap_01.simp | needs SlaMap
-simplify/cap_slamap_02.map | needs Axis, Box, CmpFrame, FrameSet, PointSet, SkyAxis, SkyFrame, SlaMap, SpecFrame, TimeFrame
+simplify/cap_slamap_02.map | needs Axis, Box, CmpFrame, FrameSet, PointSet, SkyAxis, SkyFrame, SpecFrame, TimeFrame
 simplify/cap_slamap_02.simp | needs Axis, Box, CmpFrame, PointSet, Polygon, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_slamap_03.map | needs SlaMap
-simplify/cap_slamap_03.simp | needs SlaMap
-simplify/cap_slamap_04.map | needs SlaMap
-simplify/cap_slamap_04.simp | needs SlaMap
-simplify/cap_slamap_05.map | needs SlaMap
-simplify/cap_slamap_05.simp | needs SlaMap
-simplify/cap_slamap_06.map | needs SlaMap
-simplify/cap_slamap_06.simp | needs SlaMap
-simplify/cap_slamap_07.map | needs Box, Circle, CmpRegion, FrameSet, PointSet, SkyAxis, SkyFrame, SlaMap
+simplify/cap_slamap_07.map | needs Box, Circle, CmpRegion, FrameSet, PointSet, SkyAxis, SkyFrame
 simplify/cap_slamap_07.simp | needs NullRegion, SkyAxis, SkyFrame
-simplify/cap_slamap_08.map | needs SlaMap
-simplify/cap_slamap_08.simp | needs SlaMap
-simplify/cap_slamap_09.map | needs SlaMap
-simplify/cap_slamap_09.simp | needs SlaMap
-simplify/cap_specmap_01.map | needs SpecMap, TimeMap
-simplify/cap_specmap_01.simp | needs SpecMap, TimeMap
+simplify/cap_specmap_01.map | needs SpecMap
+simplify/cap_specmap_01.simp | needs SpecMap
 simplify/cap_specmap_03.map | needs SpecMap
 simplify/cap_specmap_03.simp | needs SpecMap
 simplify/cap_specmap_04.map | needs SpecMap
@@ -99,20 +84,8 @@ simplify/cap_specmap_13.map | needs SpecMap
 simplify/cap_specmap_13.simp | needs SpecMap
 simplify/cap_specmap_14.map | needs MathMap, SpecMap
 simplify/cap_specmap_14.simp | needs MathMap
-simplify/cap_timemap_01.map | needs TimeMap
-simplify/cap_timemap_01.simp | needs TimeMap
-simplify/cap_timemap_02.map | needs Axis, Box, CmpFrame, FrameSet, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame, TimeMap
+simplify/cap_timemap_02.map | needs Axis, Box, CmpFrame, FrameSet, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame
 simplify/cap_timemap_02.simp | needs Axis, Box, CmpFrame, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame
-simplify/cap_timemap_03.map | needs TimeMap
-simplify/cap_timemap_03.simp | needs TimeMap
-simplify/cap_timemap_04.map | needs TimeMap
-simplify/cap_timemap_04.simp | needs TimeMap
-simplify/cap_timemap_05.map | needs TimeMap
-simplify/cap_timemap_06.map | needs TimeMap
-simplify/cap_timemap_06.simp | needs TimeMap
-simplify/cap_timemap_07.map | needs TimeMap
-simplify/cap_timemap_08.map | needs TimeMap
-simplify/cap_timemap_08.simp | needs TimeMap
 simplify/cap_unitnormmap_01.map | needs UnitNormMap
 simplify/cap_unitnormmap_01.simp | needs UnitNormMap
 simplify/cap_winmap_01.map | needs SpecMap
@@ -141,8 +114,8 @@ simplify/cmpmap_inverted_nested.simp | needs MathMap, SpecMap
 simplify/cmpmap_parallel_in_series_merge.map | needs MathMap
 simplify/cmpmap_parallel_series_dim_mismatch.map | needs MathMap
 simplify/cmpmap_parallel_series_dim_mismatch.simp | needs MathMap
-simplify/cmpmap_perm_parallel_swap.map | needs SpecMap, TimeMap
-simplify/cmpmap_perm_parallel_swap.simp | needs SpecMap, TimeMap
+simplify/cmpmap_perm_parallel_swap.map | needs SpecMap
+simplify/cmpmap_perm_parallel_swap.simp | needs SpecMap
 simplify/cmpmap_perm_swap_aconstants.map | needs MathMap
 simplify/cmpmap_perm_swap_aconstants.simp | needs MathMap
 simplify/cmpmap_perm_swap_bconstants.map | needs MathMap
@@ -266,12 +239,6 @@ simplify/neg_selectormap_not_equal.map | needs Axis, Box, Frame, PointSet, Selec
 simplify/neg_selectormap_parallel.map | needs Axis, Box, Frame, PointSet, SelectorMap
 simplify/neg_selectormap_series_lower.map | needs Axis, Box, Frame, PointSet, SelectorMap
 simplify/neg_selectormap_series_upper.map | needs Axis, Box, Frame, PointSet, SelectorMap
-simplify/neg_sla_2arg_mismatch.map | needs SlaMap
-simplify/neg_sla_4arg_mismatch.map | needs SlaMap
-simplify/neg_sla_arg_mismatch.map | needs SlaMap
-simplify/neg_sla_lone_forward.map | needs SlaMap
-simplify/neg_sla_parallel.map | needs SlaMap
-simplify/neg_sla_prec_no_common.map | needs SlaMap
 simplify/neg_spec_2arg_mismatch.map | needs SpecMap
 simplify/neg_spec_3arg_mismatch.map | needs SpecMap
 simplify/neg_spec_6arg_mismatch.map | needs SpecMap
@@ -286,13 +253,6 @@ simplify/neg_switchmap_not_equal.map | needs SwitchMap
 simplify/neg_switchmap_parallel.map | needs SwitchMap
 simplify/neg_switchmap_series.map | needs SwitchMap
 simplify/neg_switchmap_series_lower.map | needs SwitchMap
-simplify/neg_time_2arg_mismatch.map | needs TimeMap
-simplify/neg_time_3arg_mismatch.map | needs TimeMap
-simplify/neg_time_5arg_mismatch.map | needs TimeMap
-simplify/neg_time_arg_mismatch.map | needs TimeMap
-simplify/neg_time_lone_forward.map | needs TimeMap
-simplify/neg_time_mjdtojd_real.map | needs TimeMap
-simplify/neg_time_parallel.map | needs TimeMap
 simplify/neg_tranmap_adjacent_no_merge.map | needs MathMap, TranMap
 simplify/neg_tranmap_nontranmap_neighbour.map | needs TranMap
 simplify/neg_tranmap_oneway.map | needs MathMap, TranMap
@@ -368,8 +328,8 @@ simplify/regbasepick_cmpregion_subset.map | needs Axis, CmpRegion, Frame, FrameS
 simplify/regbasepick_cmpregion_subset.simp | needs Axis, CmpRegion, Frame, FrameSet, Interval, PointSet
 simplify/regbasepick_prism_subset.map | needs Axis, Box, Frame, PointSet
 simplify/regbasepick_prism_subset.simp | needs Axis, Box, Frame, PointSet
-simplify/rigby.map | needs SlaMap, SpecMap
-simplify/rigby.simp | needs SlaMap, SpecMap
+simplify/rigby.map | needs SpecMap
+simplify/rigby.simp | needs SpecMap
 simplify/selectormap_region_simplify.map | needs Axis, Box, Frame, PointSet, SelectorMap
 simplify/selectormap_region_simplify.simp | needs Axis, Box, Frame, PointSet, SelectorMap
 simplify/selectormap_region_simplify_real.map | needs Axis, Box, Frame, Interval, PointSet, SelectorMap
@@ -386,34 +346,6 @@ simplify/simpstab_box_nonlinear_unc.map | needs Axis, Box, Frame, FrameSet, Math
 simplify/simpstab_box_nonlinear_unc.simp | needs Axis, Box, Frame, FrameSet, MathMap, PointSet
 simplify/simpstab_permmap_slice_unc.map | needs Axis, Box, Frame, FrameSet, PointSet
 simplify/simpstab_permmap_slice_unc.simp | needs Axis, Box, Frame, PointSet
-simplify/sla_azel_cancel.map | needs SlaMap
-simplify/sla_ecliptic_cancel.map | needs SlaMap
-simplify/sla_eterms_cancel.map | needs SlaMap
-simplify/sla_fk45_cancel.map | needs SlaMap
-simplify/sla_geocentric_cancel.map | needs SlaMap
-simplify/sla_ha_cancel.map | needs SlaMap
-simplify/sla_helioecl_cancel.map | needs SlaMap
-simplify/sla_hpc_cancel.map | needs SlaMap
-simplify/sla_hpr_cancel.map | needs SlaMap
-simplify/sla_icrs_cancel.map | needs SlaMap
-simplify/sla_inverse_cancel.map | needs SlaMap
-simplify/sla_invert_normalize.map | needs SlaMap
-simplify/sla_invert_normalize.simp | needs SlaMap
-simplify/sla_j2000_cancel.map | needs SlaMap
-simplify/sla_merge_no_cancel.map | needs SlaMap
-simplify/sla_merge_no_cancel.simp | needs SlaMap
-simplify/sla_partial_cancel.map | needs SlaMap
-simplify/sla_partial_cancel.simp | needs SlaMap
-simplify/sla_prec_merge.map | needs SlaMap
-simplify/sla_prec_merge.simp | needs SlaMap
-simplify/sla_prec_redundant.map | needs SlaMap
-simplify/sla_run_identity.map | needs SlaMap
-simplify/sla_run_partial.map | needs SlaMap
-simplify/sla_run_partial.simp | needs SlaMap
-simplify/sla_supergalactic_cancel.map | needs SlaMap
-simplify/slamap_invert_normalize.map | needs SlaMap
-simplify/slamap_invert_normalize.simp | needs SlaMap
-simplify/slamap_pair_cancel.map | needs SlaMap
 simplify/spec_geocentric_cancel.map | needs SpecMap
 simplify/spec_inverse_cancel.map | needs SpecMap
 simplify/spec_invert_normalize.map | needs SpecMap
@@ -446,24 +378,6 @@ simplify/switchmap_invert_normalize.map | needs SwitchMap
 simplify/switchmap_invert_normalize.simp | needs SwitchMap
 simplify/switchmap_invonly_simplify.map | needs SwitchMap
 simplify/switchmap_invonly_simplify.simp | needs SwitchMap
-simplify/time_2arg_same_cancel.map | needs TimeMap
-simplify/time_2arg_swapped_cancel.map | needs TimeMap
-simplify/time_3arg_cancel.map | needs TimeMap
-simplify/time_5arg_cancel.map | needs TimeMap
-simplify/time_inverse_cancel.map | needs TimeMap
-simplify/time_invert_normalize.map | needs TimeMap
-simplify/time_invert_normalize.simp | needs TimeMap
-simplify/time_jdtomjd_noop.map | needs TimeMap
-simplify/time_merge_no_cancel.map | needs TimeMap
-simplify/time_merge_no_cancel.simp | needs TimeMap
-simplify/time_mjdtojd_noop.map | needs TimeMap
-simplify/time_noop_eliminate.map | needs TimeMap
-simplify/time_partial_cancel.map | needs TimeMap
-simplify/time_partial_cancel.simp | needs TimeMap
-simplify/time_run_identity.map | needs TimeMap
-simplify/timemap_invert_normalize.map | needs TimeMap
-simplify/timemap_invert_normalize.simp | needs TimeMap
-simplify/timemap_pair_cancel.map | needs TimeMap
 simplify/tranmap_adjacent_merge.map | needs TranMap
 simplify/tranmap_adjacent_merge.simp | needs TranMap
 simplify/tranmap_component_simplify.map | needs TranMap

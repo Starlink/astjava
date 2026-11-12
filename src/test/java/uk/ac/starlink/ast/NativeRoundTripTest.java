@@ -15,9 +15,8 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Rust's file leaves the classes {@code test_serialisation.rs} covers (UnitMap, ShiftMap,
  * ZoomMap, MatrixMap, PermMap, CmpMap) to that file; here every class the library loads has a
- * case, each with non-default attributes. Later tasks add theirs: SlaMap and TimeMap ({@code
- * round_trip_slamap}, {@code round_trip_timemap}) in Task 13, and a case for each Frame and
- * FrameSet class as it is ported.
+ * case, each with non-default attributes. Later tasks add a case for each Frame and FrameSet class
+ * as it is ported.
  */
 class NativeRoundTripTest {
 
@@ -222,5 +221,19 @@ class NativeRoundTripTest {
         WcsMap r = (WcsMap) assertDoubleRoundTrip(m, "WcsMap ZPN with PV");
         assertEquals(0.05, r.getD("PV2_3"));
         assertFalse(r.test("PV2_2"));
+    }
+
+    @Test
+    void roundTripSlamap() {
+        SlaMap m = new SlaMap();
+        m.add("EQGAL", new double[0]);
+        assertDoubleRoundTrip(m, "SlaMap eqgal");
+    }
+
+    @Test
+    void roundTripTimemap() {
+        TimeMap m = new TimeMap();
+        m.timeAdd("TAITOUTC", new double[] {50000.0, AstObject.AST__BAD});
+        assertDoubleRoundTrip(m, "TimeMap tai->utc");
     }
 }

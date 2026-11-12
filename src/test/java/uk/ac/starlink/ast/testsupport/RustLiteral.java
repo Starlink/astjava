@@ -8,6 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A reader for the constants of a generated {@code cases.rs} file, the C probe tables committed in
@@ -17,8 +19,9 @@ import java.util.Set;
  * not) whose values are integer, float, string, raw string and boolean literals, tuples, arrays and
  * {@code &[...]} slices, {@code Some(x)} and {@code None}, negation, the {@code f64} constants
  * ({@code f64::NAN}, {@code f64::INFINITY}, {@code f64::NEG_INFINITY}, {@code f64::MAX}), AST's bad
- * value ({@code BAD_VALUE}, however qualified), and names of constants defined earlier in the same
- * file, and the variants of an {@code enum} the file declares. {@code type} and {@code use} items,
+ * value ({@code BAD_VALUE}, however qualified, or the name a {@code use ... BAD_VALUE as NAME}
+ * item gives it), and names of constants defined earlier in the same
+ * file, and the variants of an {@code enum} the file declares. {@code type} and other {@code use} items,
  * {@code enum} declarations, attributes and comments are skipped. Anything else throws {@link
  * IllegalArgumentException} naming its line.
  *
@@ -29,6 +32,8 @@ import java.util.Set;
  * Some(x)} is read as {@code x}.
  */
 public final class RustLiteral {
+
+    private static final Pattern BAD_ALIAS = Pattern.compile("(?s).*\\bBAD_VALUE\\s+as\\s+(\\w+)\\s*");
 
     private final String src;
     private int pos;
@@ -80,8 +85,10 @@ public final class RustLiteral {
             }
             if ("const".equals(word)) {
                 constItem();
-            } else if ("type".equals(word) || "use".equals(word)) {
+            } else if ("type".equals(word)) {
                 skipItem();
+            } else if ("use".equals(word)) {
+                useItem();
             } else if ("enum".equals(word)) {
                 skipSpace();
                 enums.add(ident());
@@ -429,6 +436,16 @@ public final class RustLiteral {
             }
             pos++;
         } while (depth > 0 && pos < src.length());
+    }
+
+    /** A {@code use} item: skipped, except that {@code BAD_VALUE as NAME} makes NAME the bad value. */
+    private void useItem() {
+        int start = pos;
+        skipItem();
+        Matcher m = BAD_ALIAS.matcher(src.substring(start, pos - 1));
+        if (m.matches()) {
+            all.put(m.group(1), CValues.BAD);
+        }
     }
 
     /** Skips past the ';' ending an item, ignoring any inside brackets, as in {@code [f64; 2]}. */

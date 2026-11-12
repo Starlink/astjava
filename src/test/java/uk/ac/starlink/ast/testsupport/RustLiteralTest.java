@@ -113,6 +113,13 @@ class RustLiteralTest {
     }
 
     @Test
+    void aUseItemCanNameTheBadValue() {
+        Map<String, Object> m = RustLiteral.parse(
+                "use starlink_ast::constants::BAD_VALUE as BAD;\n" + "pub const V: &[f64] = &[1.0, BAD];\n");
+        assertEquals(Arrays.asList(1.0, -Double.MAX_VALUE), m.get("V"));
+    }
+
+    @Test
     void specialValuesMapToTheValuesTheyDenote() {
         Map<String, Object> m = RustLiteral.parse("pub const V: [f64; 6] = [f64::INFINITY, f64::NEG_INFINITY, f64::MAX,"
                 + " -f64::MAX, starlink_ast::constants::BAD_VALUE, BAD_VALUE];\n");

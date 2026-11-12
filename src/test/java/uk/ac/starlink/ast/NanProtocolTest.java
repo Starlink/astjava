@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
  * Mapping#transformNanProtocol}) gives the results of {@link Mapping#transform}.
  *
  * <p>The tests of other classes are translated in the tasks that port them: {@code
- * nan_protocol_slamap_matches_transform} and {@code nan_protocol_timemap} in Task 13; {@code nan_protocol_forward_matches_transform}, {@code
+ * nan_protocol_forward_matches_transform}, {@code
  * nan_protocol_inverse_matches_transform} and {@code nan_protocol_propagates_bad_and_nan_inputs},
  * which read {@code lsst.ast}, in Task 20. The others need classes outside the first phase and are
  * deferred.
@@ -124,5 +124,50 @@ class NanProtocolTest {
         double[][] pts = fromRows(rows);
         assertNanProtocolMatchesTransform(map, pts, 32, true, 0.0);
         assertNanProtocolMatchesTransform(map, pts, 32, false, 0.0);
+    }
+
+    /**
+     * An SlaMap from equatorial to galactic coordinates gives the same results through the NaN
+     * protocol, bad and NaN inputs included.
+     */
+    @Test
+    void nanProtocolSlamapMatchesTransform() {
+        SlaMap map = new SlaMap();
+        map.add("EQGAL", new double[0]);
+        double[][] rows = new double[256][];
+        for (int i = 0; i < 256; i++) {
+            rows[i] = new double[] {i * 0.01, -0.5 + i * 0.001};
+        }
+        rows[10][0] = BAD;
+        rows[42][1] = Double.NaN;
+        rows[100][0] = Double.NaN;
+        rows[100][1] = BAD;
+        double[][] pts = fromRows(rows);
+        double[][] regular = map.transform(pts, 256, true);
+        double[][] viaNan = map.transformNanProtocol(pts, 256, true);
+        for (int i = 0; i < 256; i++) {
+            for (int axis = 0; axis < 2; axis++) {
+                double r = regular[axis][i];
+                double n = viaNan[axis][i];
+                if (r == BAD || n == BAD) {
+                    assertEquals(r, n, "pt " + i + " ax " + axis + ": BAD mismatch");
+                } else {
+                    assertTrue(Math.abs(r - n) < 1e-14, "pt " + i + " ax " + axis + ": regular=" + r + " nan=" + n);
+                }
+            }
+        }
+    }
+
+    @Test
+    void nanProtocolTimemap() {
+        TimeMap map = new TimeMap();
+        map.timeAdd("TAITOUTC", new double[] {50000.0, BAD});
+        double[][] rows = new double[32][];
+        for (int i = 0; i < 32; i++) {
+            rows[i] = new double[] {50000.0 + i * 0.1};
+        }
+        rows[7][0] = BAD;
+        rows[11][0] = Double.NaN;
+        assertNanProtocolMatchesTransform(map, fromRows(rows), 32, true, 1e-14);
     }
 }
