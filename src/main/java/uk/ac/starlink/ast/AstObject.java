@@ -1,5 +1,6 @@
 package uk.ac.starlink.ast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,6 +57,51 @@ public class AstObject implements Cloneable {
 
     /** Constructs an Object. */
     protected AstObject() {}
+
+    /**
+     * Constructs an Object from its description, reading the Object class's part of it as C's
+     * {@code astLoadObject} (object.c) does: ID, Ident and UseDefs. The counts {@code RefCnt} and
+     * {@code Nobj} are read and discarded.
+     *
+     * @param node the description
+     */
+    AstObject(NativeNode node) {
+        NativeNode part = node.section("Object");
+        id = part.getStringIfSet("ID");
+        ident = part.getStringIfSet("Ident");
+        Long u = part.getIntIfSet("UseDfs");
+        useDefs = u == null ? UNSET_FLAG : (u != 0 ? 1 : 0);
+        part.markRead("RefCnt");
+        part.markRead("Nobj");
+    }
+
+    /**
+     * Writes the Object class's part of a description, as C's {@code Dump} (object.c) does: ID and
+     * Ident, active when set and otherwise written only if not blank, and UseDefs. C also writes
+     * the unset counts {@code RefCnt} and {@code Nobj}, which have no meaning here and are not
+     * written. Each class calls {@code super.dump(node)}, then writes the {@code IsA} marker of its
+     * parent class with {@link NativeNode#writeIsA}, then its own items.
+     *
+     * @param node the description being written
+     */
+    void dump(NativeNode node) {
+        String sval = getID();
+        node.writeString("ID", id != null, !sval.isEmpty(), sval, "Object identification string");
+        sval = getIdent();
+        node.writeString("Ident", ident != null, !sval.isEmpty(), sval, "Permanent Object identification string");
+        boolean ival = getUseDefs();
+        node.writeInt(
+                "UseDfs",
+                useDefs != UNSET_FLAG,
+                false,
+                ival ? 1 : 0,
+                ival ? "Default attribute values can be used" : "Default values cannot be used");
+    }
+
+    /** The comment on the {@code Begin} line of a description: what the class is. */
+    String dumpComment() {
+        return "AST Object";
+    }
 
     // ------------------------------------------------------------------
     // Copying and identity
@@ -119,6 +165,64 @@ public class AstObject implements Cloneable {
     @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
     public boolean sameObject(Object obj) {
         return obj == this;
+    }
+
+    /**
+     * Tests whether {@code obj} resembles this Object in all respects: whether it is of the same
+     * class and is written to a Channel (with Full -1 and no comments) as the same text. This may
+     * be expensive.
+     *
+     * @param obj the object to compare with this one
+     * @return true if {@code obj} is an Object of the same class with the same description
+     */
+    @Override
+    // The contract compares exact classes, as jniast's does.
+    @SuppressWarnings("EqualsGetClass")
+    public boolean equals(Object obj) {
+        if (obj == null || !obj.getClass().equals(getClass())) {
+            return false;
+        }
+        return compactText().equals(((AstObject) obj).compactText());
+    }
+
+    /**
+     * Returns a hash code consistent with {@link #equals}: that of the text this Object is written
+     * as by a Channel with Full -1 and no comments. This may be expensive.
+     *
+     * @return the hash code
+     */
+    @Override
+    public int hashCode() {
+        return compactText().hashCode();
+    }
+
+    /** The text {@link #equals} compares. */
+    private String compactText() {
+        return Channel.text(this, false, -1);
+    }
+
+    /**
+     * Returns the text a default Channel writes for this Object, which {@link #show} displays.
+     *
+     * @return the description of this Object in AST's native format
+     */
+    @Override
+    public String toString() {
+        return Channel.text(this, true, 0);
+    }
+
+    /**
+     * Displays a description of this Object on standard output, as a default Channel writes it.
+     * This is meant as an aid to debugging.
+     */
+    public void show() {
+        try {
+            new Channel(null, null).write(this);
+        } catch (IOException e) {
+            AstException err = Ast.err(AstException.AST__WRERR, "astShow(" + astClass() + "): " + e.getMessage());
+            err.initCause(e);
+            throw err;
+        }
     }
 
     /**

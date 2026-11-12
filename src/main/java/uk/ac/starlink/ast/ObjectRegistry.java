@@ -1,0 +1,29 @@
+package uk.ac.starlink.ast;
+
+/**
+ * Makes an Object from its description, choosing the loading constructor by class name, as C's
+ * {@code astGetLoader} (loader.c) chooses the loader.
+ *
+ * <p>Ported from Rust {@code serial/mod.rs} ({@code any_object_from_node}).
+ */
+final class ObjectRegistry {
+
+    private ObjectRegistry() {}
+
+    /**
+     * The Object {@code node} describes.
+     *
+     * @throws AstException with status {@code AST__LDERR} if the class cannot be loaded here, or
+     *     the error of loading it
+     */
+    static AstObject load(NativeNode node) {
+        switch (node.className) {
+            case "Channel":
+                return new Channel(node);
+            case "KeyMap":
+                return new KeyMap(node);
+            default:
+                throw Ast.err(AstException.AST__LDERR, "unknown AST class: " + node.className);
+        }
+    }
+}

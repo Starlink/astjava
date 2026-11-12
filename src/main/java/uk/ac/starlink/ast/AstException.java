@@ -25,6 +25,9 @@ public class AstException extends RuntimeException {
     /** The status value. */
     private final int status;
 
+    /** The explanatory message, without the status name. */
+    private final String msgText;
+
     /**
      * Constructs an AstException with the status {@link #SAI__ERROR}.
      *
@@ -44,6 +47,7 @@ public class AstException extends RuntimeException {
     public AstException(String msgText, int status) {
         super(msgText + " (" + statusName(status) + ")");
         this.status = status;
+        this.msgText = msgText;
     }
 
     /**
@@ -64,6 +68,11 @@ public class AstException extends RuntimeException {
      */
     public String getStatusName() {
         return statusName(status);
+    }
+
+    /** The explanatory message given to the constructor, without the status name. */
+    String getMsgText() {
+        return msgText;
     }
 
     /** The name of the constant whose value is {@code status}, or null. */
