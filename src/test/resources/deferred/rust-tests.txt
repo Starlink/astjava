@@ -211,3 +211,10 @@ tests/test_native_roundtrip_all.rs::round_trip_ratemap | RateMap (out of scope)
 tests/test_native_roundtrip_all.rs::round_trip_specmap | SpecMap (out of scope)
 tests/test_native_roundtrip_all.rs::round_trip_splinemap | SplineMap (out of scope)
 tests/test_native_roundtrip_all.rs::round_trip_mathmap | MathMap (out of scope)
+src/erfa/c2s.rs::c2s_kernel_is_within_one_ulp_of_c2s | hardware SIMD
+src/erfa/s2c.rs::s2c_kernel_is_within_its_derived_bound_of_the_exact_value | hardware SIMD
+src/erfa/fk45z.rs::fk45z_kernel_is_within_bound_of_fk45z | hardware SIMD
+src/erfa/fk54z.rs::fk54z_kernel_is_within_bound_of_fk54z | hardware SIMD
+src/pal/mod.rs::every_build_of_the_slice_loops_gives_the_same_bits | hardware SIMD
+src/pal/mod.rs::every_build_of_the_fk_slice_loops_gives_the_same_bits | hardware SIMD
+src/pal/mod.rs::eqgal_counts_by_symbol | Rust-only API (call counts)
