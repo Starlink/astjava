@@ -1,0 +1,753 @@
+# Native fixtures that do not round-trip through a Channel:
+# <path relative to ast_tester/fixtures> | <reason>
+# Rewritten by SerialisationCorpusTest with -Dast.writeDeferred=true.
+simplify/box_nullregion_merge.map | needs Axis, Box, Frame, NullRegion, PointSet
+simplify/box_nullregion_merge.simp | needs Axis, CmpFrame, Frame, Interval, PointSet
+simplify/box_parallel_merge.map | needs Axis, Box, Frame, PointSet
+simplify/box_parallel_merge.simp | needs Axis, Box, CmpFrame, Frame, PointSet
+simplify/box_pointlist_merge.map | needs Axis, Box, Frame, PointList, PointSet
+simplify/box_pointlist_merge.simp | needs Axis, Box, CmpFrame, Frame, PointList, PointSet
+simplify/box_self_simplify.map | needs Axis, Box, Frame, PointSet
+simplify/box_self_simplify.simp | needs Axis, Box, Frame, PointSet
+simplify/box_unc_fillfactor_merge.map | needs Axis, Box, Frame, PointSet
+simplify/box_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, PointSet
+simplify/brad.map | needs LutMap, WcsMap
+simplify/brad.simp | needs LutMap, WcsMap
+simplify/cap_box_permmap_const.map | needs Axis, Box, Frame, FrameSet, PointSet
+simplify/cap_box_permmap_const.simp | needs Axis, Box, Frame, PointSet
+simplify/cap_box_permmap_nonbidi.map | needs Axis, Box, Frame, FrameSet, PointSet
+simplify/cap_box_permmap_null.map | needs Axis, Box, Frame, FrameSet, PointSet
+simplify/cap_box_permmap_null.simp | needs Axis, Frame, NullRegion
+simplify/cap_box_permmap_null_first.map | needs Axis, Box, Frame, FrameSet, PointSet
+simplify/cap_box_permmap_null_first.simp | needs Axis, Frame, NullRegion
+simplify/cap_cheby_consolidate.map | needs ChebyMap
+simplify/cap_cheby_consolidate.simp | needs ChebyMap
+simplify/cap_cmpmap_01.map | needs MathMap, RateMap, SpecMap, TranMap
+simplify/cap_cmpmap_01.simp | needs MathMap, RateMap, SpecMap, TranMap
+simplify/cap_cmpmap_02.map | needs MathMap
+simplify/cap_cmpmap_02.simp | needs MathMap
+simplify/cap_cmpmap_03.map | needs PolyMap, SlaMap, SphMap, WcsMap
+simplify/cap_cmpmap_03.simp | needs PolyMap, SphMap, WcsMap
+simplify/cap_cmpmap_04.map | needs MathMap, RateMap, SpecMap, TranMap
+simplify/cap_cmpmap_04.simp | needs MathMap, RateMap, SpecMap, TranMap
+simplify/cap_cmpperm_resume.map | needs MathMap
+simplify/cap_cmpperm_resume.simp | needs MathMap
+simplify/cap_cmpperm_resume_inv.map | needs MathMap
+simplify/cap_cmpperm_resume_inv.simp | needs MathMap
+simplify/cap_frameset_nochange.map | needs Axis, Frame, FrameSet
+simplify/cap_frameset_nochange.simp | needs Axis, Frame, FrameSet
+simplify/cap_ident_frame.map | needs Axis, Frame, FrameSet
+simplify/cap_ident_frame.simp | needs Axis, Frame, FrameSet
+simplify/cap_interval_01.map | needs Axis, Box, CmpFrame, FrameSet, Interval, NullRegion, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_interval_01.simp | needs Axis, Box, CmpFrame, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_lutmap_01.map | needs LutMap, MathMap
+simplify/cap_lutmap_01.simp | needs MathMap
+simplify/cap_mathmap_01.map | needs MathMap
+simplify/cap_matrixmap_01.map | needs SphMap, WcsMap
+simplify/cap_matrixmap_03.map | needs SphMap, WcsMap
+simplify/cap_matrixmap_03.simp | needs SphMap, WcsMap
+simplify/cap_matrixmap_04.map | needs ChebyMap
+simplify/cap_normmap_cmpframe.map | needs Axis, CmpFrame, Frame, FrameSet, NormMap
+simplify/cap_normmap_cmpframe.simp | needs Axis, CmpFrame, Frame, FrameSet, NormMap
+simplify/cap_permmap_01.map | needs Axis, CmpFrame, NormMap, SkyAxis, SkyFrame, SpecFrame
+simplify/cap_permmap_01.simp | needs Axis, CmpFrame, NormMap, SkyAxis, SkyFrame, SpecFrame
+simplify/cap_pointlist_01.map | needs Axis, Box, CmpFrame, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_pointlist_01.simp | needs Axis, Box, CmpFrame, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_pointlist_02.map | needs Axis, CmpFrame, FrameSet, Interval, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_pointlist_02.simp | needs Axis, CmpFrame, PointList, PointSet, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_poly_bend_allowed.map | needs Axis, Box, Frame, FrameSet, MathMap, PointSet, Polygon
+simplify/cap_poly_bend_allowed.simp | needs Axis, Box, Frame, FrameSet, MathMap, PointSet, Polygon
+simplify/cap_poly_bent_edges.map | needs Axis, Box, Frame, FrameSet, MathMap, PointSet, Polygon
+simplify/cap_poly_bent_edges.simp | needs Axis, Box, Frame, FrameSet, MathMap, PointSet, Polygon
+simplify/cap_poly_unc_frame.map | needs Axis, Box, Frame, FrameSet, PointSet, Polygon
+simplify/cap_poly_unc_frame.simp | needs Axis, Box, Frame, FrameSet, PointSet, Polygon
+simplify/cap_restricted_component_flags.map | needs MathMap
+simplify/cap_restricted_component_flags.simp | needs MathMap
+simplify/cap_slamap_01.map | needs SlaMap
+simplify/cap_slamap_01.simp | needs SlaMap
+simplify/cap_slamap_02.map | needs Axis, Box, CmpFrame, FrameSet, PointSet, SkyAxis, SkyFrame, SlaMap, SpecFrame, TimeFrame
+simplify/cap_slamap_02.simp | needs Axis, Box, CmpFrame, PointSet, Polygon, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_slamap_03.map | needs SlaMap
+simplify/cap_slamap_03.simp | needs SlaMap
+simplify/cap_slamap_04.map | needs SlaMap, SphMap, WcsMap
+simplify/cap_slamap_04.simp | needs SlaMap, SphMap, WcsMap
+simplify/cap_slamap_05.map | needs SlaMap
+simplify/cap_slamap_05.simp | needs SlaMap
+simplify/cap_slamap_06.map | needs SlaMap
+simplify/cap_slamap_06.simp | needs SlaMap
+simplify/cap_slamap_07.map | needs Box, Circle, CmpRegion, FrameSet, PointSet, SkyAxis, SkyFrame, SlaMap
+simplify/cap_slamap_07.simp | needs NullRegion, SkyAxis, SkyFrame
+simplify/cap_slamap_08.map | needs SlaMap
+simplify/cap_slamap_08.simp | needs SlaMap
+simplify/cap_slamap_09.map | needs SlaMap
+simplify/cap_slamap_09.simp | needs SlaMap
+simplify/cap_specmap_01.map | needs SpecMap, TimeMap
+simplify/cap_specmap_01.simp | needs SpecMap, TimeMap
+simplify/cap_specmap_02.map | needs LutMap, SpecMap
+simplify/cap_specmap_02.simp | needs LutMap, SpecMap
+simplify/cap_specmap_03.map | needs SpecMap
+simplify/cap_specmap_03.simp | needs SpecMap
+simplify/cap_specmap_04.map | needs SpecMap
+simplify/cap_specmap_05.map | needs SpecMap
+simplify/cap_specmap_05.simp | needs SpecMap
+simplify/cap_specmap_06.map | needs SpecMap
+simplify/cap_specmap_06.simp | needs SpecMap
+simplify/cap_specmap_07.map | needs SpecMap
+simplify/cap_specmap_07.simp | needs SpecMap
+simplify/cap_specmap_08.map | needs SpecMap
+simplify/cap_specmap_08.simp | needs SpecMap
+simplify/cap_specmap_09.map | needs LutMap, SpecMap
+simplify/cap_specmap_10.map | needs SpecMap
+simplify/cap_specmap_10.simp | needs SpecMap
+simplify/cap_specmap_11.map | needs SpecMap
+simplify/cap_specmap_12.map | needs SpecMap
+simplify/cap_specmap_12.simp | needs SpecMap
+simplify/cap_specmap_13.map | needs SpecMap
+simplify/cap_specmap_13.simp | needs SpecMap
+simplify/cap_specmap_14.map | needs MathMap, SpecMap
+simplify/cap_specmap_14.simp | needs MathMap
+simplify/cap_sphmap_01.map | needs SphMap, WcsMap
+simplify/cap_sphmap_01.simp | needs SphMap, WcsMap
+simplify/cap_timemap_01.map | needs TimeMap
+simplify/cap_timemap_01.simp | needs TimeMap
+simplify/cap_timemap_02.map | needs Axis, Box, CmpFrame, FrameSet, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame, TimeMap
+simplify/cap_timemap_02.simp | needs Axis, Box, CmpFrame, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame
+simplify/cap_timemap_03.map | needs TimeMap
+simplify/cap_timemap_03.simp | needs TimeMap
+simplify/cap_timemap_04.map | needs TimeMap
+simplify/cap_timemap_04.simp | needs TimeMap
+simplify/cap_timemap_05.map | needs TimeMap
+simplify/cap_timemap_06.map | needs TimeMap
+simplify/cap_timemap_06.simp | needs TimeMap
+simplify/cap_timemap_07.map | needs TimeMap
+simplify/cap_timemap_08.map | needs TimeMap
+simplify/cap_timemap_08.simp | needs TimeMap
+simplify/cap_unitmap_01.map | needs PolyMap, SphMap, WcsMap
+simplify/cap_unitmap_01.simp | needs PolyMap, SphMap, WcsMap
+simplify/cap_unitnormmap_01.map | needs UnitNormMap
+simplify/cap_unitnormmap_01.simp | needs UnitNormMap
+simplify/cap_wcsmap_01.map | needs SphMap, WcsMap
+simplify/cap_wcsmap_01.simp | needs SphMap, WcsMap
+simplify/cap_winmap_01.map | needs SpecMap, SphMap, WcsMap
+simplify/cap_winmap_01.simp | needs SpecMap, WcsMap
+simplify/cap_winmap_02.map | needs SphMap, WcsMap
+simplify/cap_winmap_03.map | needs WcsMap
+simplify/cap_winmap_03.simp | needs WcsMap
+simplify/cap_winmap_04.map | needs PolyMap
+simplify/cap_xphmap_01.map | needs SphMap, WcsMap, XphMap
+simplify/cap_xphmap_02.map | needs WcsMap, XphMap
+simplify/cap_xphmap_02.simp | needs WcsMap, XphMap
+simplify/cap_zoommap_02.map | needs SphMap, WcsMap
+simplify/cap_zoommap_03.map | needs PolyMap
+simplify/cap_zoommap_03.simp | needs PolyMap
+simplify/cap_zoommap_04.map | needs Axis, Box, Frame, FrameSet, MathMap, PointList, PointSet, SpecFrame
+simplify/cap_zoommap_04.simp | needs Axis, Box, Frame, PointList, PointSet
+simplify/cefit_circle_conformal.map | needs Axis, Circle, Frame, FrameSet, PointSet
+simplify/cefit_circle_conformal.simp | needs Axis, Circle, Frame, FrameSet, PointSet
+simplify/cefit_circle_nonconformal_keep.map | needs Axis, Circle, Frame, FrameSet, MathMap, PointSet
+simplify/cefit_circle_nonconformal_keep.simp | needs Axis, Circle, Frame, FrameSet, MathMap, PointSet
+simplify/cefit_circle_to_ellipse.map | needs Axis, Ellipse, Frame, PointSet
+simplify/cefit_circle_to_ellipse.simp | needs Axis, Ellipse, Frame, PointSet
+simplify/cefit_ellipse_to_circle.map | needs Axis, Circle, Frame, PointSet
+simplify/cefit_ellipse_to_circle.simp | needs Axis, Circle, Frame, PointSet
+simplify/cheby_linear_lone_reduce.map | needs ChebyMap
+simplify/chebymap_inverse_cancel.map | needs ChebyMap
+simplify/cmpmap_decompose_middle.map | needs MathMap
+simplify/cmpmap_decompose_middle.simp | needs MathMap
+simplify/cmpmap_inverted_lone.map | needs SpecMap
+simplify/cmpmap_inverted_lone.simp | needs SpecMap
+simplify/cmpmap_inverted_nested.map | needs MathMap, SpecMap
+simplify/cmpmap_inverted_nested.simp | needs MathMap, SpecMap
+simplify/cmpmap_parallel_in_series_merge.map | needs MathMap
+simplify/cmpmap_parallel_series_dim_mismatch.map | needs MathMap
+simplify/cmpmap_parallel_series_dim_mismatch.simp | needs MathMap
+simplify/cmpmap_perm_parallel_swap.map | needs SpecMap, TimeMap
+simplify/cmpmap_perm_parallel_swap.simp | needs SpecMap, TimeMap
+simplify/cmpmap_perm_swap_aconstants.map | needs MathMap
+simplify/cmpmap_perm_swap_aconstants.simp | needs MathMap
+simplify/cmpmap_perm_swap_bconstants.map | needs MathMap
+simplify/cmpmap_perm_swap_bconstants.simp | needs MathMap
+simplify/cmpmap_series_in_parallel_inverted.map | needs MathMap
+simplify/cmpmap_series_in_parallel_inverted.simp | needs MathMap
+simplify/cmpmap_solo_after_unit.map | needs MathMap
+simplify/cmpmap_solo_after_unit.simp | needs MathMap
+simplify/defunc_cmpregion_component_unc.map | needs Axis, Box, Frame, PointSet
+simplify/defunc_cmpregion_component_unc.simp | needs Axis, Box, Frame, PointSet
+simplify/defunc_interval_point_at_origin.map | needs Axis, Box, Frame, PointSet
+simplify/defunc_interval_point_at_origin.simp | needs Axis, Box, Frame, PointSet
+simplify/defunc_interval_unbounded.map | needs Axis, Box, Frame, PointSet
+simplify/defunc_interval_unbounded.simp | needs Axis, Box, Frame, PointSet
+simplify/defunc_nullregion_2d.map | needs Axis, Circle, Frame, PointSet
+simplify/defunc_nullregion_2d.simp | needs Axis, Circle, Frame, PointSet
+simplify/defunc_pointlist_origin_axis.map | needs Axis, Box, Frame, PointSet
+simplify/defunc_pointlist_origin_axis.simp | needs Axis, Box, Frame, PointSet
+simplify/defunc_prism_box_interval.map | needs Axis, Box, CmpFrame, Frame, PointSet, Prism
+simplify/defunc_prism_box_interval.simp | needs Axis, Box, CmpFrame, Frame, PointSet
+simplify/dssmap_inv_winmap_absorb.map | needs DssMap
+simplify/dssmap_inv_winmap_absorb.simp | needs DssMap
+simplify/dssmap_winmap_absorb.map | needs DssMap
+simplify/dssmap_winmap_absorb.simp | needs DssMap
+simplify/dssmap_zoom_no_merge.map | needs DssMap
+simplify/dssmap_zoom_no_merge.simp | needs DssMap
+simplify/fitschan_iwc_spectral.map | needs SphMap, WcsMap
+simplify/fitschan_iwc_spectral.simp | needs SphMap, WcsMap
+simplify/fitschan_tab_spectral.map | needs LutMap, SphMap, WcsMap
+simplify/fitschan_tab_spectral.simp | needs LutMap, SphMap, WcsMap
+simplify/grism_inverse_cancel.map | needs GrismMap
+simplify/grism_inverse_cancel_tail.map | needs GrismMap
+simplify/grism_zoom_inv_merge.map | needs GrismMap
+simplify/grism_zoom_inv_merge.simp | needs GrismMap
+simplify/grism_zoom_merge.map | needs GrismMap
+simplify/grism_zoom_merge.simp | needs GrismMap
+simplify/interval_halfinf_simplify.map | needs Axis, Frame, FrameSet, Interval, PointSet
+simplify/interval_nullregion_merge.map | needs Axis, Frame, Interval, NullRegion, PointSet
+simplify/interval_nullregion_merge.simp | needs Axis, CmpFrame, Frame, Interval, PointSet
+simplify/interval_parallel_merge.map | needs Axis, Frame, Interval, PointSet
+simplify/interval_parallel_merge.simp | needs Axis, Box, CmpFrame, Frame, PointSet
+simplify/interval_pointlist_merge.map | needs Axis, Frame, Interval, PointList, PointSet
+simplify/interval_pointlist_merge.simp | needs Axis, CmpFrame, Frame, PointList, PointSet
+simplify/interval_remapped_simplify.map | needs Axis, Frame, FrameSet, Interval, PointSet
+simplify/interval_self_simplify.map | needs Axis, Frame, Interval, PointSet
+simplify/interval_self_simplify.simp | needs Axis, Box, Frame, PointSet
+simplify/interval_self_simplify_cmp.map | needs Axis, Frame, Interval, PointSet
+simplify/interval_self_simplify_cmp.simp | needs Axis, Box, Frame, PointSet
+simplify/interval_unc_fillfactor_merge.map | needs Axis, Box, Frame, Interval, PointSet
+simplify/interval_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, Interval, PointSet
+simplify/intra_invfwd_cancel.map | needs IntraMap
+simplify/intra_invfwd_cancel_tail.map | needs IntraMap
+simplify/intramap_inverse_cancel.map | needs IntraMap
+simplify/lsst.map | needs PolyMap, SphMap, WcsMap
+simplify/lsst.simp | needs PolyMap, SphMap, WcsMap
+simplify/lut_exactly_linear.map | needs LutMap
+simplify/lut_inverse_cancel.map | needs LutMap
+simplify/lut_linear_to_win.map | needs LutMap
+simplify/math_inverse_cancel.map | needs MathMap
+simplify/merge_box_fillfactor_product.map | needs Axis, Box, Frame, PointSet
+simplify/merge_box_fillfactor_product.simp | needs Axis, Box, CmpFrame, Frame, PointSet
+simplify/merge_box_meshsize_scaled.map | needs Axis, Box, Frame, PointSet
+simplify/merge_box_meshsize_scaled.simp | needs Axis, Box, CmpFrame, Frame, PointSet
+simplify/merge_interval_meshsize_scaled.map | needs Axis, Frame, Interval, PointSet
+simplify/merge_interval_meshsize_scaled.simp | needs Axis, CmpFrame, Frame, Interval, PointSet
+simplify/neg_box_asymmetric_2d.map | needs Axis, Box, Frame, PointSet
+simplify/neg_box_parallel_nonregion.map | needs Axis, Box, Frame, PointSet
+simplify/neg_box_series.map | needs Axis, Box, Frame, PointSet
+simplify/neg_box_unc_mismatch.map | needs Axis, Box, Frame, PointSet
+simplify/neg_cheby_quadratic_no_reduce.map | needs ChebyMap
+simplify/neg_chebymap_standalone.map | needs ChebyMap
+simplify/neg_circle_cmpframe_sky_second.map | needs Axis, Circle, CmpFrame, Frame, FrameSet, PointSet, SkyAxis, SkyFrame
+simplify/neg_cmpmap_mode_mismatch.map | needs MathMap
+simplify/neg_cmpmap_neighbour_nonexcmpmap.map | needs MathMap
+simplify/neg_grism_different_attrs.map | needs GrismMap
+simplify/neg_grism_fwd_then_nonzoom.map | needs GrismMap
+simplify/neg_grism_inv_then_zoom.map | needs GrismMap
+simplify/neg_grism_nonzoom_before_inv.map | needs GrismMap
+simplify/neg_grism_parallel.map | needs GrismMap
+simplify/neg_grism_same_direction.map | needs GrismMap
+simplify/neg_grism_zoom_before_fwd.map | needs GrismMap
+simplify/neg_interval_parallel_nonregion.map | needs Axis, Frame, Interval, PointSet
+simplify/neg_interval_series.map | needs Axis, Frame, Interval, PointSet
+simplify/neg_interval_unbounded_pointlist.map | needs Axis, Frame, Interval, PointList, PointSet
+simplify/neg_intra_diff_flag.map | needs IntraMap
+simplify/neg_intra_diff_func.map | needs IntraMap
+simplify/neg_intra_no_simpfi.map | needs IntraMap
+simplify/neg_intra_no_simpif.map | needs IntraMap
+simplify/neg_intra_nonintra_neighbour.map | needs IntraMap
+simplify/neg_intra_parallel.map | needs IntraMap
+simplify/neg_intra_same_direction.map | needs IntraMap
+simplify/neg_lut_constant.map | needs LutMap
+simplify/neg_lut_different_tables.map | needs LutMap
+simplify/neg_lut_near_linear.map | needs LutMap
+simplify/neg_lut_nonlinear.map | needs LutMap
+simplify/neg_lut_nonlut_neighbour.map | needs LutMap
+simplify/neg_lut_parallel.map | needs LutMap
+simplify/neg_math_inv_text_mismatch.map | needs MathMap
+simplify/neg_math_lone.map | needs MathMap
+simplify/neg_math_no_simpfi.map | needs MathMap
+simplify/neg_math_nonmath_neighbour.map | needs MathMap
+simplify/neg_normmap_diff_frame.map | needs NormMap, SkyAxis, SkyFrame
+simplify/neg_normmap_different_frames.map | needs NormMap, SkyAxis, SkyFrame
+simplify/neg_normmap_inv_diff_frame.map | needs NormMap, SkyAxis, SkyFrame
+simplify/neg_normmap_nonnorm_neighbour.map | needs NormMap, SkyAxis, SkyFrame
+simplify/neg_normmap_parallel.map | needs NormMap, SkyAxis, SkyFrame
+simplify/neg_normmap_parallel_sky.map | needs NormMap, SkyAxis, SkyFrame
+simplify/neg_nullregion_parallel_nonregion.map | needs Axis, Frame, NullRegion
+simplify/neg_nullregion_series.map | needs Axis, Frame, NullRegion
+simplify/neg_parpair_aligned_irreducible.map | needs MathMap
+simplify/neg_pcd_diff_centre.map | needs PcdMap
+simplify/neg_pcd_diff_disco.map | needs PcdMap
+simplify/neg_pcd_nonpcd_neighbour.map | needs PcdMap
+simplify/neg_pcd_nonswappable_between.map | needs PcdMap
+simplify/neg_pcd_parallel.map | needs PcdMap
+simplify/neg_pcd_perm_nonswap.map | needs PcdMap
+simplify/neg_pcd_same_invert.map | needs PcdMap
+simplify/neg_pcd_zoom_no_target.map | needs PcdMap
+simplify/neg_perm_no_merge.map | needs MathMap
+simplify/neg_pointlist_parallel_nonregion.map | needs Axis, Frame, PointList, PointSet
+simplify/neg_pointlist_series.map | needs Axis, Frame, PointList, PointSet
+simplify/neg_poly_different_coeffs.map | needs PolyMap
+simplify/neg_poly_different_inverse_coeffs.map | needs PolyMap
+simplify/neg_poly_nin_ne_nout.map | needs PolyMap
+simplify/neg_poly_no_forward.map | needs PolyMap
+simplify/neg_poly_nonlinear.map | needs PolyMap
+simplify/neg_poly_nonpoly_neighbour.map | needs PolyMap
+simplify/neg_poly_parallel_nonlinear.map | needs PolyMap
+simplify/neg_poly_same_direction.map | needs PolyMap
+simplify/neg_ratemap_diff_indices.map | needs RateMap
+simplify/neg_ratemap_diff_inner.map | needs RateMap
+simplify/neg_ratemap_different_inner.map | needs RateMap
+simplify/neg_ratemap_lower_nonrate.map | needs RateMap
+simplify/neg_ratemap_nonratemap_neighbour.map | needs RateMap
+simplify/neg_ratemap_parallel.map | needs RateMap
+simplify/neg_ratemap_same_invert.map | needs RateMap
+simplify/neg_selectormap_not_equal.map | needs Axis, Box, Frame, PointSet, SelectorMap
+simplify/neg_selectormap_parallel.map | needs Axis, Box, Frame, PointSet, SelectorMap
+simplify/neg_selectormap_series_lower.map | needs Axis, Box, Frame, PointSet, SelectorMap
+simplify/neg_selectormap_series_upper.map | needs Axis, Box, Frame, PointSet, SelectorMap
+simplify/neg_sla_2arg_mismatch.map | needs SlaMap
+simplify/neg_sla_4arg_mismatch.map | needs SlaMap
+simplify/neg_sla_arg_mismatch.map | needs SlaMap
+simplify/neg_sla_lone_forward.map | needs SlaMap
+simplify/neg_sla_parallel.map | needs SlaMap
+simplify/neg_sla_prec_no_common.map | needs SlaMap
+simplify/neg_spec_2arg_mismatch.map | needs SpecMap
+simplify/neg_spec_3arg_mismatch.map | needs SpecMap
+simplify/neg_spec_6arg_mismatch.map | needs SpecMap
+simplify/neg_spec_arg_mismatch.map | needs SpecMap
+simplify/neg_spec_lone_forward.map | needs SpecMap
+simplify/neg_spec_parallel.map | needs SpecMap
+simplify/neg_sph_no_unitradius.map | needs SphMap
+simplify/neg_sph_non_sphmap_neighbour.map | needs SphMap
+simplify/neg_sph_parallel.map | needs SphMap
+simplify/neg_sph_polarlong_mismatch.map | needs SphMap
+simplify/neg_sph_sandwich_full_matrix.map | needs SphMap
+simplify/neg_sph_sandwich_unequal_diag.map | needs SphMap
+simplify/neg_sph_sandwich_wrong_middle.map | needs SphMap
+simplify/neg_spline_different_coeffs.map | needs SplineMap
+simplify/neg_spline_nonspline_neighbour.map | needs SplineMap
+simplify/neg_spline_parallel.map | needs SplineMap
+simplify/neg_spline_same_direction.map | needs SplineMap
+simplify/neg_switchmap_not_equal.map | needs SwitchMap
+simplify/neg_switchmap_parallel.map | needs SwitchMap
+simplify/neg_switchmap_series.map | needs SwitchMap
+simplify/neg_switchmap_series_lower.map | needs SwitchMap
+simplify/neg_time_2arg_mismatch.map | needs TimeMap
+simplify/neg_time_3arg_mismatch.map | needs TimeMap
+simplify/neg_time_5arg_mismatch.map | needs TimeMap
+simplify/neg_time_arg_mismatch.map | needs TimeMap
+simplify/neg_time_lone_forward.map | needs TimeMap
+simplify/neg_time_mjdtojd_real.map | needs TimeMap
+simplify/neg_time_parallel.map | needs TimeMap
+simplify/neg_tranmap_adjacent_no_merge.map | needs MathMap, TranMap
+simplify/neg_tranmap_nontranmap_neighbour.map | needs TranMap
+simplify/neg_tranmap_oneway.map | needs MathMap, TranMap
+simplify/neg_tranmap_parallel.map | needs TranMap
+simplify/neg_tranmap_unequal_components.map | needs TranMap
+simplify/neg_unit_parallel_forward.map | needs PcdMap
+simplify/neg_unitnormmap_flanked.map | needs UnitNormMap
+simplify/neg_unitnormmap_fwd_shift.map | needs UnitNormMap
+simplify/neg_unitnormmap_inv_fwd_diffcentre.map | needs UnitNormMap
+simplify/neg_unitnormmap_nonmergeable.map | needs UnitNormMap
+simplify/neg_unitnormmap_nonunit_scale.map | needs UnitNormMap
+simplify/neg_unitnormmap_parallel.map | needs UnitNormMap
+simplify/neg_unitnormmap_same_dir.map | needs UnitNormMap
+simplify/neg_unitnormmap_shift_inv.map | needs UnitNormMap
+simplify/neg_wcs_different_params.map | needs WcsMap
+simplify/neg_wcs_different_projection.map | needs WcsMap
+simplify/neg_wcs_nonperm_between.map | needs MathMap, WcsMap
+simplify/neg_wcs_parallel.map | needs WcsMap
+simplify/neg_wcs_same_direction.map | needs WcsMap
+simplify/neg_wcs_tan_no_reduce.map | needs WcsMap
+simplify/neg_wcsmap_perm_allconst.map | needs WcsMap
+simplify/neg_wcsmap_perm_both_sides.map | needs WcsMap
+simplify/neg_wcsmap_perm_disconnect.map | needs WcsMap
+simplify/neg_wcsmap_perm_disconnect_lower.map | needs WcsMap
+simplify/neg_wcsmap_perm_nonbidir.map | needs WcsMap
+simplify/neg_wcsmap_pv_mismatch.map | needs WcsMap
+simplify/neg_win_cmpmap_split_no_simplify.map | needs MathMap
+simplify/neg_win_nonmergeable_series.map | needs MathMap
+simplify/neg_xph_nonxph_neighbour.map | needs XphMap
+simplify/neg_xph_not_opposite.map | needs XphMap
+simplify/neg_xph_parallel.map | needs XphMap
+simplify/neg_zoom_no_absorb.map | needs SphMap
+simplify/neg_zoom_parallel_lone.map | needs MathMap
+simplify/normmap_basic_frame_to_unit.map | needs Axis, Frame, NormMap
+simplify/normmap_duplicate_elim.map | needs NormMap, SkyAxis, SkyFrame
+simplify/normmap_duplicate_elim.simp | needs NormMap, SkyAxis, SkyFrame
+simplify/normmap_inverse_cancel.map | needs NormMap, SkyAxis, SkyFrame
+simplify/normmap_inverse_cancel_upper.map | needs NormMap, SkyAxis, SkyFrame
+simplify/nullregion_merge_tail.map | needs Axis, Frame, NullRegion
+simplify/nullregion_merge_tail.simp | needs Axis, CmpFrame, Frame, NullRegion
+simplify/nullregion_parallel_merge.map | needs Axis, Box, Frame, NullRegion, PointSet
+simplify/nullregion_parallel_merge.simp | needs Axis, Box, Frame, NullRegion, PointSet
+simplify/nullregion_parallel_merge_pair.map | needs Axis, Frame, NullRegion
+simplify/nullregion_parallel_merge_pair.simp | needs Axis, CmpFrame, Frame, NullRegion
+simplify/nullregion_self_simplify.map | needs Axis, Frame, NullRegion
+simplify/nullregion_self_simplify.simp | needs Axis, Frame, NullRegion
+simplify/nullregion_unc_fillfactor_merge.map | needs Axis, Box, Frame, NullRegion, PointSet
+simplify/nullregion_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, NullRegion, PointSet
+simplify/offset_skyref_integrity.map | needs SphMap, WcsMap
+simplify/offset_skyref_integrity.simp | needs SphMap, WcsMap
+simplify/parcomp_inverted_nested_reemitted.map | needs MathMap
+simplify/parcomp_inverted_nested_reemitted.simp | needs MathMap
+simplify/parcomp_inverted_reemitted.map | needs MathMap
+simplify/parcomp_inverted_reemitted.simp | needs MathMap
+simplify/parpair_one_side_reduces.map | needs MathMap
+simplify/parpair_one_side_reduces.simp | needs MathMap
+simplify/pcd_inverse_cancel.map | needs PcdMap
+simplify/pcd_inverse_cancel_tail.map | needs PcdMap
+simplify/pcd_inverted_zoom_swap.map | needs PcdMap
+simplify/pcd_inverted_zoom_swap.simp | needs PcdMap
+simplify/pcd_perm_swap_cancel.map | needs PcdMap
+simplify/pcd_search_blocked.map | needs PcdMap
+simplify/pcd_search_blocked.simp | needs PcdMap
+simplify/pcd_swap_zoom_simplifies.map | needs PcdMap
+simplify/pcd_swap_zoom_simplifies.simp | needs PcdMap
+simplify/pcd_unit_series_merge.map | needs PcdMap
+simplify/pcd_unit_series_merge.simp | needs PcdMap
+simplify/pcd_zero_disc_lone.map | needs PcdMap
+simplify/pcd_zero_disc_series.map | needs PcdMap
+simplify/pcd_zero_to_unit.map | needs PcdMap
+simplify/pcd_zoom_swap_cancel.map | needs PcdMap
+simplify/pointlist_parallel_merge_pair.map | needs Axis, Frame, PointList, PointSet
+simplify/pointlist_parallel_merge_pair.simp | needs Axis, CmpFrame, Frame, PointList, PointSet
+simplify/pointlist_self_simplify.map | needs Axis, Frame, PointList, PointSet
+simplify/pointlist_self_simplify.simp | needs Axis, Frame, PointList, PointSet
+simplify/pointlist_unc_fillfactor_merge.map | needs Axis, Box, Frame, PointList, PointSet
+simplify/pointlist_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, PointList, PointSet
+simplify/poly_duplicate_terms.map | needs PolyMap
+simplify/poly_fitted_inverse_cancel.map | needs PolyMap
+simplify/poly_inverse_cancel.map | needs PolyMap
+simplify/poly_same_inverse_coeffs_cancel.map | needs PolyMap
+simplify/rate_inner_reduce_lone.map | needs RateMap
+simplify/rate_inner_reduce_lone.simp | needs RateMap
+simplify/rate_inner_reduce_series.map | needs RateMap
+simplify/rate_inner_reduce_series.simp | needs RateMap
+simplify/ratemap_inverse_cancel.map | needs RateMap
+simplify/ratemap_simplify_interior.map | needs RateMap
+simplify/ratemap_simplify_interior.simp | needs RateMap
+simplify/reconstruct_right_assoc.map | needs WcsMap
+simplify/reconstruct_right_assoc.simp | needs WcsMap
+simplify/regbasepick_circle_permaxes.map | needs Axis, Circle, Frame, FrameSet, PointSet
+simplify/regbasepick_circle_permaxes.simp | needs Axis, Circle, Frame, FrameSet, PointSet
+simplify/regbasepick_cmpregion_subset.map | needs Axis, CmpRegion, Frame, FrameSet, Interval, PointSet
+simplify/regbasepick_cmpregion_subset.simp | needs Axis, CmpRegion, Frame, FrameSet, Interval, PointSet
+simplify/regbasepick_prism_subset.map | needs Axis, Box, Frame, PointSet
+simplify/regbasepick_prism_subset.simp | needs Axis, Box, Frame, PointSet
+simplify/rigby.map | needs SlaMap, SpecMap, SphMap, WcsMap
+simplify/rigby.simp | needs SlaMap, SpecMap, SphMap, WcsMap
+simplify/selectormap_inverse_cancel.map | needs Axis, Box, Frame, PointSet, SelectorMap
+simplify/selectormap_inverse_cancel_tail.map | needs Axis, Box, Frame, PointSet, SelectorMap
+simplify/selectormap_region_simplify.map | needs Axis, Box, Frame, PointSet, SelectorMap
+simplify/selectormap_region_simplify.simp | needs Axis, Box, Frame, PointSet, SelectorMap
+simplify/selectormap_region_simplify_real.map | needs Axis, Box, Frame, Interval, PointSet, SelectorMap
+simplify/selectormap_region_simplify_real.simp | needs Axis, Box, Frame, PointSet, SelectorMap
+simplify/series_parallel_absorb.map | needs WcsMap
+simplify/series_parallel_absorb.simp | needs WcsMap
+simplify/setunc_box_remapped_unc.map | needs Axis, Box, Frame, PointSet
+simplify/setunc_box_remapped_unc.simp | needs Axis, Box, Frame, PointSet
+simplify/setunc_unbounded_negated.map | needs Axis, Box, Frame, PointSet
+simplify/setunc_unbounded_negated.simp | needs Axis, Box, Frame, PointSet
+simplify/setunc_unitmap_regionfs_omitted.map | needs Axis, Box, Frame, PointSet
+simplify/setunc_unitmap_regionfs_omitted.simp | needs Axis, Box, Frame, PointSet
+simplify/simpstab_box_linear_unc.map | needs Axis, Box, Frame, PointSet
+simplify/simpstab_box_linear_unc.simp | needs Axis, Box, Frame, PointSet
+simplify/simpstab_box_nonlinear_unc.map | needs Axis, Box, Frame, FrameSet, MathMap, PointSet
+simplify/simpstab_box_nonlinear_unc.simp | needs Axis, Box, Frame, FrameSet, MathMap, PointSet
+simplify/simpstab_permmap_slice_unc.map | needs Axis, Box, Frame, FrameSet, PointSet
+simplify/simpstab_permmap_slice_unc.simp | needs Axis, Box, Frame, PointSet
+simplify/sla_azel_cancel.map | needs SlaMap
+simplify/sla_ecliptic_cancel.map | needs SlaMap
+simplify/sla_eterms_cancel.map | needs SlaMap
+simplify/sla_fk45_cancel.map | needs SlaMap
+simplify/sla_geocentric_cancel.map | needs SlaMap
+simplify/sla_ha_cancel.map | needs SlaMap
+simplify/sla_helioecl_cancel.map | needs SlaMap
+simplify/sla_hpc_cancel.map | needs SlaMap
+simplify/sla_hpr_cancel.map | needs SlaMap
+simplify/sla_icrs_cancel.map | needs SlaMap
+simplify/sla_inverse_cancel.map | needs SlaMap
+simplify/sla_invert_normalize.map | needs SlaMap
+simplify/sla_invert_normalize.simp | needs SlaMap
+simplify/sla_j2000_cancel.map | needs SlaMap
+simplify/sla_merge_no_cancel.map | needs SlaMap
+simplify/sla_merge_no_cancel.simp | needs SlaMap
+simplify/sla_partial_cancel.map | needs SlaMap
+simplify/sla_partial_cancel.simp | needs SlaMap
+simplify/sla_prec_merge.map | needs SlaMap
+simplify/sla_prec_merge.simp | needs SlaMap
+simplify/sla_prec_redundant.map | needs SlaMap
+simplify/sla_run_identity.map | needs SlaMap
+simplify/sla_run_partial.map | needs SlaMap
+simplify/sla_run_partial.simp | needs SlaMap
+simplify/sla_supergalactic_cancel.map | needs SlaMap
+simplify/slamap_invert_normalize.map | needs SlaMap
+simplify/slamap_invert_normalize.simp | needs SlaMap
+simplify/slamap_pair_cancel.map | needs SlaMap
+simplify/spec_cel_invert.map | needs SphMap, WcsMap
+simplify/spec_cel_invert.simp | needs WcsMap
+simplify/spec_geocentric_cancel.map | needs SpecMap
+simplify/spec_inverse_cancel.map | needs SpecMap
+simplify/spec_invert_normalize.map | needs SpecMap
+simplify/spec_invert_normalize.simp | needs SpecMap
+simplify/spec_lsr_cancel.map | needs SpecMap
+simplify/spec_merge_no_cancel.map | needs SpecMap
+simplify/spec_merge_no_cancel.simp | needs SpecMap
+simplify/spec_partial_cancel.map | needs SpecMap
+simplify/spec_partial_cancel.simp | needs SpecMap
+simplify/spec_run4_identity.map | needs SpecMap
+simplify/spec_run_inverted_mid.map | needs SpecMap
+simplify/spec_run_inverted_mid.simp | needs SpecMap
+simplify/spec_topocentric_cancel.map | needs SpecMap
+simplify/spec_unit_cancel.map | needs SpecMap
+simplify/specmap_invert_normalize.map | needs SpecMap
+simplify/specmap_invert_normalize.simp | needs SpecMap
+simplify/specmap_pair_cancel.map | needs SpecMap
+simplify/sph_fwd_inv_unitradius_cancel.map | needs SphMap
+simplify/sph_inverse_cancel.map | needs SphMap
+simplify/sph_matrix_sandwich.map | needs SphMap
+simplify/sph_matrix_sandwich_negz.map | needs SphMap
+simplify/sph_zoom_sandwich.map | needs SphMap
+simplify/sph_zoom_sandwich.simp | needs SphMap
+simplify/spline_inverse_cancel.map | needs SplineMap
+simplify/switchmap_fwdonly_simplify.map | needs SwitchMap
+simplify/switchmap_fwdonly_simplify.simp | needs SwitchMap
+simplify/switchmap_internal_simplify.map | needs SwitchMap
+simplify/switchmap_internal_simplify.simp | needs SwitchMap
+simplify/switchmap_inv_fwdonly.map | needs SwitchMap
+simplify/switchmap_inv_fwdonly.simp | needs SwitchMap
+simplify/switchmap_inv_invonly.map | needs SwitchMap
+simplify/switchmap_inv_invonly.simp | needs SwitchMap
+simplify/switchmap_inverse_cancel.map | needs SwitchMap
+simplify/switchmap_inverse_cancel_distinct_selectors.map | needs MathMap, SwitchMap
+simplify/switchmap_inverse_cancel_tail.map | needs SwitchMap
+simplify/switchmap_invert_normalize.map | needs SwitchMap
+simplify/switchmap_invert_normalize.simp | needs SwitchMap
+simplify/switchmap_invonly_simplify.map | needs SwitchMap
+simplify/switchmap_invonly_simplify.simp | needs SwitchMap
+simplify/time_2arg_same_cancel.map | needs TimeMap
+simplify/time_2arg_swapped_cancel.map | needs TimeMap
+simplify/time_3arg_cancel.map | needs TimeMap
+simplify/time_5arg_cancel.map | needs TimeMap
+simplify/time_inverse_cancel.map | needs TimeMap
+simplify/time_invert_normalize.map | needs TimeMap
+simplify/time_invert_normalize.simp | needs TimeMap
+simplify/time_jdtomjd_noop.map | needs TimeMap
+simplify/time_merge_no_cancel.map | needs TimeMap
+simplify/time_merge_no_cancel.simp | needs TimeMap
+simplify/time_mjdtojd_noop.map | needs TimeMap
+simplify/time_noop_eliminate.map | needs TimeMap
+simplify/time_partial_cancel.map | needs TimeMap
+simplify/time_partial_cancel.simp | needs TimeMap
+simplify/time_run_identity.map | needs TimeMap
+simplify/timemap_invert_normalize.map | needs TimeMap
+simplify/timemap_invert_normalize.simp | needs TimeMap
+simplify/timemap_pair_cancel.map | needs TimeMap
+simplify/tranmap_adjacent_merge.map | needs TranMap
+simplify/tranmap_adjacent_merge.simp | needs TranMap
+simplify/tranmap_adjacent_merge_inverse_order.map | needs TranMap
+simplify/tranmap_adjacent_merge_inverse_order.simp | needs TranMap
+simplify/tranmap_adjacent_merge_nonsquare.map | needs TranMap
+simplify/tranmap_adjacent_merge_nonsquare.simp | needs TranMap
+simplify/tranmap_component_simplify.map | needs TranMap
+simplify/tranmap_component_simplify.simp | needs TranMap
+simplify/tranmap_equal_components.map | needs TranMap
+simplify/tranmap_equal_components_in_list.map | needs TranMap
+simplify/tranmap_invert_in_list.map | needs TranMap
+simplify/tranmap_invert_in_list.simp | needs TranMap
+simplify/tranmap_invert_normalize.map | needs TranMap
+simplify/tranmap_invert_normalize.simp | needs TranMap
+simplify/tranmap_merge_tail.map | needs TranMap
+simplify/tranmap_merge_tail.simp | needs TranMap
+simplify/unit_parallel_invert_clear.map | needs MathMap
+simplify/unit_parallel_invert_clear.simp | needs MathMap
+simplify/unit_parallel_invert_pcd.map | needs PcdMap
+simplify/unit_parallel_invert_pcd.simp | needs PcdMap
+simplify/unitnormmap_diff_centre_to_shift.map | needs UnitNormMap
+simplify/unitnormmap_fwd_winmap_refused.map | needs UnitNormMap
+simplify/unitnormmap_fwd_winmap_refused.simp | needs UnitNormMap
+simplify/unitnormmap_inv_fwd_cancel.map | needs UnitNormMap
+simplify/unitnormmap_inv_shift_merge.map | needs UnitNormMap
+simplify/unitnormmap_inv_shift_merge.simp | needs UnitNormMap
+simplify/unitnormmap_inv_winmap_merge.map | needs UnitNormMap
+simplify/unitnormmap_inv_winmap_merge.simp | needs UnitNormMap
+simplify/unitnormmap_inverse_cancel.map | needs UnitNormMap
+simplify/unitnormmap_shift_fwd_merge.map | needs UnitNormMap
+simplify/unitnormmap_shift_fwd_merge.simp | needs UnitNormMap
+simplify/unitnormmap_shift_merge_tail.map | needs UnitNormMap
+simplify/unitnormmap_shift_merge_tail.simp | needs UnitNormMap
+simplify/unitnormmap_winmap_fwd_merge.map | needs UnitNormMap
+simplify/unitnormmap_winmap_fwd_merge.simp | needs UnitNormMap
+simplify/unitnormmap_winmap_inv_refused.map | needs UnitNormMap
+simplify/unitnormmap_winmap_inv_refused.simp | needs UnitNormMap
+simplify/wcs_inverse_cancel.map | needs WcsMap
+simplify/wcs_unknown_lone_reduce.map | needs WcsMap
+simplify/wcsconv_gappt_iwc_residue.map | needs SphMap, WcsMap
+simplify/wcsconv_gappt_iwc_residue.simp | needs SphMap, WcsMap
+simplify/wcsmap_bad_to_unit.map | needs WcsMap
+simplify/wcsmap_perm_swap_cancel.map | needs WcsMap
+simplify/wcsmap_perm_swap_simplify.map | needs WcsMap
+simplify/win_swap_past_wcsmap.map | needs WcsMap
+simplify/win_swap_past_wcsmap.simp | needs WcsMap
+simplify/xph_inverse_cancel.map | needs XphMap
+wcsconv/framesets/a20070718_00010_02_cube-ast.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecMap, SphMap, WcsMap
+wcsconv/framesets/ait-highlatpole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/aitoff-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/alt-spectral-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/atf-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
+wcsconv/framesets/awav-a2f-head.ast | needs Axis, Frame, FrameSet, SpecFrame
+wcsconv/framesets/axes-swap-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/axref-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/azel-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/beta-frq-head.ast | needs Axis, Frame, FrameSet, SpecFrame, SpecMap
+wcsconv/framesets/car1-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/car2-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/car3-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/car4-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/car5-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
+wcsconv/framesets/car6-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
+wcsconv/framesets/cd-cross-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/cd-old-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/class-ait-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, WcsMap
+wcsconv/framesets/class-arc-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/class-gal-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/class-noproj-head.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/class-olddate-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/class-sfl-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, WcsMap
+wcsconv/framesets/class-sin-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/class-spec-head.ast | needs Axis, DSBSpecFrame, Frame, FrameSet
+wcsconv/framesets/class-spec-hel-head.ast | needs Axis, DSBSpecFrame, Frame, FrameSet
+wcsconv/framesets/class-write-head.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/cname-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/cobe-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/crota-3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/cube-reorder-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/date-frac-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/date-short-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/date-z-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/degen-wcsaxes-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/degen1-ast.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/dss-ast.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/dss-fits-dss.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/ecliptic-tan-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/ener-vel-head.ast | needs Axis, Frame, FrameSet, SpecFrame, SpecMap
+wcsconv/framesets/equinox-bj-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/equinox-zero-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/fits-pc-alt-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/fits-pc-altgal-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/fits-pc-full-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/fits-pc-gal-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/fits-pc-unit-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/fk4-aips-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/fk4-noeq-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/fk5-noeq-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/freq-f2w-head.ast | needs Axis, Frame, FrameSet, SpecFrame
+wcsconv/framesets/freq-ghz-bary-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/freq-log-head.ast | needs Axis, Frame, FrameSet, MathMap, SpecFrame
+wcsconv/framesets/freq-pixel3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SpecFrame
+wcsconv/framesets/freq-wav-head.ast | needs Axis, Frame, FrameSet, SpecFrame, SpecMap
+wcsconv/framesets/galactic-tan-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/gappt-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/gls-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/grism-head.ast | needs Axis, Frame, FrameSet, GrismMap, SpecFrame
+wcsconv/framesets/helioecl-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
+wcsconv/framesets/hpx-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/iraf-longpole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/jan-fits-class.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/longslit-fits-pc.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/lsst-ast.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/mercator-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
+wcsconv/framesets/multi-wcs-dup-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/multi-wcs-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/multi-wcs-spec-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/ncp-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/offset-sky-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/offset-sky-pole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/origin-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/pc-sparse-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/pixel-1d-head.ast | needs Axis, Frame, FrameSet
+wcsconv/framesets/pixel-2d-head.ast | needs Axis, Frame, FrameSet
+wcsconv/framesets/pixel-rotated-head.ast | needs Axis, Frame, FrameSet
+wcsconv/framesets/pixel-shear-head.ast | needs Axis, Frame, FrameSet
+wcsconv/framesets/polco-head.ast | needs Axis, Frame, FrameSet, MathMap
+wcsconv/framesets/polco2-head.ast | needs Axis, Frame, FrameSet, MathMap
+wcsconv/framesets/projp-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/projp-nopv0-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/projp-pv-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/projp-pv0only-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/restfreq-ghz-head.ast | needs Axis, Frame, FrameSet, SpecFrame
+wcsconv/framesets/restfreq-mhz-head.ast | needs Axis, Frame, FrameSet, SpecFrame
+wcsconv/framesets/rfval-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/sao-tan-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/scp-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/serpens-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/sfl-origin-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
+wcsconv/framesets/sfl-pc-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
+wcsconv/framesets/sin-plain-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/sip-3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/sip-3d-swap-head.ast | needs Axis, CmpFrame, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/sip-alt-head.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/sip-head.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/sip2-head.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/skyref-alt-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/skyref-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/skyspec3d-class-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/skyspec3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/specflux-head.ast | needs Axis, CmpFrame, Frame, SpecFrame
+wcsconv/framesets/ssysobs-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/tan-cdmatrix-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/tan-polytan-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/tan-pv0-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/tan-rotated-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/tan-zeropv-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/tidy-offsets-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/tidy-pole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/timeplot-head.ast | needs Axis, CmpFrame, Frame, TimeFrame
+wcsconv/framesets/timesys-tdb-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/timesys-tt-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/timj-ast.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SlaMap, SphMap, WcsMap
+wcsconv/framesets/tnx-cheb-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/tnx-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/tsc-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/ukirt-dtai-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/unknown-cel-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/unknown-cel2-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/unknown-spec-head.ast | needs Axis, Frame, FrameSet
+wcsconv/framesets/velo-aips-head.ast | needs Axis, Frame, FrameSet, SpecFrame
+wcsconv/framesets/velo-vel-head.ast | needs Axis, Frame, FrameSet, SpecFrame
+wcsconv/framesets/vopt-f2w-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SpecMap, SphMap, WcsMap
+wcsconv/framesets/vopt-geo-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SpecMap, SphMap, WcsMap
+wcsconv/framesets/vopt-wav-head.ast | needs Axis, Frame, FrameSet, SpecFrame
+wcsconv/framesets/vrad-lsrd-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/vrad-v2f-head.ast | needs Axis, Frame, FrameSet, SpecFrame, SpecMap
+wcsconv/framesets/vrad-wav-head.ast | needs Axis, Frame, FrameSet, SpecFrame, SpecMap
+wcsconv/framesets/wave-1d-head.ast | needs Axis, Frame, FrameSet, SpecFrame
+wcsconv/framesets/wave-f2w-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SpecMap, SphMap, WcsMap
+wcsconv/framesets/wave-w2f-head.ast | needs Axis, Frame, FrameSet, SpecFrame
+wcsconv/framesets/wavn-frq-head.ast | needs Axis, Frame, FrameSet, SpecFrame
+wcsconv/framesets/zero-cdelt-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/zopt-frq-head.ast | needs Axis, Frame, FrameSet, SpecFrame, SpecMap
+wcsconv/framesets/zpn-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/zpx-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+programs/testcmpmap/splittest1.ast | needs LutMap
+programs/testfitschan/sparse.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, LutMap, SkyAxis, SkyFrame, SpecMap
+programs/testmocchan/backcompat_json.ast | needs MocChan
+programs/testmocchan/backcompat_string.ast | needs MocChan
+programs/testplot3d/plot3d-test1.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecMap, SphMap, WcsMap
+programs/teststcschan/stcschan-test1-doc3.ast | needs Axis, Box, Circle, CmpFrame, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+serialisation/basicframe.ast | needs Axis, Frame
+serialisation/c_dssmap.ast | needs DssMap
+serialisation/c_variants.ast | needs Axis, Frame, FrameSet
+serialisation/cmpframe.ast | needs Axis, CmpFrame, SkyAxis, SkyFrame, SpecFrame
+serialisation/degen1.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+serialisation/frame_in_map_slot.ast | needs Axis, CmpFrame, Frame, FrameSet
+serialisation/frameset_3frame.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+serialisation/frameset_simple.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+serialisation/frameset_skyspec.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+serialisation/jan-dsb.ast | needs Axis, DSBSpecFrame
+serialisation/lsst.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SphMap, WcsMap
+serialisation/region_in_cmpframe.ast | needs Axis, Box, CmpFrame, Frame, PointSet
+serialisation/skyframe.ast | needs SkyAxis, SkyFrame
+serialisation/skyframe_galactic.ast | needs SkyAxis, SkyFrame
+serialisation/specframe.ast | needs Axis, SpecFrame
+serialisation/timeframe.ast | needs Axis, TimeFrame
+serialisation/timj.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SlaMap, SphMap, WcsMap

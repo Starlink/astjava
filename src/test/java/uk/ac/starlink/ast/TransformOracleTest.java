@@ -1,0 +1,1243 @@
+package uk.ac.starlink.ast;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.Predicate;
+import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.CValues;
+import uk.ac.starlink.ast.testsupport.Deferred;
+import uk.ac.starlink.ast.testsupport.Fixtures;
+import uk.ac.starlink.ast.testsupport.NativeClasses;
+import uk.ac.starlink.ast.testsupport.OracleFile;
+import uk.ac.starlink.ast.testsupport.OracleSection;
+
+/**
+ * Translation of Rust {@code tests/test_transform_oracle.rs}, a port of C's {@code
+ * check_transform_oracle} ({@code ast_tester/check_transform_oracle.c}): each fixture named by the
+ * C transform oracles ({@code fixtures/oracle/{simplify_fixtures,headers,framesets}.oracle}) is
+ * loaded, the recorded inputs are transformed again, and the outputs are compared with C's, with
+ * the tolerances the oracle header states and the per-fixture overrides of {@code
+ * fixtures/oracle/transform_oracle_overrides.txt}. On an angular output axis a difference of a
+ * whole turn is accepted. An inverse section of a FITS header or a FrameSet dump is also checked to
+ * recover the inputs of the forward section before it, and the forward section of a {@code .simp}
+ * fixture (C's simplification of the {@code .map} of the same stem) is checked to agree with the
+ * {@code .map}'s where C's recorded values agree; simplification leaves transform values alone, so
+ * this holds although {@link Mapping#simplify} here returns the Mapping unchanged.
+ *
+ * <p>The three gates, {@code head_sections_match_oracle}, {@code slamap_sections_match_oracle}
+ * and {@code simplify_sections_match_oracle}, divide the sections as Rust's do. Every section
+ * either matches C or belongs to a fixture in the deferred list of its oracle ({@code
+ * deferred/{simplify,headers,framesets}.txt}), and a deferred fixture must fail. With {@code
+ * -Dast.writeDeferred=true} each gate rewrites those lists instead; see {@link Deferred}. Here a
+ * Frame is a Mapping, as in C, so Rust's list of untransformable fixtures has no counterpart: a
+ * bare Frame's sections are compared like any other.
+ *
+ * <p>Left to later tasks: Task 16 adds the FrameSet case of {@link #angularFlags} (C's {@code
+ * axis_is_cyclic} on the current or base Frame); Task 20 translates {@code
+ * bare_frame_is_untransformable_and_says_why} as a check that a bare Frame transforms as the
+ * identity; Task 23 loads {@code .head} fixtures through a FitsChan (until then every {@code .head}
+ * fixture is deferred as {@value #HEAD_NEEDS}) and translates {@code
+ * loads_head_frameset_with_frames} and {@code skyframe_longitude_is_cyclic_pixel_is_not}.
+ */
+class TransformOracleTest {
+
+    /** The oracle files, by their name without {@code .oracle}. */
+    private static final List<String> ORACLES = Arrays.asList("simplify_fixtures", "headers", "framesets");
+
+    /** The reason a {@code .head} fixture cannot be loaded. */
+    private static final String HEAD_NEEDS = "needs FitsChan";
+
+    private static final double TWO_PI = Math.PI * 2.0;
+
+    /**
+     * Rows where C's own recorded inverse does not recover the recorded forward input, keyed by
+     * fixture; {@link #compareRtrip} excuses exactly these, and only after the live result has
+     * failed both the direct and the aliased comparison. {@code
+     * referenceRtripGapsAreExactlyTheRecordedSet} checks this against the oracle files alone.
+     *
+     * <p>tnx-cheb has no inverse: its TNX Chebyshev distortion builds a ChebyMap, which cannot
+     * represent its own Jacobian, so sky to pixel is BAD for every row (both relpaths name the same
+     * object). tsc row 10 is a 360-degree alias: the image is wider than the quad-cube period.
+     * total_hi row 3 is an all-sky CAR header whose corner pixel does not recover.
+     */
+    private static final Map<String, List<Integer>> RTRIP_REFERENCE_GAPS_LICENSED = rtripGaps();
+
+    private static Map<String, List<Integer>> rtripGaps() {
+        List<Integer> all = new ArrayList<>();
+        for (int i = 0; i < 24; i++) {
+            all.add(i);
+        }
+        Map<String, List<Integer>> m = new TreeMap<>();
+        m.put("wcsconv/inputs/tnx-cheb.head", all);
+        m.put("wcsconv/framesets/tnx-cheb-head.ast", all);
+        m.put("wcsconv/inputs/tsc.head", Collections.singletonList(10));
+        m.put("wcsconv/framesets/tsc-head.ast", Collections.singletonList(10));
+        m.put("programs/joye_car_headers/total_hi.head", Collections.singletonList(3));
+        return Collections.unmodifiableMap(m);
+    }
+
+    // ------------------------------------------------------------------
+    // Comparison primitives
+    // ------------------------------------------------------------------
+
+    /**
+     * C's {@code oracle_within_tol}: {@code |got-ref| <= atol + rtol*|ref|}. BAD matches only BAD;
+     * NaN never matches.
+     */
+    static boolean withinTol(double got, double reference, double rtol, double atol) {
+        boolean gotBad = got == CValues.BAD;
+        boolean refBad = reference == CValues.BAD;
+        if (gotBad || refBad) {
+            return gotBad && refBad;
+        }
+        if (Double.isNaN(got) || Double.isNaN(reference)) {
+            return false;
+        }
+        return Math.abs(got - reference) <= atol + rtol * Math.abs(reference);
+    }
+
+    /**
+     * C's {@code oracle_within_tol_wrap}: as {@link #withinTol}, but also accepting a difference of
+     * one whole turn, as a longitude may come out as 0 or 2&pi;, or as &pi; or -&pi;.
+     */
+    static boolean withinTolWrap(double got, double reference, double rtol, double atol) {
+        if (withinTol(got, reference, rtol, atol)) {
+            return true;
+        }
+        if (got == CValues.BAD || reference == CValues.BAD || Double.isNaN(got) || Double.isNaN(reference)) {
+            return false;
+        }
+        return Math.abs(Math.abs(got - reference) - TWO_PI) <= atol + rtol * Math.abs(reference);
+    }
+
+    /** C's {@code axis_match}: wrap-aware on angular axes, plain otherwise. */
+    static boolean axisMatch(double got, double reference, double rtol, double atol, boolean angular) {
+        return angular ? withinTolWrap(got, reference, rtol, atol) : withinTol(got, reference, rtol, atol);
+    }
+
+    private static double relDiff(double got, double reference) {
+        double d = Math.abs(got - reference);
+        return reference != 0.0 ? d / Math.abs(reference) : d;
+    }
+
+    // ------------------------------------------------------------------
+    // Fixtures
+    // ------------------------------------------------------------------
+
+    /** A fixture loaded as a Mapping, or why it could not be. */
+    static final class Loaded {
+        final Mapping map;
+        final String failure;
+
+        Loaded(Mapping map, String failure) {
+            this.map = map;
+            this.failure = failure;
+        }
+    }
+
+    /**
+     * The fixture an oracle relpath names: a {@code .head} through a FitsChan, anything else
+     * through a Channel. The relpath names exactly one file under the fixture root.
+     */
+    static Loaded loadFixture(String relpath) {
+        Path path = resolveFixture(relpath);
+        if (path == null) {
+            return new Loaded(null, "fixture not found: " + relpath);
+        }
+        if (relpath.endsWith(".head")) {
+            return new Loaded(null, HEAD_NEEDS);
+        }
+        AstObject obj;
+        try {
+            obj = ChannelText.read(Fixtures.read(relpath));
+        } catch (AstException e) {
+            return new Loaded(null, "read " + relpath + ": " + e.getMessage());
+        }
+        if (!(obj instanceof Mapping)) {
+            return new Loaded(null, "not a Mapping: " + obj.astClass());
+        }
+        return new Loaded((Mapping) obj, null);
+    }
+
+    /** The file a relpath names, or null if there is none. */
+    static Path resolveFixture(String relpath) {
+        Path p = Fixtures.root().resolve(relpath);
+        return Files.isRegularFile(p) ? p : null;
+    }
+
+    /** The reason a fixture cannot be loaded for want of classes, or null if it uses none. */
+    static String needs(String relpath) {
+        if (relpath.endsWith(".head")) {
+            return HEAD_NEEDS;
+        }
+        return NativeClasses.needs(Fixtures.read(relpath));
+    }
+
+    /**
+     * Which output axes of a section are angular. A bare Mapping has no Frame to ask, so every axis
+     * is, as in C.
+     */
+    static boolean[] angularFlags(Mapping map, OracleSection s) {
+        if ("FrameSet".equals(map.astClass())) {
+            throw new IllegalStateException("the FrameSet case of angularFlags is not translated");
+        }
+        boolean[] flags = new boolean[s.nout];
+        Arrays.fill(flags, true);
+        return flags;
+    }
+
+    /** A transform that could not be made: a changed arity or an error. */
+    static final class TransformFailure extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        TransformFailure(String message) {
+            super(message);
+        }
+
+        TransformFailure(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /** The recorded inputs {@code inputs} of section {@code s} transformed by {@code map}. */
+    static double[][] transformSection(Mapping map, OracleSection s, double[][] inputs) throws TransformFailure {
+        int needNin = s.forward ? s.nin : s.nout;
+        int needNout = s.forward ? s.nout : s.nin;
+        if (map.getNin() != needNin || map.getNout() != needNout) {
+            throw new TransformFailure("arity: fixture nin/nout " + needNin + "/" + needNout + " != mapping "
+                    + map.getNin() + "/" + map.getNout());
+        }
+        try {
+            return map.tranP(inputs[0].length, s.nin, inputs, s.forward, s.nout);
+        } catch (AstException e) {
+            throw new TransformFailure("transform: " + e.getMessage(), e);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Overrides
+    // ------------------------------------------------------------------
+
+    /** A round-trip override: off, or tolerances (null for the oracle's default). */
+    static final class RtripRule {
+        final boolean off;
+        final Double rtol;
+        final Double atol;
+
+        RtripRule(boolean off, Double rtol, Double atol) {
+            this.off = off;
+            this.rtol = rtol;
+            this.atol = atol;
+        }
+    }
+
+    /** A golden override: directions switched off and rows left uncompared. */
+    static final class GoldenRule {
+        boolean fwdOff;
+        boolean invOff;
+        long fwdRows;
+        long invRows;
+    }
+
+    /** The parsed {@code transform_oracle_overrides.txt}; round-trip and golden rules are separate. */
+    static final class Overrides {
+        final Map<String, RtripRule> rtripRules = new LinkedHashMap<>();
+        final Map<String, GoldenRule> goldenRules = new LinkedHashMap<>();
+
+        /** The round-trip tolerances {@code {rtol, atol}}, or null if the check is off. */
+        double[] rtrip(String relpath, double defRtol, double defAtol) {
+            RtripRule r = rtripRules.get(relpath);
+            if (r == null) {
+                return new double[] {defRtol, defAtol};
+            }
+            if (r.off) {
+                return null;
+            }
+            return new double[] {r.rtol == null ? defRtol : r.rtol, r.atol == null ? defAtol : r.atol};
+        }
+
+        boolean goldenOff(String relpath, boolean forward) {
+            GoldenRule g = goldenRules.get(relpath);
+            return g != null && (forward ? g.fwdOff : g.invOff);
+        }
+
+        long goldenSkipRows(String relpath, boolean forward) {
+            GoldenRule g = goldenRules.get(relpath);
+            if (g == null) {
+                return 0L;
+            }
+            return forward ? g.fwdRows : g.invRows;
+        }
+    }
+
+    /**
+     * A comma-separated list of 0-based row indices as a bitmap. Rows at or beyond 64 are ignored;
+     * a token that is not a number ends the list.
+     */
+    static long parseRowList(String list) {
+        long rows = 0L;
+        int i = 0;
+        while (i < list.length()) {
+            int j = i;
+            while (j < list.length() && list.charAt(j) != ',' && list.charAt(j) != ' ') {
+                j++;
+            }
+            String tok = list.substring(i, j).trim();
+            i = j + 1;
+            if (tok.isEmpty()) {
+                continue;
+            }
+            long v;
+            try {
+                v = Long.parseLong(tok);
+            } catch (NumberFormatException e) {
+                break;
+            }
+            if (v < 0) {
+                break;
+            }
+            if (v < 64) {
+                rows |= 1L << v;
+            }
+        }
+        return rows;
+    }
+
+    private static Double parseOrNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        return CValues.parseRustFloat(s);
+    }
+
+    static Overrides parseOverrides(String text) {
+        Overrides o = new Overrides();
+        for (String line : CValues.lines(text)) {
+            if (line.startsWith("#") || CValues.isBlank(line)) {
+                continue;
+            }
+            String[] toks = CValues.splitWhitespace(line);
+            if (toks.length < 2) {
+                continue;
+            }
+            String rel = toks[0];
+            String what = toks[1];
+            String third = toks.length > 2 ? toks[2] : null;
+            if (what.startsWith("golden")) {
+                GoldenRule entry = o.goldenRules.computeIfAbsent(rel, k -> new GoldenRule());
+                String kind = what.substring("golden".length());
+                if ("-fwd-rows".equals(kind)) {
+                    entry.fwdRows |= parseRowList(third == null ? "" : third);
+                } else if ("-inv-rows".equals(kind)) {
+                    entry.invRows |= parseRowList(third == null ? "" : third);
+                } else {
+                    entry.fwdOff |= kind.isEmpty() || "-fwd".equals(kind);
+                    entry.invOff |= kind.isEmpty() || "-inv".equals(kind);
+                }
+            } else if ("off".equals(what)) {
+                o.rtripRules.put(rel, new RtripRule(true, null, null));
+            } else {
+                o.rtripRules.put(rel, new RtripRule(false, parseOrNull(what), parseOrNull(third)));
+            }
+        }
+        return o;
+    }
+
+    static Overrides committedOverrides() {
+        return parseOverrides(Fixtures.read("oracle/transform_oracle_overrides.txt"));
+    }
+
+    // ------------------------------------------------------------------
+    // Checks
+    // ------------------------------------------------------------------
+
+    enum CheckKind {
+        GOLDEN_FWD("golden-fwd"),
+        GOLDEN_INV("golden-inv"),
+        EQUIVALENCE("equivalence"),
+        ROUND_TRIP("round-trip");
+
+        final String label;
+
+        CheckKind(String label) {
+            this.label = label;
+        }
+    }
+
+    /** One output value that does not match. */
+    static final class AxisMiss {
+        final CheckKind check;
+        final int row;
+        final int axis;
+        final double reference;
+        final double got;
+        final double rel;
+
+        AxisMiss(CheckKind check, int row, int axis, double reference, double got) {
+            this.check = check;
+            this.row = row;
+            this.axis = axis;
+            this.reference = reference;
+            this.got = got;
+            this.rel = relDiff(got, reference);
+        }
+
+        boolean bad() {
+            return got == CValues.BAD || reference == CValues.BAD;
+        }
+    }
+
+    /** Golden check: live outputs against the recorded ones, axis by axis. */
+    static List<AxisMiss> compareGolden(
+            CheckKind check,
+            double[][] live,
+            double[][] recorded,
+            boolean[] angular,
+            long skipRows,
+            double rtol,
+            double atol) {
+        List<AxisMiss> misses = new ArrayList<>();
+        int npoint = recorded.length == 0 ? 0 : recorded[0].length;
+        for (int row = 0; row < npoint; row++) {
+            if (row < 64 && ((skipRows >>> row) & 1L) == 1L) {
+                continue;
+            }
+            for (int axis = 0; axis < recorded.length; axis++) {
+                double got = live[axis][row];
+                double reference = recorded[axis][row];
+                if (!axisMatch(got, reference, rtol, atol, angular[axis])) {
+                    misses.add(new AxisMiss(check, row, axis, reference, got));
+                }
+            }
+        }
+        return misses;
+    }
+
+    /**
+     * Equivalence check: the live {@code .map} outputs against the live {@code .simp} outputs, only
+     * where C's recorded values for the two agree (where they do not, the point was outside the
+     * domain the two share).
+     */
+    static List<AxisMiss> compareEquiv(
+            double[][] mapLive,
+            double[][] simpLive,
+            double[][] mapRef,
+            double[][] simpRef,
+            boolean[] angular,
+            double rtol,
+            double atol) {
+        List<AxisMiss> misses = new ArrayList<>();
+        int npoint = mapRef.length == 0 ? 0 : mapRef[0].length;
+        for (int row = 0; row < npoint; row++) {
+            for (int axis = 0; axis < mapRef.length; axis++) {
+                if (!axisMatch(mapRef[axis][row], simpRef[axis][row], rtol, atol, angular[axis])) {
+                    continue;
+                }
+                double a = mapLive[axis][row];
+                double b = simpLive[axis][row];
+                if (!axisMatch(a, b, rtol, atol, angular[axis])) {
+                    misses.add(new AxisMiss(CheckKind.EQUIVALENCE, row, axis, b, a));
+                }
+            }
+        }
+        return misses;
+    }
+
+    /**
+     * Whether C's own recorded inverse recovers the recorded forward input at {@code row}, decided
+     * from the recorded data alone.
+     */
+    static boolean referenceRoundTrips(OracleSection fwd, double[][] invRef, int row, double rtol, double atol) {
+        double[][] in = fwd.inputs();
+        for (int a = 0; a < fwd.nin; a++) {
+            if (!withinTol(invRef[a][row], in[a][row], rtol, atol)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Round-trip check: the inverse of the forward outputs recovers the forward inputs, skipping
+     * points whose forward output was BAD, accepting a different point that the forward
+     * transformation takes to the same output (an alias), and excusing, last, a row C's own
+     * recorded inverse does not recover either.
+     */
+    static List<AxisMiss> compareRtrip(
+            Mapping map, OracleSection fwd, double[][] invLive, double[][] invRef, double rtol, double atol) {
+        List<AxisMiss> misses = new ArrayList<>();
+        int npoint = fwd.npoint();
+        double[][] fwdIn = fwd.inputs();
+        double[][] fwdOut = fwd.outputs();
+        double[][] sky2;
+        try {
+            sky2 = map.tranP(npoint, fwd.nin, invLive, true, fwd.nout);
+        } catch (AstException e) {
+            sky2 = null;
+        }
+        for (int row = 0; row < npoint; row++) {
+            boolean fbad = false;
+            for (int b = 0; b < fwd.nout; b++) {
+                fbad |= fwdOut[b][row] == CValues.BAD;
+            }
+            if (fbad) {
+                continue;
+            }
+            boolean pixelOk = true;
+            for (int a = 0; a < fwd.nin; a++) {
+                pixelOk &= withinTol(invLive[a][row], fwdIn[a][row], rtol, atol);
+            }
+            if (pixelOk) {
+                continue;
+            }
+            if (sky2 != null) {
+                boolean alias = true;
+                for (int b = 0; b < fwd.nout; b++) {
+                    alias &= withinTolWrap(sky2[b][row], fwdOut[b][row], fwd.rtol, fwd.atol);
+                }
+                if (alias) {
+                    continue;
+                }
+            }
+            if (!referenceRoundTrips(fwd, invRef, row, rtol, atol)) {
+                continue;
+            }
+            for (int a = 0; a < fwd.nin; a++) {
+                if (!withinTol(invLive[a][row], fwdIn[a][row], rtol, atol)) {
+                    misses.add(new AxisMiss(CheckKind.ROUND_TRIP, row, a, fwdIn[a][row], invLive[a][row]));
+                }
+            }
+        }
+        return misses;
+    }
+
+    // ------------------------------------------------------------------
+    // Driver
+    // ------------------------------------------------------------------
+
+    enum Outcome {
+        PASS,
+        SKIPPED_BY_OVERRIDE,
+        LOAD_FAIL,
+        ARITY,
+        MISMATCH;
+
+        boolean fails() {
+            return this == LOAD_FAIL || this == ARITY || this == MISMATCH;
+        }
+    }
+
+    /** What happened to one section. */
+    static final class SectionReport {
+        final String oracle;
+        final OracleSection section;
+        Outcome outcome;
+        String detail = "";
+        List<AxisMiss> misses = Collections.emptyList();
+
+        /** The round-trip check has a forward section to pair with, and is not switched off. */
+        boolean rtripPaired;
+
+        /** The round-trip check ran. */
+        boolean rtrip;
+
+        /** The {@code .map} section the equivalence check pairs with, or null. */
+        String equivPartner;
+
+        /** The equivalence check ran. */
+        boolean equiv;
+
+        SectionReport(String oracle, OracleSection section) {
+            this.oracle = oracle;
+            this.section = section;
+        }
+
+        String relpath() {
+            return section.path;
+        }
+
+        String describe() {
+            String dir = section.forward ? "fwd" : "inv";
+            if (outcome != Outcome.MISMATCH) {
+                return relpath() + " " + dir + ": " + outcome + " " + detail;
+            }
+            AxisMiss worst = misses.get(0);
+            for (AxisMiss m : misses) {
+                if (m.rel > worst.rel) {
+                    worst = m;
+                }
+            }
+            return relpath() + " " + dir + ": mismatch:" + worst.check.label + " nmiss=" + misses.size() + " row="
+                    + worst.row + " axis=" + worst.axis + " ref=" + worst.reference + " got=" + worst.got + " rel="
+                    + worst.rel + (worst.bad() ? " (BAD)" : "");
+        }
+    }
+
+    private static boolean hasExt(String relpath, String ext) {
+        int dot = relpath.lastIndexOf('.');
+        return dot >= 0 && relpath.substring(dot).equals(ext);
+    }
+
+    private static String pathStem(String relpath) {
+        int dot = relpath.lastIndexOf('.');
+        return dot < 0 ? relpath : relpath.substring(0, dot);
+    }
+
+    static List<OracleSection> parseOracle(String oracle) {
+        return OracleFile.parse(Fixtures.root().resolve("oracle/" + oracle + ".oracle"));
+    }
+
+    /**
+     * Runs every section of one oracle file, recording an outcome for each. The pairing of sections
+     * follows the order C's generator writes them in.
+     */
+    static List<SectionReport> runOracle(String oracle, Overrides overrides) {
+        List<SectionReport> reports = new ArrayList<>();
+        OracleSection prevFwdAny = null;
+        OracleSection prevMapAny = null;
+        OracleSection prevFwd = null;
+        OracleSection prevMap = null;
+        double[][] prevMapLive = null;
+        for (OracleSection s : parseOracle(oracle)) {
+            SectionReport r = new SectionReport(oracle, s);
+            reports.add(r);
+            boolean grid = hasExt(s.path, ".head") || hasExt(s.path, ".ast");
+            double[] rtripTol = overrides.rtrip(s.path, s.rtripRtol, s.rtripAtol);
+            r.rtripPaired = !s.forward && grid && rtripTol != null && pairsAsRtrip(prevFwdAny, s);
+            if (s.forward && hasExt(s.path, ".simp") && prevMapAny != null && pairsAsEquiv(prevMapAny, s)) {
+                r.equivPartner = prevMapAny.path;
+            }
+            if (s.forward) {
+                prevFwdAny = s;
+                if (hasExt(s.path, ".map")) {
+                    prevMapAny = s;
+                }
+            }
+
+            Loaded loaded = loadFixture(s.path);
+            if (loaded.map == null) {
+                r.outcome = Outcome.LOAD_FAIL;
+                r.detail = loaded.failure;
+                continue;
+            }
+            Mapping map = loaded.map;
+            double[][] live;
+            try {
+                live = transformSection(map, s, s.inputs());
+            } catch (TransformFailure e) {
+                r.outcome = Outcome.ARITY;
+                r.detail = e.getMessage();
+                continue;
+            }
+            boolean[] angular = angularFlags(map, s);
+            List<AxisMiss> misses = new ArrayList<>();
+            boolean skippedByOverride = false;
+            if (overrides.goldenOff(s.path, s.forward)) {
+                skippedByOverride = true;
+            } else {
+                misses.addAll(compareGolden(
+                        s.forward ? CheckKind.GOLDEN_FWD : CheckKind.GOLDEN_INV,
+                        live,
+                        s.outputs(),
+                        angular,
+                        overrides.goldenSkipRows(s.path, s.forward),
+                        s.rtol,
+                        s.atol));
+            }
+            if (!s.forward && grid && rtripTol != null && prevFwd != null && pairsAsRtrip(prevFwd, s)) {
+                misses.addAll(compareRtrip(map, prevFwd, live, s.outputs(), rtripTol[0], rtripTol[1]));
+                r.rtrip = true;
+            }
+            if (s.forward && hasExt(s.path, ".simp") && prevMap != null && pairsAsEquiv(prevMap, s)) {
+                misses.addAll(compareEquiv(
+                        prevMapLive, live, prevMap.outputs(), s.outputs(), angular, s.equivRtol, s.equivAtol));
+                r.equiv = true;
+            }
+            if (s.forward) {
+                prevFwd = s;
+                if (hasExt(s.path, ".map")) {
+                    prevMap = s;
+                    prevMapLive = live;
+                }
+            }
+            if (!misses.isEmpty()) {
+                r.outcome = Outcome.MISMATCH;
+                r.misses = misses;
+            } else if (skippedByOverride) {
+                r.outcome = Outcome.SKIPPED_BY_OVERRIDE;
+                r.detail = s.forward ? "golden-fwd" : "golden-inv";
+            } else {
+                r.outcome = Outcome.PASS;
+            }
+        }
+        return reports;
+    }
+
+    private static boolean pairsAsRtrip(OracleSection fwd, OracleSection inv) {
+        return fwd != null && fwd.path.equals(inv.path) && fwd.nin == inv.nout && fwd.npoint() == inv.npoint();
+    }
+
+    private static boolean pairsAsEquiv(OracleSection map, OracleSection simp) {
+        return map.nout == simp.nout
+                && map.npoint() == simp.npoint()
+                && pathStem(map.path).equals(pathStem(simp.path));
+    }
+
+    /** The deferred list of an oracle file. */
+    static String deferredName(String oracle) {
+        return "simplify_fixtures".equals(oracle) ? "simplify" : oracle;
+    }
+
+    static boolean isHeadSection(String relpath) {
+        return relpath.endsWith(".head");
+    }
+
+    static boolean isSlamapSection(String relpath) {
+        int slash = relpath.lastIndexOf('/');
+        return relpath.substring(slash + 1).contains("sla");
+    }
+
+    static boolean isSimplifySection(String relpath) {
+        return !isHeadSection(relpath) && !isSlamapSection(relpath);
+    }
+
+    /** The fixtures of an oracle's reports, each with its sections, in oracle order. */
+    private static Map<String, List<SectionReport>> byFixture(List<SectionReport> reports) {
+        Map<String, List<SectionReport>> out = new LinkedHashMap<>();
+        for (SectionReport r : reports) {
+            out.computeIfAbsent(r.relpath(), k -> new ArrayList<>()).add(r);
+        }
+        return out;
+    }
+
+    private static boolean anyFails(List<SectionReport> sections) {
+        for (SectionReport r : sections) {
+            if (r.outcome.fails()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Rewrites the deferred list of one oracle from its reports, and gives the unexplained failures. */
+    private static List<String> writeDeferred(String oracle, List<SectionReport> reports) {
+        Map<String, String> old = Deferred.load(deferredName(oracle));
+        Map<String, String> entries = new LinkedHashMap<>();
+        for (Map.Entry<String, List<SectionReport>> e : byFixture(reports).entrySet()) {
+            if (anyFails(e.getValue())) {
+                entries.put(e.getKey(), Deferred.newReason(needs(e.getKey()), old.get(e.getKey())));
+            }
+        }
+        Deferred.write(
+                deferredName(oracle),
+                Arrays.asList(
+                        "Fixtures of fixtures/oracle/" + oracle + ".oracle whose sections do not all match C:",
+                        "<path relative to ast_tester/fixtures> | <reason>",
+                        "Rewritten by TransformOracleTest with -D" + Deferred.WRITE_PROPERTY + "=true."),
+                entries);
+        List<String> unexplained = new ArrayList<>();
+        for (Map.Entry<String, String> e : entries.entrySet()) {
+            if (Deferred.UNEXPLAINED.equals(e.getValue())) {
+                unexplained.add(
+                        e.getKey() + ": " + firstFailure(byFixture(reports).get(e.getKey())));
+            }
+        }
+        return unexplained;
+    }
+
+    private static String firstFailure(List<SectionReport> sections) {
+        for (SectionReport r : sections) {
+            if (r.outcome.fails()) {
+                return r.describe();
+            }
+        }
+        return "passes";
+    }
+
+    /**
+     * One gate: the sections of the named oracles for which {@code inGate} holds either match C or
+     * belong to a deferred fixture, which must fail and give a current reason; the gate covers
+     * {@code nsections} sections, and the round-trip and equivalence checks pair {@code nrtrip}
+     * and {@code nequiv} of them. Gives what is wrong, or with {@code -Dast.writeDeferred=true}
+     * rewrites the deferred lists and gives the failures it could not explain.
+     */
+    private static List<String> gate(
+            List<String> oracles, Predicate<String> inGate, int nsections, int nrtrip, int nequiv) {
+        Overrides ov = committedOverrides();
+        List<String> problems = new ArrayList<>();
+        int sections = 0;
+        int rtripPaired = 0;
+        int equivPaired = 0;
+        for (String oracle : oracles) {
+            List<SectionReport> all = runOracle(oracle, ov);
+            if (Deferred.writeRequested()) {
+                problems.addAll(writeDeferred(oracle, all));
+                continue;
+            }
+            Map<String, String> deferred = Deferred.load(deferredName(oracle));
+            for (Map.Entry<String, List<SectionReport>> e : byFixture(all).entrySet()) {
+                String relpath = e.getKey();
+                if (!inGate.test(relpath)) {
+                    continue;
+                }
+                List<SectionReport> secs = e.getValue();
+                String reason = deferred.get(relpath);
+                boolean fails = anyFails(secs);
+                for (SectionReport r : secs) {
+                    sections++;
+                    rtripPaired += r.rtripPaired ? 1 : 0;
+                    equivPaired += r.equivPartner != null ? 1 : 0;
+                    if (reason == null && r.outcome.fails()) {
+                        problems.add(r.describe());
+                    }
+                    if (reason == null && r.rtripPaired && !r.rtrip) {
+                        problems.add(relpath + ": round-trip check did not run");
+                    }
+                    if (reason == null && r.equivPartner != null && !r.equiv && !deferred.containsKey(r.equivPartner)) {
+                        problems.add(relpath + ": equivalence check against " + r.equivPartner + " did not run");
+                    }
+                }
+                if (reason != null) {
+                    if (!fails) {
+                        problems.add(relpath + " is deferred (" + reason + ") but matches C; remove it from "
+                                + deferredName(oracle) + ".txt");
+                    } else {
+                        String p = Deferred.reasonProblem(reason, needs(relpath));
+                        if (p != null) {
+                            problems.add(relpath + " " + p + " (" + firstFailure(secs) + ")");
+                        }
+                    }
+                }
+            }
+        }
+        if (Deferred.writeRequested()) {
+            return problems;
+        }
+        if (sections != nsections) {
+            problems.add("the gate compared " + sections + " sections, not " + nsections
+                    + "; fixtures may have been renamed, removed or added");
+        }
+        if (rtripPaired != nrtrip || equivPaired != nequiv) {
+            problems.add("the gate paired " + rtripPaired + " sections for the round trip and " + equivPaired
+                    + " for equivalence, not " + nrtrip + " and " + nequiv
+                    + "; a regenerated oracle that reorders sections stops the checks silently");
+        }
+        return problems;
+    }
+
+    // ------------------------------------------------------------------
+    // resolve_tests
+    // ------------------------------------------------------------------
+
+    @Test
+    void resolvesEveryOracleRelpath() {
+        List<String> missing = new ArrayList<>();
+        for (String oracle : ORACLES) {
+            for (OracleSection s : parseOracle(oracle)) {
+                if (resolveFixture(s.path) == null && !missing.contains(s.path)) {
+                    missing.add(s.path);
+                }
+            }
+        }
+        assertTrue(missing.isEmpty(), "unresolved fixtures: " + missing);
+    }
+
+    /** {@code serialisation/degen1.ast} is the round-tripped form of {@code wcsconv/inputs/degen1.ast}. */
+    @Test
+    void duplicateBasenamesResolveToTheirOwnFiles() {
+        Path a = resolveFixture("wcsconv/inputs/degen1.ast");
+        Path b = resolveFixture("serialisation/degen1.ast");
+        assertNotNull(a);
+        assertNotNull(b);
+        assertNotEquals(a, b);
+        assertNotEquals(Fixtures.read("wcsconv/inputs/degen1.ast"), Fixtures.read("serialisation/degen1.ast"));
+    }
+
+    @Test
+    void bareBasenameDoesNotResolve() {
+        assertNull(resolveFixture("degen1.ast"));
+        assertNull(resolveFixture("brad.map"));
+    }
+
+    // ------------------------------------------------------------------
+    // parse_tests
+    // ------------------------------------------------------------------
+
+    private static final String TOL_LINE =
+            "# tol: rtol=1e-07 atol=1e-07  equiv_rtol=1e-09 equiv_atol=1e-09  rtrip_rtol=1e-06 rtrip_atol=0.05\n";
+
+    @Test
+    void parsesHeaderBadTokenAndDirection() {
+        String text = "# header\n" + TOL_LINE + "\n[foo.map  nin=2 nout=1 dir=forward]\n 1 2  3\n 4 5  BAD\n\n"
+                + "[bar.head  nin=1 nout=1 dir=inverse]\n 7  8\n";
+        List<OracleSection> secs = OracleFile.parseText(text, "test");
+        assertEquals(2, secs.size());
+        OracleSection s0 = secs.get(0);
+        assertEquals("foo.map", s0.path);
+        assertEquals(2, s0.nin);
+        assertEquals(1, s0.nout);
+        assertTrue(s0.forward);
+        assertEquals(2, s0.npoint());
+        assertEquals(1.0, s0.inputs()[0][0]);
+        assertEquals(5.0, s0.inputs()[1][1]);
+        assertEquals(3.0, s0.outputs()[0][0]);
+        assertEquals(CValues.BAD, s0.outputs()[0][1]);
+        assertFalse(secs.get(1).forward);
+    }
+
+    @Test
+    void malformedRowIsHardError() {
+        String text = TOL_LINE + "[foo.map  nin=2 nout=1 dir=forward]\n  1 2\n";
+        assertThrows(IllegalArgumentException.class, () -> OracleFile.parseText(text, "test"));
+    }
+
+    @Test
+    void parsesAllThreeCommittedOracles() {
+        int total = 0;
+        for (String oracle : ORACLES) {
+            total += parseOracle(oracle).size();
+        }
+        assertEquals(2261, total);
+    }
+
+    // ------------------------------------------------------------------
+    // primitive_tests
+    // ------------------------------------------------------------------
+
+    /** The golden tolerances every committed oracle states. */
+    private static final double GOLDEN_RTOL = 1e-7;
+
+    private static final double GOLDEN_ATOL = 1e-7;
+
+    @Test
+    void committedOraclesStateTheGoldenTolerances() {
+        for (String oracle : ORACLES) {
+            OracleSection s = parseOracle(oracle).get(0);
+            assertEquals(GOLDEN_RTOL, s.rtol, oracle);
+            assertEquals(GOLDEN_ATOL, s.atol, oracle);
+        }
+    }
+
+    @Test
+    void withinTolMatchesCSemantics() {
+        assertTrue(withinTol(1.0, 1.0, 0.0, 0.0));
+        assertTrue(withinTol(1.0 + 4e-16, 1.0, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertFalse(withinTol(1.0001, 1.0, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertTrue(withinTol(5e-13, 0.0, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertTrue(withinTol(CValues.BAD, CValues.BAD, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertFalse(withinTol(CValues.BAD, 1.0, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertFalse(withinTol(1.0, CValues.BAD, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertFalse(withinTol(Double.NaN, 1.0, 1e9, 1e9));
+    }
+
+    @Test
+    void withinTolWrapAcceptsFullTurnAndCiPairs() {
+        assertTrue(withinTolWrap(1.0, 1.0, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertTrue(withinTolWrap(TWO_PI, 0.0, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertTrue(withinTolWrap(0.0, TWO_PI, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertTrue(withinTolWrap(Math.PI, -Math.PI, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertFalse(withinTolWrap(1.0, 2.0, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertFalse(withinTolWrap(CValues.BAD, 0.0, GOLDEN_RTOL, GOLDEN_ATOL));
+        // Pairs of an arm64 reference and an x86-64 result seen in C's CI.
+        assertTrue(withinTolWrap(5.0999352672935785e-17, 6.283185307179586, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertTrue(withinTolWrap(1.9478449064398693e-20, 6.283185307179586, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertTrue(withinTolWrap(3.141592653589793, -3.141592653589793, GOLDEN_RTOL, GOLDEN_ATOL));
+        assertTrue(withinTolWrap(1.0, 1.0000000047018207, GOLDEN_RTOL, GOLDEN_ATOL));
+    }
+
+    // ------------------------------------------------------------------
+    // loader_tests
+    // ------------------------------------------------------------------
+
+    @Test
+    void loadsNativeMapping() {
+        Loaded l = loadFixture("simplify/matrix_diagonal_to_zoom.map");
+        assertNull(l.failure);
+        assertEquals(2, l.map.getNin());
+        assertNotEquals("FrameSet", l.map.astClass(), "a bare Mapping has no Frame");
+    }
+
+    // ------------------------------------------------------------------
+    // override_tests
+    // ------------------------------------------------------------------
+
+    @Test
+    void parsesIndependentRtripAndGoldenLines() {
+        String text = "# comment\n"
+                + "rtoff.head off\n"
+                + "loose.head 2e-3 4e-2\n"
+                + "noisy.map golden-inv off\n"
+                + "both.map golden off\n"
+                + "fwdonly.map golden-fwd off\n"
+                + "rows.map golden-inv-rows 2,3\n"
+                + "rows.map golden-fwd-rows 0\n";
+        Overrides o = parseOverrides(text);
+        assertNull(o.rtrip("rtoff.head", 1e-6, 0.05));
+        assertTrue(Arrays.equals(new double[] {2e-3, 4e-2}, o.rtrip("loose.head", 1e-6, 0.05)));
+        // A fixture with only a golden line keeps the default round trip.
+        assertTrue(Arrays.equals(new double[] {1e-6, 0.05}, o.rtrip("noisy.map", 1e-6, 0.05)));
+        assertTrue(!o.goldenOff("rtoff.head", true) && !o.goldenOff("rtoff.head", false));
+        assertTrue(!o.goldenOff("noisy.map", true) && o.goldenOff("noisy.map", false));
+        assertTrue(o.goldenOff("both.map", true) && o.goldenOff("both.map", false));
+        assertTrue(o.goldenOff("fwdonly.map", true) && !o.goldenOff("fwdonly.map", false));
+        // A row list narrows the skip instead of switching off the direction.
+        assertTrue(!o.goldenOff("rows.map", true) && !o.goldenOff("rows.map", false));
+        assertEquals(0b1100L, o.goldenSkipRows("rows.map", false));
+        assertEquals(0b1L, o.goldenSkipRows("rows.map", true));
+        assertEquals(0L, o.goldenSkipRows("noisy.map", true));
+    }
+
+    @Test
+    void parsesCommittedOverridesFile() {
+        Overrides o = committedOverrides();
+        // An allowlist, so that a new override cannot appear unnoticed.
+        List<String> rtripOff = new ArrayList<>();
+        for (Map.Entry<String, RtripRule> e : o.rtripRules.entrySet()) {
+            assertTrue(e.getValue().off, "only disabled round trips, no loosened tolerance: " + e.getKey());
+            rtripOff.add(e.getKey());
+        }
+        Collections.sort(rtripOff);
+        assertEquals(Arrays.asList("wcsconv/framesets/tnx-cheb-head.ast", "wcsconv/inputs/tnx-cheb.head"), rtripOff);
+
+        // neg_unitnormmap_inv_fwd_diffcentre's inverse at the all-zero sample (rows 2 and 3) is BAD
+        // or a direction made of rounding noise, depending on whether a multiply and an add are
+        // fused, so only those rows are skipped.
+        String unm = "simplify/neg_unitnormmap_inv_fwd_diffcentre.map";
+        assertEquals(Collections.singletonList(unm), new ArrayList<>(o.goldenRules.keySet()));
+        assertTrue(!o.goldenOff(unm, false) && !o.goldenOff(unm, true));
+        assertEquals(0b1100L, o.goldenSkipRows(unm, false));
+        assertEquals(0L, o.goldenSkipRows(unm, true));
+
+        Overrides probe = parseOverrides("a.head off\nb.map golden-inv off\nc.map golden-fwd-rows 0,5,63\n");
+        assertNull(probe.rtrip("a.head", 1e-6, 0.05));
+        assertTrue(probe.goldenOff("b.map", false));
+        assertFalse(probe.goldenOff("c.map", true));
+        assertEquals(1L | 1L << 5 | 1L << 63, probe.goldenSkipRows("c.map", true));
+        assertEquals(0L, probe.goldenSkipRows("c.map", false));
+    }
+
+    @Test
+    void parsesRowListsAsC() {
+        assertEquals(0L, parseRowList(""));
+        assertEquals(1L | 1L << 63, parseRowList("0,63"));
+        assertEquals(0L, parseRowList("64,-1"));
+    }
+
+    // ------------------------------------------------------------------
+    // transform_tests
+    // ------------------------------------------------------------------
+
+    @Test
+    void bareMappingAllAxesAngular() {
+        Loaded l = loadFixture("simplify/matrix_diagonal_to_zoom.map");
+        OracleSection s = OracleFile.parseText(TOL_LINE + "[x.map nin=2 nout=2 dir=forward]\n", "test")
+                .get(0);
+        boolean[] flags = angularFlags(l.map, s);
+        assertTrue(flags[0] && flags[1]);
+        assertEquals(2, flags.length);
+    }
+
+    @Test
+    void transformReproducesOracleShape() throws TransformFailure {
+        Loaded l = loadFixture("simplify/matrix_diagonal_to_zoom.map");
+        OracleSection s = OracleFile.parseText(
+                        TOL_LINE + "[x.map nin=2 nout=2 dir=forward]\n 1 3 0 0\n 2 4 0 0\n", "test")
+                .get(0);
+        double[][] out = transformSection(l.map, s, s.inputs());
+        assertEquals(2, out.length);
+        assertEquals(2, out[0].length);
+    }
+
+    // ------------------------------------------------------------------
+    // check_tests
+    // ------------------------------------------------------------------
+
+    @Test
+    void goldenFlagsOutOfToleranceAxis() {
+        double[][] live = {{1.0, 2.0}};
+        double[][] recorded = {{1.0, 2.5}};
+        List<AxisMiss> misses = compareGolden(
+                CheckKind.GOLDEN_FWD, live, recorded, new boolean[] {false}, 0L, GOLDEN_RTOL, GOLDEN_ATOL);
+        assertEquals(1, misses.size());
+        assertEquals(1, misses.get(0).row);
+        assertEquals(0, misses.get(0).axis);
+    }
+
+    @Test
+    void equivSkipsPointsWhereRecordedDisagree() {
+        // Row 0 disagrees in the record (outside the shared domain) and live: skipped. Row 1 agrees
+        // in the record but not live: flagged.
+        double[][] mapRef = {{10.0, 1.0}};
+        double[][] simpRef = {{20.0, 1.0}};
+        double[][] mapLive = {{10.0, 1.0}};
+        double[][] simpLive = {{20.0, 9.0}};
+        List<AxisMiss> misses = compareEquiv(mapLive, simpLive, mapRef, simpRef, new boolean[] {false}, 1e-9, 1e-9);
+        assertEquals(1, misses.size());
+        assertEquals(1, misses.get(0).row);
+    }
+
+    @Test
+    void rtripExcusesOnlyRowsTheReferenceAlsoFails() {
+        // A 1-axis identity, so a recovered point forward-maps to itself.
+        UnitMap map = new UnitMap(1);
+        OracleSection fwd = OracleFile.parseText(
+                        TOL_LINE + "[synthetic.head nin=1 nout=1 dir=forward]\n 10 10\n 20 20\n 30 30\n 40 40\n",
+                        "test")
+                .get(0);
+        // Row 0: live recovers (pass). Row 1: live wrong, reference recovers (miss). Row 2: live
+        // wrong, reference wrong too (excused). Row 3: live recovers, reference wrong (pass).
+        double[][] invLive = {{10.0, 99.0, 99.0, 40.0}};
+        double[][] invRef = {{10.0, 20.0, 77.0, 55.0}};
+        List<AxisMiss> misses = compareRtrip(map, fwd, invLive, invRef, fwd.rtripRtol, fwd.rtripAtol);
+        assertEquals(1, misses.size(), "only row 1 may be reported");
+        assertEquals(1, misses.get(0).row);
+    }
+
+    // ------------------------------------------------------------------
+    // driver_tests
+    // ------------------------------------------------------------------
+
+    @Test
+    void runsFramesetsOracleWithoutPanicking() {
+        assertEquals(353, runOracle("framesets", committedOverrides()).size());
+    }
+
+    // ------------------------------------------------------------------
+    // Gates
+    // ------------------------------------------------------------------
+
+    /**
+     * SlaMap sections: those of the simplify corpus whose file name contains {@code sla}. C pairs
+     * none of them for the round trip and 31 for equivalence.
+     */
+    @Test
+    void slamapSectionsMatchOracle() {
+        List<String> problems =
+                gate(Collections.singletonList("simplify_fixtures"), TransformOracleTest::isSlamapSection, 136, 0, 31);
+        assertTrue(problems.isEmpty(), "SlaMap gate:\n" + String.join("\n", problems));
+    }
+
+    /** {@code .head} sections, all in {@code headers.oracle}. */
+    @Test
+    void headSectionsMatchOracle() {
+        List<String> problems =
+                gate(Collections.singletonList("headers"), TransformOracleTest::isHeadSection, 277, 137, 0);
+        assertTrue(problems.isEmpty(), "head gate:\n" + String.join("\n", problems));
+    }
+
+    /**
+     * Every other section: the rest of the simplify corpus and every native dump. Rust's gate
+     * leaves out the 24 sections of the 12 fixtures its port cannot transform (11 bare Frames, and
+     * a FrameSet with a Frame in a Mapping slot); here a Frame is a Mapping, as in C, so the gate
+     * covers 1848 sections, and the round trip pairs the 12 inverse sections of those fixtures
+     * besides Rust's 162.
+     */
+    @Test
+    void simplifySectionsMatchOracle() {
+        List<String> problems = gate(
+                Arrays.asList("simplify_fixtures", "framesets"),
+                TransformOracleTest::isSimplifySection,
+                1848,
+                RTRIP_SIMPLIFY,
+                304);
+        assertTrue(problems.isEmpty(), "simplify gate:\n" + String.join("\n", problems));
+    }
+
+    private static final int RTRIP_SIMPLIFY = 174;
+
+    @Test
+    void everyOracleSectionIsGated() {
+        List<String> ungated = new ArrayList<>();
+        int total = 0;
+        for (String oracle : ORACLES) {
+            for (OracleSection s : parseOracle(oracle)) {
+                total++;
+                if (!isHeadSection(s.path) && !isSlamapSection(s.path) && !isSimplifySection(s.path)) {
+                    ungated.add(s.path);
+                }
+            }
+        }
+        assertTrue(ungated.isEmpty(), "sections no gate covers: " + ungated);
+        assertEquals(2261, total);
+    }
+
+    /**
+     * A fixture deferred for want of classes still cannot be loaded, so that it is noticed when
+     * its classes are ported.
+     */
+    @Test
+    void deferredFixturesStillFailToLoad() {
+        List<String> nowLoading = new ArrayList<>();
+        for (String oracle : ORACLES) {
+            for (Map.Entry<String, String> e :
+                    Deferred.load(deferredName(oracle)).entrySet()) {
+                if (e.getValue().startsWith("needs ") && loadFixture(e.getKey()).map != null) {
+                    nowLoading.add(e.getKey() + " (" + e.getValue() + ")");
+                }
+            }
+        }
+        assertTrue(nowLoading.isEmpty(), "these now load; rerun with -Dast.writeDeferred=true: " + nowLoading);
+    }
+
+    /** Every deferred list names fixtures of its own oracle, so a stale entry cannot sit unnoticed. */
+    @Test
+    void deferredListsNameOracleFixtures() {
+        for (String oracle : ORACLES) {
+            List<String> present = new ArrayList<>();
+            for (OracleSection s : parseOracle(oracle)) {
+                present.add(s.path);
+            }
+            for (String key : Deferred.load(deferredName(oracle)).keySet()) {
+                assertTrue(present.contains(key), deferredName(oracle) + ".txt names " + key + ", not in " + oracle);
+            }
+        }
+    }
+
+    /**
+     * The rows where C's own recorded inverse does not recover the forward input are exactly
+     * {@link #RTRIP_REFERENCE_GAPS_LICENSED}, from the oracle files alone.
+     */
+    @Test
+    void referenceRtripGapsAreExactlyTheRecordedSet() {
+        Map<String, List<Integer>> found = new TreeMap<>();
+        for (String oracle : ORACLES) {
+            OracleSection prevFwd = null;
+            for (OracleSection s : parseOracle(oracle)) {
+                boolean grid = hasExt(s.path, ".head") || hasExt(s.path, ".ast");
+                if (!s.forward && grid && pairsAsRtrip(prevFwd, s)) {
+                    double[][] fwdOut = prevFwd.outputs();
+                    double[][] invRef = s.outputs();
+                    for (int row = 0; row < prevFwd.npoint(); row++) {
+                        boolean fbad = false;
+                        for (double[] col : fwdOut) {
+                            fbad |= col[row] == CValues.BAD;
+                        }
+                        if (!fbad && !referenceRoundTrips(prevFwd, invRef, row, s.rtripRtol, s.rtripAtol)) {
+                            found.computeIfAbsent(s.path, k -> new ArrayList<>())
+                                    .add(row);
+                        }
+                    }
+                }
+                if (s.forward) {
+                    prevFwd = s;
+                }
+            }
+        }
+        assertEquals(RTRIP_REFERENCE_GAPS_LICENSED, found);
+    }
+}

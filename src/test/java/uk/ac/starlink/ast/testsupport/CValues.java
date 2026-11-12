@@ -333,7 +333,7 @@ public final class CValues {
     }
 
     /** Parses a token as Rust's {@code str::parse::<f64>} does, or returns null. */
-    static Double parseRustFloat(String tok) {
+    public static Double parseRustFloat(String tok) {
         if (!RUST_FLOAT.matcher(tok).matches()) {
             return null;
         }

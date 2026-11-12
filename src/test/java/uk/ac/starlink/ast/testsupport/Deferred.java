@@ -5,16 +5,99 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * The deferred lists in {@code src/test/resources/deferred/}: one line per deferred item,
  * {@code <key> | <reason>}, with {@code #} comments and blank lines ignored.
+ *
+ * <p>The fixture gates write their lists themselves when the system property {@value
+ * #WRITE_PROPERTY} is {@code true}. A written reason is {@code needs <classes>}, naming the classes
+ * the library cannot load yet; a reason written by hand for a fixture that fails with every class
+ * present is kept; any other failure is written as {@value #UNEXPLAINED}, which the gates reject
+ * until a person replaces it with the measured cause.
  */
 public final class Deferred {
 
+    /** The system property that makes the gates rewrite their deferred lists. */
+    public static final String WRITE_PROPERTY = "ast.writeDeferred";
+
+    /** The reason written for a failure that missing classes do not explain. */
+    public static final String UNEXPLAINED = "UNEXPLAINED";
+
+    private static final String NEEDS = "needs ";
+
     private Deferred() {}
+
+    /** Whether the gates are to rewrite their deferred lists rather than check them. */
+    public static boolean writeRequested() {
+        return Boolean.getBoolean(WRITE_PROPERTY);
+    }
+
+    /**
+     * The reason to write for an item that fails.
+     *
+     * @param needs the {@code needs <classes>} reason for the item, or null if it uses no missing
+     *     class
+     * @param old the reason listed now, or null
+     */
+    public static String newReason(String needs, String old) {
+        if (needs != null) {
+            return needs;
+        }
+        if (old != null && !old.startsWith(NEEDS) && !UNEXPLAINED.equals(old)) {
+            return old;
+        }
+        return UNEXPLAINED;
+    }
+
+    /**
+     * What is wrong with the listed reason of an item that fails, or null if nothing is: {@value
+     * #UNEXPLAINED}, a {@code needs} reason other than the current one, or a hand-written reason
+     * for an item that uses missing classes.
+     *
+     * @param reason the listed reason
+     * @param needs the {@code needs <classes>} reason for the item, or null if it uses no missing
+     *     class
+     */
+    public static String reasonProblem(String reason, String needs) {
+        if (UNEXPLAINED.equals(reason)) {
+            return "is UNEXPLAINED; find the cause in the C and Rust sources and write it in place";
+        }
+        if (needs != null && !needs.equals(reason)) {
+            return "is listed as \"" + reason + "\" but " + needs + "; rerun with -D" + WRITE_PROPERTY + "=true";
+        }
+        if (needs == null && reason.startsWith(NEEDS)) {
+            return "is listed as \"" + reason + "\" but every class it uses is ported, and it still fails";
+        }
+        return null;
+    }
+
+    /**
+     * Writes {@code src/test/resources/deferred/<name>.txt} under the project root: the header
+     * lines, each as a comment, then one line per entry.
+     */
+    public static void write(String name, List<String> header, Map<String, String> entries) {
+        StringBuilder sb = new StringBuilder();
+        for (String h : header) {
+            sb.append("# ").append(h).append('\n');
+        }
+        for (Map.Entry<String, String> e : entries.entrySet()) {
+            sb.append(e.getKey()).append(" | ").append(e.getValue()).append('\n');
+        }
+        String base = System.getProperty("basedir", System.getProperty("user.dir"));
+        Path path = Paths.get(base, "src", "test", "resources", "deferred", name + ".txt");
+        try {
+            Files.write(path, sb.toString().getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
     /**
      * Loads {@code deferred/<name>.txt} from the test class path, keyed in file order.
