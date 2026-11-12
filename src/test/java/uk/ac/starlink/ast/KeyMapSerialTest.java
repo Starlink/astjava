@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -19,10 +20,6 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
 /**
  * Translation of Rust {@code tests/test_keymap_serial.rs}: KeyMap round trips through native text,
  * and {@code MapSz} against the C oracle {@code oracle/keymap_mapsz.txt}.
- *
- * <p>{@code every_scalar_type_round_trips}, {@code a_null_object_entry_round_trips} and {@code
- * a_non_first_object_vector_element_has_no_trailing_space} store UnitMaps, and are translated with
- * UnitMap (Task 6).
  */
 class KeyMapSerialTest {
 
@@ -219,6 +216,34 @@ class KeyMapSerialTest {
     }
 
     @Test
+    void everyScalarTypeRoundTrips() {
+        KeyMap km = new KeyMap();
+        km.mapPut0I("an_int", -7, "int comment");
+        km.mapPut0D("a_double", 1.5, null);
+        km.mapPut0F("a_float", 0.25f, null);
+        km.mapPut0C("a_string", "text with spaces", null);
+        km.mapPut0S("a_short", (short) -3, null);
+        km.mapPut0B("a_byte", 200, null);
+        km.mapPut0K("an_int64", 9_000_000_000L, null);
+        km.mapPutU("undefined", null);
+        km.mapPut0A("an_object", new UnitMap(2), null);
+
+        KeyMap back = assertDoubleRoundTrip(km, "scalars");
+
+        assertEquals(km.mapSize(), back.mapSize());
+        assertEquals(-7, back.mapGet0I("an_int"));
+        assertEquals(1.5, back.mapGet0D("a_double"));
+        assertEquals(0.25f, back.mapGet0F("a_float"));
+        assertEquals("text with spaces", back.mapGet0C("a_string"));
+        assertEquals((short) -3, back.mapGet0S("a_short"));
+        assertEquals(200, back.mapGet0B("a_byte"));
+        assertEquals(9_000_000_000L, back.mapGet0K("an_int64"));
+        assertTrue(back.mapHasKey("undefined"));
+        assertFalse(back.mapDefined("undefined"));
+        assertNotNull(back.mapGet0A("an_object"));
+    }
+
+    @Test
     void everyVectorTypeRoundTrips() {
         KeyMap km = new KeyMap();
         km.mapPut1I("ints", new int[] {1, 2, 3}, null);
@@ -252,6 +277,45 @@ class KeyMapSerialTest {
         KeyMap back = assertDoubleRoundTrip(km, "bad double");
         assertEquals(AstObject.AST__BAD, back.mapGet0D("bad"));
         assertArrayEquals(new double[] {1.0, AstObject.AST__BAD, 3.0}, back.mapGet1D("part_bad"));
+    }
+
+    @Test
+    void aNullObjectEntryRoundTrips() {
+        // MapPut1A stores a null element rather than rejecting it (keymap.c MAKE_MAPPUT1(A, ...,
+        // (value[i]?astClone(value[i]):NULL))), and DumpEntry writes no item for it.
+        KeyMap km = new KeyMap();
+        km.mapPut1A("objects", new AstObject[] {new UnitMap(1), null}, null);
+
+        KeyMap back = assertDoubleRoundTrip(km, "null object element");
+        AstObject[] got = back.mapGet1A("objects");
+        assertEquals(2, got.length);
+        assertNotNull(got[0]);
+        assertNull(got[1]);
+    }
+
+    @Test
+    void aNonFirstObjectVectorElementHasNoTrailingSpace() {
+        // DumpEntry (keymap.c) gives every element after the first an empty comment, and
+        // WriteObject (channel.c) then writes " =" with nothing after it.
+        KeyMap km = new KeyMap();
+        km.mapPut1A("objects", new AstObject[] {new UnitMap(1), new UnitMap(2)}, null);
+
+        String text = ChannelText.dump(km);
+        String line = null;
+        for (String l : CValues.lines(text)) {
+            if (l.trim().startsWith("V1_2 =")) {
+                line = l;
+                break;
+            }
+        }
+        assertNotNull(line, "no V1_2 item found in:\n" + text);
+        assertTrue(line.endsWith("="), "V1_2 item must end at '=', got \"" + line + "\"");
+
+        KeyMap back = assertDoubleRoundTrip(km, "object vector, no trailing space");
+        AstObject[] got = back.mapGet1A("objects");
+        assertEquals(2, got.length);
+        assertNotNull(got[0]);
+        assertNotNull(got[1]);
     }
 
     @Test

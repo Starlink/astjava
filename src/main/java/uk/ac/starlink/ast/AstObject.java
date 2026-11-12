@@ -291,7 +291,7 @@ public class AstObject implements Cloneable {
     }
 
     /** The AST class name of this Object, the value of its Class attribute. */
-    String astClass() {
+    final String astClass() {
         Class<?> c = getClass();
         while (c.getSimpleName().isEmpty()) {
             c = c.getSuperclass();

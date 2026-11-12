@@ -19,10 +19,11 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * set, even blank, and read back. Each dump in {@code oracle/object_id.json} (from {@code
  * tools/oracle_fixtures/object_id_probe.c}) is made, compared with C's, read back and dumped again.
  *
- * <p>{@code dumps_match_c} runs here the cases whose classes are ported: {@code channel}. The
- * others are added by the tasks that port their classes: {@code keymap} (which holds a ZoomMap),
- * {@code zoommap}, {@code zoommap_blank}, {@code zoommap_copy} and {@code zoommap_simplified} in
- * Task 6; {@code cmpmap}, {@code cmpmap_copy}, {@code cmpmap_simplified} and {@code
+ * <p>{@code dumps_match_c} runs here the cases whose classes are ported: {@code zoommap}, {@code
+ * zoommap_blank}, {@code keymap}, {@code channel}, {@code zoommap_copy} and {@code
+ * zoommap_simplified}. {@code simplify} returns the ZoomMap itself, as C's {@code astSimplify}
+ * returns a Mapping it cannot simplify, recording it as simplified. The others are added by the
+ * tasks that port their classes: {@code cmpmap}, {@code cmpmap_copy}, {@code cmpmap_simplified} and {@code
  * cmpmap_unsimplifiable} in Task 7; {@code frame} in Task 15; {@code frameset}, {@code
  * frameset_frame_id} and {@code frameset_part_ids} in Task 16; {@code skyframe} in Task 18; {@code
  * cmpframe} in Task 20; {@code fitschan} in Task 21. {@code excluded_cases_still_differ} is
@@ -32,15 +33,38 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
 class ObjectIdOracleTest {
 
     /** The cases {@link #dumpsMatchC} runs. */
-    private static final List<String> CASES = Arrays.asList("channel");
+    private static final List<String> CASES =
+            Arrays.asList("zoommap", "zoommap_blank", "keymap", "channel", "zoommap_copy", "zoommap_simplified");
+
+    /** A 1-dimensional ZoomMap of factor {@code factor} with ID {@code id}. */
+    private static ZoomMap zoom(double factor, String id) {
+        ZoomMap m = new ZoomMap(1, factor);
+        m.setID(id);
+        return m;
+    }
 
     /** The Object each case of the probe makes. */
     private static AstObject object(String name) {
         switch (name) {
+            case "zoommap":
+                ZoomMap z = zoom(2.0, "zid");
+                z.setC("Ident", "zident");
+                return z;
+            case "zoommap_blank":
+                return zoom(2.0, "");
+            case "keymap":
+                KeyMap km = new KeyMap();
+                km.setID("km");
+                km.mapPut0A("z", zoom(2.0, "inner"), null);
+                return km;
             case "channel":
                 Channel ch = new Channel(null, null);
                 ch.setID("ch");
                 return ch;
+            case "zoommap_copy":
+                return zoom(2.0, "orig").copy();
+            case "zoommap_simplified":
+                return zoom(2.0, "orig").simplify();
             default:
                 throw new IllegalArgumentException("no case " + name);
         }
