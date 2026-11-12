@@ -1,0 +1,8 @@
+# Rust tests that are not translated, one per line:
+# <rust test file>::<test name> | <reason>
+# Valid reasons: a named out-of-scope class or method; needs simplification;
+# hardware SIMD; Rust-only API; no C value.
+tests/error_model.rs::with_context_appends | Rust-only API (AstError context)
+tests/error_model.rs::display_includes_context | Rust-only API (AstError context)
+tests/error_model.rs::new_tracked_captures_location | Rust-only API (AstError source location)
+tests/error_model.rs::new_has_no_location | Rust-only API (AstError source location)

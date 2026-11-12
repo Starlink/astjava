@@ -34,7 +34,7 @@ class JniastApiTest {
     private static final String PACKAGE = "uk.ac.starlink.ast";
 
     /** The jniast classes this library provides. */
-    static final List<String> IN_SCOPE = Collections.emptyList();
+    static final List<String> IN_SCOPE = Arrays.asList("AstException");
 
     /** One line of {@code jniast-api.txt}. */
     private static final class Member {
