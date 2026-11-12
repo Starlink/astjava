@@ -17,8 +17,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * (frame.c {@code DefaultMinAxes}, {@code DefaultMaxAxes}, {@code ConsistentMinAxes} and {@code
  * ConsistentMaxAxes}).
  *
- * <p>The plain Frame cases of {@code min_max_axes_match_the_c_library} run here; the SkyFrame
- * cases are added in Task 18 and the CmpFrame cases in Task 20.
+ * <p>The plain Frame and SkyFrame cases of {@code min_max_axes_match_the_c_library} run here; the
+ * CmpFrame cases are added in Task 20.
  */
 class MinMaxAxesTest {
 
@@ -46,26 +46,41 @@ class MinMaxAxesTest {
         }
     }
 
+    /** The Frame the probe names {@code cls}, or null for a class whose cases do not run here. */
+    private static Frame make(String cls) {
+        switch (cls) {
+            case "Frame2":
+                return new Frame(2);
+            case "SkyFrame":
+                return new SkyFrame();
+            case "CmpFrame":
+                return null;
+            default:
+                throw new IllegalArgumentException("unknown class " + cls);
+        }
+    }
+
     @Test
     void minMaxAxesMatchTheCLibrary() {
         List<String> failures = new ArrayList<>();
         int ran = 0;
         for (JsonNode c : ProbeData.load("min_max_axes").get("AXES_CASES")) {
-            if (!"Frame2".equals(c.get(0).asText())) {
+            String cls = c.get(0).asText();
+            Frame f = make(cls);
+            if (f == null) {
                 continue;
             }
             ran++;
             String settings = c.get(1).asText();
-            Frame f = new Frame(2);
             apply(f, settings);
             String got = f.getMinAxes() + "|" + f.getMaxAxes() + "|" + f.testMinAxes() + "|" + f.testMaxAxes();
             String want = c.get(2).asInt() + "|" + c.get(3).asInt() + "|"
                     + c.get(4).asBoolean() + "|" + c.get(5).asBoolean();
             if (!got.equals(want)) {
-                failures.add("Frame2 [" + settings + "]: got " + got + ", C gives " + want);
+                failures.add(cls + " [" + settings + "]: got " + got + ", C gives " + want);
             }
         }
-        assertEquals(10, ran, "the plain Frame cases");
+        assertEquals(20, ran, "the plain Frame and SkyFrame cases");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

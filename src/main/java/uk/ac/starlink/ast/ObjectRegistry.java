@@ -44,6 +44,10 @@ final class ObjectRegistry {
                 return PolyMap::new;
             case "ShiftMap":
                 return ShiftMap::new;
+            case "SkyAxis":
+                return SkyAxis::new;
+            case "SkyFrame":
+                return SkyFrame::new;
             case "SlaMap":
                 return SlaMap::new;
             case "SphMap":

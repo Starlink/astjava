@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.ProbeData;
@@ -18,20 +18,44 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * one attribute on the first or last axis of an object of each class and reads every attribute of
  * every axis back).
  *
- * <p>The cases for a plain Frame run here. Those of SkyFrame are added in Task 18, TimeFrame in
- * Task 19, and CmpFrame, PlainCmpFrame and FrameSet in Task 20; SpecFrame, DSBSpecFrame,
- * FluxFrame, SpecFluxFrame and Circle are outside the first phase.
+ * <p>The cases for a plain Frame, a SkyFrame and a FrameSet holding a SkyFrame (with those of its
+ * current Frame, "inner1") run here. Those of TimeFrame are added in Task 19, and CmpFrame and
+ * PlainCmpFrame in Task 20; SpecFrame, DSBSpecFrame, FluxFrame, SpecFluxFrame and Circle are
+ * outside the first phase.
  */
 class FrameAxisAttrsTest {
 
     /** The classes whose cases run. */
-    private static final List<String> CLASSES = Collections.singletonList("Frame");
+    private static final List<String> CLASSES = Arrays.asList("Frame", "SkyFrame", "FrameSet");
+
+    private static SkyFrame icrs() {
+        SkyFrame f = new SkyFrame();
+        f.setSystem("ICRS");
+        return f;
+    }
 
     private static Frame make(String cls) {
-        if ("Frame".equals(cls)) {
-            return new Frame(2);
+        switch (cls) {
+            case "Frame":
+                return new Frame(2);
+            case "SkyFrame":
+                return icrs();
+            case "FrameSet":
+                return new FrameSet(icrs());
+            default:
+                throw new IllegalArgumentException("unexpected class " + cls);
         }
-        throw new IllegalArgumentException("unexpected class " + cls);
+    }
+
+    /** The Frame whose attributes {@code whose} names: {@code f} itself or one it holds. */
+    private static Frame target(String cls, Frame f, String whose) {
+        if ("self".equals(whose)) {
+            return f;
+        }
+        if ("FrameSet".equals(cls) && "inner1".equals(whose)) {
+            return ((FrameSet) f).getFrame(FrameSet.AST__CURRENT);
+        }
+        throw new IllegalStateException("a " + cls + " has no Frame " + whose);
     }
 
     /** The axis of {@code "Label(2)"}. */
@@ -142,20 +166,17 @@ class FrameAxisAttrsTest {
             }
             String setting = c.get(1).asText();
             String whose = c.get(2).asText();
-            if (!"self".equals(whose)) {
-                throw new IllegalStateException("a plain Frame has no inner Frames");
-            }
             String attr = c.get(3).asText();
             Frame f = make(cls);
             apply(f, setting);
-            String got = value(f, attr);
+            String got = value(target(cls, f, whose), attr);
             String want = expected(c.get(4), c.get(5).asBoolean());
             run++;
             if (!got.equals(want)) {
                 failures.add(cls + " \"" + setting + "\" " + whose + " " + attr + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(288, run, "the plain Frame cases the C probe recorded");
+        assertEquals(1152, run, "the Frame, SkyFrame and FrameSet cases the C probe recorded");
         assertTrue(failures.isEmpty(), failures.size() + " cases differ:\n" + String.join("\n", failures));
     }
 

@@ -96,7 +96,10 @@ public class Axis extends AstObject {
         String comment = lab != null && !lab.equals(sval) ? "Axis units (" + lab + ")" : "Axis units";
         node.writeString("Unit", testAxisUnit(), false, sval, comment);
         node.writeInt("Digits", testAxisDigits(), false, getAxisDigits(), "Default formatting precision");
-        node.writeString("Format", testAxisFormat(), false, getAxisFormat(), "Format specifier");
+        // The Axis class's own Format, as C's private TestAxisFormat and GetAxisFormat give it; a
+        // class that keeps its Format elsewhere supplies the unset value through getAxisFormat.
+        boolean set = format != null;
+        node.writeString("Format", set, false, set ? format : getAxisFormat(), "Format specifier");
         boolean dir = getAxisDirection();
         node.writeInt(
                 "Dirn",
@@ -122,8 +125,9 @@ public class Axis extends AstObject {
 
     /**
      * Formats a value for this axis (C's {@code AxisFormat}): {@code <bad>} for a bad value
-     * ({@link Mapping#isBad}), otherwise the value written with the Format, rewritten as C's {@code ParseAxisFormat}
-     * rewrites it.
+     * ({@link Mapping#isBad}), otherwise the value written with the Format, rewritten as C's {@code
+     * ParseAxisFormat} rewrites it. The Format is the Axis class's own ({@link #ownAxisFormat}),
+     * not one a subclass that extends the Format syntax keeps.
      *
      * @throws AstException with status {@code AST__FMTER} if the Format cannot format one value
      */
@@ -131,7 +135,7 @@ public class Axis extends AstObject {
         if (Mapping.isBad(value)) {
             return "<bad>";
         }
-        return AxisFormat.formatValue(astClass(), getAxisFormat(), getAxisDigits(), value);
+        return AxisFormat.formatValue(astClass(), ownAxisFormat(), getAxisDigits(), value);
     }
 
     /**
@@ -168,7 +172,7 @@ public class Axis extends AstObject {
      * {@code <bad>} token with white space allowed before each of its characters and counted
      * after it, or zero if it is not there.
      */
-    private static int badToken(String s) {
+    static int badToken(String s) {
         String[] sets = {"<", "Bb", "Aa", "Dd", ">"};
         int i = 0;
         for (String set : sets) {
@@ -233,7 +237,9 @@ public class Axis extends AstObject {
     /**
      * Copies the attributes set on this Axis, the template, to {@code result} (C's {@code
      * AxisOverlay}): Digits, Direction, Label, Symbol, Unit and Format. Top and Bottom are not
-     * copied.
+     * copied. The Format is the Axis class's own, copied to the Axis class's own Format of {@code
+     * result}, so that a Format whose syntax a subclass extends is not given to an Axis that
+     * cannot read it.
      */
     void axisOverlay(Axis result) {
         if (testAxisDigits()) {
@@ -251,8 +257,8 @@ public class Axis extends AstObject {
         if (testAxisUnit()) {
             result.setAxisUnit(getAxisUnit());
         }
-        if (testAxisFormat()) {
-            result.setAxisFormat(getAxisFormat());
+        if (format != null) {
+            result.format = format;
         }
     }
 
@@ -311,9 +317,9 @@ public class Axis extends AstObject {
         unit = null;
     }
 
-    /** The Format: set, or the default {@link #getDefaultFormat}. */
+    /** The Format: set, or the default {@code %1.<Digits>G}. */
     String getAxisFormat() {
-        return format != null ? format : getDefaultFormat();
+        return ownAxisFormat();
     }
 
     void setAxisFormat(String value) {
@@ -328,8 +334,17 @@ public class Axis extends AstObject {
         format = null;
     }
 
+    /**
+     * The Axis class's own Format, set or default, as C's private {@code GetAxisFormat} (axis.c)
+     * gives it. A subclass that keeps its Format elsewhere overrides {@link #getAxisFormat} but
+     * not this.
+     */
+    private String ownAxisFormat() {
+        return format != null ? format : getDefaultFormat();
+    }
+
     /** The Format used when none is set (C's {@code GetDefaultFormat}): {@code %1.<Digits>G}. */
-    String getDefaultFormat() {
+    private String getDefaultFormat() {
         return "%1." + getAxisDigits() + "G";
     }
 

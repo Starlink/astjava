@@ -12,33 +12,33 @@ class NativeClassesTest {
     private static final String DUMP = " Begin FrameSet \t# Set of inter-related coordinate systems\n"
             + " IsA Object\n"
             + "    Frm1 = \t# Frame number 1\n"
-            + "       Begin SkyFrame \t# Description of celestial coordinate system\n"
+            + "       Begin SpecFrame \t# Description of spectral coordinate system\n"
             + "          Ax1 = \n"
-            + "             Begin SkyAxis\n"
-            + "             End SkyAxis\n"
-            + "       End SkyFrame\n"
+            + "             Begin LutMap\n"
+            + "             End LutMap\n"
+            + "       End SpecFrame\n"
             + "    Map2 = \n"
             + "       Begin CmpMap\n"
             + "          MapA = \n"
             + "             Begin ZoomMap\n"
             + "             End ZoomMap\n"
             + "          MapB = \n"
-            + "             Begin SkyFrame\n"
-            + "             End SkyFrame\n"
+            + "             Begin SpecFrame\n"
+            + "             End SpecFrame\n"
             + "       End CmpMap\n"
             + " End FrameSet\n";
 
     @Test
     void listsTheBegunClassesInOrder() {
         assertEquals(
-                Arrays.asList("FrameSet", "SkyFrame", "SkyAxis", "CmpMap", "ZoomMap", "SkyFrame"),
+                Arrays.asList("FrameSet", "SpecFrame", "LutMap", "CmpMap", "ZoomMap", "SpecFrame"),
                 NativeClasses.begun(DUMP));
     }
 
     @Test
     void missingClassesAreSortedWithoutRepeats() {
-        assertEquals(Arrays.asList("SkyAxis", "SkyFrame"), NativeClasses.missing(DUMP));
-        assertEquals("needs SkyAxis, SkyFrame", NativeClasses.needs(DUMP));
+        assertEquals(Arrays.asList("LutMap", "SpecFrame"), NativeClasses.missing(DUMP));
+        assertEquals("needs LutMap, SpecFrame", NativeClasses.needs(DUMP));
     }
 
     @Test

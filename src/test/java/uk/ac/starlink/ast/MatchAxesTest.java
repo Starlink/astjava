@@ -19,10 +19,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * {@code astMatchAxes( frm1, frm2, axes )} for every pair of a list of Frames).
  *
  * <p>The probe's Frames are numbered as its {@code make} function builds them. The cases whose
- * Frames this version can build run here: so far the one-axis plain Frame (3); the SkyFrames (0,
- * 1) and the FrameSet holding one (8) are added in Task 18, the TimeFrame (12) in Task 19, and
- * the CmpFrames (4, 5, 7) in Task 20. The cases using Frames that hold a SpecFrame (2, 6, 9, 11)
- * or a Circle (10) are outside this version.
+ * Frames this version can build run here: the SkyFrame (0), the SkyFrame with its axes swapped
+ * (1), the one-axis plain Frame (3) and the FrameSet whose current Frame is a SkyFrame (8). The
+ * TimeFrame (12) is added in Task 19, and the CmpFrames (4, 5, 7) in Task 20. The cases using
+ * Frames that hold a SpecFrame (2, 6, 9, 11) or a Circle (10) are outside this version.
  *
  * <p>{@code frm1.matchAxes(frm2)} is called, as the probe calls {@code astMatchAxes}, so that a
  * FrameSet {@code frm1} gives its current Frame as C's FrameSet {@code MatchAxes} does.
@@ -36,8 +36,18 @@ class MatchAxesTest {
     /** Frame {@code i} of the probe's list, or null if this version cannot build it. */
     private static Frame frame(int i) {
         switch (i) {
+            case 0:
+                return new SkyFrame();
+            case 1:
+                SkyFrame swapped = new SkyFrame();
+                swapped.permAxes(new int[] {2, 1});
+                return swapped;
             case 3:
                 return new Frame(1);
+            case 8:
+                FrameSet fs = new FrameSet(new Frame(2));
+                fs.addFrame(FrameSet.AST__BASE, new UnitMap(2), new SkyFrame());
+                return fs;
             default:
                 return null;
         }
@@ -67,7 +77,7 @@ class MatchAxesTest {
                         + Arrays.toString(expected));
             }
         }
-        assertEquals(1, ran, "the cases with Frames this version builds");
+        assertEquals(16, ran, "the cases with Frames this version builds");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

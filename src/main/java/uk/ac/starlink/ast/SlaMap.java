@@ -380,6 +380,26 @@ public class SlaMap extends Mapping {
         steps.add(new Step(type, narg == 0 ? new double[0] : args.clone()));
     }
 
+    /** The number of conversions. */
+    int ncvt() {
+        return steps.size();
+    }
+
+    /** The code of conversion {@code i}, from 0, as {@link #add} takes it. */
+    String cvtCode(int i) {
+        return steps.get(i).cvt.code;
+    }
+
+    /** A copy of the arguments of conversion {@code i}, from 0. */
+    double[] cvtArgs(int i) {
+        return steps.get(i).args.clone();
+    }
+
+    /** Whether the SlaMap has no conversions, so that it is a unit Mapping (C's {@code astSlaIsEmpty}). */
+    boolean isEmpty() {
+        return steps.isEmpty();
+    }
+
     // ------------------------------------------------------------------
     // Transformation
     // ------------------------------------------------------------------

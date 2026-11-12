@@ -2360,8 +2360,6 @@ public class Frame extends Mapping {
      * followed by degrees, minutes and seconds.
      *
      * @return the ObsLat
-     * @throws UnsupportedOperationException because the angle is formatted by a SkyAxis, which
-     *     this version does not have
      */
     public String getObsLat() {
         return getC("ObsLat");
@@ -2371,8 +2369,7 @@ public class Frame extends Mapping {
      * Sets the ObsLat attribute, as {@code N} or {@code S} followed by an angle in degrees.
      *
      * @param obsLat the ObsLat
-     * @throws UnsupportedOperationException because the angle is read by a SkyAxis, which this
-     *     version does not have
+     * @throws AstException with status {@code AST__ATTIN} if the value cannot be read
      */
     public void setObsLat(String obsLat) {
         setC("ObsLat", obsLat);
@@ -2383,8 +2380,6 @@ public class Frame extends Mapping {
      * W} followed by degrees, minutes and seconds.
      *
      * @return the ObsLon
-     * @throws UnsupportedOperationException because the angle is formatted by a SkyAxis, which
-     *     this version does not have
      */
     public String getObsLon() {
         return getC("ObsLon");
@@ -2394,8 +2389,7 @@ public class Frame extends Mapping {
      * Sets the ObsLon attribute, as {@code E} or {@code W} followed by an angle in degrees.
      *
      * @param obsLon the ObsLon
-     * @throws UnsupportedOperationException because the angle is read by a SkyAxis, which this
-     *     version does not have
+     * @throws AstException with status {@code AST__ATTIN} if the value cannot be read
      */
     public void setObsLon(String obsLon) {
         setC("ObsLon", obsLon);
@@ -2901,7 +2895,7 @@ public class Frame extends Mapping {
      * The axis number in {@code attrib} if it is {@code name(n)}, as C's {@code sscanf(attrib,
      * "name(%d)%n")} reads it when all of it is read, or null.
      */
-    private static Integer axisArg(String attrib, String name) {
+    static Integer axisArg(String attrib, String name) {
         int n = name.length();
         if (attrib.length() < n + 3
                 || !attrib.startsWith(name)
@@ -2937,10 +2931,47 @@ public class Frame extends Mapping {
         }
     }
 
-    /** The error for ObsLat and ObsLon in text, which C formats and reads with a SkyAxis. */
-    private static UnsupportedOperationException noSkyAxis(String attrib) {
-        return new UnsupportedOperationException(
-                attrib + " is formatted and read as an angle by a SkyAxis, which is not available in this version");
+    /**
+     * The SkyFrame C uses to format and read ObsLat and ObsLon values: FK5 J2000 with a {@code
+     * dms.2} Format on its latitude axis, which formats both.
+     */
+    private static SkyFrame obsSkyFrame() {
+        SkyFrame sf = new SkyFrame();
+        sf.set("system=FK5,equinox=J2000,format(2)=dms.2");
+        return sf;
+    }
+
+    /**
+     * Reads ObsLat or ObsLon as text (frame.c {@code SetAttrib}): an optional hemisphere letter
+     * ({@code pos} or {@code neg}, in either case), then an angle in degrees as the latitude axis
+     * of {@link #obsSkyFrame} reads it, which must use the whole of the value.
+     *
+     * @return the angle in radians
+     * @throws AstException with status {@code AST__ATTIN} if the value cannot be read
+     */
+    private double readObsAngle(String value, char pos, char neg, String name, String desc) {
+        int off2 = 0;
+        int sign = 1;
+        char c = value.charAt(0);
+        if (c == pos || c == Character.toLowerCase(pos)) {
+            off2 = 1;
+        } else if (c == neg || c == Character.toLowerCase(neg)) {
+            off2 = 1;
+            sign = -1;
+        }
+        double[] dval = new double[1];
+        int ival = obsSkyFrame().unformat(2, value.substring(off2), dval);
+        int len = value.length();
+        while (len > 0 && CScan.isCSpace(value.charAt(len - 1))) {
+            len--;
+        }
+        if (ival != len - off2) {
+            throw Ast.err(
+                    AstException.AST__ATTIN,
+                    "astSetAttrib(" + astClass() + "): Invalid value for " + name + " (" + desc + ") \"" + value
+                            + "\".");
+        }
+        return dval[0] * sign;
     }
 
     @Override
@@ -3004,8 +3035,16 @@ public class Frame extends Mapping {
             return getNormUnit(axis);
         } else if ("internalunit".equals(ix)) {
             return getInternalUnit(axis);
-        } else if ("obslat".equals(attrib) || "obslon".equals(attrib)) {
-            throw noSkyAxis("obslat".equals(attrib) ? "ObsLat" : "ObsLon");
+        } else if ("obslat".equals(attrib)) {
+            double dval = getObsLatValue();
+            return dval < 0
+                    ? "S" + obsSkyFrame().format(2, -dval)
+                    : "N" + obsSkyFrame().format(2, dval);
+        } else if ("obslon".equals(attrib)) {
+            double dval = Pal.drange(getObsLonValue());
+            return dval < 0
+                    ? "W" + obsSkyFrame().format(2, -dval)
+                    : "E" + obsSkyFrame().format(2, dval);
         } else if ("obsalt".equals(attrib)) {
             return CFormat.format("%.17g", getObsAlt());
         } else if ("dtai".equals(attrib)) {
@@ -3161,8 +3200,10 @@ public class Frame extends Mapping {
             setTitle(value);
         } else if ("unit".equals(ix)) {
             setUnit(axis, value);
-        } else if (("obslat".equals(attrib) || "obslon".equals(attrib)) && hasWord(value)) {
-            throw noSkyAxis("obslat".equals(attrib) ? "ObsLat" : "ObsLon");
+        } else if ("obslat".equals(attrib) && hasWord(value)) {
+            setObsLatValue(readObsAngle(value, 'N', 'S', "ObsLat", "observers latitude"));
+        } else if ("obslon".equals(attrib) && hasWord(value)) {
+            setObsLonValue(readObsAngle(value, 'E', 'W', "ObsLon", "observers longitude"));
         } else if ("obsalt".equals(attrib) && dval != null) {
             setObsAlt(dval);
         } else if ("dtai".equals(attrib) && dval != null) {

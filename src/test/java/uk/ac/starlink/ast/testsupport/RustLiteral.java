@@ -21,7 +21,8 @@ import java.util.regex.Pattern;
  * ({@code f64::NAN}, {@code f64::INFINITY}, {@code f64::NEG_INFINITY}, {@code f64::MAX}), AST's bad
  * value ({@code BAD_VALUE}, however qualified, or the name a {@code use ... BAD_VALUE as NAME}
  * item gives it), and names of constants defined earlier in the same
- * file, and the variants of an {@code enum} the file declares. {@code type} and other {@code use} items,
+ * file, the variants of an {@code enum} the file declares, and {@code Ok(x)} and {@code Err(x)},
+ * read as variants named {@code Ok} and {@code Err}. {@code type} and other {@code use} items,
  * {@code enum} declarations, attributes and comments are skipped. Anything else throws {@link
  * IllegalArgumentException} naming its line.
  *
@@ -239,6 +240,9 @@ public final class RustLiteral {
                 return false;
             case "None":
                 return null;
+            case "Ok":
+            case "Err":
+                return variant(p);
             case "Some":
                 skipSpace();
                 expect('(');

@@ -32,19 +32,19 @@ simplify/cap_cmpperm_resume.map | needs MathMap
 simplify/cap_cmpperm_resume.simp | needs MathMap
 simplify/cap_cmpperm_resume_inv.map | needs MathMap
 simplify/cap_cmpperm_resume_inv.simp | needs MathMap
-simplify/cap_interval_01.map | needs Box, CmpFrame, Interval, NullRegion, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_interval_01.simp | needs Box, CmpFrame, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_interval_01.map | needs Box, CmpFrame, Interval, NullRegion, PointSet, Prism, SpecFrame, TimeFrame
+simplify/cap_interval_01.simp | needs Box, CmpFrame, Interval, PointSet, SpecFrame, TimeFrame
 simplify/cap_lutmap_01.map | needs LutMap, MathMap
 simplify/cap_lutmap_01.simp | needs MathMap
 simplify/cap_mathmap_01.map | needs MathMap
 simplify/cap_normmap_cmpframe.map | needs CmpFrame, NormMap
 simplify/cap_normmap_cmpframe.simp | needs CmpFrame, NormMap
-simplify/cap_permmap_01.map | needs CmpFrame, NormMap, SkyAxis, SkyFrame, SpecFrame
-simplify/cap_permmap_01.simp | needs CmpFrame, NormMap, SkyAxis, SkyFrame, SpecFrame
-simplify/cap_pointlist_01.map | needs Box, CmpFrame, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_pointlist_01.simp | needs Box, CmpFrame, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_pointlist_02.map | needs CmpFrame, Interval, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_pointlist_02.simp | needs CmpFrame, PointList, PointSet, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_permmap_01.map | needs CmpFrame, NormMap, SpecFrame
+simplify/cap_permmap_01.simp | needs CmpFrame, NormMap, SpecFrame
+simplify/cap_pointlist_01.map | needs Box, CmpFrame, PointList, PointSet, Prism, SpecFrame, TimeFrame
+simplify/cap_pointlist_01.simp | needs Box, CmpFrame, PointList, PointSet, Prism, SpecFrame, TimeFrame
+simplify/cap_pointlist_02.map | needs CmpFrame, Interval, PointList, PointSet, Prism, SpecFrame, TimeFrame
+simplify/cap_pointlist_02.simp | needs CmpFrame, PointList, PointSet, SpecFrame, TimeFrame
 simplify/cap_poly_bend_allowed.map | needs Box, MathMap, PointSet, Polygon
 simplify/cap_poly_bend_allowed.simp | needs Box, MathMap, PointSet, Polygon
 simplify/cap_poly_bent_edges.map | needs Box, MathMap, PointSet, Polygon
@@ -53,10 +53,10 @@ simplify/cap_poly_unc_frame.map | needs Box, PointSet, Polygon
 simplify/cap_poly_unc_frame.simp | needs Box, PointSet, Polygon
 simplify/cap_restricted_component_flags.map | needs MathMap
 simplify/cap_restricted_component_flags.simp | needs MathMap
-simplify/cap_slamap_02.map | needs Box, CmpFrame, PointSet, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_slamap_02.simp | needs Box, CmpFrame, PointSet, Polygon, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_slamap_07.map | needs Box, Circle, CmpRegion, PointSet, SkyAxis, SkyFrame
-simplify/cap_slamap_07.simp | needs NullRegion, SkyAxis, SkyFrame
+simplify/cap_slamap_02.map | needs Box, CmpFrame, PointSet, SpecFrame, TimeFrame
+simplify/cap_slamap_02.simp | needs Box, CmpFrame, PointSet, Polygon, Prism, SpecFrame, TimeFrame
+simplify/cap_slamap_07.map | needs Box, Circle, CmpRegion, PointSet
+simplify/cap_slamap_07.simp | needs NullRegion
 simplify/cap_specmap_01.map | needs SpecMap
 simplify/cap_specmap_01.simp | needs SpecMap
 simplify/cap_specmap_03.map | needs SpecMap
@@ -80,8 +80,8 @@ simplify/cap_specmap_13.map | needs SpecMap
 simplify/cap_specmap_13.simp | needs SpecMap
 simplify/cap_specmap_14.map | needs MathMap, SpecMap
 simplify/cap_specmap_14.simp | needs MathMap
-simplify/cap_timemap_02.map | needs Box, CmpFrame, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame
-simplify/cap_timemap_02.simp | needs Box, CmpFrame, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame
+simplify/cap_timemap_02.map | needs Box, CmpFrame, Interval, PointSet, SpecFrame, StcResourceProfile, TimeFrame
+simplify/cap_timemap_02.simp | needs Box, CmpFrame, Interval, PointSet, SpecFrame, StcResourceProfile, TimeFrame
 simplify/cap_unitnormmap_01.map | needs UnitNormMap
 simplify/cap_unitnormmap_01.simp | needs UnitNormMap
 simplify/cap_winmap_01.map | needs SpecMap
@@ -177,7 +177,7 @@ simplify/neg_box_series.map | needs Box, PointSet
 simplify/neg_box_unc_mismatch.map | needs Box, PointSet
 simplify/neg_cheby_quadratic_no_reduce.map | needs ChebyMap
 simplify/neg_chebymap_standalone.map | needs ChebyMap
-simplify/neg_circle_cmpframe_sky_second.map | needs Circle, CmpFrame, PointSet, SkyAxis, SkyFrame
+simplify/neg_circle_cmpframe_sky_second.map | needs Circle, CmpFrame, PointSet
 simplify/neg_cmpmap_mode_mismatch.map | needs MathMap
 simplify/neg_cmpmap_neighbour_nonexcmpmap.map | needs MathMap
 simplify/neg_grism_different_attrs.map | needs GrismMap
@@ -207,12 +207,12 @@ simplify/neg_math_inv_text_mismatch.map | needs MathMap
 simplify/neg_math_lone.map | needs MathMap
 simplify/neg_math_no_simpfi.map | needs MathMap
 simplify/neg_math_nonmath_neighbour.map | needs MathMap
-simplify/neg_normmap_diff_frame.map | needs NormMap, SkyAxis, SkyFrame
-simplify/neg_normmap_different_frames.map | needs NormMap, SkyAxis, SkyFrame
-simplify/neg_normmap_inv_diff_frame.map | needs NormMap, SkyAxis, SkyFrame
-simplify/neg_normmap_nonnorm_neighbour.map | needs NormMap, SkyAxis, SkyFrame
-simplify/neg_normmap_parallel.map | needs NormMap, SkyAxis, SkyFrame
-simplify/neg_normmap_parallel_sky.map | needs NormMap, SkyAxis, SkyFrame
+simplify/neg_normmap_diff_frame.map | needs NormMap
+simplify/neg_normmap_different_frames.map | needs NormMap
+simplify/neg_normmap_inv_diff_frame.map | needs NormMap
+simplify/neg_normmap_nonnorm_neighbour.map | needs NormMap
+simplify/neg_normmap_parallel.map | needs NormMap
+simplify/neg_normmap_parallel_sky.map | needs NormMap
 simplify/neg_nullregion_parallel_nonregion.map | needs NullRegion
 simplify/neg_nullregion_series.map | needs NullRegion
 simplify/neg_parpair_aligned_irreducible.map | needs MathMap
@@ -271,10 +271,10 @@ simplify/neg_xph_not_opposite.map | needs XphMap
 simplify/neg_xph_parallel.map | needs XphMap
 simplify/neg_zoom_parallel_lone.map | needs MathMap
 simplify/normmap_basic_frame_to_unit.map | needs NormMap
-simplify/normmap_duplicate_elim.map | needs NormMap, SkyAxis, SkyFrame
-simplify/normmap_duplicate_elim.simp | needs NormMap, SkyAxis, SkyFrame
-simplify/normmap_inverse_cancel.map | needs NormMap, SkyAxis, SkyFrame
-simplify/normmap_inverse_cancel_upper.map | needs NormMap, SkyAxis, SkyFrame
+simplify/normmap_duplicate_elim.map | needs NormMap
+simplify/normmap_duplicate_elim.simp | needs NormMap
+simplify/normmap_inverse_cancel.map | needs NormMap
+simplify/normmap_inverse_cancel_upper.map | needs NormMap
 simplify/nullregion_merge_tail.map | needs NullRegion
 simplify/nullregion_merge_tail.simp | needs CmpFrame, NullRegion
 simplify/nullregion_parallel_merge.map | needs Box, NullRegion, PointSet

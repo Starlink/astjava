@@ -72,6 +72,16 @@ class RustLiteralTest {
     }
 
     @Test
+    void resultOkAndErrAreVariants() {
+        Map<String, Object> m = RustLiteral.parse(
+                "pub const C: &[Result<Option<[f64; 2]>, &str>] = &[Err(\"Noval\"), Ok(Some([1.5, 2.0])), Ok(None)];\n");
+        assertEquals(
+                "[{\"variant\":\"Err\",\"value\":\"Noval\"},{\"variant\":\"Ok\",\"value\":[1.5,2.0]},"
+                        + "{\"variant\":\"Ok\",\"value\":null}]",
+                CasesToJson.toJson(m.get("C")));
+    }
+
+    @Test
     void aTypeItemWithAnArrayTypeIsSkipped() {
         Map<String, Object> m =
                 RustLiteral.parse("pub type Quad = (&'static str, [f64; 2], usize);\npub const N: i32 = 3;\n");

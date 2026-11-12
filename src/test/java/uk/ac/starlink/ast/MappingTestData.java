@@ -30,4 +30,20 @@ final class MappingTestData {
     static double[][] transformRows(Mapping map, boolean forward, double[]... rows) {
         return map.transform(fromRows(rows), rows.length, forward);
     }
+
+    /**
+     * Whether {@code map} is a UnitMap, or a CmpMap whose components all are, which C's {@code
+     * astSimplify} reduces to a UnitMap. Where C returns a simplified UnitMap, this library, which
+     * does not simplify, returns such a chain.
+     */
+    static boolean isUnitChain(Mapping map) {
+        if (map instanceof UnitMap) {
+            return true;
+        }
+        if (map instanceof CmpMap) {
+            CmpMap cmp = (CmpMap) map;
+            return isUnitChain(cmp.getMap1()) && isUnitChain(cmp.getMap2());
+        }
+        return false;
+    }
 }

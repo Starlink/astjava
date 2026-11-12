@@ -16,8 +16,9 @@ import org.junit.jupiter.api.function.Executable;
  *
  * <p>A point with fewer coordinates than the Frame has axes, which Rust rejects with a panic
  * naming the shortfall, raises {@code AST__DIMIN} here with the same words. {@code
- * match_axes_finds_sky_in_cmp} needs a SpecFrame and is deferred; the SkyFrame short-point tests
- * are translated in Task 18 and the CmpFrame ones in Task 20.
+ * match_axes_finds_sky_in_cmp} needs a SpecFrame and is deferred; the CmpFrame short-point tests
+ * ({@code cmp_angle_panics_on_a_short_point}, {@code cmp_distance_panics_on_a_short_point}) are
+ * translated in Task 20.
  */
 class FrameGeometryTest {
 
@@ -184,5 +185,15 @@ class FrameGeometryTest {
     void resolvePointsPanicsOnAShortPoint() {
         assertShortPoint(
                 "has 2 axes", () -> new Frame(2).resolvePoints(p(0.0), p(1.0, 0.0), new double[][] {{1.0}, {1.0}}, 1));
+    }
+
+    @Test
+    void skyNormPanicsOnAShortPoint() {
+        assertShortPoint("has 2 axes", () -> new SkyFrame().norm(p(0.0)));
+    }
+
+    @Test
+    void skyDistancePanicsOnAShortPoint() {
+        assertShortPoint("has 2 axes", () -> new SkyFrame().distance(p(0.0), p(0.0)));
     }
 }
