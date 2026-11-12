@@ -18,8 +18,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * ConsistentMaxAxes}).
  *
  * <p>The plain Frame cases of {@code min_max_axes_match_the_c_library} run here; the SkyFrame
- * cases are added in Task 18 and the CmpFrame cases in Task 20. {@code
- * find_frame_matches_the_c_library} is translated in Task 17.
+ * cases are added in Task 18 and the CmpFrame cases in Task 20.
  */
 class MinMaxAxesTest {
 
@@ -67,6 +66,26 @@ class MinMaxAxesTest {
             }
         }
         assertEquals(10, ran, "the plain Frame cases");
+        assertTrue(failures.isEmpty(), String.join("\n", failures));
+    }
+
+    @Test
+    void findFrameMatchesTheCLibrary() {
+        List<String> failures = new ArrayList<>();
+        int ran = 0;
+        for (JsonNode c : ProbeData.load("min_max_axes").get("FIND_CASES")) {
+            ran++;
+            String settings = c.get(0).asText();
+            int naxes = c.get(1).asInt();
+            boolean matched = c.get(2).asBoolean();
+            Frame template = new Frame(2);
+            apply(template, settings);
+            boolean got = new Frame(naxes).findFrame(template, "") != null;
+            if (got != matched) {
+                failures.add("[" + settings + "] against " + naxes + " axes: got " + got + ", C gives " + matched);
+            }
+        }
+        assertEquals(40, ran);
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 }

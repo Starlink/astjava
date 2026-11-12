@@ -1,0 +1,8 @@
+{
+  "source": "crates/starlink-ast/tests/overlay_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/overlay_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "CASES": [["frame_pick",["Picked","PIX",3,true,47892.0,"Y",""]],["sky_target_frame_template",["Hello","SKY",9,false,51544.5,"Right ascension","hh:mm:ss.sss"]],["sky_pick_one",["Sky","SKY",5,true,47892.0,"Right ascension","hh:mm:ss"]],["flux_target_frame_template",["TT","FLUX",9,true,55197.0,"LL","W/m^2/Hz"]],["spec_target_frame_template",["Spec","SPECTRUM",8,false,51544.5,"Nu","GHz"]],["time_target_frame_template",["When","TIME",11,false,51544.5,"T","d"]],["time_system_change",["Julian Date","TIME",7,false,51544.5,"Julian Date","d"]],["spec_system_change",["Wavelength","SPECTRUM",7,false,51544.5,"Wavelength","Angstrom"]],["cmp_template_plain_target",null],["spec_pick_padded",["2-d coordinate system","SPECTRUM",7,false,51544.5,"Axis 1",""]],["spec_wave_pick_padded",["Wavelength","SPECTRUM",7,false,51544.5,"Wavelength","Angstrom"]],["time_pick_padded",["2-d coordinate system","TIME",7,false,51544.5,"Axis 1","d"]],["flux_pick_padded",["Flux density at = 1.4E+09 Hz","FLUX",7,false,51544.5,"Flux density","W/m^2/Hz"]]]
+  }
+}

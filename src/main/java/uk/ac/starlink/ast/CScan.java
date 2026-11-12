@@ -34,6 +34,11 @@ final class CScan {
         return c >= 'A' && c <= 'Z' ? (char) (c + ('a' - 'A')) : c;
     }
 
+    /** C's {@code toupper} in the C locale: ASCII letters only. */
+    static char toUpper(char c) {
+        return c >= 'a' && c <= 'z' ? (char) (c - ('a' - 'A')) : c;
+    }
+
     private static boolean isDigit(char c) {
         return c >= '0' && c <= '9';
     }
