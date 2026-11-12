@@ -16,10 +16,11 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * oracle/tran_definedness.json}, for Mappings whose definedness depends on more than their
  * coefficients, here a MatrixMap holding a bad element (matrixmap.c {@code InvertMatrix}) and its
  * control, and an NCP WcsMap, which defines both directions but cannot transform in either
- * (wcsmap.c {@code Map}), and its SIN control. The MatrixMaps are also built from the matrices C was given.
+ * (wcsmap.c {@code Map}), and its SIN control, and a PolyMap with unequal numbers of inputs and
+ * outputs (polymap.c {@code GetIterInverse}, {@code SetIterInverse}), with whether setting
+ * IterInverse fails. The MatrixMaps are also built from the matrices C was given.
  *
- * <p>The PolyMap cases, with the check that setting IterInverse fails, are added in Task 12; the
- * SwitchMap cases need a class outside the first phase.
+ * <p>The SwitchMap cases need a class outside the first phase.
  */
 class TranDefinednessOracleTest {
 
@@ -52,7 +53,7 @@ class TranDefinednessOracleTest {
     }
 
     private static boolean inScope(String name) {
-        return name.startsWith("matrixmap_") || name.startsWith("wcsmap_");
+        return name.startsWith("matrixmap_") || name.startsWith("wcsmap_") || name.startsWith("polymap_");
     }
 
     @Test
@@ -74,10 +75,23 @@ class TranDefinednessOracleTest {
                 failures.add(name + ": (TranForward, TranInverse, forward fails, inverse fails) " + got + ", C gives "
                         + want(c));
             }
+            if (map instanceof PolyMap) {
+                boolean iterFails;
+                try {
+                    ((PolyMap) map).setIterInverse(true);
+                    iterFails = false;
+                } catch (AstException e) {
+                    iterFails = true;
+                }
+                if (iterFails != c.get(6).asBoolean()) {
+                    failures.add(name + ": setting IterInverse fails " + iterFails + ", C "
+                            + c.get(6).asBoolean());
+                }
+            }
             ran++;
         }
         assertTrue(failures.isEmpty(), String.join("\n", failures));
-        assertEquals(4, ran, "cases run");
+        assertEquals(7, ran, "cases run");
     }
 
     @Test

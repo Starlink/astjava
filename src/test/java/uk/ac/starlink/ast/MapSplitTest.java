@@ -17,8 +17,7 @@ import org.junit.jupiter.api.Test;
  * package-private {@code mapSplit(int[])}, C's protected {@code astMapSplit} with zero-based
  * indices, and Rust's public {@code map_split} is jniast's {@code mapSplit(int[], int[])}.
  *
- * <p>{@code polymap_split_full_inputs_only} is translated in Task 12 and {@code frameset_splits_its_base_to_current_mapping}
- * in Task 16. The {@code normmap_*}, {@code tranmap_*} and {@code ratemap_*} tests need classes
+ * <p>{@code frameset_splits_its_base_to_current_mapping} is translated in Task 16. The {@code normmap_*}, {@code tranmap_*} and {@code ratemap_*} tests need classes
  * outside the first phase, as does {@code testcmpmap_split_of_splittest1}, whose Mapping holds
  * LutMaps.
  */
@@ -656,5 +655,21 @@ class MapSplitTest {
         for (int i = 0; i < 3; i++) {
             assertTrue(Math.abs(sub[i] - parent[i]) < 1e-12, "axis " + i);
         }
+    }
+
+    // ------------------------------------------------------------------
+    // PolyMap
+    // ------------------------------------------------------------------
+
+    /**
+     * PolyMap has no MapSplit of its own: the base class's handles all its inputs and no other
+     * selection.
+     */
+    @Test
+    void polymapSplitFullInputsOnly() {
+        PolyMap pm = new PolyMap(2, 2, 2, new double[] {1.0, 1.0, 1.0, 0.0, 1.0, 2.0, 0.0, 1.0}, 0, null);
+        assertNotNull(split(pm, 0, 1));
+        assertNull(split(pm, 0));
+        assertNull(split(pm, 1));
     }
 }

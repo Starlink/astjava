@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
  * the tolerance of 1e-12 is the Rust tests' own. A fit is {@code Nout} constant terms followed by
  * the gradients, row by row.
  *
- * <p>{@code identity_polymap_2x2} is translated in Task 12. {@code returns_correct_type} tests a Rust type. In
+ * <p>{@code returns_correct_type} tests a Rust type. In
  * {@code transform_error_is_reported}, a Mapping with no inverse, inverted, stands in for the
  * inverted RateMap, which is outside the first phase.
  */
@@ -36,6 +36,22 @@ class LinearApproxTest {
         for (int i = 0; i < expected.length; i++) {
             assertEquals(expected[i], actual[i], 1e-12, label + ": index " + i);
         }
+    }
+
+    /** C's fit of the PolyMap out1 = x + y + 2, out2 = 3y over [-1, 1] on each axis. */
+    private static final double[] LINEAR_APPROX_IDENTITY_POLY = {2.0, 0.0, 1.0, 1.0, 0.0, 3.0};
+
+    @Test
+    void identityPolymap2x2() {
+        PolyMap pm = new PolyMap(
+                2,
+                2,
+                4,
+                new double[] {1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 2.0, 1.0, 0.0, 0.0, 3.0, 2.0, 0.0, 1.0},
+                0,
+                null);
+        double[] fit = pm.linearApprox(new double[] {-1.0, -1.0}, new double[] {1.0, 1.0}, 0.001);
+        assertClose(fit, LINEAR_APPROX_IDENTITY_POLY, "identity polymap");
     }
 
     @Test

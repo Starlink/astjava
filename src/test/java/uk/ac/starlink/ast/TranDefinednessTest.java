@@ -10,11 +10,44 @@ import org.junit.jupiter.api.Test;
  * its TranForward and TranInverse attributes, in its current orientation, a CmpMap combining its
  * components'.
  *
- * <p>The PolyMap tests ({@code polymap_*} and the {@code cmpmap_*} tests built on a PolyMap) are
- * translated in Task 12; {@code chebymap_forward_only_has_no_inverse} and {@code
- * tranmap_needs_both_directions} need classes outside the first phase.
+ * <p>{@code chebymap_forward_only_has_no_inverse} and {@code tranmap_needs_both_directions} need
+ * classes outside the first phase.
  */
 class TranDefinednessTest {
+
+    /**
+     * A 1-in, 1-out PolyMap with no usable inverse: forward coefficients only and the iterative
+     * inverse explicitly disabled, since IterInverse otherwise defaults on when no inverse
+     * coefficients are supplied (polymap.c {@code GetIterInverse}).
+     */
+    private static PolyMap fwdOnlyPolymap() {
+        PolyMap pm = new PolyMap(1, 1, 1, new double[] {1.0, 1.0, 2.0}, 0, null);
+        pm.setIterInverse(false);
+        return pm;
+    }
+
+    @Test
+    void polymapForwardOnlyHasNoInverse() {
+        PolyMap pm = fwdOnlyPolymap();
+        assertTrue(pm.getTranForward());
+        assertFalse(pm.getTranInverse());
+    }
+
+    @Test
+    void polymapIterInverseProvidesInverse() {
+        PolyMap pm = fwdOnlyPolymap();
+        pm.setIterInverse(true);
+        assertTrue(pm.getTranForward());
+        assertTrue(pm.getTranInverse());
+    }
+
+    @Test
+    void polymapInvertSwapsDefinedness() {
+        PolyMap pm = fwdOnlyPolymap();
+        pm.invert();
+        assertFalse(pm.getTranForward());
+        assertTrue(pm.getTranInverse());
+    }
 
     /**
      * A 2-out, 3-in matrix that stays in full form, so that, not being square, it has no inverse
@@ -58,6 +91,28 @@ class TranDefinednessTest {
         mm.invert();
         assertTrue(mm.getTranForward());
         assertTrue(mm.getTranInverse());
+    }
+
+    @Test
+    void cmpmapSeriesDefinednessFollowsComponents() {
+        CmpMap cmp = new CmpMap(fwdOnlyPolymap(), new ZoomMap(1, 2.0), true);
+        assertTrue(cmp.getTranForward());
+        assertFalse(cmp.getTranInverse());
+    }
+
+    @Test
+    void cmpmapParallelDefinednessFollowsComponents() {
+        CmpMap cmp = new CmpMap(fwdOnlyPolymap(), new ZoomMap(1, 2.0), false);
+        assertTrue(cmp.getTranForward());
+        assertFalse(cmp.getTranInverse());
+    }
+
+    @Test
+    void cmpmapInvertSwapsDefinedness() {
+        CmpMap cmp = new CmpMap(fwdOnlyPolymap(), new ZoomMap(1, 2.0), true);
+        cmp.invert();
+        assertFalse(cmp.getTranForward());
+        assertTrue(cmp.getTranInverse());
     }
 
     @Test
