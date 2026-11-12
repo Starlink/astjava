@@ -14,11 +14,10 @@ import org.junit.jupiter.api.function.Executable;
  * makes the checks C's base-class {@code Transform} (mapping.c) makes before any class transforms
  * a point.
  *
- * <p>The WinMap, PermMap and CmpMap of {@link #mappings} are added in Task 7. {@code
- * an_undefined_direction_is_trnnd} uses a RateMap, which is outside the first phase; a Mapping
- * whose inverse is undefined, as a RateMap's is, stands in for it. The FrameSet part of {@code
- * a_region_and_a_frameset_check_too} is translated in Task 16, and its Region part needs a class
- * outside the first phase; {@code rate_checks_its_axes} and {@code
+ * <p>{@code an_undefined_direction_is_trnnd} uses a RateMap, which is outside the first phase; a
+ * Mapping whose inverse is undefined, as a RateMap's is, stands in for it. The FrameSet part of
+ * {@code a_region_and_a_frameset_check_too} is translated in Task 16, and its Region part needs a
+ * class outside the first phase; {@code rate_checks_its_axes} and {@code
  * map_box_takes_a_one_based_output} are translated in Task 8.
  */
 class TransformValidationTest {
@@ -28,7 +27,12 @@ class TransformValidationTest {
     }
 
     private static List<Mapping> mappings() {
-        return Arrays.<Mapping>asList(new UnitMap(2), new ZoomMap(2, 2.0));
+        return Arrays.<Mapping>asList(
+                new UnitMap(2),
+                new ZoomMap(2, 2.0),
+                new WinMap(new double[] {1.0, -2.0}, new double[] {2.0, 3.0}),
+                new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null),
+                new CmpMap(new ZoomMap(2, 2.0), new UnitMap(2), true));
     }
 
     @Test

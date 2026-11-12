@@ -38,13 +38,17 @@ class JniastApiTest {
             "AstException",
             "AstObject",
             "Channel",
+            "CmpMap",
             "KeyMap",
             "Mapping",
+            "MatrixMap",
+            "PermMap",
             "ResampleFlags",
             "ShiftMap",
             "UinterpCalculator",
             "Ukern1Calculator",
             "UnitMap",
+            "WinMap",
             "ZoomMap");
 
     /** One line of {@code jniast-api.txt}. */

@@ -308,6 +308,14 @@ public abstract class Mapping extends AstObject {
         return nin;
     }
 
+    /**
+     * The number of output coordinates of the Mapping as created, which inverting it does not
+     * change.
+     */
+    final int createdNout() {
+        return nout;
+    }
+
     /** Whether the Invert attribute has been set, even to false. */
     boolean testInvert() {
         return invertValue != UNSET_FLAG;

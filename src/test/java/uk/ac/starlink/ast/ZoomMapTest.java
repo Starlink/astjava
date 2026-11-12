@@ -14,10 +14,11 @@ import org.junit.jupiter.api.Test;
  * Translation of Rust {@code tests/test_zoommap.rs}.
  *
  * <p>{@code zoom_map_rate} and {@code zoom_rate_analytical} test {@code rate}, and are translated
- * in Task 8; Errors 7 and 8 of {@code zoom_attribute_set_clear_and_get}, which put the ZoomMap in
- * a CmpMap, are added in Task 7. {@code zoom_parallel_merge_different_factors}, {@code
- * zoom_parallel_merge_same_factor} and {@code a_merged_zoom_that_underflows_to_zero_is_an_error}
- * test simplification, and are deferred.
+ * in Task 8. C's {@code testzoommap.c} Errors 9 and 11 expect {@code AST__IMMUT} from changing the
+ * Zoom of a ZoomMap shared with a CmpMap, which C detects from its reference count; Java does not
+ * count references, so the attribute stays writable. {@code
+ * zoom_parallel_merge_different_factors}, {@code zoom_parallel_merge_same_factor} and {@code
+ * a_merged_zoom_that_underflows_to_zero_is_an_error} test simplification, and are deferred.
  */
 class ZoomMapTest {
 
@@ -88,8 +89,8 @@ class ZoomMapTest {
     }
 
     /**
-     * {@code testzoommap.c} Errors 1-6: Zoom is set by construction, reverts to 1 when cleared,
-     * and reads back a new value.
+     * {@code testzoommap.c} Errors 1-8: Zoom is set by construction, reverts to 1 when cleared,
+     * and reads back a new value; putting the ZoomMap in a CmpMap leaves it as it was.
      */
     @Test
     void zoomAttributeSetClearAndGet() {
@@ -104,5 +105,10 @@ class ZoomMapTest {
         zm.setZoom(2.5);
         assertTrue(zm.test("Zoom"), "Error 5");
         assertEquals(2.5, zm.getZoom(), "Error 6");
+
+        CmpMap cmp = new CmpMap(zm, new UnitMap(1), true);
+        assertTrue(zm.test("Zoom"), "Error 7");
+        assertEquals(2.5, zm.getZoom(), "Error 8");
+        assertEquals(5.0, cmp.tran1(1, new double[] {2.0}, true)[0]);
     }
 }

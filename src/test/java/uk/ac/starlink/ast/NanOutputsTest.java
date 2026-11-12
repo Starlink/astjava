@@ -15,9 +15,9 @@ import org.junit.jupiter.api.Test;
  * time, and transformed in each direction it defines.
  *
  * <p>The Mappings of the other first-phase classes are added to {@link #mappings} by the tasks that
- * port them: WinMap, PermMap, MatrixMap and CmpMap in Task 7, SphMap and WcsMap in Task 11,
- * PolyMap in Task 12, SlaMap and TimeMap in Task 13. Those of the Rust test's LutMap, MathMap,
- * UnitNormMap, SpecMap, PcdMap and TranMap are outside the first phase.
+ * port them: SphMap and WcsMap in Task 11, PolyMap in Task 12, SlaMap and TimeMap in Task 13.
+ * Those of the Rust test's LutMap, MathMap, UnitNormMap, SpecMap, PcdMap and TranMap are outside
+ * the first phase.
  */
 class NanOutputsTest {
 
@@ -26,6 +26,11 @@ class NanOutputsTest {
         m.put("UnitMap", new UnitMap(2));
         m.put("ZoomMap", new ZoomMap(2, 2.0));
         m.put("ShiftMap", new ShiftMap(new double[] {1.0, 2.0}));
+        m.put("WinMap", new WinMap(new double[] {1.0, -2.0}, new double[] {2.0, 3.0}));
+        m.put("PermMap", new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null));
+        m.put("MatrixMap diagonal", new MatrixMap(2, 2, new double[][] {{2.0, 0.0}, {0.0, 3.0}}));
+        m.put("MatrixMap full", new MatrixMap(2, 2, new double[][] {{1.0, 0.5}, {0.25, 2.0}}));
+        m.put("CmpMap", new CmpMap(new ZoomMap(1, 2.0), new UnitMap(1), false));
         return m;
     }
 
