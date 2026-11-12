@@ -15,10 +15,11 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * defines, and whether transforming in each is an error, match C, from {@code
  * oracle/tran_definedness.json}, for Mappings whose definedness depends on more than their
  * coefficients, here a MatrixMap holding a bad element (matrixmap.c {@code InvertMatrix}) and its
- * control. The MatrixMaps are also built from the matrices C was given.
+ * control, and an NCP WcsMap, which defines both directions but cannot transform in either
+ * (wcsmap.c {@code Map}), and its SIN control. The MatrixMaps are also built from the matrices C was given.
  *
- * <p>The PolyMap cases, with the check that setting IterInverse fails, are added in Task 12, and
- * the WcsMap cases in Task 11; the SwitchMap cases need a class outside the first phase.
+ * <p>The PolyMap cases, with the check that setting IterInverse fails, are added in Task 12; the
+ * SwitchMap cases need a class outside the first phase.
  */
 class TranDefinednessOracleTest {
 
@@ -51,7 +52,7 @@ class TranDefinednessOracleTest {
     }
 
     private static boolean inScope(String name) {
-        return name.startsWith("matrixmap_");
+        return name.startsWith("matrixmap_") || name.startsWith("wcsmap_");
     }
 
     @Test
@@ -76,7 +77,7 @@ class TranDefinednessOracleTest {
             ran++;
         }
         assertTrue(failures.isEmpty(), String.join("\n", failures));
-        assertEquals(2, ran, "cases run");
+        assertEquals(4, ran, "cases run");
     }
 
     @Test

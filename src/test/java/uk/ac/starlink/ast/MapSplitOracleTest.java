@@ -22,7 +22,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  *
  * <p>{@code matrixmap_inverted_full_permuted}, where C simplifies the PermMap and MatrixMap the base
  * class splits a full permuted selection into into one MatrixMap, is in {@link #EXCLUDED}, and
- * {@code excludedCasesStillDiffer} fails when it matches. The WcsMap cases are added in Task 11;
+ * {@code excludedCasesStillDiffer} fails when it matches. The WcsMap cases are run;
  * the NormMap, RateMap and TranMap cases, and with them {@code
  * issimp_component_exclusions_still_differ}, need classes outside the first phase.
  */
@@ -60,10 +60,9 @@ class MapSplitOracleTest {
             return inverted(new MatrixMap(2, 2, new double[][] {{2.0, 1.0}, {0.0, 3.0}}));
         } else if (name.startsWith("cmpmap_parallel_")) {
             return new CmpMap(new ZoomMap(1, 2.0), new ShiftMap(new double[] {1.0, 2.0}), false);
-        } else if (name.startsWith("normmap_")
-                || name.startsWith("ratemap_")
-                || name.startsWith("tranmap_")
-                || name.startsWith("wcsmap_")) {
+        } else if (name.startsWith("wcsmap_")) {
+            return new WcsMap(3, WcsMap.AST__TAN, 1, 2);
+        } else if (name.startsWith("normmap_") || name.startsWith("ratemap_") || name.startsWith("tranmap_")) {
             return null;
         }
         throw new IllegalArgumentException("no Java construction for case " + name);
@@ -136,7 +135,7 @@ class MapSplitOracleTest {
             ran++;
         }
         assertTrue(failures.isEmpty(), String.join("\n", failures));
-        assertEquals(41, ran, "cases run");
+        assertEquals(47, ran, "cases run");
     }
 
     @Test

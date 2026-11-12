@@ -11,8 +11,8 @@ simplify/box_self_simplify.map | needs Axis, Box, Frame, PointSet
 simplify/box_self_simplify.simp | needs Axis, Box, Frame, PointSet
 simplify/box_unc_fillfactor_merge.map | needs Axis, Box, Frame, PointSet
 simplify/box_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, PointSet
-simplify/brad.map | needs LutMap, WcsMap
-simplify/brad.simp | needs LutMap, WcsMap
+simplify/brad.map | needs LutMap
+simplify/brad.simp | needs LutMap
 simplify/cap_box_permmap_const.map | needs Axis, Box, Frame, FrameSet, PointSet
 simplify/cap_box_permmap_const.simp | needs Axis, Box, Frame, PointSet
 simplify/cap_box_permmap_nonbidi.map | needs Axis, Box, Frame, FrameSet, PointSet
@@ -26,8 +26,8 @@ simplify/cap_cmpmap_01.map | needs MathMap, RateMap, SpecMap, TranMap
 simplify/cap_cmpmap_01.simp | needs MathMap, RateMap, SpecMap, TranMap
 simplify/cap_cmpmap_02.map | needs MathMap
 simplify/cap_cmpmap_02.simp | needs MathMap
-simplify/cap_cmpmap_03.map | needs PolyMap, SlaMap, SphMap, WcsMap
-simplify/cap_cmpmap_03.simp | needs PolyMap, SphMap, WcsMap
+simplify/cap_cmpmap_03.map | needs PolyMap, SlaMap
+simplify/cap_cmpmap_03.simp | needs PolyMap
 simplify/cap_cmpmap_04.map | needs MathMap, RateMap, SpecMap, TranMap
 simplify/cap_cmpmap_04.simp | needs MathMap, RateMap, SpecMap, TranMap
 simplify/cap_cmpperm_resume.map | needs MathMap
@@ -43,9 +43,6 @@ simplify/cap_interval_01.simp | needs Axis, Box, CmpFrame, Interval, PointSet, S
 simplify/cap_lutmap_01.map | needs LutMap, MathMap
 simplify/cap_lutmap_01.simp | needs MathMap
 simplify/cap_mathmap_01.map | needs MathMap
-simplify/cap_matrixmap_01.map | needs SphMap, WcsMap
-simplify/cap_matrixmap_03.map | needs SphMap, WcsMap
-simplify/cap_matrixmap_03.simp | needs SphMap, WcsMap
 simplify/cap_matrixmap_04.map | needs ChebyMap
 simplify/cap_normmap_cmpframe.map | needs Axis, CmpFrame, Frame, FrameSet, NormMap
 simplify/cap_normmap_cmpframe.simp | needs Axis, CmpFrame, Frame, FrameSet, NormMap
@@ -69,8 +66,8 @@ simplify/cap_slamap_02.map | needs Axis, Box, CmpFrame, FrameSet, PointSet, SkyA
 simplify/cap_slamap_02.simp | needs Axis, Box, CmpFrame, PointSet, Polygon, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
 simplify/cap_slamap_03.map | needs SlaMap
 simplify/cap_slamap_03.simp | needs SlaMap
-simplify/cap_slamap_04.map | needs SlaMap, SphMap, WcsMap
-simplify/cap_slamap_04.simp | needs SlaMap, SphMap, WcsMap
+simplify/cap_slamap_04.map | needs SlaMap
+simplify/cap_slamap_04.simp | needs SlaMap
 simplify/cap_slamap_05.map | needs SlaMap
 simplify/cap_slamap_05.simp | needs SlaMap
 simplify/cap_slamap_06.map | needs SlaMap
@@ -106,8 +103,6 @@ simplify/cap_specmap_13.map | needs SpecMap
 simplify/cap_specmap_13.simp | needs SpecMap
 simplify/cap_specmap_14.map | needs MathMap, SpecMap
 simplify/cap_specmap_14.simp | needs MathMap
-simplify/cap_sphmap_01.map | needs SphMap, WcsMap
-simplify/cap_sphmap_01.simp | needs SphMap, WcsMap
 simplify/cap_timemap_01.map | needs TimeMap
 simplify/cap_timemap_01.simp | needs TimeMap
 simplify/cap_timemap_02.map | needs Axis, Box, CmpFrame, FrameSet, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame, TimeMap
@@ -122,22 +117,16 @@ simplify/cap_timemap_06.simp | needs TimeMap
 simplify/cap_timemap_07.map | needs TimeMap
 simplify/cap_timemap_08.map | needs TimeMap
 simplify/cap_timemap_08.simp | needs TimeMap
-simplify/cap_unitmap_01.map | needs PolyMap, SphMap, WcsMap
-simplify/cap_unitmap_01.simp | needs PolyMap, SphMap, WcsMap
+simplify/cap_unitmap_01.map | needs PolyMap
+simplify/cap_unitmap_01.simp | needs PolyMap
 simplify/cap_unitnormmap_01.map | needs UnitNormMap
 simplify/cap_unitnormmap_01.simp | needs UnitNormMap
-simplify/cap_wcsmap_01.map | needs SphMap, WcsMap
-simplify/cap_wcsmap_01.simp | needs SphMap, WcsMap
-simplify/cap_winmap_01.map | needs SpecMap, SphMap, WcsMap
-simplify/cap_winmap_01.simp | needs SpecMap, WcsMap
-simplify/cap_winmap_02.map | needs SphMap, WcsMap
-simplify/cap_winmap_03.map | needs WcsMap
-simplify/cap_winmap_03.simp | needs WcsMap
+simplify/cap_winmap_01.map | needs SpecMap
+simplify/cap_winmap_01.simp | needs SpecMap
 simplify/cap_winmap_04.map | needs PolyMap
-simplify/cap_xphmap_01.map | needs SphMap, WcsMap, XphMap
-simplify/cap_xphmap_02.map | needs WcsMap, XphMap
-simplify/cap_xphmap_02.simp | needs WcsMap, XphMap
-simplify/cap_zoommap_02.map | needs SphMap, WcsMap
+simplify/cap_xphmap_01.map | needs XphMap
+simplify/cap_xphmap_02.map | needs XphMap
+simplify/cap_xphmap_02.simp | needs XphMap
 simplify/cap_zoommap_03.map | needs PolyMap
 simplify/cap_zoommap_03.simp | needs PolyMap
 simplify/cap_zoommap_04.map | needs Axis, Box, Frame, FrameSet, MathMap, PointList, PointSet, SpecFrame
@@ -189,10 +178,8 @@ simplify/dssmap_winmap_absorb.map | needs DssMap
 simplify/dssmap_winmap_absorb.simp | needs DssMap
 simplify/dssmap_zoom_no_merge.map | needs DssMap
 simplify/dssmap_zoom_no_merge.simp | needs DssMap
-simplify/fitschan_iwc_spectral.map | needs SphMap, WcsMap
-simplify/fitschan_iwc_spectral.simp | needs SphMap, WcsMap
-simplify/fitschan_tab_spectral.map | needs LutMap, SphMap, WcsMap
-simplify/fitschan_tab_spectral.simp | needs LutMap, SphMap, WcsMap
+simplify/fitschan_tab_spectral.map | needs LutMap
+simplify/fitschan_tab_spectral.simp | needs LutMap
 simplify/grism_inverse_cancel.map | needs GrismMap
 simplify/grism_inverse_cancel_tail.map | needs GrismMap
 simplify/grism_zoom_inv_merge.map | needs GrismMap
@@ -216,8 +203,8 @@ simplify/interval_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, 
 simplify/intra_invfwd_cancel.map | needs IntraMap
 simplify/intra_invfwd_cancel_tail.map | needs IntraMap
 simplify/intramap_inverse_cancel.map | needs IntraMap
-simplify/lsst.map | needs PolyMap, SphMap, WcsMap
-simplify/lsst.simp | needs PolyMap, SphMap, WcsMap
+simplify/lsst.map | needs PolyMap
+simplify/lsst.simp | needs PolyMap
 simplify/lut_exactly_linear.map | needs LutMap
 simplify/lut_inverse_cancel.map | needs LutMap
 simplify/lut_linear_to_win.map | needs LutMap
@@ -315,13 +302,6 @@ simplify/neg_spec_6arg_mismatch.map | needs SpecMap
 simplify/neg_spec_arg_mismatch.map | needs SpecMap
 simplify/neg_spec_lone_forward.map | needs SpecMap
 simplify/neg_spec_parallel.map | needs SpecMap
-simplify/neg_sph_no_unitradius.map | needs SphMap
-simplify/neg_sph_non_sphmap_neighbour.map | needs SphMap
-simplify/neg_sph_parallel.map | needs SphMap
-simplify/neg_sph_polarlong_mismatch.map | needs SphMap
-simplify/neg_sph_sandwich_full_matrix.map | needs SphMap
-simplify/neg_sph_sandwich_unequal_diag.map | needs SphMap
-simplify/neg_sph_sandwich_wrong_middle.map | needs SphMap
 simplify/neg_spline_different_coeffs.map | needs SplineMap
 simplify/neg_spline_nonspline_neighbour.map | needs SplineMap
 simplify/neg_spline_parallel.map | needs SplineMap
@@ -351,24 +331,12 @@ simplify/neg_unitnormmap_nonunit_scale.map | needs UnitNormMap
 simplify/neg_unitnormmap_parallel.map | needs UnitNormMap
 simplify/neg_unitnormmap_same_dir.map | needs UnitNormMap
 simplify/neg_unitnormmap_shift_inv.map | needs UnitNormMap
-simplify/neg_wcs_different_params.map | needs WcsMap
-simplify/neg_wcs_different_projection.map | needs WcsMap
-simplify/neg_wcs_nonperm_between.map | needs MathMap, WcsMap
-simplify/neg_wcs_parallel.map | needs WcsMap
-simplify/neg_wcs_same_direction.map | needs WcsMap
-simplify/neg_wcs_tan_no_reduce.map | needs WcsMap
-simplify/neg_wcsmap_perm_allconst.map | needs WcsMap
-simplify/neg_wcsmap_perm_both_sides.map | needs WcsMap
-simplify/neg_wcsmap_perm_disconnect.map | needs WcsMap
-simplify/neg_wcsmap_perm_disconnect_lower.map | needs WcsMap
-simplify/neg_wcsmap_perm_nonbidir.map | needs WcsMap
-simplify/neg_wcsmap_pv_mismatch.map | needs WcsMap
+simplify/neg_wcs_nonperm_between.map | needs MathMap
 simplify/neg_win_cmpmap_split_no_simplify.map | needs MathMap
 simplify/neg_win_nonmergeable_series.map | needs MathMap
 simplify/neg_xph_nonxph_neighbour.map | needs XphMap
 simplify/neg_xph_not_opposite.map | needs XphMap
 simplify/neg_xph_parallel.map | needs XphMap
-simplify/neg_zoom_no_absorb.map | needs SphMap
 simplify/neg_zoom_parallel_lone.map | needs MathMap
 simplify/normmap_basic_frame_to_unit.map | needs Axis, Frame, NormMap
 simplify/normmap_duplicate_elim.map | needs NormMap, SkyAxis, SkyFrame
@@ -385,8 +353,6 @@ simplify/nullregion_self_simplify.map | needs Axis, Frame, NullRegion
 simplify/nullregion_self_simplify.simp | needs Axis, Frame, NullRegion
 simplify/nullregion_unc_fillfactor_merge.map | needs Axis, Box, Frame, NullRegion, PointSet
 simplify/nullregion_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, NullRegion, PointSet
-simplify/offset_skyref_integrity.map | needs SphMap, WcsMap
-simplify/offset_skyref_integrity.simp | needs SphMap, WcsMap
 simplify/parcomp_inverted_nested_reemitted.map | needs MathMap
 simplify/parcomp_inverted_nested_reemitted.simp | needs MathMap
 simplify/parcomp_inverted_reemitted.map | needs MathMap
@@ -425,24 +391,20 @@ simplify/rate_inner_reduce_series.simp | needs RateMap
 simplify/ratemap_inverse_cancel.map | needs RateMap
 simplify/ratemap_simplify_interior.map | needs RateMap
 simplify/ratemap_simplify_interior.simp | needs RateMap
-simplify/reconstruct_right_assoc.map | needs WcsMap
-simplify/reconstruct_right_assoc.simp | needs WcsMap
 simplify/regbasepick_circle_permaxes.map | needs Axis, Circle, Frame, FrameSet, PointSet
 simplify/regbasepick_circle_permaxes.simp | needs Axis, Circle, Frame, FrameSet, PointSet
 simplify/regbasepick_cmpregion_subset.map | needs Axis, CmpRegion, Frame, FrameSet, Interval, PointSet
 simplify/regbasepick_cmpregion_subset.simp | needs Axis, CmpRegion, Frame, FrameSet, Interval, PointSet
 simplify/regbasepick_prism_subset.map | needs Axis, Box, Frame, PointSet
 simplify/regbasepick_prism_subset.simp | needs Axis, Box, Frame, PointSet
-simplify/rigby.map | needs SlaMap, SpecMap, SphMap, WcsMap
-simplify/rigby.simp | needs SlaMap, SpecMap, SphMap, WcsMap
+simplify/rigby.map | needs SlaMap, SpecMap
+simplify/rigby.simp | needs SlaMap, SpecMap
 simplify/selectormap_inverse_cancel.map | needs Axis, Box, Frame, PointSet, SelectorMap
 simplify/selectormap_inverse_cancel_tail.map | needs Axis, Box, Frame, PointSet, SelectorMap
 simplify/selectormap_region_simplify.map | needs Axis, Box, Frame, PointSet, SelectorMap
 simplify/selectormap_region_simplify.simp | needs Axis, Box, Frame, PointSet, SelectorMap
 simplify/selectormap_region_simplify_real.map | needs Axis, Box, Frame, Interval, PointSet, SelectorMap
 simplify/selectormap_region_simplify_real.simp | needs Axis, Box, Frame, PointSet, SelectorMap
-simplify/series_parallel_absorb.map | needs WcsMap
-simplify/series_parallel_absorb.simp | needs WcsMap
 simplify/setunc_box_remapped_unc.map | needs Axis, Box, Frame, PointSet
 simplify/setunc_box_remapped_unc.simp | needs Axis, Box, Frame, PointSet
 simplify/setunc_unbounded_negated.map | needs Axis, Box, Frame, PointSet
@@ -483,8 +445,6 @@ simplify/sla_supergalactic_cancel.map | needs SlaMap
 simplify/slamap_invert_normalize.map | needs SlaMap
 simplify/slamap_invert_normalize.simp | needs SlaMap
 simplify/slamap_pair_cancel.map | needs SlaMap
-simplify/spec_cel_invert.map | needs SphMap, WcsMap
-simplify/spec_cel_invert.simp | needs WcsMap
 simplify/spec_geocentric_cancel.map | needs SpecMap
 simplify/spec_inverse_cancel.map | needs SpecMap
 simplify/spec_invert_normalize.map | needs SpecMap
@@ -502,12 +462,6 @@ simplify/spec_unit_cancel.map | needs SpecMap
 simplify/specmap_invert_normalize.map | needs SpecMap
 simplify/specmap_invert_normalize.simp | needs SpecMap
 simplify/specmap_pair_cancel.map | needs SpecMap
-simplify/sph_fwd_inv_unitradius_cancel.map | needs SphMap
-simplify/sph_inverse_cancel.map | needs SphMap
-simplify/sph_matrix_sandwich.map | needs SphMap
-simplify/sph_matrix_sandwich_negz.map | needs SphMap
-simplify/sph_zoom_sandwich.map | needs SphMap
-simplify/sph_zoom_sandwich.simp | needs SphMap
 simplify/spline_inverse_cancel.map | needs SplineMap
 simplify/switchmap_fwdonly_simplify.map | needs SwitchMap
 simplify/switchmap_fwdonly_simplify.simp | needs SwitchMap
@@ -579,175 +533,166 @@ simplify/unitnormmap_winmap_fwd_merge.map | needs UnitNormMap
 simplify/unitnormmap_winmap_fwd_merge.simp | needs UnitNormMap
 simplify/unitnormmap_winmap_inv_refused.map | needs UnitNormMap
 simplify/unitnormmap_winmap_inv_refused.simp | needs UnitNormMap
-simplify/wcs_inverse_cancel.map | needs WcsMap
-simplify/wcs_unknown_lone_reduce.map | needs WcsMap
-simplify/wcsconv_gappt_iwc_residue.map | needs SphMap, WcsMap
-simplify/wcsconv_gappt_iwc_residue.simp | needs SphMap, WcsMap
-simplify/wcsmap_bad_to_unit.map | needs WcsMap
-simplify/wcsmap_perm_swap_cancel.map | needs WcsMap
-simplify/wcsmap_perm_swap_simplify.map | needs WcsMap
-simplify/win_swap_past_wcsmap.map | needs WcsMap
-simplify/win_swap_past_wcsmap.simp | needs WcsMap
 simplify/xph_inverse_cancel.map | needs XphMap
-wcsconv/framesets/a20070718_00010_02_cube-ast.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecMap, SphMap, WcsMap
-wcsconv/framesets/ait-highlatpole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/aitoff-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/alt-spectral-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/atf-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
+wcsconv/framesets/a20070718_00010_02_cube-ast.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecMap
+wcsconv/framesets/ait-highlatpole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/aitoff-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/alt-spectral-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/atf-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/awav-a2f-head.ast | needs Axis, Frame, FrameSet, SpecFrame
-wcsconv/framesets/axes-swap-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/axref-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/azel-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/axes-swap-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/axref-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/azel-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/beta-frq-head.ast | needs Axis, Frame, FrameSet, SpecFrame, SpecMap
 wcsconv/framesets/car1-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/car2-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
-wcsconv/framesets/car3-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/car3-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/car4-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
-wcsconv/framesets/car5-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
-wcsconv/framesets/car6-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
-wcsconv/framesets/cd-cross-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/cd-old-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/class-ait-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, WcsMap
-wcsconv/framesets/class-arc-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/class-gal-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/class-noproj-head.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/class-olddate-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/class-sfl-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, WcsMap
-wcsconv/framesets/class-sin-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/car5-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/car6-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/cd-cross-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/cd-old-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/class-ait-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/class-arc-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/class-gal-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/class-noproj-head.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/class-olddate-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/class-sfl-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/class-sin-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
 wcsconv/framesets/class-spec-head.ast | needs Axis, DSBSpecFrame, Frame, FrameSet
 wcsconv/framesets/class-spec-hel-head.ast | needs Axis, DSBSpecFrame, Frame, FrameSet
-wcsconv/framesets/class-write-head.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/cname-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/cobe-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/crota-3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/cube-reorder-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/date-frac-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/date-short-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/date-z-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/degen-wcsaxes-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/degen1-ast.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/dss-ast.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/dss-fits-dss.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/ecliptic-tan-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/class-write-head.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/cname-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/cobe-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/crota-3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/cube-reorder-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/date-frac-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/date-short-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/date-z-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/degen-wcsaxes-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/degen1-ast.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/dss-ast.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/dss-fits-dss.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/ecliptic-tan-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/ener-vel-head.ast | needs Axis, Frame, FrameSet, SpecFrame, SpecMap
-wcsconv/framesets/equinox-bj-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/equinox-zero-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/fits-pc-alt-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/fits-pc-altgal-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/fits-pc-full-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/fits-pc-gal-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/fits-pc-unit-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/fk4-aips-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/fk4-noeq-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/fk5-noeq-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/equinox-bj-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/equinox-zero-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/fits-pc-alt-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/fits-pc-altgal-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/fits-pc-full-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/fits-pc-gal-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/fits-pc-unit-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/fk4-aips-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/fk4-noeq-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/fk5-noeq-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/freq-f2w-head.ast | needs Axis, Frame, FrameSet, SpecFrame
-wcsconv/framesets/freq-ghz-bary-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/freq-ghz-bary-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
 wcsconv/framesets/freq-log-head.ast | needs Axis, Frame, FrameSet, MathMap, SpecFrame
 wcsconv/framesets/freq-pixel3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SpecFrame
 wcsconv/framesets/freq-wav-head.ast | needs Axis, Frame, FrameSet, SpecFrame, SpecMap
-wcsconv/framesets/galactic-tan-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/gappt-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/gls-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/galactic-tan-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/gappt-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/gls-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/grism-head.ast | needs Axis, Frame, FrameSet, GrismMap, SpecFrame
-wcsconv/framesets/helioecl-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
-wcsconv/framesets/hpx-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/iraf-longpole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/jan-fits-class.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/longslit-fits-pc.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/lsst-ast.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/mercator-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
-wcsconv/framesets/multi-wcs-dup-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/multi-wcs-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/multi-wcs-spec-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/ncp-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/offset-sky-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/offset-sky-pole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/origin-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/pc-sparse-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/helioecl-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/hpx-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/iraf-longpole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/jan-fits-class.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/longslit-fits-pc.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/lsst-ast.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame
+wcsconv/framesets/mercator-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/multi-wcs-dup-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/multi-wcs-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/multi-wcs-spec-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/ncp-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/offset-sky-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/offset-sky-pole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/origin-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/pc-sparse-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/pixel-1d-head.ast | needs Axis, Frame, FrameSet
 wcsconv/framesets/pixel-2d-head.ast | needs Axis, Frame, FrameSet
 wcsconv/framesets/pixel-rotated-head.ast | needs Axis, Frame, FrameSet
 wcsconv/framesets/pixel-shear-head.ast | needs Axis, Frame, FrameSet
 wcsconv/framesets/polco-head.ast | needs Axis, Frame, FrameSet, MathMap
 wcsconv/framesets/polco2-head.ast | needs Axis, Frame, FrameSet, MathMap
-wcsconv/framesets/projp-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/projp-nopv0-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/projp-pv-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/projp-pv0only-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/projp-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/projp-nopv0-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/projp-pv-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/projp-pv0only-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/restfreq-ghz-head.ast | needs Axis, Frame, FrameSet, SpecFrame
 wcsconv/framesets/restfreq-mhz-head.ast | needs Axis, Frame, FrameSet, SpecFrame
-wcsconv/framesets/rfval-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/sao-tan-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/scp-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/serpens-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/sfl-origin-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
-wcsconv/framesets/sfl-pc-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, WcsMap
-wcsconv/framesets/sin-plain-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/sip-3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/sip-3d-swap-head.ast | needs Axis, CmpFrame, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/sip-alt-head.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/sip-head.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/sip2-head.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/skyref-alt-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/skyref-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/skyspec3d-class-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/skyspec3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/rfval-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/sao-tan-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/scp-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/serpens-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/sfl-origin-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/sfl-pc-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/sin-plain-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/sip-3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/sip-3d-swap-head.ast | needs Axis, CmpFrame, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/sip-alt-head.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame
+wcsconv/framesets/sip-head.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame
+wcsconv/framesets/sip2-head.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame
+wcsconv/framesets/skyref-alt-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/skyref-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/skyspec3d-class-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/skyspec3d-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
 wcsconv/framesets/specflux-head.ast | needs Axis, CmpFrame, Frame, SpecFrame
-wcsconv/framesets/ssysobs-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
-wcsconv/framesets/tan-cdmatrix-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/tan-polytan-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/tan-pv0-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/tan-rotated-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/tan-zeropv-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/tidy-offsets-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/tidy-pole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/ssysobs-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
+wcsconv/framesets/tan-cdmatrix-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/tan-polytan-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/tan-pv0-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/tan-rotated-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/tan-zeropv-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/tidy-offsets-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/tidy-pole-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/timeplot-head.ast | needs Axis, CmpFrame, Frame, TimeFrame
-wcsconv/framesets/timesys-tdb-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/timesys-tt-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/timj-ast.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SlaMap, SphMap, WcsMap
-wcsconv/framesets/tnx-cheb-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/tnx-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/tsc-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/ukirt-dtai-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/unknown-cel-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/unknown-cel2-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/timesys-tdb-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/timesys-tt-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/timj-ast.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SlaMap
+wcsconv/framesets/tnx-cheb-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/tnx-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/tsc-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/ukirt-dtai-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/unknown-cel-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/unknown-cel2-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 wcsconv/framesets/unknown-spec-head.ast | needs Axis, Frame, FrameSet
 wcsconv/framesets/velo-aips-head.ast | needs Axis, Frame, FrameSet, SpecFrame
 wcsconv/framesets/velo-vel-head.ast | needs Axis, Frame, FrameSet, SpecFrame
-wcsconv/framesets/vopt-f2w-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SpecMap, SphMap, WcsMap
-wcsconv/framesets/vopt-geo-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SpecMap, SphMap, WcsMap
+wcsconv/framesets/vopt-f2w-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SpecMap
+wcsconv/framesets/vopt-geo-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SpecMap
 wcsconv/framesets/vopt-wav-head.ast | needs Axis, Frame, FrameSet, SpecFrame
-wcsconv/framesets/vrad-lsrd-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/vrad-lsrd-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
 wcsconv/framesets/vrad-v2f-head.ast | needs Axis, Frame, FrameSet, SpecFrame, SpecMap
 wcsconv/framesets/vrad-wav-head.ast | needs Axis, Frame, FrameSet, SpecFrame, SpecMap
 wcsconv/framesets/wave-1d-head.ast | needs Axis, Frame, FrameSet, SpecFrame
-wcsconv/framesets/wave-f2w-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SpecMap, SphMap, WcsMap
+wcsconv/framesets/wave-f2w-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SpecMap
 wcsconv/framesets/wave-w2f-head.ast | needs Axis, Frame, FrameSet, SpecFrame
 wcsconv/framesets/wavn-frq-head.ast | needs Axis, Frame, FrameSet, SpecFrame
-wcsconv/framesets/zero-cdelt-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame, SphMap, WcsMap
+wcsconv/framesets/zero-cdelt-head.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
 wcsconv/framesets/zopt-frq-head.ast | needs Axis, Frame, FrameSet, SpecFrame, SpecMap
-wcsconv/framesets/zpn-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
-wcsconv/framesets/zpx-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+wcsconv/framesets/zpn-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
+wcsconv/framesets/zpx-head.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 programs/testcmpmap/splittest1.ast | needs LutMap
 programs/testfitschan/sparse.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, LutMap, SkyAxis, SkyFrame, SpecMap
 programs/testmocchan/backcompat_json.ast | needs MocChan
 programs/testmocchan/backcompat_string.ast | needs MocChan
-programs/testplot3d/plot3d-test1.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecMap, SphMap, WcsMap
+programs/testplot3d/plot3d-test1.ast | needs Axis, CmpFrame, DSBSpecFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecMap
 programs/teststcschan/stcschan-test1-doc3.ast | needs Axis, Box, Circle, CmpFrame, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
 serialisation/basicframe.ast | needs Axis, Frame
 serialisation/c_dssmap.ast | needs DssMap
 serialisation/c_variants.ast | needs Axis, Frame, FrameSet
 serialisation/cmpframe.ast | needs Axis, CmpFrame, SkyAxis, SkyFrame, SpecFrame
-serialisation/degen1.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SphMap, WcsMap
+serialisation/degen1.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame
 serialisation/frame_in_map_slot.ast | needs Axis, CmpFrame, Frame, FrameSet
 serialisation/frameset_3frame.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 serialisation/frameset_simple.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame
 serialisation/frameset_skyspec.ast | needs Axis, CmpFrame, Frame, FrameSet, SkyAxis, SkyFrame, SpecFrame
 serialisation/jan-dsb.ast | needs Axis, DSBSpecFrame
-serialisation/lsst.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame, SphMap, WcsMap
+serialisation/lsst.ast | needs Axis, Frame, FrameSet, PolyMap, SkyAxis, SkyFrame
 serialisation/region_in_cmpframe.ast | needs Axis, Box, CmpFrame, Frame, PointSet
 serialisation/skyframe.ast | needs SkyAxis, SkyFrame
 serialisation/skyframe_galactic.ast | needs SkyAxis, SkyFrame
 serialisation/specframe.ast | needs Axis, SpecFrame
 serialisation/timeframe.ast | needs Axis, TimeFrame
-serialisation/timj.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SlaMap, SphMap, WcsMap
+serialisation/timj.ast | needs Axis, Frame, FrameSet, SkyAxis, SkyFrame, SlaMap

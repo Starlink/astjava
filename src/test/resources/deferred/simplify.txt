@@ -11,8 +11,8 @@ simplify/box_self_simplify.map | needs Axis, Box, Frame, PointSet
 simplify/box_self_simplify.simp | needs Axis, Box, Frame, PointSet
 simplify/box_unc_fillfactor_merge.map | needs Axis, Box, Frame, PointSet
 simplify/box_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, PointSet
-simplify/brad.map | needs LutMap, WcsMap
-simplify/brad.simp | needs LutMap, WcsMap
+simplify/brad.map | needs LutMap
+simplify/brad.simp | needs LutMap
 simplify/cap_box_permmap_const.map | needs Axis, Box, Frame, FrameSet, PointSet
 simplify/cap_box_permmap_const.simp | needs Axis, Box, Frame, PointSet
 simplify/cap_box_permmap_nonbidi.map | needs Axis, Box, Frame, FrameSet, PointSet
@@ -26,8 +26,8 @@ simplify/cap_cmpmap_01.map | needs MathMap, RateMap, SpecMap, TranMap
 simplify/cap_cmpmap_01.simp | needs MathMap, RateMap, SpecMap, TranMap
 simplify/cap_cmpmap_02.map | needs MathMap
 simplify/cap_cmpmap_02.simp | needs MathMap
-simplify/cap_cmpmap_03.map | needs PolyMap, SlaMap, SphMap, WcsMap
-simplify/cap_cmpmap_03.simp | needs PolyMap, SphMap, WcsMap
+simplify/cap_cmpmap_03.map | needs PolyMap, SlaMap
+simplify/cap_cmpmap_03.simp | needs PolyMap
 simplify/cap_cmpmap_04.map | needs MathMap, RateMap, SpecMap, TranMap
 simplify/cap_cmpmap_04.simp | needs MathMap, RateMap, SpecMap, TranMap
 simplify/cap_cmpperm_resume.map | needs MathMap
@@ -43,9 +43,6 @@ simplify/cap_interval_01.simp | needs Axis, Box, CmpFrame, Interval, PointSet, S
 simplify/cap_lutmap_01.map | needs LutMap, MathMap
 simplify/cap_lutmap_01.simp | needs MathMap
 simplify/cap_mathmap_01.map | needs MathMap
-simplify/cap_matrixmap_01.map | needs SphMap, WcsMap
-simplify/cap_matrixmap_03.map | needs SphMap, WcsMap
-simplify/cap_matrixmap_03.simp | needs SphMap, WcsMap
 simplify/cap_normmap_cmpframe.map | needs Axis, CmpFrame, Frame, FrameSet, NormMap
 simplify/cap_normmap_cmpframe.simp | needs Axis, CmpFrame, Frame, FrameSet, NormMap
 simplify/cap_permmap_01.map | needs Axis, CmpFrame, NormMap, SkyAxis, SkyFrame, SpecFrame
@@ -68,8 +65,8 @@ simplify/cap_slamap_02.map | needs Axis, Box, CmpFrame, FrameSet, PointSet, SkyA
 simplify/cap_slamap_02.simp | needs Axis, Box, CmpFrame, PointSet, Polygon, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
 simplify/cap_slamap_03.map | needs SlaMap
 simplify/cap_slamap_03.simp | needs SlaMap
-simplify/cap_slamap_04.map | needs SlaMap, SphMap, WcsMap
-simplify/cap_slamap_04.simp | needs SlaMap, SphMap, WcsMap
+simplify/cap_slamap_04.map | needs SlaMap
+simplify/cap_slamap_04.simp | needs SlaMap
 simplify/cap_slamap_05.map | needs SlaMap
 simplify/cap_slamap_05.simp | needs SlaMap
 simplify/cap_slamap_06.map | needs SlaMap
@@ -103,8 +100,6 @@ simplify/cap_specmap_13.map | needs SpecMap
 simplify/cap_specmap_13.simp | needs SpecMap
 simplify/cap_specmap_14.map | needs MathMap, SpecMap
 simplify/cap_specmap_14.simp | needs MathMap
-simplify/cap_sphmap_01.map | needs SphMap, WcsMap
-simplify/cap_sphmap_01.simp | needs SphMap, WcsMap
 simplify/cap_timemap_01.map | needs TimeMap
 simplify/cap_timemap_01.simp | needs TimeMap
 simplify/cap_timemap_02.map | needs Axis, Box, CmpFrame, FrameSet, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame, TimeMap
@@ -119,22 +114,16 @@ simplify/cap_timemap_06.simp | needs TimeMap
 simplify/cap_timemap_07.map | needs TimeMap
 simplify/cap_timemap_08.map | needs TimeMap
 simplify/cap_timemap_08.simp | needs TimeMap
-simplify/cap_unitmap_01.map | needs PolyMap, SphMap, WcsMap
-simplify/cap_unitmap_01.simp | needs PolyMap, SphMap, WcsMap
+simplify/cap_unitmap_01.map | needs PolyMap
+simplify/cap_unitmap_01.simp | needs PolyMap
 simplify/cap_unitnormmap_01.map | needs UnitNormMap
 simplify/cap_unitnormmap_01.simp | needs UnitNormMap
-simplify/cap_wcsmap_01.map | needs SphMap, WcsMap
-simplify/cap_wcsmap_01.simp | needs SphMap, WcsMap
-simplify/cap_winmap_01.map | needs SpecMap, SphMap, WcsMap
-simplify/cap_winmap_01.simp | needs SpecMap, WcsMap
-simplify/cap_winmap_02.map | needs SphMap, WcsMap
-simplify/cap_winmap_03.map | needs WcsMap
-simplify/cap_winmap_03.simp | needs WcsMap
+simplify/cap_winmap_01.map | needs SpecMap
+simplify/cap_winmap_01.simp | needs SpecMap
 simplify/cap_winmap_04.map | needs PolyMap
-simplify/cap_xphmap_01.map | needs SphMap, WcsMap, XphMap
-simplify/cap_xphmap_02.map | needs WcsMap, XphMap
-simplify/cap_xphmap_02.simp | needs WcsMap, XphMap
-simplify/cap_zoommap_02.map | needs SphMap, WcsMap
+simplify/cap_xphmap_01.map | needs XphMap
+simplify/cap_xphmap_02.map | needs XphMap
+simplify/cap_xphmap_02.simp | needs XphMap
 simplify/cap_zoommap_03.map | needs PolyMap
 simplify/cap_zoommap_03.simp | needs PolyMap
 simplify/cap_zoommap_04.map | needs Axis, Box, Frame, FrameSet, MathMap, PointList, PointSet, SpecFrame
@@ -209,8 +198,8 @@ simplify/interval_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, 
 simplify/intra_invfwd_cancel.map | needs IntraMap
 simplify/intra_invfwd_cancel_tail.map | needs IntraMap
 simplify/intramap_inverse_cancel.map | needs IntraMap
-simplify/lsst.map | needs PolyMap, SphMap, WcsMap
-simplify/lsst.simp | needs PolyMap, SphMap, WcsMap
+simplify/lsst.map | needs PolyMap
+simplify/lsst.simp | needs PolyMap
 simplify/lut_exactly_linear.map | needs LutMap
 simplify/lut_inverse_cancel.map | needs LutMap
 simplify/lut_linear_to_win.map | needs LutMap
@@ -305,13 +294,6 @@ simplify/neg_spec_6arg_mismatch.map | needs SpecMap
 simplify/neg_spec_arg_mismatch.map | needs SpecMap
 simplify/neg_spec_lone_forward.map | needs SpecMap
 simplify/neg_spec_parallel.map | needs SpecMap
-simplify/neg_sph_no_unitradius.map | needs SphMap
-simplify/neg_sph_non_sphmap_neighbour.map | needs SphMap
-simplify/neg_sph_parallel.map | needs SphMap
-simplify/neg_sph_polarlong_mismatch.map | needs SphMap
-simplify/neg_sph_sandwich_full_matrix.map | needs SphMap
-simplify/neg_sph_sandwich_unequal_diag.map | needs SphMap
-simplify/neg_sph_sandwich_wrong_middle.map | needs SphMap
 simplify/neg_spline_different_coeffs.map | needs SplineMap
 simplify/neg_spline_nonspline_neighbour.map | needs SplineMap
 simplify/neg_spline_parallel.map | needs SplineMap
@@ -341,24 +323,12 @@ simplify/neg_unitnormmap_nonunit_scale.map | needs UnitNormMap
 simplify/neg_unitnormmap_parallel.map | needs UnitNormMap
 simplify/neg_unitnormmap_same_dir.map | needs UnitNormMap
 simplify/neg_unitnormmap_shift_inv.map | needs UnitNormMap
-simplify/neg_wcs_different_params.map | needs WcsMap
-simplify/neg_wcs_different_projection.map | needs WcsMap
-simplify/neg_wcs_nonperm_between.map | needs MathMap, WcsMap
-simplify/neg_wcs_parallel.map | needs WcsMap
-simplify/neg_wcs_same_direction.map | needs WcsMap
-simplify/neg_wcs_tan_no_reduce.map | needs WcsMap
-simplify/neg_wcsmap_perm_allconst.map | needs WcsMap
-simplify/neg_wcsmap_perm_both_sides.map | needs WcsMap
-simplify/neg_wcsmap_perm_disconnect.map | needs WcsMap
-simplify/neg_wcsmap_perm_disconnect_lower.map | needs WcsMap
-simplify/neg_wcsmap_perm_nonbidir.map | needs WcsMap
-simplify/neg_wcsmap_pv_mismatch.map | needs WcsMap
+simplify/neg_wcs_nonperm_between.map | needs MathMap
 simplify/neg_win_cmpmap_split_no_simplify.map | needs MathMap
 simplify/neg_win_nonmergeable_series.map | needs MathMap
 simplify/neg_xph_nonxph_neighbour.map | needs XphMap
 simplify/neg_xph_not_opposite.map | needs XphMap
 simplify/neg_xph_parallel.map | needs XphMap
-simplify/neg_zoom_no_absorb.map | needs SphMap
 simplify/neg_zoom_parallel_lone.map | needs MathMap
 simplify/normmap_basic_frame_to_unit.map | needs Axis, Frame, NormMap
 simplify/normmap_duplicate_elim.map | needs NormMap, SkyAxis, SkyFrame
@@ -412,22 +382,18 @@ simplify/rate_inner_reduce_series.map | needs RateMap
 simplify/rate_inner_reduce_series.simp | needs RateMap
 simplify/ratemap_simplify_interior.map | needs RateMap
 simplify/ratemap_simplify_interior.simp | needs RateMap
-simplify/reconstruct_right_assoc.map | needs WcsMap
-simplify/reconstruct_right_assoc.simp | needs WcsMap
 simplify/regbasepick_circle_permaxes.map | needs Axis, Circle, Frame, FrameSet, PointSet
 simplify/regbasepick_circle_permaxes.simp | needs Axis, Circle, Frame, FrameSet, PointSet
 simplify/regbasepick_cmpregion_subset.map | needs Axis, CmpRegion, Frame, FrameSet, Interval, PointSet
 simplify/regbasepick_cmpregion_subset.simp | needs Axis, CmpRegion, Frame, FrameSet, Interval, PointSet
 simplify/regbasepick_prism_subset.map | needs Axis, Box, Frame, PointSet
 simplify/regbasepick_prism_subset.simp | needs Axis, Box, Frame, PointSet
-simplify/rigby.map | needs SlaMap, SpecMap, SphMap, WcsMap
-simplify/rigby.simp | needs SlaMap, SpecMap, SphMap, WcsMap
+simplify/rigby.map | needs SlaMap, SpecMap
+simplify/rigby.simp | needs SlaMap, SpecMap
 simplify/selectormap_region_simplify.map | needs Axis, Box, Frame, PointSet, SelectorMap
 simplify/selectormap_region_simplify.simp | needs Axis, Box, Frame, PointSet, SelectorMap
 simplify/selectormap_region_simplify_real.map | needs Axis, Box, Frame, Interval, PointSet, SelectorMap
 simplify/selectormap_region_simplify_real.simp | needs Axis, Box, Frame, PointSet, SelectorMap
-simplify/series_parallel_absorb.map | needs WcsMap
-simplify/series_parallel_absorb.simp | needs WcsMap
 simplify/setunc_box_remapped_unc.map | needs Axis, Box, Frame, PointSet
 simplify/setunc_box_remapped_unc.simp | needs Axis, Box, Frame, PointSet
 simplify/setunc_unbounded_negated.map | needs Axis, Box, Frame, PointSet
@@ -468,8 +434,6 @@ simplify/sla_supergalactic_cancel.map | needs SlaMap
 simplify/slamap_invert_normalize.map | needs SlaMap
 simplify/slamap_invert_normalize.simp | needs SlaMap
 simplify/slamap_pair_cancel.map | needs SlaMap
-simplify/spec_cel_invert.map | needs SphMap, WcsMap
-simplify/spec_cel_invert.simp | needs WcsMap
 simplify/spec_geocentric_cancel.map | needs SpecMap
 simplify/spec_inverse_cancel.map | needs SpecMap
 simplify/spec_invert_normalize.map | needs SpecMap
@@ -487,12 +451,6 @@ simplify/spec_unit_cancel.map | needs SpecMap
 simplify/specmap_invert_normalize.map | needs SpecMap
 simplify/specmap_invert_normalize.simp | needs SpecMap
 simplify/specmap_pair_cancel.map | needs SpecMap
-simplify/sph_fwd_inv_unitradius_cancel.map | needs SphMap
-simplify/sph_inverse_cancel.map | needs SphMap
-simplify/sph_matrix_sandwich.map | needs SphMap
-simplify/sph_matrix_sandwich_negz.map | needs SphMap
-simplify/sph_zoom_sandwich.map | needs SphMap
-simplify/sph_zoom_sandwich.simp | needs SphMap
 simplify/spline_inverse_cancel.map | needs SplineMap
 simplify/switchmap_fwdonly_simplify.map | needs SwitchMap
 simplify/switchmap_fwdonly_simplify.simp | needs SwitchMap
@@ -559,13 +517,4 @@ simplify/unitnormmap_winmap_fwd_merge.map | needs UnitNormMap
 simplify/unitnormmap_winmap_fwd_merge.simp | needs UnitNormMap
 simplify/unitnormmap_winmap_inv_refused.map | needs UnitNormMap
 simplify/unitnormmap_winmap_inv_refused.simp | needs UnitNormMap
-simplify/wcs_inverse_cancel.map | needs WcsMap
-simplify/wcs_unknown_lone_reduce.map | needs WcsMap
-simplify/wcsconv_gappt_iwc_residue.map | needs SphMap, WcsMap
-simplify/wcsconv_gappt_iwc_residue.simp | needs SphMap, WcsMap
-simplify/wcsmap_bad_to_unit.map | needs WcsMap
-simplify/wcsmap_perm_swap_cancel.map | needs WcsMap
-simplify/wcsmap_perm_swap_simplify.map | needs WcsMap
-simplify/win_swap_past_wcsmap.map | needs WcsMap
-simplify/win_swap_past_wcsmap.simp | needs WcsMap
 simplify/xph_inverse_cancel.map | needs XphMap
