@@ -299,3 +299,9 @@ tests/test_timemap.rs::timemap_merge_eliminates_no_effect | needs simplification
 tests/test_timemap.rs::timemap_merge_mjd_to_jd_cancels | needs simplification
 tests/test_timemap.rs::timemap_merge_mjd_to_mjd_equal_offsets | needs simplification
 tests/test_timemap.rs::timemap_simplified_chain | needs simplification
+src/units/tests.rs::log_hz_to_hz_is_mathmap | MathMap (out of scope)
+src/units/tests.rs::sqrt_hz_to_hz_is_mathmap | MathMap (out of scope)
+src/units/tests.rs::log_kms_to_ms_is_mathmap | MathMap (out of scope)
+src/units/tests.rs::hz_to_log_hz_is_mathmap | MathMap (out of scope)
+tests/test_unit_mapper.rs::spec_frame_unit_changes_match_the_c_library | SpecFrame (out of scope)
+tests/test_unit_mapper.rs::zoom_map_chains_simplify_as_the_c_library_does | needs simplification
