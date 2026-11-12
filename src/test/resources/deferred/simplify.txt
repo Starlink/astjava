@@ -1,25 +1,25 @@
 # Fixtures of fixtures/oracle/simplify_fixtures.oracle whose sections do not all match C:
 # <path relative to ast_tester/fixtures> | <reason>
 # Rewritten by TransformOracleTest with -Dast.writeDeferred=true.
-simplify/box_nullregion_merge.map | needs Axis, Box, Frame, NullRegion, PointSet
-simplify/box_nullregion_merge.simp | needs Axis, CmpFrame, Frame, Interval, PointSet
-simplify/box_parallel_merge.map | needs Axis, Box, Frame, PointSet
-simplify/box_parallel_merge.simp | needs Axis, Box, CmpFrame, Frame, PointSet
-simplify/box_pointlist_merge.map | needs Axis, Box, Frame, PointList, PointSet
-simplify/box_pointlist_merge.simp | needs Axis, Box, CmpFrame, Frame, PointList, PointSet
-simplify/box_self_simplify.map | needs Axis, Box, Frame, PointSet
-simplify/box_self_simplify.simp | needs Axis, Box, Frame, PointSet
-simplify/box_unc_fillfactor_merge.map | needs Axis, Box, Frame, PointSet
-simplify/box_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, PointSet
+simplify/box_nullregion_merge.map | needs Box, NullRegion, PointSet
+simplify/box_nullregion_merge.simp | needs CmpFrame, Interval, PointSet
+simplify/box_parallel_merge.map | needs Box, PointSet
+simplify/box_parallel_merge.simp | needs Box, CmpFrame, PointSet
+simplify/box_pointlist_merge.map | needs Box, PointList, PointSet
+simplify/box_pointlist_merge.simp | needs Box, CmpFrame, PointList, PointSet
+simplify/box_self_simplify.map | needs Box, PointSet
+simplify/box_self_simplify.simp | needs Box, PointSet
+simplify/box_unc_fillfactor_merge.map | needs Box, PointSet
+simplify/box_unc_fillfactor_merge.simp | needs Box, CmpFrame, PointSet
 simplify/brad.map | needs LutMap
 simplify/brad.simp | needs LutMap
-simplify/cap_box_permmap_const.map | needs Axis, Box, Frame, FrameSet, PointSet
-simplify/cap_box_permmap_const.simp | needs Axis, Box, Frame, PointSet
-simplify/cap_box_permmap_nonbidi.map | needs Axis, Box, Frame, FrameSet, PointSet
-simplify/cap_box_permmap_null.map | needs Axis, Box, Frame, FrameSet, PointSet
-simplify/cap_box_permmap_null.simp | needs Axis, Frame, NullRegion
-simplify/cap_box_permmap_null_first.map | needs Axis, Box, Frame, FrameSet, PointSet
-simplify/cap_box_permmap_null_first.simp | needs Axis, Frame, NullRegion
+simplify/cap_box_permmap_const.map | needs Box, FrameSet, PointSet
+simplify/cap_box_permmap_const.simp | needs Box, PointSet
+simplify/cap_box_permmap_nonbidi.map | needs Box, FrameSet, PointSet
+simplify/cap_box_permmap_null.map | needs Box, FrameSet, PointSet
+simplify/cap_box_permmap_null.simp | needs NullRegion
+simplify/cap_box_permmap_null_first.map | needs Box, FrameSet, PointSet
+simplify/cap_box_permmap_null_first.simp | needs NullRegion
 simplify/cap_cheby_consolidate.map | needs ChebyMap
 simplify/cap_cheby_consolidate.simp | needs ChebyMap
 simplify/cap_cmpmap_01.map | needs MathMap, RateMap, SpecMap, TranMap
@@ -32,33 +32,33 @@ simplify/cap_cmpperm_resume.map | needs MathMap
 simplify/cap_cmpperm_resume.simp | needs MathMap
 simplify/cap_cmpperm_resume_inv.map | needs MathMap
 simplify/cap_cmpperm_resume_inv.simp | needs MathMap
-simplify/cap_frameset_nochange.map | needs Axis, Frame, FrameSet
-simplify/cap_frameset_nochange.simp | needs Axis, Frame, FrameSet
-simplify/cap_ident_frame.map | needs Axis, Frame, FrameSet
-simplify/cap_ident_frame.simp | needs Axis, Frame, FrameSet
-simplify/cap_interval_01.map | needs Axis, Box, CmpFrame, FrameSet, Interval, NullRegion, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_interval_01.simp | needs Axis, Box, CmpFrame, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_frameset_nochange.map | needs FrameSet
+simplify/cap_frameset_nochange.simp | needs FrameSet
+simplify/cap_ident_frame.map | needs FrameSet
+simplify/cap_ident_frame.simp | needs FrameSet
+simplify/cap_interval_01.map | needs Box, CmpFrame, FrameSet, Interval, NullRegion, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_interval_01.simp | needs Box, CmpFrame, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, TimeFrame
 simplify/cap_lutmap_01.map | needs LutMap, MathMap
 simplify/cap_lutmap_01.simp | needs MathMap
 simplify/cap_mathmap_01.map | needs MathMap
-simplify/cap_normmap_cmpframe.map | needs Axis, CmpFrame, Frame, FrameSet, NormMap
-simplify/cap_normmap_cmpframe.simp | needs Axis, CmpFrame, Frame, FrameSet, NormMap
-simplify/cap_permmap_01.map | needs Axis, CmpFrame, NormMap, SkyAxis, SkyFrame, SpecFrame
-simplify/cap_permmap_01.simp | needs Axis, CmpFrame, NormMap, SkyAxis, SkyFrame, SpecFrame
-simplify/cap_pointlist_01.map | needs Axis, Box, CmpFrame, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_pointlist_01.simp | needs Axis, Box, CmpFrame, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_pointlist_02.map | needs Axis, CmpFrame, FrameSet, Interval, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_pointlist_02.simp | needs Axis, CmpFrame, PointList, PointSet, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_poly_bend_allowed.map | needs Axis, Box, Frame, FrameSet, MathMap, PointSet, Polygon
-simplify/cap_poly_bend_allowed.simp | needs Axis, Box, Frame, FrameSet, MathMap, PointSet, Polygon
-simplify/cap_poly_bent_edges.map | needs Axis, Box, Frame, FrameSet, MathMap, PointSet, Polygon
-simplify/cap_poly_bent_edges.simp | needs Axis, Box, Frame, FrameSet, MathMap, PointSet, Polygon
-simplify/cap_poly_unc_frame.map | needs Axis, Box, Frame, FrameSet, PointSet, Polygon
-simplify/cap_poly_unc_frame.simp | needs Axis, Box, Frame, FrameSet, PointSet, Polygon
+simplify/cap_normmap_cmpframe.map | needs CmpFrame, FrameSet, NormMap
+simplify/cap_normmap_cmpframe.simp | needs CmpFrame, FrameSet, NormMap
+simplify/cap_permmap_01.map | needs CmpFrame, NormMap, SkyAxis, SkyFrame, SpecFrame
+simplify/cap_permmap_01.simp | needs CmpFrame, NormMap, SkyAxis, SkyFrame, SpecFrame
+simplify/cap_pointlist_01.map | needs Box, CmpFrame, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_pointlist_01.simp | needs Box, CmpFrame, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_pointlist_02.map | needs CmpFrame, FrameSet, Interval, PointList, PointSet, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_pointlist_02.simp | needs CmpFrame, PointList, PointSet, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_poly_bend_allowed.map | needs Box, FrameSet, MathMap, PointSet, Polygon
+simplify/cap_poly_bend_allowed.simp | needs Box, FrameSet, MathMap, PointSet, Polygon
+simplify/cap_poly_bent_edges.map | needs Box, FrameSet, MathMap, PointSet, Polygon
+simplify/cap_poly_bent_edges.simp | needs Box, FrameSet, MathMap, PointSet, Polygon
+simplify/cap_poly_unc_frame.map | needs Box, FrameSet, PointSet, Polygon
+simplify/cap_poly_unc_frame.simp | needs Box, FrameSet, PointSet, Polygon
 simplify/cap_restricted_component_flags.map | needs MathMap
 simplify/cap_restricted_component_flags.simp | needs MathMap
-simplify/cap_slamap_02.map | needs Axis, Box, CmpFrame, FrameSet, PointSet, SkyAxis, SkyFrame, SpecFrame, TimeFrame
-simplify/cap_slamap_02.simp | needs Axis, Box, CmpFrame, PointSet, Polygon, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_slamap_02.map | needs Box, CmpFrame, FrameSet, PointSet, SkyAxis, SkyFrame, SpecFrame, TimeFrame
+simplify/cap_slamap_02.simp | needs Box, CmpFrame, PointSet, Polygon, Prism, SkyAxis, SkyFrame, SpecFrame, TimeFrame
 simplify/cap_slamap_07.map | needs Box, Circle, CmpRegion, FrameSet, PointSet, SkyAxis, SkyFrame
 simplify/cap_slamap_07.simp | needs NullRegion, SkyAxis, SkyFrame
 simplify/cap_specmap_01.map | needs SpecMap
@@ -84,8 +84,8 @@ simplify/cap_specmap_13.map | needs SpecMap
 simplify/cap_specmap_13.simp | needs SpecMap
 simplify/cap_specmap_14.map | needs MathMap, SpecMap
 simplify/cap_specmap_14.simp | needs MathMap
-simplify/cap_timemap_02.map | needs Axis, Box, CmpFrame, FrameSet, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame
-simplify/cap_timemap_02.simp | needs Axis, Box, CmpFrame, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame
+simplify/cap_timemap_02.map | needs Box, CmpFrame, FrameSet, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame
+simplify/cap_timemap_02.simp | needs Box, CmpFrame, Interval, PointSet, SkyAxis, SkyFrame, SpecFrame, StcResourceProfile, TimeFrame
 simplify/cap_unitnormmap_01.map | needs UnitNormMap
 simplify/cap_unitnormmap_01.simp | needs UnitNormMap
 simplify/cap_winmap_01.map | needs SpecMap
@@ -93,16 +93,16 @@ simplify/cap_winmap_01.simp | needs SpecMap
 simplify/cap_xphmap_01.map | needs XphMap
 simplify/cap_xphmap_02.map | needs XphMap
 simplify/cap_xphmap_02.simp | needs XphMap
-simplify/cap_zoommap_04.map | needs Axis, Box, Frame, FrameSet, MathMap, PointList, PointSet, SpecFrame
-simplify/cap_zoommap_04.simp | needs Axis, Box, Frame, PointList, PointSet
-simplify/cefit_circle_conformal.map | needs Axis, Circle, Frame, FrameSet, PointSet
-simplify/cefit_circle_conformal.simp | needs Axis, Circle, Frame, FrameSet, PointSet
-simplify/cefit_circle_nonconformal_keep.map | needs Axis, Circle, Frame, FrameSet, MathMap, PointSet
-simplify/cefit_circle_nonconformal_keep.simp | needs Axis, Circle, Frame, FrameSet, MathMap, PointSet
-simplify/cefit_circle_to_ellipse.map | needs Axis, Ellipse, Frame, PointSet
-simplify/cefit_circle_to_ellipse.simp | needs Axis, Ellipse, Frame, PointSet
-simplify/cefit_ellipse_to_circle.map | needs Axis, Circle, Frame, PointSet
-simplify/cefit_ellipse_to_circle.simp | needs Axis, Circle, Frame, PointSet
+simplify/cap_zoommap_04.map | needs Box, FrameSet, MathMap, PointList, PointSet, SpecFrame
+simplify/cap_zoommap_04.simp | needs Box, PointList, PointSet
+simplify/cefit_circle_conformal.map | needs Circle, FrameSet, PointSet
+simplify/cefit_circle_conformal.simp | needs Circle, FrameSet, PointSet
+simplify/cefit_circle_nonconformal_keep.map | needs Circle, FrameSet, MathMap, PointSet
+simplify/cefit_circle_nonconformal_keep.simp | needs Circle, FrameSet, MathMap, PointSet
+simplify/cefit_circle_to_ellipse.map | needs Ellipse, PointSet
+simplify/cefit_circle_to_ellipse.simp | needs Ellipse, PointSet
+simplify/cefit_ellipse_to_circle.map | needs Circle, PointSet
+simplify/cefit_ellipse_to_circle.simp | needs Circle, PointSet
 simplify/cheby_linear_lone_reduce.map | needs ChebyMap
 simplify/chebymap_inverse_cancel.map | needs ChebyMap
 simplify/cmpmap_decompose_middle.map | needs MathMap
@@ -124,18 +124,18 @@ simplify/cmpmap_series_in_parallel_inverted.map | needs MathMap
 simplify/cmpmap_series_in_parallel_inverted.simp | needs MathMap
 simplify/cmpmap_solo_after_unit.map | needs MathMap
 simplify/cmpmap_solo_after_unit.simp | needs MathMap
-simplify/defunc_cmpregion_component_unc.map | needs Axis, Box, Frame, PointSet
-simplify/defunc_cmpregion_component_unc.simp | needs Axis, Box, Frame, PointSet
-simplify/defunc_interval_point_at_origin.map | needs Axis, Box, Frame, PointSet
-simplify/defunc_interval_point_at_origin.simp | needs Axis, Box, Frame, PointSet
-simplify/defunc_interval_unbounded.map | needs Axis, Box, Frame, PointSet
-simplify/defunc_interval_unbounded.simp | needs Axis, Box, Frame, PointSet
-simplify/defunc_nullregion_2d.map | needs Axis, Circle, Frame, PointSet
-simplify/defunc_nullregion_2d.simp | needs Axis, Circle, Frame, PointSet
-simplify/defunc_pointlist_origin_axis.map | needs Axis, Box, Frame, PointSet
-simplify/defunc_pointlist_origin_axis.simp | needs Axis, Box, Frame, PointSet
-simplify/defunc_prism_box_interval.map | needs Axis, Box, CmpFrame, Frame, PointSet, Prism
-simplify/defunc_prism_box_interval.simp | needs Axis, Box, CmpFrame, Frame, PointSet
+simplify/defunc_cmpregion_component_unc.map | needs Box, PointSet
+simplify/defunc_cmpregion_component_unc.simp | needs Box, PointSet
+simplify/defunc_interval_point_at_origin.map | needs Box, PointSet
+simplify/defunc_interval_point_at_origin.simp | needs Box, PointSet
+simplify/defunc_interval_unbounded.map | needs Box, PointSet
+simplify/defunc_interval_unbounded.simp | needs Box, PointSet
+simplify/defunc_nullregion_2d.map | needs Circle, PointSet
+simplify/defunc_nullregion_2d.simp | needs Circle, PointSet
+simplify/defunc_pointlist_origin_axis.map | needs Box, PointSet
+simplify/defunc_pointlist_origin_axis.simp | needs Box, PointSet
+simplify/defunc_prism_box_interval.map | needs Box, CmpFrame, PointSet, Prism
+simplify/defunc_prism_box_interval.simp | needs Box, CmpFrame, PointSet
 simplify/dssmap_inv_winmap_absorb.map | needs DssMap
 simplify/dssmap_inv_winmap_absorb.simp | needs DssMap
 simplify/dssmap_winmap_absorb.map | needs DssMap
@@ -148,20 +148,20 @@ simplify/grism_zoom_inv_merge.map | needs GrismMap
 simplify/grism_zoom_inv_merge.simp | needs GrismMap
 simplify/grism_zoom_merge.map | needs GrismMap
 simplify/grism_zoom_merge.simp | needs GrismMap
-simplify/interval_halfinf_simplify.map | needs Axis, Frame, FrameSet, Interval, PointSet
-simplify/interval_nullregion_merge.map | needs Axis, Frame, Interval, NullRegion, PointSet
-simplify/interval_nullregion_merge.simp | needs Axis, CmpFrame, Frame, Interval, PointSet
-simplify/interval_parallel_merge.map | needs Axis, Frame, Interval, PointSet
-simplify/interval_parallel_merge.simp | needs Axis, Box, CmpFrame, Frame, PointSet
-simplify/interval_pointlist_merge.map | needs Axis, Frame, Interval, PointList, PointSet
-simplify/interval_pointlist_merge.simp | needs Axis, CmpFrame, Frame, PointList, PointSet
-simplify/interval_remapped_simplify.map | needs Axis, Frame, FrameSet, Interval, PointSet
-simplify/interval_self_simplify.map | needs Axis, Frame, Interval, PointSet
-simplify/interval_self_simplify.simp | needs Axis, Box, Frame, PointSet
-simplify/interval_self_simplify_cmp.map | needs Axis, Frame, Interval, PointSet
-simplify/interval_self_simplify_cmp.simp | needs Axis, Box, Frame, PointSet
-simplify/interval_unc_fillfactor_merge.map | needs Axis, Box, Frame, Interval, PointSet
-simplify/interval_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, Interval, PointSet
+simplify/interval_halfinf_simplify.map | needs FrameSet, Interval, PointSet
+simplify/interval_nullregion_merge.map | needs Interval, NullRegion, PointSet
+simplify/interval_nullregion_merge.simp | needs CmpFrame, Interval, PointSet
+simplify/interval_parallel_merge.map | needs Interval, PointSet
+simplify/interval_parallel_merge.simp | needs Box, CmpFrame, PointSet
+simplify/interval_pointlist_merge.map | needs Interval, PointList, PointSet
+simplify/interval_pointlist_merge.simp | needs CmpFrame, PointList, PointSet
+simplify/interval_remapped_simplify.map | needs FrameSet, Interval, PointSet
+simplify/interval_self_simplify.map | needs Interval, PointSet
+simplify/interval_self_simplify.simp | needs Box, PointSet
+simplify/interval_self_simplify_cmp.map | needs Interval, PointSet
+simplify/interval_self_simplify_cmp.simp | needs Box, PointSet
+simplify/interval_unc_fillfactor_merge.map | needs Box, Interval, PointSet
+simplify/interval_unc_fillfactor_merge.simp | needs Box, CmpFrame, Interval, PointSet
 simplify/intra_invfwd_cancel.map | needs IntraMap
 simplify/intra_invfwd_cancel_tail.map | needs IntraMap
 simplify/intramap_inverse_cancel.map | needs IntraMap
@@ -169,19 +169,19 @@ simplify/lut_exactly_linear.map | needs LutMap
 simplify/lut_inverse_cancel.map | needs LutMap
 simplify/lut_linear_to_win.map | needs LutMap
 simplify/math_inverse_cancel.map | needs MathMap
-simplify/merge_box_fillfactor_product.map | needs Axis, Box, Frame, PointSet
-simplify/merge_box_fillfactor_product.simp | needs Axis, Box, CmpFrame, Frame, PointSet
-simplify/merge_box_meshsize_scaled.map | needs Axis, Box, Frame, PointSet
-simplify/merge_box_meshsize_scaled.simp | needs Axis, Box, CmpFrame, Frame, PointSet
-simplify/merge_interval_meshsize_scaled.map | needs Axis, Frame, Interval, PointSet
-simplify/merge_interval_meshsize_scaled.simp | needs Axis, CmpFrame, Frame, Interval, PointSet
-simplify/neg_box_asymmetric_2d.map | needs Axis, Box, Frame, PointSet
-simplify/neg_box_parallel_nonregion.map | needs Axis, Box, Frame, PointSet
-simplify/neg_box_series.map | needs Axis, Box, Frame, PointSet
-simplify/neg_box_unc_mismatch.map | needs Axis, Box, Frame, PointSet
+simplify/merge_box_fillfactor_product.map | needs Box, PointSet
+simplify/merge_box_fillfactor_product.simp | needs Box, CmpFrame, PointSet
+simplify/merge_box_meshsize_scaled.map | needs Box, PointSet
+simplify/merge_box_meshsize_scaled.simp | needs Box, CmpFrame, PointSet
+simplify/merge_interval_meshsize_scaled.map | needs Interval, PointSet
+simplify/merge_interval_meshsize_scaled.simp | needs CmpFrame, Interval, PointSet
+simplify/neg_box_asymmetric_2d.map | needs Box, PointSet
+simplify/neg_box_parallel_nonregion.map | needs Box, PointSet
+simplify/neg_box_series.map | needs Box, PointSet
+simplify/neg_box_unc_mismatch.map | needs Box, PointSet
 simplify/neg_cheby_quadratic_no_reduce.map | needs ChebyMap
 simplify/neg_chebymap_standalone.map | needs ChebyMap
-simplify/neg_circle_cmpframe_sky_second.map | needs Axis, Circle, CmpFrame, Frame, FrameSet, PointSet, SkyAxis, SkyFrame
+simplify/neg_circle_cmpframe_sky_second.map | needs Circle, CmpFrame, FrameSet, PointSet, SkyAxis, SkyFrame
 simplify/neg_cmpmap_mode_mismatch.map | needs MathMap
 simplify/neg_cmpmap_neighbour_nonexcmpmap.map | needs MathMap
 simplify/neg_grism_different_attrs.map | needs GrismMap
@@ -191,9 +191,9 @@ simplify/neg_grism_nonzoom_before_inv.map | needs GrismMap
 simplify/neg_grism_parallel.map | needs GrismMap
 simplify/neg_grism_same_direction.map | needs GrismMap
 simplify/neg_grism_zoom_before_fwd.map | needs GrismMap
-simplify/neg_interval_parallel_nonregion.map | needs Axis, Frame, Interval, PointSet
-simplify/neg_interval_series.map | needs Axis, Frame, Interval, PointSet
-simplify/neg_interval_unbounded_pointlist.map | needs Axis, Frame, Interval, PointList, PointSet
+simplify/neg_interval_parallel_nonregion.map | needs Interval, PointSet
+simplify/neg_interval_series.map | needs Interval, PointSet
+simplify/neg_interval_unbounded_pointlist.map | needs Interval, PointList, PointSet
 simplify/neg_intra_diff_flag.map | needs IntraMap
 simplify/neg_intra_diff_func.map | needs IntraMap
 simplify/neg_intra_no_simpfi.map | needs IntraMap
@@ -217,8 +217,8 @@ simplify/neg_normmap_inv_diff_frame.map | needs NormMap, SkyAxis, SkyFrame
 simplify/neg_normmap_nonnorm_neighbour.map | needs NormMap, SkyAxis, SkyFrame
 simplify/neg_normmap_parallel.map | needs NormMap, SkyAxis, SkyFrame
 simplify/neg_normmap_parallel_sky.map | needs NormMap, SkyAxis, SkyFrame
-simplify/neg_nullregion_parallel_nonregion.map | needs Axis, Frame, NullRegion
-simplify/neg_nullregion_series.map | needs Axis, Frame, NullRegion
+simplify/neg_nullregion_parallel_nonregion.map | needs NullRegion
+simplify/neg_nullregion_series.map | needs NullRegion
 simplify/neg_parpair_aligned_irreducible.map | needs MathMap
 simplify/neg_pcd_diff_centre.map | needs PcdMap
 simplify/neg_pcd_diff_disco.map | needs PcdMap
@@ -229,16 +229,16 @@ simplify/neg_pcd_perm_nonswap.map | needs PcdMap
 simplify/neg_pcd_same_invert.map | needs PcdMap
 simplify/neg_pcd_zoom_no_target.map | needs PcdMap
 simplify/neg_perm_no_merge.map | needs MathMap
-simplify/neg_pointlist_parallel_nonregion.map | needs Axis, Frame, PointList, PointSet
-simplify/neg_pointlist_series.map | needs Axis, Frame, PointList, PointSet
+simplify/neg_pointlist_parallel_nonregion.map | needs PointList, PointSet
+simplify/neg_pointlist_series.map | needs PointList, PointSet
 simplify/neg_ratemap_lower_nonrate.map | needs RateMap
 simplify/neg_ratemap_nonratemap_neighbour.map | needs RateMap
 simplify/neg_ratemap_parallel.map | needs RateMap
 simplify/neg_ratemap_same_invert.map | needs RateMap
-simplify/neg_selectormap_not_equal.map | needs Axis, Box, Frame, PointSet, SelectorMap
-simplify/neg_selectormap_parallel.map | needs Axis, Box, Frame, PointSet, SelectorMap
-simplify/neg_selectormap_series_lower.map | needs Axis, Box, Frame, PointSet, SelectorMap
-simplify/neg_selectormap_series_upper.map | needs Axis, Box, Frame, PointSet, SelectorMap
+simplify/neg_selectormap_not_equal.map | needs Box, PointSet, SelectorMap
+simplify/neg_selectormap_parallel.map | needs Box, PointSet, SelectorMap
+simplify/neg_selectormap_series_lower.map | needs Box, PointSet, SelectorMap
+simplify/neg_selectormap_series_upper.map | needs Box, PointSet, SelectorMap
 simplify/neg_spec_2arg_mismatch.map | needs SpecMap
 simplify/neg_spec_3arg_mismatch.map | needs SpecMap
 simplify/neg_spec_6arg_mismatch.map | needs SpecMap
@@ -274,21 +274,21 @@ simplify/neg_xph_nonxph_neighbour.map | needs XphMap
 simplify/neg_xph_not_opposite.map | needs XphMap
 simplify/neg_xph_parallel.map | needs XphMap
 simplify/neg_zoom_parallel_lone.map | needs MathMap
-simplify/normmap_basic_frame_to_unit.map | needs Axis, Frame, NormMap
+simplify/normmap_basic_frame_to_unit.map | needs NormMap
 simplify/normmap_duplicate_elim.map | needs NormMap, SkyAxis, SkyFrame
 simplify/normmap_duplicate_elim.simp | needs NormMap, SkyAxis, SkyFrame
 simplify/normmap_inverse_cancel.map | needs NormMap, SkyAxis, SkyFrame
 simplify/normmap_inverse_cancel_upper.map | needs NormMap, SkyAxis, SkyFrame
-simplify/nullregion_merge_tail.map | needs Axis, Frame, NullRegion
-simplify/nullregion_merge_tail.simp | needs Axis, CmpFrame, Frame, NullRegion
-simplify/nullregion_parallel_merge.map | needs Axis, Box, Frame, NullRegion, PointSet
-simplify/nullregion_parallel_merge.simp | needs Axis, Box, Frame, NullRegion, PointSet
-simplify/nullregion_parallel_merge_pair.map | needs Axis, Frame, NullRegion
-simplify/nullregion_parallel_merge_pair.simp | needs Axis, CmpFrame, Frame, NullRegion
-simplify/nullregion_self_simplify.map | needs Axis, Frame, NullRegion
-simplify/nullregion_self_simplify.simp | needs Axis, Frame, NullRegion
-simplify/nullregion_unc_fillfactor_merge.map | needs Axis, Box, Frame, NullRegion, PointSet
-simplify/nullregion_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, NullRegion, PointSet
+simplify/nullregion_merge_tail.map | needs NullRegion
+simplify/nullregion_merge_tail.simp | needs CmpFrame, NullRegion
+simplify/nullregion_parallel_merge.map | needs Box, NullRegion, PointSet
+simplify/nullregion_parallel_merge.simp | needs Box, NullRegion, PointSet
+simplify/nullregion_parallel_merge_pair.map | needs NullRegion
+simplify/nullregion_parallel_merge_pair.simp | needs CmpFrame, NullRegion
+simplify/nullregion_self_simplify.map | needs NullRegion
+simplify/nullregion_self_simplify.simp | needs NullRegion
+simplify/nullregion_unc_fillfactor_merge.map | needs Box, NullRegion, PointSet
+simplify/nullregion_unc_fillfactor_merge.simp | needs Box, CmpFrame, NullRegion, PointSet
 simplify/parcomp_inverted_nested_reemitted.map | needs MathMap
 simplify/parcomp_inverted_nested_reemitted.simp | needs MathMap
 simplify/parcomp_inverted_reemitted.map | needs MathMap
@@ -310,42 +310,42 @@ simplify/pcd_zero_disc_lone.map | needs PcdMap
 simplify/pcd_zero_disc_series.map | needs PcdMap
 simplify/pcd_zero_to_unit.map | needs PcdMap
 simplify/pcd_zoom_swap_cancel.map | needs PcdMap
-simplify/pointlist_parallel_merge_pair.map | needs Axis, Frame, PointList, PointSet
-simplify/pointlist_parallel_merge_pair.simp | needs Axis, CmpFrame, Frame, PointList, PointSet
-simplify/pointlist_self_simplify.map | needs Axis, Frame, PointList, PointSet
-simplify/pointlist_self_simplify.simp | needs Axis, Frame, PointList, PointSet
-simplify/pointlist_unc_fillfactor_merge.map | needs Axis, Box, Frame, PointList, PointSet
-simplify/pointlist_unc_fillfactor_merge.simp | needs Axis, Box, CmpFrame, Frame, PointList, PointSet
+simplify/pointlist_parallel_merge_pair.map | needs PointList, PointSet
+simplify/pointlist_parallel_merge_pair.simp | needs CmpFrame, PointList, PointSet
+simplify/pointlist_self_simplify.map | needs PointList, PointSet
+simplify/pointlist_self_simplify.simp | needs PointList, PointSet
+simplify/pointlist_unc_fillfactor_merge.map | needs Box, PointList, PointSet
+simplify/pointlist_unc_fillfactor_merge.simp | needs Box, CmpFrame, PointList, PointSet
 simplify/rate_inner_reduce_lone.map | needs RateMap
 simplify/rate_inner_reduce_lone.simp | needs RateMap
 simplify/rate_inner_reduce_series.map | needs RateMap
 simplify/rate_inner_reduce_series.simp | needs RateMap
 simplify/ratemap_simplify_interior.map | needs RateMap
 simplify/ratemap_simplify_interior.simp | needs RateMap
-simplify/regbasepick_circle_permaxes.map | needs Axis, Circle, Frame, FrameSet, PointSet
-simplify/regbasepick_circle_permaxes.simp | needs Axis, Circle, Frame, FrameSet, PointSet
-simplify/regbasepick_cmpregion_subset.map | needs Axis, CmpRegion, Frame, FrameSet, Interval, PointSet
-simplify/regbasepick_cmpregion_subset.simp | needs Axis, CmpRegion, Frame, FrameSet, Interval, PointSet
-simplify/regbasepick_prism_subset.map | needs Axis, Box, Frame, PointSet
-simplify/regbasepick_prism_subset.simp | needs Axis, Box, Frame, PointSet
+simplify/regbasepick_circle_permaxes.map | needs Circle, FrameSet, PointSet
+simplify/regbasepick_circle_permaxes.simp | needs Circle, FrameSet, PointSet
+simplify/regbasepick_cmpregion_subset.map | needs CmpRegion, FrameSet, Interval, PointSet
+simplify/regbasepick_cmpregion_subset.simp | needs CmpRegion, FrameSet, Interval, PointSet
+simplify/regbasepick_prism_subset.map | needs Box, PointSet
+simplify/regbasepick_prism_subset.simp | needs Box, PointSet
 simplify/rigby.map | needs SpecMap
 simplify/rigby.simp | needs SpecMap
-simplify/selectormap_region_simplify.map | needs Axis, Box, Frame, PointSet, SelectorMap
-simplify/selectormap_region_simplify.simp | needs Axis, Box, Frame, PointSet, SelectorMap
-simplify/selectormap_region_simplify_real.map | needs Axis, Box, Frame, Interval, PointSet, SelectorMap
-simplify/selectormap_region_simplify_real.simp | needs Axis, Box, Frame, PointSet, SelectorMap
-simplify/setunc_box_remapped_unc.map | needs Axis, Box, Frame, PointSet
-simplify/setunc_box_remapped_unc.simp | needs Axis, Box, Frame, PointSet
-simplify/setunc_unbounded_negated.map | needs Axis, Box, Frame, PointSet
-simplify/setunc_unbounded_negated.simp | needs Axis, Box, Frame, PointSet
-simplify/setunc_unitmap_regionfs_omitted.map | needs Axis, Box, Frame, PointSet
-simplify/setunc_unitmap_regionfs_omitted.simp | needs Axis, Box, Frame, PointSet
-simplify/simpstab_box_linear_unc.map | needs Axis, Box, Frame, PointSet
-simplify/simpstab_box_linear_unc.simp | needs Axis, Box, Frame, PointSet
-simplify/simpstab_box_nonlinear_unc.map | needs Axis, Box, Frame, FrameSet, MathMap, PointSet
-simplify/simpstab_box_nonlinear_unc.simp | needs Axis, Box, Frame, FrameSet, MathMap, PointSet
-simplify/simpstab_permmap_slice_unc.map | needs Axis, Box, Frame, FrameSet, PointSet
-simplify/simpstab_permmap_slice_unc.simp | needs Axis, Box, Frame, PointSet
+simplify/selectormap_region_simplify.map | needs Box, PointSet, SelectorMap
+simplify/selectormap_region_simplify.simp | needs Box, PointSet, SelectorMap
+simplify/selectormap_region_simplify_real.map | needs Box, Interval, PointSet, SelectorMap
+simplify/selectormap_region_simplify_real.simp | needs Box, PointSet, SelectorMap
+simplify/setunc_box_remapped_unc.map | needs Box, PointSet
+simplify/setunc_box_remapped_unc.simp | needs Box, PointSet
+simplify/setunc_unbounded_negated.map | needs Box, PointSet
+simplify/setunc_unbounded_negated.simp | needs Box, PointSet
+simplify/setunc_unitmap_regionfs_omitted.map | needs Box, PointSet
+simplify/setunc_unitmap_regionfs_omitted.simp | needs Box, PointSet
+simplify/simpstab_box_linear_unc.map | needs Box, PointSet
+simplify/simpstab_box_linear_unc.simp | needs Box, PointSet
+simplify/simpstab_box_nonlinear_unc.map | needs Box, FrameSet, MathMap, PointSet
+simplify/simpstab_box_nonlinear_unc.simp | needs Box, FrameSet, MathMap, PointSet
+simplify/simpstab_permmap_slice_unc.map | needs Box, FrameSet, PointSet
+simplify/simpstab_permmap_slice_unc.simp | needs Box, PointSet
 simplify/spec_geocentric_cancel.map | needs SpecMap
 simplify/spec_inverse_cancel.map | needs SpecMap
 simplify/spec_invert_normalize.map | needs SpecMap

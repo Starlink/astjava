@@ -6,3 +6,5 @@ AstObject.pointer | the address of the C object behind a JNI wrapper; there is n
 AstObject.finalize() | releases the C object behind a JNI wrapper; there is no C object
 AstObject.getAstConstantI(String) | reads constants from the C library; they are ordinary static final fields
 Channel.finalize() | releases the C channel behind a JNI wrapper; there is no C object
+Frame.convert(Frame,String) | returns a FrameSet; Task 17 adds it, after FrameSet (Task 16)
+Frame.findFrame(Frame,String) | returns a FrameSet; Task 17 adds it, after FrameSet (Task 16)

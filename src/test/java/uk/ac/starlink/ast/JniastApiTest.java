@@ -37,8 +37,10 @@ class JniastApiTest {
     static final List<String> IN_SCOPE = Arrays.asList(
             "AstException",
             "AstObject",
+            "Axis",
             "Channel",
             "CmpMap",
+            "Frame",
             "KeyMap",
             "Mapping",
             "MatrixMap",

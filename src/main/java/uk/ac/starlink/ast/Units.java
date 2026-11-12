@@ -63,6 +63,22 @@ final class Units {
     }
 
     /**
+     * Whether values in the units {@code inUnit} can be converted to the units {@code outUnit},
+     * and the label {@code inLabel} rewritten for the output units, as {@link #unitMapperLabel}
+     * gives them, but without making a Mapping from the conversion found, so that the result's
+     * {@code mapping} may be null: C's
+     * {@code NewUnit} (frame.c) uses only the label and whether there is a Mapping, so a conversion
+     * that needs a MathMap is found too.
+     *
+     * @return the label, or null if the units cannot be converted
+     * @throws AstException with status {@code AST__BADUN} if a units string or the label cannot
+     *     be parsed
+     */
+    static LabelledMapping relabel(String inUnit, String outUnit, String inLabel) {
+        return UnitsMapper.unitMapper(inUnit, outUnit, inLabel, false);
+    }
+
+    /**
      * The standard FITS-WCS form of the units string {@code in} (C {@code astUnitNormaliser}). A
      * string that is only a constant normalises to a blank string.
      *

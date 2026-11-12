@@ -1,0 +1,72 @@
+package uk.ac.starlink.ast;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.ProbeData;
+
+/**
+ * Translation of Rust {@code tests/test_min_max_axes.rs}: MinAxes and MaxAxes, checked against C
+ * ({@code oracle/min_max_axes.json}, from {@code tools/oracle_fixtures/min_max_axes_probe.c}). An
+ * unset MinAxes defaults to Naxes but no more than a set MaxAxes, an unset MaxAxes to Naxes but no
+ * less than a set MinAxes, and setting either moves a set value of the other to stay consistent
+ * (frame.c {@code DefaultMinAxes}, {@code DefaultMaxAxes}, {@code ConsistentMinAxes} and {@code
+ * ConsistentMaxAxes}).
+ *
+ * <p>The plain Frame cases of {@code min_max_axes_match_the_c_library} run here; the SkyFrame
+ * cases are added in Task 18 and the CmpFrame cases in Task 20. {@code
+ * find_frame_matches_the_c_library} is translated in Task 17.
+ */
+class MinMaxAxesTest {
+
+    /** Applies {@code ;}-separated {@code MinAxes=n}, {@code MaxAxes=n}, {@code -MinAxes} or {@code -MaxAxes}. */
+    private static void apply(Frame f, String settings) {
+        int start = 0;
+        while (start < settings.length()) {
+            int semi = settings.indexOf(';', start);
+            int end = semi < 0 ? settings.length() : semi;
+            String tok = settings.substring(start, end);
+            if ("-MinAxes".equals(tok)) {
+                f.clearMinAxes();
+            } else if ("-MaxAxes".equals(tok)) {
+                f.clearMaxAxes();
+            } else if (!tok.isEmpty()) {
+                int eq = tok.indexOf('=');
+                int n = Integer.parseInt(tok.substring(eq + 1));
+                if ("MinAxes".equals(tok.substring(0, eq))) {
+                    f.setMinAxes(n);
+                } else {
+                    f.setMaxAxes(n);
+                }
+            }
+            start = end + 1;
+        }
+    }
+
+    @Test
+    void minMaxAxesMatchTheCLibrary() {
+        List<String> failures = new ArrayList<>();
+        int ran = 0;
+        for (JsonNode c : ProbeData.load("min_max_axes").get("AXES_CASES")) {
+            if (!"Frame2".equals(c.get(0).asText())) {
+                continue;
+            }
+            ran++;
+            String settings = c.get(1).asText();
+            Frame f = new Frame(2);
+            apply(f, settings);
+            String got = f.getMinAxes() + "|" + f.getMaxAxes() + "|" + f.testMinAxes() + "|" + f.testMaxAxes();
+            String want = c.get(2).asInt() + "|" + c.get(3).asInt() + "|"
+                    + c.get(4).asBoolean() + "|" + c.get(5).asBoolean();
+            if (!got.equals(want)) {
+                failures.add("Frame2 [" + settings + "]: got " + got + ", C gives " + want);
+            }
+        }
+        assertEquals(10, ran, "the plain Frame cases");
+        assertTrue(failures.isEmpty(), String.join("\n", failures));
+    }
+}
