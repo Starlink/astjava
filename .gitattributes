@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+# FITS files and other binary test data.
+*.fits binary
+*.fit binary
+*.jar binary

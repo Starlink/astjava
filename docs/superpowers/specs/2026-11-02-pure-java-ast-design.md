@@ -28,7 +28,7 @@ This document describes the long-term port briefly and the first phase, a protot
 
 - `../starlink-astrs` (repository name starlink-ast-rs), crate `crates/starlink-ast`: about 200k lines of source, including its own ports of ERFA, PAL and wcslib.
 - Structure is cleaner than C; FitsChan in particular is split into one file per encoding (`src/fitschan/enc_*.rs`, `wcs_*.rs`).
-- Class behavior is modeled with traits (`Mapping`, `Frame`, `Region`) and an `AnyObject` enum for deserialized objects.
+- Class behaviour is modelled with traits (`Mapping`, `Frame`, `Region`) and an `AnyObject` enum for deserialised objects.
 - Not ported: `Plot`, `Plot3D`, the Grf backends, `XmlChan`, `YamlChan`, `StcsChan`.
 - Licensed LGPL-3.0-or-later.
 - `docs/porting-hazards.md` records the mistakes that cost the Rust port most; the most expensive was collapsing C's per-class extension points, made twice.
@@ -56,7 +56,7 @@ This document describes the long-term port briefly and the first phase, a protot
 Long term:
 
 - A pure-Java AST in package `uk.ac.starlink.ast`, with class names and public method signatures as close as possible to jniast, so existing applications can swap jars with little or no code change.
-- Behavior that matches the current C library (the commit the Rust port pins), not the AST 5.1 that jniast was generated from.
+- Behaviour that matches the current C library (the commit the Rust port pins), not the AST 5.1 that jniast was generated from.
 - Classes that are in AST but not jniast (for example ChebyMap, Moc, Table, SplineMap) added later following jniast's conventions.
 
 First phase (the prototype):
@@ -130,7 +130,7 @@ First phase (the prototype):
 - Shared versus copied objects follow C, not Rust.
   Java references behave like C pointers with the garbage collector doing the reference counting, so Java shares where C calls `astClone` and copies where C calls `astCopy`.
   For example CmpMap shares its components and records each one's Invert flag at construction (`cmpmap.c:4848`), while `FrameSet.addFrame` stores copies of the Frame and Mapping (`frameset.c:1427`).
-  Rust copies everywhere because of its ownership rules, so this is one place to take behavior from C.
+  Rust copies everywhere because of its ownership rules, so this is one place to take behaviour from C.
 
 ### Memory
 
@@ -149,7 +149,7 @@ First phase (the prototype):
 - No locks in the library.
 - An object may be used from any thread, but not from two threads at once; the class documentation says so and tells users to `copy()` a FrameSet per thread.
 - Rust's `thread_local!` caches become `ThreadLocal`; caches held inside objects (`Cell`/`RefCell` fields in Rust, for example SkyFrame's sidereal-time and epoch caches) become ordinary fields.
-- Global tables (for example the units tables) are immutable and initialized in a thread-safe way.
+- Global tables (for example the units tables) are immutable and initialised in a thread-safe way.
 
 ### Attributes
 
@@ -227,7 +227,7 @@ The rules below keep as much of that safety as Java 8 allows, and mark the place
 
 ### Translating Rust enums and `match`
 
-- Where a `match` chooses behavior by variant, prefer an abstract method on the variant classes, so the compiler makes every new variant implement it.
+- Where a `match` chooses behaviour by variant, prefer an abstract method on the variant classes, so the compiler makes every new variant implement it.
 - A `match` on a data-free enum becomes a `switch` statement.
 - A `match` that must test classes becomes an `instanceof` chain.
 - Every `switch` has a `default`, and every `instanceof` or `if`/`else` chain that stands in for a `match` ends with a final `else`; that branch throws an `AstException` with status `AST__INTER` (internal programming error) naming the unexpected value.
@@ -237,7 +237,7 @@ The rules below keep as much of that safety as Java 8 allows, and mark the place
 
 - Code that a later Java would simplify carries a comment tag in the form `// MODERN-JAVA(21): <what would replace it>`, for example `// MODERN-JAVA(21): sealed interface with pattern-matching switch`.
 - The tag goes on every `instanceof` chain or `switch` standing in for a `match`, every hand-written value class that would be a record, and anything else a newer feature would replace.
-- `rg 'MODERN-JAVA'` lists every such place, so the code can be modernized if the baseline later rises.
+- `rg 'MODERN-JAVA'` lists every such place, so the code can be modernised if the baseline later rises.
 
 ### Other consequences of Java 8
 
@@ -255,7 +255,7 @@ The rules below keep as much of that safety as Java 8 allows, and mark the place
 
 ## Porting rules
 
-- Port from the Rust code; where Rust's structure comes from Rust itself (ownership, borrow-driven copies, trait objects), take the behavior from C.
+- Port from the Rust code; where Rust's structure comes from Rust itself (ownership, borrow-driven copies, trait objects), take the behaviour from C.
 - Do not add heuristics or shortcuts the original lacks; when something does not match, find out why in the original.
 - Keep C's per-class extension points as overridable methods.
 - Read the Rust repo's `docs/porting-hazards.md`, `docs/issues/c-library-quirks.md` and `c-bugs.md` before starting.

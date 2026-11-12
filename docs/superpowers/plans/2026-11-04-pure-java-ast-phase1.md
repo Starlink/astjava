@@ -1,14 +1,15 @@
 # Pure-Java AST Phase 1 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A pure-Java `uk.ac.starlink.ast` library, API-compatible with jniast for the first-phase classes, that reads native AST dumps and FITS-WCS headers (including SIP) into FrameSets and transforms pixel to sky and back with results that match the C library.
 
-**Architecture:** Port class by class from the Rust port (`../starlink-astrs/crates/starlink-ast/src`), taking behavior from C (`reference/starlink-ast/src`) wherever the Rust structure is shaped by Rust itself.
+**Architecture:** Port class by class from the Rust port (`../starlink-astrs/crates/starlink-ast/src`), taking behaviour from C (`reference/starlink-ast/src`) wherever the Rust structure is shaped by Rust itself.
 Public classes mirror jniast's hierarchy in one package with package-private helpers; the numeric libraries (ERFA, PAL, wcslib, cminpack) are ported into internal packages.
 Tests are JUnit translations of the Rust tests plus gates over the C-generated oracle files; every expected value comes from C.
 
-**Tech Stack:** Java 8 (`--release 8`), Maven 3.10, JUnit 5 (Jupiter), Jackson 2 (test scope only), Checkstyle (build only), JMH (benchmarks only).
+**Tech Stack:** Java 8 (`--release 8`), Maven 3.10, JUnit 5 (Jupiter), Jackson 2 (test scope only), Error Prone, Checkstyle, PMD and Spotless with palantir-java-format (build only, JDK 21), JMH (benchmarks only).
 
 **Spec:** `docs/superpowers/specs/2026-11-02-pure-java-ast-design.md`
 
@@ -18,7 +19,7 @@ Tests are JUnit translations of the Rust tests plus gates over the C-generated o
 - Java 8 language level and APIs (`--release 8`); the library runs on Java 8 and every later runtime.
 - Licensed LGPL-3.0-or-later; jniast's hand-written Java is GPL and is not copied; its public signatures are matched, and implementations and documentation are written from the C (LGPL) and Rust (LGPL) sources.
 - Package `uk.ac.starlink.ast`; class names and public method signatures match jniast (`../starjava/jniast/src/main/uk/ac/starlink/ast`).
-- Behavior follows the C library at the commit the Rust port pins, `3d3f255f`, not the AST 5.1 jniast was generated from.
+- Behaviour follows the C library at the commit the Rust port pins, `3d3f255f`, not the AST 5.1 jniast was generated from.
 - Built with Maven; tests use JUnit 5; `mvn test` runs every test without needing the C library or the Rust toolchain.
 - Every `switch` has a `default`, and every `instanceof` or `if`/`else` chain that stands in for a `match` ends with a final `else`; that branch throws an `AstException` with status `AST__INTER` naming the unexpected value.
 - Code that a later Java would simplify carries a comment `// MODERN-JAVA(21): <what would replace it>`.
@@ -29,7 +30,8 @@ Tests are JUnit translations of the Rust tests plus gates over the C-generated o
 - No locks; Rust `thread_local!` caches become `ThreadLocal`; per-object caches are ordinary fields; one object is never used by two threads at once.
 - Errors are thrown `AstException`s carrying AST status codes; there is no status variable.
 - jniast methods of in-scope classes that need out-of-scope work throw `UnsupportedOperationException`; out-of-scope jniast classes are absent.
-- Comments and Javadoc describe the code as it is, never plans or history; Markdown uses one sentence per line and American English.
+- Comments and Javadoc describe the code as it is, never plans or history, in British spelling, as AST and starjava use.
+- Markdown uses one sentence per line.
 
 ## Review Focus
 
@@ -90,7 +92,7 @@ The spec leaves these to the builder; this plan fixes them.
 Rust has no string attribute layer, so it is ported from C.
 
 - Public jniast methods on `AstObject`: `set(String settings)`, `getC/getD/getF/getI/getL/getB(String)`, `setC/setD/setF/setI/setL/setB(String, value)`, `test(String)`, `clear(String)`.
-- They normalize names as C's `object.c` does (`astSet`, `astGetC`, `astTest`, `astClear`), then call four package-private hooks that mirror C's per-class virtual functions:
+- They normalise names as C's `object.c` does (`astSet`, `astGetC`, `astTest`, `astClear`), then call four package-private hooks that mirror C's per-class virtual functions:
   `String getAttrib(String attrib)`, `void setAttrib(String attrib, String value)`, `boolean testAttrib(String attrib)`, `void clearAttrib(String attrib)`.
 - Each class handles its own attribute names and passes the rest to `super`, as its C `GetAttrib`/`SetAttrib`/`TestAttrib`/`ClearAttrib` functions do; `AstObject`'s versions throw `AST__BADAT`.
   A read-only attribute raises `AST__NOWRT` on set or clear.
@@ -111,7 +113,7 @@ Rust has no string attribute layer, so it is ported from C.
   Nothing else of C's handling of Frames as Mappings is ported (for example, simplifying a Frame inside a CmpMap); a dump with a Frame in a Mapping slot loads as Rust loads it (`tests/test_frame_in_map_slot.rs`).
 - `public Mapping simplify()` returns `this` in this phase, as C's `astSimplify` returns a clone of an object it cannot simplify; internal callers go through it so the real simplifier can replace it.
 
-### Native serialization
+### Native serialisation
 
 - `NativeNode` (package-private) is one object's dump, mirroring Rust `serial/node.rs`: class name, then ordered items (key, value of kind INT, DOUBLE, STRING, OBJECT or UNSET, comment, the "helpful" flag, and `IsA` class markers).
   It has lookup readers (`int readInt(String key, int dflt)`, `double readDouble(String key, double dflt)`, `String readString(String key, String dflt)`, `NativeNode readObject(String key)`) and writers (`writeInt`, `writeDouble`, `writeString`, `writeObject`, `writeIsA`) with Rust's `(key, set, helpful, value, comment)` arguments.
@@ -127,15 +129,20 @@ Rust has no string attribute layer, so it is ported from C.
 - Rust tests that use probe data (`tests/<x>_oracle/cases.rs`, generated from C by `tools/oracle_fixtures/<probe>.c` in the Rust repo and committed there) read it from `src/test/resources/oracle/<x>.json`, converted by `tools/CasesToJson.java` (Task 2).
   No test data is regenerated and no C library is built; a Java test never reads a Rust `cases.rs` directly.
 - Where a Rust test's expected value was produced by the Rust port rather than by C (Rust `tests/test_verification_ledger.rs` records each test's provenance), the Java test checks the property the value demonstrates (for example, a fit's accuracy) instead, or is deferred with the reason `no C value`.
-- Where a Java-only test needs C's behavior (Review Focus 2 and 3), the expected result is read from the C code that handles the case and cited in the test (`file.c:line`).
+- Where a Java-only test needs C's behaviour (Review Focus 2 and 3), the expected result is read from the C code that handles the case and cited in the test (`file.c:line`).
 - Deferred lists for the oracle gates are `src/test/resources/deferred/{simplify,framesets,headers}.txt`, one line per fixture: `<path relative to ast_tester/fixtures> | <reason>`.
   The gate fails if a listed fixture passes, so each task that adds a class removes the fixtures it makes pass.
 
 ### Environment
 
-- `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home` (JDK 27; `--release 8` works there with an "obsolete" warning, which the build suppresses with `-Xlint:-options`).
+- `export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home` (JDK 21; `--release 8` works there with an "obsolete" warning, which the build suppresses with `-Xlint:-options`).
+  The build needs JDK 21 to 26; the JAR it makes runs on Java 8.
+- Tests on another runtime (Java 8, or the newest JDK): `mvn test -Djvm=<that runtime>/bin/java`.
+  The formatter does not run on JDK 27, and the build stops with a message there.
 - Whole suite: `mvn -q test`.
   One class: `mvn -q test -Dtest=ZoomMapTest`.
+  Compiler warnings fail the build, and `-q` hides their text; run without `-q` to see them.
+- Git hooks (`prek install`) format and lint every commit; see `CLAUDE.md`.
 - No C compiler or C library is needed.
 
 ---
@@ -145,7 +152,8 @@ Rust has no string attribute layer, so it is ported from C.
 ### Task 1: Project skeleton, test helpers and the jniast API check
 
 **Files:**
-- Create: `pom.xml`, `LICENSE` (the LGPL-3.0 text, copied from `reference/starlink-ast/COPYING`), `README.md`, `.gitignore` (`target/`, `.DS_Store`), `.gitmodules`, `.github/workflows/ci.yml`, `config/checkstyle.xml`
+- Create: `LICENSE` (the LGPL-3.0 text, copied from `reference/starlink-ast/COPYING`), `README.md`, `.github/workflows/ci.yml`
+- Modify: `pom.xml` (exists, with the build and static-analysis setup)
 - Create: `tools/ExtractApi.java`, `src/test/resources/jniast-api.txt`
 - Create: `src/test/java/uk/ac/starlink/ast/testsupport/{Fixtures,CValues,OracleFile,OracleSection,Deferred}.java`
 - Test: `src/test/java/uk/ac/starlink/ast/testsupport/{CValuesTest,OracleFileTest}.java`, `src/test/java/uk/ac/starlink/ast/JniastApiTest.java`
@@ -157,17 +165,16 @@ Rust has no string attribute layer, so it is ported from C.
   - `OracleFile.parse(Path)`: `List<OracleSection>`; `OracleSection` has `String path`, `int nin`, `int nout`, `boolean forward`, `double[][] rows` (inputs then outputs, `BAD` read as `AST__BAD`), plus the header tolerances.
   - `Deferred.load(String name)`: `Map<String,String>` from `src/test/resources/deferred/<name>.txt`.
 
-- [ ] **Step 1: Add the C repo as a submodule**
+- [ ] **Step 1: Pin the C submodule**
 
-Run: `git submodule add https://github.com/Starlink/ast reference/starlink-ast && git -C reference/starlink-ast checkout 3d3f255f`
-Expected: `reference/starlink-ast/ast_tester/fixtures/oracle/headers.oracle` exists.
+The submodule `reference/starlink-ast` exists; check out the commit the Rust port pins and record it.
+Run: `git -C reference/starlink-ast checkout 3d3f255f && git add reference/starlink-ast`
+Expected: `git submodule status reference/starlink-ast` shows `3d3f255f`, and `reference/starlink-ast/ast_tester/fixtures/oracle/headers.oracle` exists.
 
-- [ ] **Step 2: Write `pom.xml`**
+- [ ] **Step 2: Check `pom.xml`**
 
-Group `uk.ac.starlink`, artifact `ast`, version `0.1.0-SNAPSHOT`.
-`maven.compiler.release=8` with `-Xlint:-options`; a profile activated by `<jdk>1.8</jdk>` replaces `release` with `source`/`target` `1.8` and skips Checkstyle.
-Test dependencies only: `org.junit.jupiter:junit-jupiter` (latest 5.x) and `com.fasterxml.jackson.core:jackson-databind` (latest 2.x).
-Checkstyle runs in `verify` with only `MissingSwitchDefault` enabled (`config/checkstyle.xml`).
+`pom.xml` already has the coordinates (`uk.ac.starlink:ast:0.1.0-SNAPSHOT`), `--release 8`, the JUnit 5 and Jackson test dependencies, enforcer rules requiring JDK 21 to 26 and banning runtime dependencies, and Error Prone, Checkstyle (`config/checkstyle.xml`), PMD (`config/pmd-ruleset.xml`) and Spotless.
+Change it only where this task needs to.
 
 - [ ] **Step 3: Write the failing helper tests**
 
@@ -191,12 +198,12 @@ Expected: lines for all 68 classes in `uk.ac.starlink.ast`, including `Mapping|m
 
 - [ ] **Step 7: Write `JniastApiTest`**
 
-For every class named in `jniast-api.txt` that exists in `uk.ac.starlink.ast` (looked up without initializing it), every listed member must exist with the same name, parameter simple names, return simple name and public or protected access; the failure message lists every missing member.
+For every class named in `jniast-api.txt` that exists in `uk.ac.starlink.ast` (looked up without initialising it), every listed member must exist with the same name, parameter simple names, return simple name and public or protected access; the failure message lists every missing member.
 A second test asserts the set of jniast classes present equals `IN_SCOPE`, a constant list each task extends (empty now).
 
 - [ ] **Step 8: Write CI and the README**
 
-`ci.yml` runs `mvn -B verify` with submodules on Temurin 8 and Temurin 25.
+`ci.yml` checks out submodules, builds with Temurin 21 and runs `mvn -B verify`, then runs the tests again on Temurin 8 and Temurin 25 runtimes with `mvn -B test -Djvm=<runtime>/bin/java`; a lint job runs `prek run --all-files` (`j178/prek-action`) on Temurin 21.
 `README.md` says what the project is, how to build and test, and that the fixtures come from the submodule.
 
 - [ ] **Step 9: Run everything**
@@ -305,7 +312,7 @@ Each porting task has the same five steps; the task body gives what is specific.
 **Decisions:**
 - `AstObject`'s constructor is protected, as jniast's is; `Nobject` and `ObjSize` follow C's definitions where they can be computed in Java and otherwise return what C returns for a fresh object, documented in the Javadoc.
 
-### Task 5: Channel, native serialization and KeyMap
+### Task 5: Channel, native serialisation and KeyMap
 
 **Files:**
 - Create: `src/main/java/uk/ac/starlink/ast/{Channel,KeyMap,NativeNode,NativeReader,NativeWriter,NativeStream,ChannelOptions,ObjectRegistry}.java`, plus package-private KeyMap helpers named after `keymap/*.rs`
@@ -319,7 +326,7 @@ Each porting task has the same five steps; the task body gives what is specific.
 
 **Interfaces:**
 - Consumes: Task 4.
-- Produces: `NativeNode`, `NativeReader.parse`, `NativeWriter.render`, `ObjectRegistry.load` (Shared Design › Native serialization); jniast's `Channel` API, including `protected String source()`, `protected void sink(String)`, `read()`, `write(AstObject)` and `warnings()` returning `KeyMap`.
+- Produces: `NativeNode`, `NativeReader.parse`, `NativeWriter.render`, `ObjectRegistry.load` (Shared Design › Native serialisation); jniast's `Channel` API, including `protected String source()`, `protected void sink(String)`, `read()`, `write(AstObject)` and `warnings()` returning `KeyMap`.
 
 **Decisions:**
 - `equals` and `hashCode` implement jniast's documented contract (two objects are equal when their Channel dumps are identical); `toString()` and `show()` write through a Channel as jniast's do.
@@ -382,7 +389,7 @@ Port the package-private `equal` (Rust `Mapping::equal`) only if an in-scope cal
 - Consumes: Tasks 6 and 7.
 - Produces: jniast's `mapBox`, `rate`, `linearApprox`, `tranGrid`, `mapSplit` and `decompose`, and the package-private `boolean isLinear()`.
 
-### Task 9: Oracle gates and serialization corpus
+### Task 9: Oracle gates and serialisation corpus
 
 **Files:**
 - Create: `src/test/java/uk/ac/starlink/ast/{TransformOracleTest,SerialisationCorpusTest,NativeRoundTripTest}.java`, `src/test/java/uk/ac/starlink/ast/testsupport/NativeClasses.java`
@@ -414,7 +421,7 @@ Any in-scope fixture that fails is investigated in the original and fixed, not d
 - [ ] **Step 3: Commit**
 
 ```bash
-git add -A && git commit -m "Add transform-oracle and serialization gates"
+git add -A && git commit -m "Add transform-oracle and serialisation gates"
 ```
 
 ### Task 10: ERFA and PAL
@@ -446,7 +453,7 @@ The whole-array projection loops (`fwd_slice`, `rev_slice`, `slice_apply`) are p
 **Tests:** `tests/test_wcsmap.rs`, `test_wcsmap_edges.rs`, `test_wcsmap_pv.rs`, `test_sphmap.rs`; unit tests in `wcslib/prj.rs`, `wcslib/golden_tests.rs` and `mappings/sphmap.rs`.
 Tolerances in Rust tests that exist only because of `vmath` drift (`SPHMAP_DRIFT_LICENSED` and similar) are not carried over; Java compares with `CValues.withinLibmRounding`.
 Tests of the `vmath` kernels themselves are deferred with the reason `hardware SIMD`; tests that slices give the same results as single points (`tan_slices_give_each_point_the_same_bits_at_any_length` and similar) are translated.
-`ProjectionDomainTest` (Review Focus 2): for each projection type, a sphere-to-plane transform of a point outside the projection's domain (for TAN, native latitude -10 degrees) and a plane-to-sphere transform of a plane point outside the projected region (for SIN, a radius greater than the unit circle in its plane units) give `AST__BAD` in that point and finite values in a valid neighbor, with no exception; each expected BAD is confirmed in the C code (`wcsmap.c` and the wcslib projection it calls) and cited in the test.
+`ProjectionDomainTest` (Review Focus 2): for each projection type, a sphere-to-plane transform of a point outside the projection's domain (for TAN, native latitude -10 degrees) and a plane-to-sphere transform of a plane point outside the projected region (for SIN, a radius greater than the unit circle in its plane units) give `AST__BAD` in that point and finite values in a valid neighbour, with no exception; each expected BAD is confirmed in the C code (`wcsmap.c` and the wcslib projection it calls) and cited in the test.
 
 **Probe data:** `wcsmap_pv` generator.
 
@@ -508,7 +515,7 @@ A conversion that needs a MathMap throws `UnsupportedOperationException` naming 
 
 **Interfaces:**
 - Consumes: Tasks 6 and 7.
-- Produces: package-private `static Mapping Units.unitMapper(String inUnit, String outUnit)` and `static Units.LabelledMapping Units.unitMapperLabel(String inUnit, String outUnit, String inLabel)` (fields `Mapping mapping`, `String label`), both returning null where Rust returns `None` (`units/mapper.rs:138,178`), and the unit normalization and parsing functions Frame needs, with the Rust names in lowerCamelCase.
+- Produces: package-private `static Mapping Units.unitMapper(String inUnit, String outUnit)` and `static Units.LabelledMapping Units.unitMapperLabel(String inUnit, String outUnit, String inLabel)` (fields `Mapping mapping`, `String label`), both returning null where Rust returns `None` (`units/mapper.rs:138,178`), and the unit normalisation and parsing functions Frame needs, with the Rust names in lowerCamelCase.
 
 ### Task 15: Axis and Frame
 
@@ -526,7 +533,7 @@ Rust's attribute macros (`frame_attrs!` and the others in `frame_attrs.rs`) beco
 
 **Interfaces:**
 - Consumes: Tasks 3 to 8, 14.
-- Produces: jniast's `Frame` and `Axis` APIs (`findFrame` and `convert` exist but are completed in Task 17); package-private `Axis getAxis(int axis)` (1-based, honoring Permute) and `void setAxis(int axis, Axis ax)` for subclasses.
+- Produces: jniast's `Frame` and `Axis` APIs (`findFrame` and `convert` exist but are completed in Task 17); package-private `Axis getAxis(int axis)` (1-based, honouring Permute) and `void setAxis(int axis, Axis ax)` for subclasses.
 
 ### Task 16: FrameSet structure
 
@@ -699,7 +706,7 @@ The `native` rows of `fixtures/wcsconv/cases.txt` compare dumps of FrameSets C s
 
 - [ ] **Step 1: Write the benchmark project**
 
-`TransformBench` is a JMH benchmark parameterized by case and point count, reporting nanoseconds per point.
+`TransformBench` is a JMH benchmark parameterised by case and point count, reporting nanoseconds per point.
 
 - [ ] **Step 2: Run it**
 
@@ -736,7 +743,7 @@ Expected: no matches; BUILD SUCCESS.
 
 - [ ] **Step 3: Run the suite on a Java 8 runtime**
 
-Run the CI workflow's Java 8 job, or `mvn -q verify` with `JAVA_HOME` set to a Java 8 JDK if one is installed (none is on this Mac, and installing one needs Tim's agreement).
+Run the CI workflow's Java 8 tests, or `mvn -q test -Djvm=<java8>/bin/java` if a Java 8 runtime is installed (none is on this Mac, and installing one needs Tim's agreement).
 Expected: BUILD SUCCESS; any test whose result differs between runtimes is investigated and its cause recorded in the report.
 
 - [ ] **Step 4: Write the report**
