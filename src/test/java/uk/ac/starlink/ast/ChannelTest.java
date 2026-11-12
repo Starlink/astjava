@@ -29,11 +29,11 @@ import uk.ac.starlink.ast.testsupport.CValues;
  * {@code toString}, which writes as a default Channel does, matches a Channel for the same nested
  * Object.
  *
- * <p>The tests that write and read Frames, SkyFrames and FrameSets are translated in the tasks
- * that port them: {@code
- * round_trip_skyframe_via_file} and {@code default_skyframe_file_round_trip_is_equal} in Task 18
- * (SkyFrame); {@code round_trip_multiple_types}, {@code write_and_read_frameset_via_channel} and
- * {@code converted_frameset_string_round_trip} in Task 20 (FrameSet).
+ * <p>{@code default_skyframe_file_round_trip_is_equal} compares the SkyFrame read back with the
+ * original, which C does with {@code astEqual}, by comparing their dumps, since a native round
+ * trip writes back what it read. The tests that write and read several classes together, {@code
+ * round_trip_multiple_types}, {@code write_and_read_frameset_via_channel} and {@code
+ * converted_frameset_string_round_trip}, are translated in Task 20.
  *
  * <p>The Rust tests that use the real standard input and output run a child copy of the test
  * program; here standard input and output are replaced for the duration of the test.
@@ -175,6 +175,29 @@ class ChannelTest {
         assertEquals(33.0, out[2], 1e-10, "shift axis 3");
     }
 
+    /** Writes {@code obj} to the file {@code path} and reads it back, through SinkFile and SourceFile. */
+    private static AstObject viaFile(AstObject obj, String path) throws IOException {
+        Channel out = new Channel(null, null);
+        out.setSinkFile(path);
+        out.write(obj);
+        out.clearSinkFile();
+
+        Channel in = ChannelText.reader("");
+        in.setSourceFile(path);
+        return in.read();
+    }
+
+    @Test
+    void roundTripSkyframeViaFile(@TempDir Path dir) throws IOException {
+        SkyFrame sky = new SkyFrame();
+        sky.setSystem("FK5");
+        Frame f = assertInstanceOf(
+                Frame.class,
+                viaFile(sky, dir.resolve("ast_channel_test_skyframe.ast").toString()));
+        assertEquals(2, f.getNaxes());
+        assertEquals("FK5", f.getSystem());
+    }
+
     @Test
     void roundTripZoommapViaFile(@TempDir Path dir) throws IOException {
         String path = dir.resolve("ast_channel_test_zoommap.ast").toString();
@@ -192,6 +215,25 @@ class ChannelTest {
         assertEquals(-5.0, p[0], 1e-10, "zoom file axis 1");
         assertEquals(-10.0, p[1], 1e-10, "zoom file axis 2");
         assertEquals(-15.0, p[2], 1e-10, "zoom file axis 3");
+    }
+
+    /**
+     * testchannel.c Errors 1-6: a default SkyFrame written to a file and read back is the same as
+     * the original, for two files in turn. C's Error 7, a read while SinkFile is still set, is
+     * not part of this test, as it is not of Rust's.
+     */
+    @Test
+    void defaultSkyframeFileRoundTripIsEqual(@TempDir Path dir) throws IOException {
+        SkyFrame sf = new SkyFrame();
+        sf.setSystem("ICRS");
+        String want = ChannelText.dump(sf);
+        String[] names = {"ast_testchannel_fred.txt", "ast_testchannel_fred2.txt"};
+        for (int n = 0; n < names.length; n++) {
+            AstObject restored = viaFile(sf, dir.resolve(names[n]).toString());
+            assertNotNull(restored, "Error " + (2 + 3 * n));
+            assertInstanceOf(SkyFrame.class, restored, "a SkyFrame reads back as a SkyFrame");
+            assertEquals(want, ChannelText.dump(restored), "Error " + (3 + 3 * n));
+        }
     }
 
     @Test

@@ -49,6 +49,8 @@ class JniastApiTest {
             "PolyMap",
             "ResampleFlags",
             "ShiftMap",
+            "SkyAxis",
+            "SkyFrame",
             "SlaMap",
             "SphMap",
             "TimeMap",

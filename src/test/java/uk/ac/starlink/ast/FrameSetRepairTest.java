@@ -3,6 +3,8 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
 import static uk.ac.starlink.ast.MappingTestData.transformRows;
@@ -17,10 +19,7 @@ import org.junit.jupiter.api.Test;
  *
  * <p>{@code frameset_simplified_returns_frameset} is translated as far as this version simplifies:
  * the result is a FrameSet with the same Frames; that the CmpMap of a ZoomMap and its inverse
- * becomes a UnitMap needs simplification. {@code frameset_delegates_domain_but_owns_ident} and
- * {@code frameset_template_matches_like_current_frame} need a SkyFrame and are translated in Task
- * 18, with {@code convert_via_noncurrent_member_frame} and {@code
- * convert_via_current_frame_still_works}; {@code add_frame_allframes_appends_axes} needs a
+ * becomes a UnitMap needs simplification. {@code add_frame_allframes_appends_axes} needs a
  * CmpFrame and is translated in Task 20, with {@code allframes_rejected_as_single_frame}.
  */
 class FrameSetRepairTest {
@@ -95,6 +94,33 @@ class FrameSetRepairTest {
 
     // Frame-method delegation to the current Frame
 
+    private static SkyFrame sky(String system) {
+        SkyFrame f = new SkyFrame();
+        f.setSystem(system);
+        return f;
+    }
+
+    @Test
+    void framesetDelegatesDomainButOwnsIdent() {
+        SkyFrame skyFrame = sky("ICRS");
+        skyFrame.setIdent("Q");
+        FrameSet fs = new FrameSet(named(2, "PIXEL"));
+        fs.addFrame(FrameSet.AST__BASE, new UnitMap(2), skyFrame);
+
+        // C forwards GetDomain to the current Frame.
+        assertEquals("SKY", fs.getDomain());
+
+        // Ident is the FrameSet's own, not the current Frame's (frameset.c:4841 passes this).
+        assertEquals("", fs.getIdent());
+        fs.setIdent("FS");
+        assertEquals("FS", fs.getIdent());
+        assertEquals("Q", fs.getFrame(FrameSet.AST__CURRENT).getIdent());
+
+        fs.setCurrent(fs.getBase());
+        assertEquals("PIXEL", fs.getDomain());
+        assertEquals("FS", fs.getIdent());
+    }
+
     @Test
     void framesetDelegatesMatchControlAttributes() {
         FrameSet fs = new FrameSet(named(3, "PIXEL"));
@@ -102,6 +128,19 @@ class FrameSetRepairTest {
         fs.setMinAxes(5);
         assertEquals(5, fs.getMinAxes());
         assertEquals(5, fs.getFrame(FrameSet.AST__CURRENT).getMinAxes());
+    }
+
+    /**
+     * A FrameSet whose current Frame is a SkyFrame matches as a SkyFrame template (C forwards
+     * astMatch to the current Frame): it matches a SkyFrame target but not a plain Frame target.
+     */
+    @Test
+    void framesetTemplateMatchesLikeCurrentFrame() {
+        FrameSet fs = new FrameSet(named(2, "PIXEL"));
+        fs.addFrame(FrameSet.AST__BASE, new UnitMap(2), sky("ICRS"));
+
+        assertNotNull(fs.match(sky("ICRS"), false), "FrameSet(SkyFrame) should match a SkyFrame");
+        assertNull(fs.match(new Frame(2), false), "FrameSet(SkyFrame) must not match a plain Frame target");
     }
 
     // Simplify returns a FrameSet
@@ -129,5 +168,41 @@ class FrameSetRepairTest {
         fs.addFrame(FrameSet.AST__BASE, pm, named(1, "B"));
         assertTrue(fs.getTranForward());
         assertFalse(fs.getTranInverse());
+    }
+
+    // Convert from a FrameSet tries every member Frame
+
+    /**
+     * Converting from a FrameSet tries every member Frame, not just the current one. Here the
+     * current Frame (PIXEL) cannot align with a Galactic SkyFrame, but the base Frame (an FK5
+     * SkyFrame) can. C's astConvert of the same FrameSet to a Galactic SkyFrame maps (0.1, 0.2)
+     * rad to (1.951902536797, -0.886577028810) rad, given to 12 decimal places.
+     */
+    @Test
+    void convertViaNoncurrentMemberFrame() {
+        FrameSet fs = new FrameSet(sky("FK5"));
+        fs.addFrame(FrameSet.AST__BASE, new UnitMap(2), named(2, "PIXEL"));
+
+        FrameSet out = fs.convert(sky("GALACTIC"), "");
+        assertNotNull(out, "FrameSet should convert to Galactic via its FK5 base member");
+        Mapping m = out.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        assertTrue(m.getTranForward());
+        assertTrue(m.getTranInverse());
+
+        double[] res = point(transformRows(m, true, new double[] {0.1, 0.2}), 0);
+        assertEquals(1.951902536797, res[0], 1e-9);
+        assertEquals(-0.88657702881, res[1], 1e-9);
+    }
+
+    /** When the current Frame can align directly, converting still gives a usable result. */
+    @Test
+    void convertViaCurrentFrameStillWorks() {
+        FrameSet fs = new FrameSet(named(2, "PIXEL"));
+        fs.addFrame(FrameSet.AST__BASE, new UnitMap(2), sky("FK5"));
+
+        FrameSet out = fs.convert(sky("GALACTIC"), "");
+        assertNotNull(out, "current FK5 Frame converts to Galactic");
+        Mapping m = out.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        assertTrue(m.getTranForward() && m.getTranInverse());
     }
 }

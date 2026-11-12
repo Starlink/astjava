@@ -2,6 +2,7 @@ package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,15 +20,29 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * SubFrame}).
  *
  * <p>The cases of {@code overlay_results_match_the_c_library} whose Frames this version builds run
- * here: so far {@code frame_pick}; the SkyFrame cases ({@code sky_target_frame_template}, {@code
- * sky_pick_one}) are added in Task 18 and the TimeFrame cases ({@code time_target_frame_template},
- * {@code time_system_change}, {@code time_pick_padded}) in Task 19. The cases with a SpecFrame or
- * a FluxFrame are outside this version.
+ * here: {@code frame_pick} and the SkyFrame cases ({@code sky_target_frame_template}, {@code
+ * sky_pick_one}). The TimeFrame cases ({@code time_target_frame_template}, {@code
+ * time_system_change}, {@code time_pick_padded}) are added in Task 19. The cases with a SpecFrame
+ * or a FluxFrame (among them {@code cmp_template_plain_target}, whose CmpFrame holds a SpecFrame)
+ * are outside this version.
  */
 class OverlayTest {
 
     /** J1990 as a TDB Modified Julian Date. */
     private static final double J1990 = 47892.0;
+
+    /** The current Frame of what {@code target.findFrame(template, "")} finds. */
+    private static Frame found(Frame target, Frame template) {
+        FrameSet fs = target.findFrame(template, "");
+        assertNotNull(fs, "a match");
+        return fs.getFrame(FrameSet.AST__CURRENT);
+    }
+
+    private static SkyFrame sky(String system) {
+        SkyFrame f = new SkyFrame();
+        f.setSystem(system);
+        return f;
+    }
 
     /** The Frame the probe's case gives, or null if this version cannot build its Frames. */
     private static Frame run(String name) {
@@ -42,6 +57,20 @@ class OverlayTest {
                 f.setLabel(2, "Y");
                 f.setUnit(1, "m");
                 return f.pickAxes(2, new int[] {2, 1}, null);
+            }
+            case "sky_target_frame_template": {
+                Frame t = new Frame(2);
+                t.setDomain("SKY");
+                t.setTitle("Hello");
+                t.setDigits(9);
+                return found(sky("FK5"), t);
+            }
+            case "sky_pick_one": {
+                SkyFrame s = sky("FK5");
+                s.setEpochMjd(J1990);
+                s.setTitle("Sky");
+                s.setDigits(5);
+                return s.pickAxes(1, new int[] {1}, null);
             }
             default:
                 return null;
@@ -71,7 +100,7 @@ class OverlayTest {
                 failures.add(name + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(1, ran, "the cases with Frames this version builds");
+        assertEquals(3, ran, "the cases with Frames this version builds");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

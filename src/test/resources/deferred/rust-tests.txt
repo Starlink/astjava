@@ -327,3 +327,14 @@ tests/test_convert.rs::find_frame_cmp_needs_widened_axes | SpecFrame (out of sco
 tests/test_convert.rs::convert_between_regions_does_not_clip | Circle (Region, out of scope)
 tests/test_frame_in_map_slot.rs::a_region_inside_a_cmpmap_still_reads | Region classes (out of scope)
 tests/test_frame_in_map_slot.rs::a_region_inside_a_cmpframe_still_reads | Box (Region, out of scope)
+src/frames/skyframe.rs::skyframe_is_send | Rust-only API (Send trait bound)
+tests/test_skyframe.rs::skyframe_is_send | Rust-only API (Send)
+tests/test_skyframe.rs::debug_formatting | Rust-only API (Debug formatting)
+tests/test_skyframe.rs::serialise_skyframe_not_a_mapping | Rust-only API (AnyObject::as_mapping; in AST every Frame is a Mapping)
+tests/test_sky_convert.rs::fk_licences_name_existing_cases | hardware SIMD
+tests/test_sky_geometry.rs::cmp_frame_resolve_matches_the_c_library | needs CmpFrame (Task 20)
+tests/test_sky_geometry.rs::cmp_frame_resolve_points_matches_the_c_library | needs CmpFrame (Task 20)
+tests/test_sky_interleave.rs::interleaved_sky_axes_match_the_c_library | needs CmpFrame (Task 20)
+tests/test_sky_pole_oracle.rs::sky_pole_matches_the_c_library | needs FitsChan
+tests/test_sky_pole_oracle.rs::refused_cases_are_ill_conditioned | needs FitsChan
+tests/test_skyref_offset_mapping.rs::skyref_offset_mapping_matches_oracle | needs FitsChan

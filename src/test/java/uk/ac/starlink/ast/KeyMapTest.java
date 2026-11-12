@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test;
  * blocks of testkeymap.c that change a nested KeyMap through the caller's own reference are
  * therefore translated as C writes them.
  *
- * <p>The tests built on the seven scalar entries of testkeymap.c, which store a SkyFrame, are
- * translated with SkyFrame (Task 18): {@code scalar_puts_and_types}, {@code
- * scalar_cross_type_reads} and {@code a_scalar_reads_as_a_length_one_vector}. Those that also
- * store a SpecFrame, which is outside the first phase, are on the deferred list.
+ * <p>The tests built on the seven scalar entries of testkeymap.c, one of which is a SkyFrame,
+ * are {@code scalarPutsAndTypes}, {@code scalarCrossTypeReads} and {@code
+ * aScalarReadsAsALengthOneVector}. Those that also store a SpecFrame, which is outside the first
+ * phase, are on the deferred list.
  */
 class KeyMapTest {
 
@@ -1537,5 +1537,91 @@ class KeyMapTest {
         assertEquals(0, km.mapLength(repeat('a', 200)));
         AstException e = assertAst(AstException.AST__BIGKEY, () -> km.mapLength(repeat('a', 201)));
         assertContains("astMapLength(KeyMap): ", e);
+    }
+
+    /**
+     * The seven scalar entries testkeymap.c puts at lines 374-380, one per scalar type. C's {@code
+     * astSkyFrame( " " )} leaves System at its ICRS default.
+     */
+    private static KeyMap sevenKeyMap() {
+        KeyMap map = new KeyMap();
+        map.mapPut0S("Freds", (short) 1999, "com 1");
+        map.mapPut0I("Fredi", 1999, "com 1");
+        map.mapPut0K("Fredk", 1999L, "com 1");
+        map.mapPut0D("Fredd", 1999.9, "com2 ");
+        map.mapPut0F("Fredr", 1999.9f, "com2 ");
+        map.mapPut0C("Fredc", "Hello", " ");
+        map.mapPut0A("Freda", new SkyFrame(), " ");
+        return map;
+    }
+
+    @Test
+    void scalarPutsAndTypes() {
+        // main (testkeymap.c:372-431).
+        KeyMap map = sevenKeyMap();
+
+        // Error -12.
+        assertTrue(map.mapDefined("Freda"));
+
+        // Error -11 / -10 / -9: an Object has no string rendering, so its MapLenC is 0, not an
+        // error.
+        assertEquals(4, map.mapLenC("Fredi"));
+        assertEquals(0, map.mapLenC("Freda"));
+        assertEquals(5, map.mapLenC("Fredc"));
+
+        // Error -8: KeyCase defaults to case-sensitive, so "freda" is absent.
+        assertEquals(KeyMap.AST__BADTYPE, map.mapType("freda"));
+        // Error -7 / -6 / -5 / -5b / -4.
+        assertEquals(KeyMap.AST__OBJECTTYPE, map.mapType("Freda"));
+        assertEquals(KeyMap.AST__STRINGTYPE, map.mapType("Fredc"));
+        assertEquals(KeyMap.AST__DOUBLETYPE, map.mapType("Fredd"));
+        assertEquals(KeyMap.AST__FLOATTYPE, map.mapType("Fredr"));
+        assertEquals(KeyMap.AST__INTTYPE, map.mapType("Fredi"));
+
+        // Error -3 / -2.
+        assertFalse(map.mapHasKey("fredi"));
+        assertTrue(map.mapHasKey("Fredi"));
+    }
+
+    @Test
+    void scalarCrossTypeReads() {
+        // main (testkeymap.c:534-590).
+        KeyMap map2 = sevenKeyMap();
+
+        // Error 10 / 11, 10b / 11b: an int reads as double and as float.
+        assertEquals(1999.0, map2.mapGet0D("Fredi"));
+        assertEquals(1999.0f, map2.mapGet0F("Fredi"));
+
+        // Error 12 / 13a / 13.
+        assertEquals("1999", map2.mapGet0C("Fredi"));
+
+        // Error 14 / 15, 14k / 15k, 14b / 15b: ConvertValue rounds 1999.9 up by adding a half and
+        // truncating, in all three integer widths.
+        assertEquals(2000, map2.mapGet0I("Fredd"));
+        assertEquals(2000L, map2.mapGet0K("Fredd"));
+        assertEquals((short) 2000, map2.mapGet0S("Fredd"));
+
+        // Error 16 / 17a / 17.
+        assertEquals("1999.9", map2.mapGet0C("Fredd"));
+    }
+
+    /**
+     * main (testkeymap.c:592-636). C pre-fills a two-element buffer with a sentinel and checks
+     * that element 1 is untouched; the arrays returned here are sized to the entry's own length,
+     * so the same fact is the length.
+     */
+    @Test
+    void aScalarReadsAsALengthOneVector() {
+        KeyMap map2 = sevenKeyMap();
+
+        // Error 18 / 19 / 20 / 21.
+        assertArrayEquals(new int[] {1999}, map2.mapGet1I("Fredi"));
+        // Error 22 / 23 / 24 / 25.
+        assertArrayEquals(new double[] {1999.9}, map2.mapGet1D("Fredd"));
+
+        // Error 26 / 27 / 28 / 29.
+        AstObject[] avec = map2.mapGet1A("Freda");
+        assertEquals(1, avec.length);
+        assertInstanceOf(SkyFrame.class, avec[0]);
     }
 }

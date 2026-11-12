@@ -916,6 +916,11 @@ public class AstObject implements Cloneable {
         useDefs = value ? 1 : 0;
     }
 
+    /** Clears the UseDefs attribute, so that it takes its default, true. */
+    void clearUseDefs() {
+        useDefs = UNSET_FLAG;
+    }
+
     /**
      * Gets the Nobject attribute. In C it counts the Objects of this class in existence; Objects
      * here are managed by the garbage collector and are not counted, so this returns 1, the value

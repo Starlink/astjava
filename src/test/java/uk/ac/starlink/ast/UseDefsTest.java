@@ -15,9 +15,9 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * UseDefs defaults to true, and a dump writes {@code UseDfs} when it is set (object.c {@code
  * Dump}).
  *
- * <p>The plain Frame cases run here; {@code sky_on} is added in Task 18, {@code time_off} in Task
- * 19, and {@code cmp_from_first}, {@code cmp_second_ignored}, {@code frameset_from_current} and
- * {@code frameset_own} in Task 20; {@code spec_off} needs a SpecFrame, outside the first phase.
+ * <p>The plain Frame cases and {@code sky_on} run here; {@code time_off} is added in Task 19, and
+ * {@code cmp_from_first}, {@code cmp_second_ignored}, {@code frameset_from_current} and {@code
+ * frameset_own} in Task 20; {@code spec_off} needs a SpecFrame, outside the first phase.
  */
 class UseDefsTest {
 
@@ -37,6 +37,10 @@ class UseDefsTest {
                 Frame f = off(new Frame(1));
                 f.setIdent("Me");
                 return f;
+            case "sky_on":
+                SkyFrame sky = new SkyFrame();
+                sky.setUseDefs(true);
+                return sky;
             default:
                 return null;
         }
@@ -69,7 +73,7 @@ class UseDefsTest {
                 failures.add(name + ": read back as " + read);
             }
         }
-        assertEquals(3, ran, "the plain Frame cases");
+        assertEquals(4, ran, "the plain Frame cases and sky_on");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 }

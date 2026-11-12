@@ -22,16 +22,16 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  *
  * <p>{@code dumps_match_c} runs here the cases whose classes are ported: {@code zoommap}, {@code
  * zoommap_blank}, {@code keymap}, {@code channel}, {@code zoommap_copy}, {@code
- * zoommap_simplified}, {@code cmpmap}, {@code cmpmap_copy}, {@code frame}, {@code frameset},
- * {@code frameset_frame_id} and {@code frameset_part_ids}. {@code simplify} returns the
+ * zoommap_simplified}, {@code cmpmap}, {@code cmpmap_copy}, {@code frame}, {@code skyframe},
+ * {@code frameset}, {@code frameset_frame_id} and {@code frameset_part_ids}. {@code simplify} returns the
  * ZoomMap itself, as C's {@code astSimplify} returns a Mapping it cannot simplify, recording it as
  * simplified, and a CmpMap shares its components, as C's does, so the Rust test's exclusions for
  * copies do not arise for them. {@code cmpmap_simplified} is C's simplification of two ZoomMaps
  * into one, which this version does not make: it is in {@link #EXCLUDED}, and {@code
  * excluded_cases_still_differ} fails when it matches. The others are added by the tasks that port
- * their classes: {@code skyframe} in Task 18; {@code cmpframe} in Task 20; {@code
- * fitschan} in Task 21. {@code cmpmap_unsimplifiable} needs a LutMap, and the remaining cases
- * other classes outside the first phase.
+ * their classes: {@code cmpframe} in Task 20; {@code fitschan} in Task 21. {@code
+ * cmpmap_unsimplifiable} needs a LutMap, and the remaining cases other classes outside the first
+ * phase.
  */
 class ObjectIdOracleTest {
 
@@ -46,6 +46,7 @@ class ObjectIdOracleTest {
             "cmpmap",
             "cmpmap_copy",
             "frame",
+            "skyframe",
             "frameset",
             "frameset_frame_id",
             "frameset_part_ids");
@@ -127,6 +128,12 @@ class ObjectIdOracleTest {
                 Frame f = new Frame(2);
                 f.setID("fid");
                 return f;
+            case "skyframe":
+                SkyFrame sky = new SkyFrame();
+                sky.setSystem("ICRS");
+                sky.clearSystem();
+                sky.setID("sky");
+                return sky;
             case "frameset":
                 return frameset(null, null, null);
             case "frameset_frame_id":
