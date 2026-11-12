@@ -22,6 +22,12 @@ final class ObjectRegistry {
                 return new Channel(node);
             case "KeyMap":
                 return new KeyMap(node);
+            case "ShiftMap":
+                return new ShiftMap(node);
+            case "UnitMap":
+                return new UnitMap(node);
+            case "ZoomMap":
+                return new ZoomMap(node);
             default:
                 throw Ast.err(AstException.AST__LDERR, "unknown AST class: " + node.className);
         }

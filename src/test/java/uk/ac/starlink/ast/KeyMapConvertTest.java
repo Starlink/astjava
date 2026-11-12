@@ -8,10 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
-/**
- * Translation of the unit tests in Rust {@code src/keymap/convert.rs}. {@code
- * object_converts_only_to_object} stores a UnitMap and is translated with UnitMap (Task 6).
- */
+/** Translation of the unit tests in Rust {@code src/keymap/convert.rs}. */
 class KeyMapConvertTest {
 
     private static final int I = KeyMap.AST__INTTYPE;
@@ -33,6 +30,20 @@ class KeyMapConvertTest {
         assertNotNull(got, value + " to " + to);
         assertEquals(wantType, got.type);
         assertEquals(want, got.value, value + " to " + to);
+    }
+
+    @Test
+    void objectConvertsOnlyToObject() {
+        KeyMapConvert.Raw obj = new KeyMapConvert.Raw(KeyMap.AST__OBJECTTYPE, new UnitMap(1));
+        KeyMapConvert.Raw same = KeyMapConvert.convert(obj, KeyMap.AST__OBJECTTYPE);
+        assertNotNull(same);
+        assertEquals(KeyMap.AST__OBJECTTYPE, same.type);
+        for (int to : new int[] {I, S, K, B, F, D, C, U}) {
+            assertNull(KeyMapConvert.convert(obj, to), "type " + to);
+        }
+        // Nothing converts to an Object either.
+        assertNull(conv(I, 1, KeyMap.AST__OBJECTTYPE));
+        assertNull(conv(C, "x", KeyMap.AST__OBJECTTYPE));
     }
 
     @Test
