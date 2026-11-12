@@ -77,6 +77,15 @@ final class UnitsMapper {
      * @throws UnsupportedOperationException if the conversion needs a MathMap
      */
     static Units.LabelledMapping unitMapper(String in, String out, String inLab) {
+        return unitMapper(in, out, inLab, true);
+    }
+
+    /**
+     * {@link #unitMapper(String, String, String)}, making the Mapping from the conversion found
+     * only if {@code makeMap}: otherwise the result's Mapping is null, so that a conversion C makes with a MathMap is found
+     * and its label rewritten, as C's {@code NewUnit} (frame.c) uses them.
+     */
+    static Units.LabelledMapping unitMapper(String in, String out, String inLab, boolean makeMap) {
         if (in.equals(out)) {
             return new Units.LabelledMapping(new UnitMap(1), inLab);
         }
@@ -163,7 +172,7 @@ final class UnitsMapper {
             return null;
         }
 
-        Mapping result = makeMapping(testtree);
+        Mapping result = makeMap ? makeMapping(testtree) : null;
         if (inLab == null) {
             return new Units.LabelledMapping(result, null);
         }

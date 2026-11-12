@@ -18,8 +18,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * nested in it. The expected dumps and reads come from C ({@code oracle/ident.json}, from {@code
  * tools/oracle_fixtures/ident_probe.c}).
  *
- * <p>The Frame and FrameSet parts of {@code a_blank_ident_is_set_and_written} and {@code
- * a_blank_ident_reads_back_set} are translated in Tasks 15 (Frame) and 16 (FrameSet).
+ * <p>The FrameSet parts of {@code a_blank_ident_is_set_and_written} and {@code
+ * a_blank_ident_reads_back_set} are translated in Task 16.
  * {@code aCopyKeepsIdent} checks the Object itself.
  */
 class IdentTest {
@@ -72,11 +72,16 @@ class IdentTest {
         zoom.setIdent("");
         assertTrue(zoom.test("Ident"));
         assertEquals(text("DUMP_BLANK_ZOOMMAP"), ChannelText.dump(zoom), "zoommap");
+
+        Frame frame = new Frame(1);
+        frame.setIdent("");
+        assertTrue(frame.test("Ident"));
+        assertEquals(text("DUMP_BLANK_FRAME"), ChannelText.dump(frame), "frame");
     }
 
     @Test
     void aBlankIdentReadsBackSet() {
-        for (String dump : new String[] {"DUMP_BLANK_KEYMAP", "DUMP_BLANK_ZOOMMAP"}) {
+        for (String dump : new String[] {"DUMP_BLANK_KEYMAP", "DUMP_BLANK_ZOOMMAP", "DUMP_BLANK_FRAME"}) {
             AstObject obj = ChannelText.read(text(dump));
             assertEquals("", obj.getIdent(), dump);
             assertTrue(obj.test("Ident"), dump);

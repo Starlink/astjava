@@ -30,7 +30,7 @@ import uk.ac.starlink.ast.testsupport.CValues;
  * Object.
  *
  * <p>The tests that write and read Frames, SkyFrames and FrameSets are translated in the tasks
- * that port them: {@code config_full_minus_one_shorter_output} in Task 15 (Frame); {@code
+ * that port them: {@code
  * round_trip_skyframe_via_file} and {@code default_skyframe_file_round_trip_is_equal} in Task 18
  * (SkyFrame); {@code round_trip_multiple_types}, {@code write_and_read_frameset_via_channel} and
  * {@code converted_frameset_string_round_trip} in Task 20 (FrameSet).
@@ -84,6 +84,26 @@ class ChannelTest {
         assertTrue(ch.test("Full"));
         ch.clear("Full");
         assertEquals(0, ch.getFull());
+    }
+
+    /** A Frame written with Full -1 leaves out the unset items written with Full 0. */
+    @Test
+    void configFullMinusOneShorterOutput() throws IOException {
+        Frame frame = new Frame(3);
+        frame.setDomain("PIXEL");
+        frame.setLabel(1, "X");
+        frame.setLabel(2, "Y");
+        frame.setLabel(3, "Z");
+        String normal = ChannelText.dump(frame);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Channel ch = new Channel(null, out);
+        ch.setFull(-1);
+        ch.write(frame);
+        String minimal = new String(out.toByteArray(), StandardCharsets.UTF_8);
+        assertTrue(
+                minimal.length() < normal.length(),
+                "Full -1 output (" + minimal.length() + " bytes) should be shorter than Full 0 (" + normal.length()
+                        + " bytes)");
     }
 
     @Test

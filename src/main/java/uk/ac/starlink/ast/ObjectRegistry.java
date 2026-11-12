@@ -24,10 +24,14 @@ final class ObjectRegistry {
      */
     static Loader loader(String className) {
         switch (className) {
+            case "Axis":
+                return Axis::new;
             case "Channel":
                 return Channel::new;
             case "CmpMap":
                 return CmpMap::new;
+            case "Frame":
+                return Frame::new;
             case "KeyMap":
                 return KeyMap::new;
             case "MatrixMap":
