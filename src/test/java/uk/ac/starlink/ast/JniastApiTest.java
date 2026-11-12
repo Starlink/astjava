@@ -34,7 +34,7 @@ class JniastApiTest {
     private static final String PACKAGE = "uk.ac.starlink.ast";
 
     /** The jniast classes this library provides. */
-    static final List<String> IN_SCOPE = Arrays.asList("AstException");
+    static final List<String> IN_SCOPE = Arrays.asList("AstException", "AstObject");
 
     /** One line of {@code jniast-api.txt}. */
     private static final class Member {
@@ -154,14 +154,17 @@ class JniastApiTest {
         return m.params.stream().map(JniastApiTest::withoutPackage).collect(Collectors.toList());
     }
 
-    /** Every class and interface {@code c} inherits from, itself first. */
+    /**
+     * Every class and interface {@code c} inherits from, itself first, except
+     * {@code java.lang.Object}, whose members jniast's classes declare again when they use them.
+     */
     private static List<Class<?>> hierarchy(Class<?> c) {
         List<Class<?>> out = new ArrayList<>();
         List<Class<?>> todo = new ArrayList<>();
         todo.add(c);
         while (!todo.isEmpty()) {
             Class<?> k = todo.remove(0);
-            if (k == null || out.contains(k)) {
+            if (k == null || k == Object.class || out.contains(k)) {
                 continue;
             }
             out.add(k);
