@@ -88,14 +88,19 @@ public class ZoomMap extends Mapping {
      *
      * @param zoom the zoom factor
      * @throws AstException with status {@code AST__ZOOMI} if {@code zoom} is zero, leaving the
-     *     factor unchanged
+     *     factor unchanged, or {@code AST__IMMUT} if the ZoomMap is shared with a holder such as a
+     *     CmpMap, which a copy is not
      */
     public void setZoom(double zoom) {
         storeZoom(zoom);
     }
 
-    /** C's private {@code SetZoom}, which both {@link #setZoom} and the loader call. */
+    /**
+     * C's private {@code SetZoom}, which both {@link #setZoom} and the loader call. It is an
+     * {@code astMAKE_SET1} attribute, so a shared ZoomMap refuses the change first.
+     */
     private void storeZoom(double zoom) {
+        checkSet1("Zoom");
         // C tests the raw value, so a rejected zero still discards the records (zoommap.c, the
         // astMAKE_SET1 of Zoom).
         if (zoom != this.zoom) {
@@ -113,8 +118,12 @@ public class ZoomMap extends Mapping {
         return zoom != 0.0;
     }
 
-    /** Clears the Zoom attribute, which also discards the record of simplification. */
+    /**
+     * Clears the Zoom attribute, which also discards the record of simplification. It is an
+     * {@code astMAKE_CLEAR1} attribute, so a shared ZoomMap refuses to clear it.
+     */
     void clearZoom() {
+        checkClear1("Zoom");
         clearIsSimple();
         zoom = 0.0;
     }
