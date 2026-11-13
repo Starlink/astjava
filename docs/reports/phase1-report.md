@@ -5,10 +5,11 @@
 Phase 1 ported the core of AST to pure Java on 12 November 2026, in about ten hours of porting by AI agents and two more of benchmarking: 28 jniast classes with jniast's public API, in 72,840 lines of main code and 46,573 lines of tests.
 The library reads the LSST FrameSet, native dumps and FITS-WCS headers, SIP headers included, and transforms pixel to sky and back with results that match the C library within the oracle files' tolerances.
 Of the C oracle fixtures, 69 of 139 FITS headers, 109 of 178 FrameSets and 426 of 833 Mappings match; every other fixture is deferred for a named class, encoding or method that is outside phase 1.
-Taking behaviour from C where the C library and the Rust port disagree turned up 62 differences between them, recorded in [`docs/rust-c-differences.md`](../rust-c-differences.md).
+Taking behaviour from C where the C library and the Rust port disagree turned up 65 differences between them, recorded in [`docs/rust-c-differences.md`](../rust-c-differences.md).
 On large arrays, transforms through FrameSets and Mappings from real data take 1.1 to 2.6 times as long per point as in the Rust port; a call with one point is often faster than Rust's.
 The largest gaps are the simplifier, spectral axes, FitsChan writing and the FITS encodings other than FITS-WCS and NATIVE.
-The largest risk found is in the tests: lists of points measured against this Mac's `Math` already fail on x86-64 CI, so the suite is not yet green on the runtimes the library supports.
+The largest risk found is that, without the simplifier, setting attributes through a FrameSet of several Frames grows it without bound, which must be fixed before any release to SPLAT, TOPCAT or Firefly users (see Gaps and risks).
+Tests whose guards assumed this Mac's `Math` failed on x86-64 CI; the guards were changed so that they hold on any runtime, and CI has not yet run at the head of the branch, which needs a push.
 Scaled from phase 1's rate by Rust source size, the later phases that have a Rust port come to about 7.6 hours of the same kind of work, with a range of 2.6 to 15.9 hours from the spread of per-task rates; the simplifier, SpecFrame and FitsChan writing are not expected to scale linearly, and Plot, XmlChan and YamlChan have no Rust port to scale from.
 
 ## Outcome against the success criteria
@@ -17,7 +18,7 @@ The spec's first-phase success criteria ([design](../superpowers/specs/2026-11-0
 
 | Criterion | Result |
 | --- | --- |
-| 1. Every jniast public member of the in-scope classes exists | Met: `JniastApiTest` checks the 549 jniast members of the 28 classes against `src/test/resources/jniast-api.txt`; 5 members tied to JNI (`pointer`, `finalize()` and `getAstConstantI`) are excluded with reasons in `jniast-api-exclusions.txt`. |
+| 1. Every jniast public member of the in-scope classes exists | Met: `JniastApiTest` checks the 549 jniast members of the 28 classes against `src/test/resources/jniast-api.txt`; 5 members tied to JNI (`pointer`, `finalize()` and `getAstConstantI`) are excluded with reasons in `jniast-api-exclusions.txt`; and every public member jniast lacks is listed with its reason in `jniast-api-additions.txt` (26 status codes of the newer C library and the HPX and XPH projection codes). |
 | 2. `lsst.ast` forward and inverse match C | Met: forward within libm rounding; inverse within 4.5e-10 pixel, the Rust test's bound away from the platform C's values were captured on (see Tolerances). |
 | 3. In-scope FITS headers, SIP included, match `headers.oracle` | Met for 69 of 139 headers, including `sip.head`, `sip2.head` and `sip-alt.head`, with 2 rows in each of two CAR headers deferred as needing simplification; the other 70 headers need SpecFrame, MathMap or another encoding. |
 | 4. In-scope sections of `framesets.oracle` and `simplify_fixtures.oracle` match | Met: 109 of 178 and 426 of 833 fixtures. |
@@ -51,7 +52,7 @@ Every class is ported from the Rust port (`reference/starlink-ast-rs`, commit `1
 | Total | 215 | 72,840 | |
 
 The tests are 217 files and 46,573 lines: the Rust port's tests translated to JUnit 5, the C oracle and probe checks, and the deferred-list gates.
-The build runs 2,257 tests.
+The build runs 2,286 tests.
 
 ## Time and method
 
@@ -100,43 +101,47 @@ The ledger `.superpowers/sdd/2026-11-04-pure-java-ast-phase1/progress.md` record
 
 | Runtime | Platform | Tests | Result |
 | --- | --- | ---: | --- |
-| OpenJDK 21.0.13 (Homebrew), `mvn verify` | macOS aarch64 | 2,257 | All pass |
-| OpenJDK 27.0.1 (Homebrew), `mvn test -Djvm=...` | macOS aarch64 | 2,257 | All pass |
+| OpenJDK 21.0.13 (Homebrew), `mvn verify` | macOS aarch64 | 2,286 | All pass |
+| OpenJDK 27.0.1 (Homebrew), `mvn test -Djvm=...`, at `7be4d84` | macOS aarch64 | 2,257 | All pass |
 | Temurin 21 (CI `build`), at commit `b5404cf` (Task 21) | Linux x86-64 | 2,012 | 1 failure: `WcslibGoldenTest` |
 | Temurin 8 (CI `runtime`), at `b5404cf` | Linux x86-64 | 2,012 | 1 failure: `WcslibGoldenTest` |
 | Temurin 25 (CI `runtime`), at `b5404cf` | Linux x86-64 | 2,012 | 2 failures: `WcslibGoldenTest`, `PalTest.fk54zSliceGivesEachElementTheSameBitsWhateverItsLength` |
+| Temurin 21, 8 and 25 (CI run 43376418963), with some of the review fixes | Linux x86-64 | 2,276 | `WcslibGoldenTest` on all three; `PalTest.fk45zSliceGivesFk45zOutsideTheKernelDomain` on 25 |
 
 No Java 8 runtime is installed on the Mac, and installing one needs Tim's agreement, so Java 8 has run only in CI.
-CI last ran on the pull request at `b5404cf`; the 245 tests added by Tasks 22 to 24 have not yet run on x86-64 or on Java 8.
+CI has not yet run at the head of the branch, since that needs a push.
 
 The JDK 27 run adds little evidence: it ran on the same machine, and every point `WcslibGoldenTest` lists still differs from C there as it does on JDK 21.
-The CI failures are both in the tests, not the library:
+The CI failures were all in the tests, not the library, and the review's fix pass changed the tests:
 
-- `WcslibGoldenTest` lists 23 points whose outputs differ from the C values by more than libm rounding on the Mac (see Tolerances), and fails if a listed point comes within libm rounding, so that the list holds only points that need it.
-  On x86-64, 14 of the 23 points (12 on Java 8) agree with C within libm rounding: there, `Math` gives values at those points within libm rounding of the C values captured with Apple's libm; no point exceeded its wider bound.
-  The list is a measurement of one platform, and the check that keeps it short cannot hold across platforms.
-- `PalTest.fk54zSliceGivesEachElementTheSameBitsWhateverItsLength` compares raw bits, NaN payloads included, between two identical calls of `Pal.fk54zSlice` on the input (-π/2, ∞).
-  On Java 25 one call returned `0xFFF8000000000000` (the x86 default NaN, sign bit set) and the other `0x7FF8000000000000` (Java's canonical NaN): the code path that produced the NaN changed between the calls, as the JIT compiled the method, and Java does not specify the sign or payload of a NaN from arithmetic.
+- `WcslibGoldenTest` lists 23 points whose outputs differ from the C values by more than libm rounding on the Mac (see Tolerances), and failed if a listed point came within libm rounding.
+  On x86-64, 12 to 14 of the 23 points agree with C within libm rounding: there, `Math` gives values at those points within libm rounding of the C values captured with Apple's libm; no point exceeded its wider bound.
+  Each listed bound is now an upper bound only, since whether a point needs it depends on the runtime's `Math`, which is not C's libm and differs between platforms.
+- `PalTest`'s slice tests compared raw bits, NaN payloads included; on Java 25 two identical calls returned `0xFFF8000000000000` (the x86 default NaN, sign bit set) and `0x7FF8000000000000` (Java's canonical NaN), as the JIT compiled the method, first in `fk54zSliceGivesEachElementTheSameBitsWhateverItsLength` and in the later run in `fk45zSliceGivesFk45zOutsideTheKernelDomain`.
+  Java does not specify the sign or payload of a NaN from arithmetic, so where the expected value is NaN the tests now require only a NaN, and compare every other value bit for bit.
+- The two inverse CAR-seam rows of `oracle-rows.txt` are now marked as depending on the runtime's `Math`, so that the gate does not fail if they match C on another runtime; the forward rows come from multiplications alone and keep the check.
+  `SkyConvertTest`'s check that some excused case still differs is kept, since the excused differences come from C's merged conversions, far beyond libm rounding.
+  Both passed on x86-64 with Java 8, 21 and 25 in the later CI run.
 
 ## Problems found
 
 ### Differences between C and Rust
 
-[`docs/rust-c-differences.md`](../rust-c-differences.md) records 62 behaviours in which the Rust port differs from the pinned C library, plus a list of 9 differences in the units code, each with the C source line, the Rust file and what Java does.
+[`docs/rust-c-differences.md`](../rust-c-differences.md) records 65 behaviours in which the Rust port differs from the pinned C library, plus a list of 9 differences in the units code, each with the C source line, the Rust file and what Java does.
 
 | Area | Entries |
 | --- | ---: |
 | Errors and formatting | 1 |
 | Channel and native serialisation | 7 |
-| Mappings | 21 |
+| Mappings | 22 |
 | Units | 1 section of 9 items |
-| Frames | 7 |
-| FitsChan | 25 |
+| Frames | 8 |
+| FitsChan | 26 |
 | Test harness | 1 |
 
-Java follows C in 52 entries and Rust in 10; in 4 of the 10 both ports differ from C (infinite inputs, Full dumps without `RefCnt` and `Nobj`, a string where a dump expects a number, duplicate WCS keywords).
+Java follows C in 56 entries and Rust in 9; in 3 of the 9 both ports differ from C (infinite inputs, Full dumps without `RefCnt` and `Nobj`, and values that are not finite in a PolyMap, which C makes bad only when `AST_REPLACE_NAN` is set).
 10 entries are faults of C itself (marked **C quirk**), such as `ClearAttrib` testing for "prpjp" instead of "projp" in `wcsmap.c`, and a NATIVE read rounding floating values through `%.17g` and `CheckZero`.
-Task 23, FITS-WCS reading, added 18 of the 25 FitsChan entries, more than any other task.
+Task 23, FITS-WCS reading, added 18 of the 26 FitsChan entries, more than any other task.
 The ledger records no case where a gate, rerun after a class was added, found a bug in an earlier task's port.
 
 ### Items flagged for review
@@ -147,21 +152,23 @@ These were flagged in the ledger for this review, or are gaps in behaviour again
   `Mapping.simplify()` returns a Mapping that transforms identically without restructuring it, as the spec decided.
   C simplifies the Mappings it builds while reading a header, adding a Frame and changing a FrameSet attribute, so dumps differ from C's, 4 oracle rows at the CAR seam differ (see Deferred), and transforms through a FrameSet read from a header do more work than C's.
   Setting or clearing a Frame attribute through a FrameSet with more than one Frame remaps the current Frame with `CmpMap(UnitMap, UnitMap⁻¹)` where C's simplification gives a UnitMap, so each such setting adds a layer to the FrameSet (Task 17).
-- **Duplicate WCS keywords.**
-  The FITS-WCS read looks each keyword up and takes the first card, as the Rust port does; C's `WcsFcRead` reads the cards in order, so the last duplicate wins.
-  A header with a repeated keyword can read differently from C; `error-bad-radesys` is excluded and checked to still differ.
-  Following C needs a redesign that Task 23 estimated at 150 to 250 lines.
-- **AST__BADIN.**
-  C raises AST__BADIN when a dump has a string where a number is expected; this port, like the Rust port, does not.
-  Four probe cases are excluded and checked to still differ: `string_for_double`, `string_for_int`, `native_bad_value` and `native_bad_value_clean` (Tasks 20 and 22).
+  The review measured this on `galactic-tan.head`: 200 calls of `fs.setC("Label(1)", ...)` grew the dump from 13.7 KB to 6.6 MB and a single-point `tran2` from 3.6 µs to 213 µs.
+- **Duplicate WCS keywords** (fixed in the review's fix pass).
+  The FITS-WCS read now gives each keyword the value C's `WcsFcRead` stores: of the cards for one keyword, the last whose value converts, a later card that does not convert being passed over; `error-bad-radesys` now runs against C's result.
+- **AST__BADIN** (fixed in the review's fix pass).
+  A dump value that `sscanf` cannot read whole as the number a loader asks for, or a double that is not finite, now raises AST__BADIN with C's message, and a failed loader leaves the rest of the Object for the next read, as C does; the four probe cases `string_for_double`, `string_for_int`, `native_bad_value` and `native_bad_value_clean` now run against C's results.
+- **Malformed input** (checked in the review's fix pass).
+  A corrupt native dump or header raises an `AstException` with a status, not another exception: an integer no `int` holds is AST__BADIN (C's `sscanf` result is undefined); a SkyFrame dump with one axis is AST__AXIIN, as C reports it; FrameSet Frame, node and link indices, SphMap coordinate counts and axis permutations that the rest of the dump does not support are AST__BADIN when read, where C reads or writes beyond its arrays or crashes; a failed FrameSet integrity restore keeps its status (C's AST__MTRMT for an infinite SkyRef) where it threw `IllegalStateException`; and a header with more than 99 WCS axes is AST__INTER, as C's FitsStore reports it, where the port ran out of memory.
+  A reviewer's fuzzer that changes values in the native fixtures found no other exception in 60,000 reads.
+  One case is left: a count an `int` holds but no memory does, such as `Naxes = 2147483647`, makes C try to build that many Axes (the pinned library was still running after 30 seconds) and Java run out of memory; turning it into an AstException needs either a limit C lacks or C's AST__NOMEM for a failed allocation, which is a decision for the next phase.
 - **Infinite inputs.**
   The plan's rule treats a non-finite input as bad, where C tests only for AST__BAD; this affects infinite inputs only (Task 6).
 - **Round-trip excuse.**
   The transform-oracle gate excuses the rows where C's own recorded inverse does not recover the input, as the Rust test does; C's checker has no such excuse (Task 9).
 - **SkyFrame conversions.**
-  `SkyConvertTest` excuses 168 of 1,584 conversions, each only where its SlaMap holds a pair of conversions that C's `MapMerge` cancels or merges (Task 18).
+  `SkyConvertTest` excuses 168 of 1,584 conversions, each only where its SlaMap holds a pair of conversions that C's `MapMerge` cancels or merges, and only within 5e-8 rad of C, where the largest measured difference is 1.97e-8 rad (Task 18).
 - **Tolerances measured on one platform.**
-  `WcslibGoldenTest`'s list, the LSST inverse bound and the 4 CAR-seam rows were measured on aarch64 HotSpot; the first already fails on x86-64 (see Tests and runtimes).
+  `WcslibGoldenTest`'s list, the LSST inverse bound and the 4 CAR-seam rows were measured on aarch64 HotSpot; the guards that assumed those measurements hold everywhere were changed (see Tests and runtimes).
 - **Shared objects.**
   C raises AST__IMMUT when an attribute such as ZoomMap's `Zoom` is set on an object whose reference count exceeds 1; Java marks an object as shared when a container takes it by reference and clears the mark on `copy()`, so an object stays immutable after its holder is garbage, where C's count would fall back to 1 (Tasks 7 and 8).
 - **Per-call cost of `tranP`.**
@@ -185,12 +192,12 @@ The following are wider than that, or excuse values:
 | `WcslibGoldenTest` | 18 points with a wider bound (1e-13 to 1e-6), 5 compared by status only | Up to 2.8e-7 relative (COP, 1e-8 from the cone's apex); a one-ULP difference between `Math` and Apple's libm (`sin` near the poles, `tan` and `log` in COO's and COP's set-up constants) is amplified by cancellation; the 5 status-only points have native longitude -DBL_MAX, where a few ULP in COO's constant change the angle by about 1e292 degrees |
 | `LsstOracleTest` | Inverse within 4.5e-10 pixel absolute, the Rust test's bound away from the capture platform | Largest measured 4.49e-10; PolyMap's iterative inverse stops once a step is below TolInv (1e-7 pixel), so a last-bit difference in a trigonometric function moves where it stops |
 | `TransformOracleTest` | Round-trip rows excused for 5 fixtures: `tnx-cheb.head` and `tnx-cheb-head.ast` (all 24 rows), `tsc.head` and `tsc-head.ast` (row 10), `total_hi.head` (row 3) | C's own recorded inverse does not recover these inputs: tnx-cheb's sky-to-pixel values are bad in every row, the TSC image is wider than the quad-cube period, and `total_hi` is an all-sky CAR header whose corner pixel does not recover |
-| `SkyConvertTest` | 168 of 1,584 conversions excused | C's `MapMerge` cancels or merges a pair in the SlaMap; needs simplification |
+| `SkyConvertTest` | 168 of 1,584 conversions excused, each within 5e-8 rad of C | C's `MapMerge` cancels or merges a pair in the SlaMap; needs simplification; largest measured 1.97e-8 rad |
 | FITS-WCS property tests | Rust's property tolerances kept (CRPIX to CRVAL 0.01 degree, round trips 1e-6, SIP replacement under 1 pixel, PolyTran fit 0.02 pixel) | No C value exists for these properties |
 | `SkyFrame` tests | Vernal equinox within Rust's 1e-6; a cast Frame's Unit not checked | Rust-origin expectations with no C value |
 | Structure checks | A chain of UnitMaps accepted where C gives one UnitMap | C's simplification |
 
-Some checks are exact and so are sensitive in the other direction: `TranGridOracleTest` compares C's FNV hashes of three grids exactly, the 18 arithmetic-only ERFA and PAL routines are compared bit for bit, and `PalTest`'s slice tests compare raw bits, which is what failed on Java 25.
+Some checks are exact and so are sensitive in the other direction: `TranGridOracleTest` compares C's FNV hashes of three grids exactly, the 18 arithmetic-only ERFA and PAL routines are compared bit for bit, and `PalTest`'s slice tests compare bits exactly, except that an expected NaN need only be matched by a NaN.
 
 ## Deferred tests, fixtures and oracle rows
 
@@ -228,7 +235,7 @@ No row of `wcsconv/cases.txt` can run yet: each either writes its output through
 
 Oracle rows (`oracle-rows.txt`, 4): row 1 of `wcsconv/inputs/car6.head` and of `programs/joye_car_headers/CHIPASS_Equ.head`, in both directions.
 Pixel 5401 is 180 degrees from CRPIX1; without simplification, CDELT1 and then the degree-to-radian scale give a native longitude of -180-1.14e-13 degrees, beyond `wcsmap.c`'s 1e-13 tolerance for CAR, so the point is bad, whereas C's merged WinMap gives -180-8.5e-14.
-The inverse row is the same seam the other way.
+The inverse row is the same seam the other way; which side of the seam it reaches follows the sign of a near-zero value computed with `Math`'s sine and cosine, so these two rows are marked as depending on the runtime and the gate does not fail if they match C.
 No row is deferred for a fused multiply-add, which the spec expected.
 
 ## Benchmarks
@@ -389,10 +396,11 @@ The following are not expected to scale linearly:
 
 For those deciding on the full port:
 
-- The suite does not yet pass on x86-64: `WcslibGoldenTest`'s list of measured points needs a rule that holds on every runtime, and `PalTest`'s slice tests compare NaN bits that Java does not fix.
-  The CAR-seam rows and the LSST inverse bound were measured on aarch64 too, and the tests added since the last CI run have not run on x86-64 or Java 8.
-- Without the simplifier, FrameSets read from headers carry longer Mapping chains than C's, dumps differ from C's, repeated attribute settings on a FrameSet add layers, and four edge rows differ.
+- Setting attributes through a FrameSet of several Frames grows it without bound, because there is no simplifier: on `galactic-tan.head`, 200 calls of `fs.setC("Label(1)", ...)` grew the dump from 13.7 KB to 6.6 MB and a single-point `tran2` from 3.6 µs to 213 µs.
+  This must be fixed, with the simplifier or at least its UnitMap and CmpMap merging, before any release to SPLAT, TOPCAT or Firefly users, whose sessions set attributes repeatedly.
+- The tests that failed on x86-64 CI (`WcslibGoldenTest`'s measured points and `PalTest`'s NaN bits) were changed to hold on any runtime, but CI has not yet run at the head of the branch, which needs a push.
+  The LSST inverse bound was measured on aarch64 too.
+- Without the simplifier, FrameSets read from headers carry longer Mapping chains than C's, dumps differ from C's, and four edge rows differ.
 - Headers with a spectral axis, `-TAB`, `-LOG` on a non-spectral axis, or an encoding other than FITS-WCS and NATIVE cannot be read yet; about half of the header fixtures are of this kind.
-- Two behaviours differ from C in ways a user could meet: duplicate WCS keywords (first card wins, C's last wins) and a string where a dump expects a number (no AST__BADIN).
 - `tranP`'s per-call cost makes single-point calls on cheap Mappings several times slower than Rust's; real FrameSets are not affected much.
 - The work so far is a fast breadth sweep; the Rust port's experience is that such sweeps leave debts the existing tests do not show.
