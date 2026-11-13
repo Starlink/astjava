@@ -1054,11 +1054,9 @@ public class FrameSet extends Frame {
             try {
                 restoreIntegrity();
             } catch (AstException e) {
-                AstException err = Ast.withContext(
+                throw Ast.withContext(
                         e,
                         "Unable to accommodate the attribute setting \"" + (head + value).replace('\r', ',') + "\".");
-                err.initCause(e);
-                throw err;
             }
         } finally {
             integrityFrame = saveFrame;
@@ -1088,10 +1086,7 @@ public class FrameSet extends Frame {
             try {
                 restoreIntegrity();
             } catch (AstException e) {
-                AstException err =
-                        Ast.withContext(e, "Unable to accommodate clearing the \"" + attrib + "\" attribute(s).");
-                err.initCause(e);
-                throw err;
+                throw Ast.withContext(e, "Unable to accommodate clearing the \"" + attrib + "\" attribute(s).");
             }
         } finally {
             integrityFrame = saveFrame;
