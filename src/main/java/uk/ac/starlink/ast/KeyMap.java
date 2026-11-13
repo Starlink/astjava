@@ -345,7 +345,7 @@ public class KeyMap extends AstObject {
                     break;
                 case AST__OBJECTTYPE:
                     NativeNode obj = part.readObject(nm);
-                    values.add(obj == null ? null : ObjectRegistry.load(obj));
+                    values.add(obj == null ? null : ObjectRegistry.loadNested(obj, nm));
                     break;
                 case AST__UNDEFTYPE:
                     break;

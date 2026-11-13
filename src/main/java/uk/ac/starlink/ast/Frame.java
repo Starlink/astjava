@@ -135,7 +135,7 @@ public class Frame extends Mapping {
             if (desc == null) {
                 ax = new Axis();
             } else {
-                AstObject obj = ObjectRegistry.load(desc);
+                AstObject obj = ObjectRegistry.loadNested(desc, "Ax" + n);
                 if (!(obj instanceof Axis)) {
                     throw Ast.err(
                             AstException.AST__LDERR,
@@ -179,6 +179,7 @@ public class Frame extends Mapping {
             }
             perm[axis] = part.readInt("Prm" + n, n) - 1;
         }
+        checkLoadedPerm(perm, "astLoadFrame(" + astClass() + ")");
         // C's loader passes each value read through the Frame class's own setter.
         title = part.getStringIfSet("Title");
         domain = part.getStringIfSet("Domain");
@@ -229,7 +230,7 @@ public class Frame extends Mapping {
         }
         NativeNode vdesc = part.readObject("Vrnts");
         if (vdesc != null) {
-            AstObject obj = ObjectRegistry.load(vdesc);
+            AstObject obj = ObjectRegistry.loadNested(vdesc, "Vrnts");
             if (!(obj instanceof FrameSet)) {
                 throw Ast.err(
                         AstException.AST__LDERR,
@@ -246,6 +247,29 @@ public class Frame extends Mapping {
             return UNSET;
         }
         return v != 0 ? 1 : 0;
+    }
+
+    /**
+     * Checks that an axis permutation read by a loader holds each axis once. C's loaders (frame.c
+     * {@code astLoadFrame}, cmpframe.c {@code astLoadCmpFrame}) do not check, and a Frame with
+     * another permutation makes C index its axes out of range; this check has no counterpart in C.
+     *
+     * @param perm the permutation, numbered from 0
+     * @param loader the loader, for the error message
+     * @throws AstException with status {@code AST__BADIN} if it is not a permutation
+     */
+    static void checkLoadedPerm(int[] perm, String loader) {
+        boolean[] seen = new boolean[perm.length];
+        for (int axis = 0; axis < perm.length; axis++) {
+            int p = perm[axis];
+            if (p < 0 || p >= perm.length || seen[p]) {
+                throw Ast.err(
+                        AstException.AST__BADIN,
+                        loader + ": The axis permutation is invalid - axis " + (axis + 1) + " is given axis " + (p + 1)
+                                + ", where each axis from 1 to " + perm.length + " should be given once.");
+            }
+            seen[p] = true;
+        }
     }
 
     @Override

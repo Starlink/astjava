@@ -1,5 +1,7 @@
 package uk.ac.starlink.ast;
 
+import java.util.Locale;
+
 /**
  * Makes an Object from its description, choosing the loading constructor by class name, as C's
  * {@code astGetLoader} (loader.c) chooses the loader.
@@ -90,5 +92,32 @@ final class ObjectRegistry {
             throw Ast.err(AstException.AST__LDERR, "unknown AST class: " + node.className);
         }
         return loader.load(node);
+    }
+
+    /**
+     * The Object {@code node} describes, which is the value of item {@code key} of another
+     * Object's description. C loads such an Object while it reads the outer one, and when the
+     * load fails adds "Failed to read the "key" Object value." to the error, once, for the
+     * innermost such Object (channel.c:2929, 2947-2953); a description read from a stream gets
+     * that message here.
+     *
+     * @throws AstException with status {@code AST__LDERR} if the class cannot be loaded here, or
+     *     the error of loading it
+     */
+    static AstObject loadNested(NativeNode node, String key) {
+        NativeNode.Progress progress = node.progress;
+        if (progress == null) {
+            return load(node);
+        }
+        progress.nestedMsg = false;
+        try {
+            return load(node);
+        } catch (AstException e) {
+            if (progress.nestedMsg) {
+                throw e;
+            }
+            progress.nestedMsg = true;
+            throw Ast.withContext(e, "Failed to read the \"" + key.toLowerCase(Locale.ROOT) + "\" Object value.");
+        }
     }
 }

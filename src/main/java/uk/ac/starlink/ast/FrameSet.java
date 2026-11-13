@@ -1,6 +1,8 @@
 package uk.ac.starlink.ast;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -168,7 +170,8 @@ public class FrameSet extends Frame {
      *
      * @param node the description
      * @throws AstException with status {@code AST__LDERR} if a Frame or Mapping is missing or of
-     *     the wrong class
+     *     the wrong class, or {@code AST__BADIN} if the Frame and node indices do not describe a
+     *     FrameSet
      */
     FrameSet(NativeNode node) {
         super(node);
@@ -181,22 +184,31 @@ public class FrameSet extends Frame {
         if (nnode < 1) {
             nnode = 1;
         }
-        frames = new Frame[nframe];
-        nodes = new int[nframe];
-        varfrms = new int[nframe];
-        maps = new Mapping[nnode - 1];
-        links = new int[nnode - 1];
-        inverts = new int[nnode - 1];
+        // The arrays grow as the Frames and Mappings are read, rather than being made at the size
+        // the counts give, so that a count larger than the description supports ends at the first
+        // missing Object instead of in an allocation of that size.
+        List<Frame> frameList = new ArrayList<>();
+        List<Integer> nodeList = new ArrayList<>();
+        List<Integer> varfrmList = new ArrayList<>();
         for (int ifr = 1; ifr <= nframe; ifr++) {
-            frames[ifr - 1] = (Frame) loadPart(part, "Frm" + ifr, Frame.class);
-            nodes[ifr - 1] = part.readInt("Nod" + ifr, ifr) - 1;
-            varfrms[ifr - 1] = part.readInt("VFr" + ifr, 0);
+            frameList.add((Frame) loadPart(part, "Frm" + ifr, Frame.class));
+            nodeList.add(part.readInt("Nod" + ifr, ifr) - 1);
+            varfrmList.add(part.readInt("VFr" + ifr, 0));
         }
+        List<Integer> linkList = new ArrayList<>();
+        List<Integer> invertList = new ArrayList<>();
+        List<Mapping> mapList = new ArrayList<>();
         for (int inode = 1; inode < nnode; inode++) {
-            links[inode - 1] = part.readInt("Lnk" + (inode + 1), 0) - 1;
-            inverts[inode - 1] = part.readInt("Inv" + (inode + 1), 0);
-            maps[inode - 1] = (Mapping) loadPart(part, "Map" + (inode + 1), Mapping.class);
+            linkList.add(part.readInt("Lnk" + (inode + 1), 0) - 1);
+            invertList.add(part.readInt("Inv" + (inode + 1), 0));
+            mapList.add((Mapping) loadPart(part, "Map" + (inode + 1), Mapping.class));
         }
+        frames = frameList.toArray(new Frame[0]);
+        nodes = toIntArray(nodeList);
+        varfrms = toIntArray(varfrmList);
+        maps = mapList.toArray(new Mapping[0]);
+        links = toIntArray(linkList);
+        inverts = toIntArray(invertList);
         base = part.readInt("Base", UNSET);
         if (base < 1) {
             base = UNSET;
@@ -204,6 +216,62 @@ public class FrameSet extends Frame {
         current = part.readInt("Currnt", UNSET); // codespell:ignore currnt
         if (current < 1) {
             current = UNSET;
+        }
+        checkLoaded();
+    }
+
+    private static int[] toIntArray(List<Integer> list) {
+        int[] out = new int[list.size()];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = list.get(i);
+        }
+        return out;
+    }
+
+    /**
+     * Checks that the Frame and node indices a FrameSet's description gives describe a FrameSet:
+     * at least one Frame, Base and Current Frame indices within the Frames, each Frame on a node,
+     * each variants Frame index naming a Frame or none, and the nodes linked in a tree whose root is
+     * the first node. C's loader (frameset.c {@code astLoadFrameSet}) makes none of these checks,
+     * and a FrameSet that fails one makes C read or write beyond its arrays or recurse without end;
+     * this check has no counterpart in C.
+     *
+     * @throws AstException with status {@code AST__BADIN} if a check fails
+     */
+    private void checkLoaded() {
+        if (nframe < 1) {
+            throw Ast.err(AstException.AST__BADIN, "astLoadFrameSet(FrameSet): The FrameSet holds no Frames.");
+        }
+        checkIndex(base, 1, nframe, "The base Frame index");
+        checkIndex(current, 1, nframe, "The current Frame index");
+        for (int ifr = 1; ifr <= nframe; ifr++) {
+            checkIndex(nodes[ifr - 1] + 1, 1, nnode, "The node index of Frame " + ifr);
+            checkIndex(varfrms[ifr - 1], 0, nframe, "The variants Frame index of Frame " + ifr);
+        }
+        for (int inode = 1; inode < nnode; inode++) {
+            checkIndex(
+                    links[inode - 1] + 1,
+                    1,
+                    nnode,
+                    "The index of the node from which node " + (inode + 1) + " is derived");
+            int steps = 0;
+            for (int n = inode; n != 0; n = links[n - 1]) {
+                if (++steps > nnode) {
+                    throw Ast.err(
+                            AstException.AST__BADIN,
+                            "astLoadFrameSet(FrameSet): Node " + (inode + 1) + " is not derived from node 1.");
+                }
+            }
+        }
+    }
+
+    /** Checks an index read by the loader, {@link #UNSET} being allowed. */
+    private static void checkIndex(int index, int lo, int hi, String what) {
+        if (index != UNSET && (index < lo || index > hi)) {
+            throw Ast.err(
+                    AstException.AST__BADIN,
+                    "astLoadFrameSet(FrameSet): " + what + " (" + index + ") is invalid - it should be in the range "
+                            + lo + " to " + hi + ".");
         }
     }
 
@@ -213,7 +281,7 @@ public class FrameSet extends Frame {
         if (desc == null) {
             throw Ast.err(AstException.AST__LDERR, "astLoadFrameSet(FrameSet): The object " + key + " is missing.");
         }
-        AstObject obj = ObjectRegistry.load(desc);
+        AstObject obj = ObjectRegistry.loadNested(desc, key);
         if (!cls.isInstance(obj)) {
             throw Ast.err(
                     AstException.AST__LDERR,
@@ -429,6 +497,16 @@ public class FrameSet extends Frame {
 
     /** The current Frame, not marked as shared. */
     private Frame currentFrame() {
+        if (frames == null) {
+            // Only while the Frame part of a description is loaded, before the Frames are read,
+            // when that part holds a value whose loading asks the current Frame (such as System).
+            // C's loader then reads the Frame array before it exists and crashes; this check has
+            // no counterpart in C.
+            throw Ast.err(
+                    AstException.AST__BADIN,
+                    "astLoadFrameSet(FrameSet): The Frame part of the description holds a value that needs the "
+                            + "current Frame, which has not yet been read.");
+        }
         return frames[getCurrent() - 1];
     }
 

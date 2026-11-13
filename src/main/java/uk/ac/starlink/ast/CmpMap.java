@@ -149,7 +149,7 @@ public class CmpMap extends Mapping {
             throw Ast.err(
                     AstException.AST__LDERR, "astLoadCmpMap(CmpMap): The component Mapping " + key + " is missing.");
         }
-        AstObject obj = ObjectRegistry.load(desc);
+        AstObject obj = ObjectRegistry.loadNested(desc, key);
         if (!(obj instanceof Mapping)) {
             throw Ast.err(
                     AstException.AST__LDERR,

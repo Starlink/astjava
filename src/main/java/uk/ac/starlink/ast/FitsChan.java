@@ -342,7 +342,7 @@ public class FitsChan extends Channel {
         cardList.setCard(part.readInt("Card", 0));
         NativeNode t = part.readObject("Tables");
         if (t != null) {
-            AstObject obj = ObjectRegistry.load(t);
+            AstObject obj = ObjectRegistry.loadNested(t, "Tables");
             if (!(obj instanceof KeyMap)) {
                 throw Ast.err(
                         AstException.AST__BADIN,

@@ -244,6 +244,12 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: makes the result bad.
 - Java: as Rust.
 
+### A SkyFrame dump whose Frame part gives one axis
+
+- C: `astLoadSkyFrame` passes each SkyRef value to `TestSkyRef` for the axis its inverse permutation gives, so a SkyFrame whose Frame part gave `Naxes = 1` fails with AST__AXIIN, "Axis index (2) invalid" (`skyframe.c` `astLoadSkyFrame`).
+- Rust: `frames/skyframe.rs` `from_node` makes a two-axis SkyFrame whatever the Frame part gives.
+- Java: as C.
+
 ### TimeFrame date formatting with a Unit that is not a time
 
 - C: `astFormat` returns NULL without an error when the Unit cannot be converted to days.

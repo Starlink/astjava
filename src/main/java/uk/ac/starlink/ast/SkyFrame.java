@@ -167,6 +167,12 @@ public class SkyFrame extends Frame {
                                 + ").");
             }
         }
+        // C's loader passes each SkyRef value to TestSkyRef for the axis its inverse permutation
+        // gives (skyframe.c astLoadSkyFrame), whose ValidateAxis rejects a second axis when the
+        // Frame part gave one; C forms that permutation from two elements of the axis permutation
+        // array whatever its length, which here are the axes 1 and 2 validated directly.
+        validateAxis(1, true, "astTestSkyRef");
+        validateAxis(2, true, "astTestSkyRef");
         skyRef[0] = part.readDouble("SRef1", AST__BAD);
         skyRef[1] = part.readDouble("SRef2", AST__BAD);
         skyRefP[0] = part.readDouble("SRefP1", AST__BAD);
