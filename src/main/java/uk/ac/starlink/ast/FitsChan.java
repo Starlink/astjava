@@ -343,7 +343,7 @@ public class FitsChan extends Channel {
         cardList.setCard(part.readInt("Card", 0));
         NativeNode t = part.readObject("Tables");
         if (t != null) {
-            AstObject obj = ObjectRegistry.load(t);
+            AstObject obj = ObjectRegistry.loadNested(t, "Tables");
             if (!(obj instanceof KeyMap)) {
                 throw Ast.err(
                         AstException.AST__BADIN,
@@ -793,11 +793,15 @@ public class FitsChan extends Channel {
             if (enc == Encoding.NATIVE) {
                 obj = readNative();
             } else if (!cardList.testCard()) {
-                obj = readForeign(enc);
-                if (obj == null) {
-                    cardList.clearCard();
-                } else {
-                    cardList.setCard(Integer.MAX_VALUE);
+                try {
+                    obj = readForeign(enc);
+                } finally {
+                    // C's ClearCard does not check the error status, so a failed read rewinds too.
+                    if (obj == null) {
+                        cardList.clearCard();
+                    } else {
+                        cardList.setCard(Integer.MAX_VALUE);
+                    }
                 }
             }
         } finally {

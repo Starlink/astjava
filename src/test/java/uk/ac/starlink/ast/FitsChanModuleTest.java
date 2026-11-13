@@ -10,10 +10,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Translation of the card unit tests of Rust {@code fitschan/mod.rs}.
  *
- * <p>Left to later tasks: {@code read_consumes_wcs_cards_but_keeps_obs_and_structural} and {@code
- * protected_card_survives_read} need a FITS-WCS read (Task 23); {@code native_round_trip} and
- * {@code rewrite_after_read_re_emits_wcs_cards} write to the FitsChan and are listed in {@code
- * deferred/rust-tests.txt}.
+ * <p>{@code native_round_trip} and {@code rewrite_after_read_re_emits_wcs_cards} write to the
+ * FitsChan and are listed in {@code deferred/rust-tests.txt}.
  */
 class FitsChanModuleTest {
 
@@ -170,6 +168,52 @@ class FitsChanModuleTest {
         fc.findFits("NAXIS1", true);
         fc.clear("Card");
         assertNotNull(fc.findFits("NAXIS", true));
+    }
+
+    /** A FITS-WCS celestial header with structural and observation cards. */
+    private static final String WCS_HEADER_WITH_MJDOBS = "SIMPLE  =                    T / Fits standard\n"
+            + "BITPIX  =                  -32 / Bits per pixel\n"
+            + "NAXIS   =                    2 / Number of axes\n"
+            + "NAXIS1  =                  100 / Axis 1 length\n"
+            + "NAXIS2  =                  100 / Axis 2 length\n"
+            + "MJD-OBS =          51544.50000 / MJD of observation\n"
+            + "CTYPE1  = 'RA---TAN'           / X type\n"
+            + "CTYPE2  = 'DEC--TAN'           / Y type\n"
+            + "CRVAL1  =                 10.0 / Reference value\n"
+            + "CRVAL2  =                 20.0 / Reference value\n"
+            + "CRPIX1  =                 50.5 / Reference pixel\n"
+            + "CRPIX2  =                 50.5 / Reference pixel\n"
+            + "CDELT1  =                 -0.1 / Degrees/pixel\n"
+            + "CDELT2  =                  0.1 / Degrees/pixel\n"
+            + "END";
+
+    /**
+     * A read removes the cards that describe the FrameSet and leaves the structural cards, and
+     * MJD-OBS, which C leaves for other software to use (fitschan.c:3829).
+     */
+    @Test
+    void readConsumesWcsCardsButKeepsObsAndStructural() {
+        FitsChan fc = FitsChan.fromHeader(WCS_HEADER_WITH_MJDOBS);
+        assertNotNull(fc.read(), "reads a FrameSet");
+        String out = fc.toHeader();
+        for (String kw :
+                new String[] {"CTYPE1", "CTYPE2", "CRVAL1", "CRVAL2", "CRPIX1", "CRPIX2", "CDELT1", "CDELT2"}) {
+            assertFalse(out.contains(kw), "consumed WCS card " + kw + " should not appear in output:\n" + out);
+        }
+        for (String kw : new String[] {"SIMPLE", "BITPIX", "NAXIS", "NAXIS1", "NAXIS2", "MJD-OBS"}) {
+            assertTrue(out.contains(kw), kw + " should survive the read:\n" + out);
+        }
+    }
+
+    /** A card protected before the read, as {@code retainFits} protects one, survives it. */
+    @Test
+    void protectedCardSurvivesRead() {
+        FitsChan fc = FitsChan.fromHeader(WCS_HEADER_WITH_MJDOBS);
+        assertTrue(fc.cards().setProtected("CRVAL1"));
+        assertNotNull(fc.read(), "reads a FrameSet");
+        String out = fc.toHeader();
+        assertTrue(out.contains("CRVAL1"), "protected CRVAL1 should survive the read:\n" + out);
+        assertFalse(out.contains("CRVAL2"), "CRVAL2 should be consumed:\n" + out);
     }
 
     /** {@code s} padded with spaces to 80 characters. */

@@ -1,6 +1,7 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -9,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
+import uk.ac.starlink.ast.testsupport.Fixtures;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
 /**
@@ -200,5 +202,26 @@ class FrameSetIntegrityTest {
         assertTrue(
                 failures.isEmpty(),
                 failures.size() + " of " + checked + " cases differ from C:\n" + String.join("\n", failures));
+    }
+
+    /**
+     * A setting whose integrity cannot be restored reports the error of the restore, with its
+     * status, and C's further message naming the setting (frameset.c:11951-11952). The header is
+     * {@code wcsconv/inputs/skyref-alt.head} with an infinite {@code SREF2A}: setting {@code
+     * SkyRefIs} on the FrameSet read from the alternate description makes a MatrixMap from a
+     * matrix of bad values while restoring integrity, which C reports with {@code AST__MTRMT}
+     * (status checked against the pinned C library).
+     */
+    @Test
+    void aFailedIntegrityRestoreReportsTheStatusOfTheFailure() {
+        String header = Fixtures.read("wcsconv/inputs/skyref-alt.head")
+                .replace("SREF2A  =               50.669 / Alternate A: sky ref Gal lat (deg)", "SREF2A  = 1.0E99999");
+        assertTrue(header.contains("1.0E99999"), "the fixture still holds the SREF2A card replaced");
+        FitsChan fc = FitsHeaders.chanFromLines(header);
+        AstException e = assertThrows(AstException.class, fc::read);
+        assertEquals(AstException.AST__MTRMT, e.getStatus(), e.getMessage());
+        assertTrue(
+                e.getMsgText().endsWith("Unable to accommodate the attribute setting \"SkyRefIs=ORIGIN\"."),
+                e.getMsgText());
     }
 }

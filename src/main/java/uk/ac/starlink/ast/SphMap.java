@@ -32,9 +32,17 @@ public class SphMap extends Mapping {
     /**
      * Loads a SphMap from its description, as C's {@code astLoadSphMap} does: each attribute is
      * read raw and, when set, applied again through its setter, which then changes nothing.
+     *
+     * @throws AstException with status {@code AST__BADIN} if the description does not give 3
+     *     inputs and 2 outputs
      */
     SphMap(NativeNode node) {
         super(node);
+        // C's loader takes the coordinate counts the Mapping part gives, and its transformation
+        // then reads and writes 3 and 2 coordinates whatever they are; this check has no
+        // counterpart in C.
+        checkLoadedCount("input", createdNin(), 3);
+        checkLoadedCount("output", createdNout(), 2);
         NativeNode part = node.section("SphMap");
         unitRadius = part.readInt("UntRd", -1);
         if (unitRadius != -1) {
@@ -43,6 +51,15 @@ public class SphMap extends Mapping {
         polarLong = part.readDouble("PlrLg", AST__BAD);
         if (polarLong != AST__BAD) {
             storePolarLong(polarLong);
+        }
+    }
+
+    private static void checkLoadedCount(String what, int n, int want) {
+        if (n != want) {
+            throw Ast.err(
+                    AstException.AST__BADIN,
+                    "astLoadSphMap(SphMap): The number of " + what + " coordinates (" + n
+                            + ") is invalid - it should be " + want + ".");
         }
     }
 

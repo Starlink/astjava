@@ -104,6 +104,7 @@ public class CmpFrame extends Frame {
         for (int axis = 0; axis < naxes; axis++) {
             perm[axis] = part.readInt("Axp" + (axis + 1), axis + 1) - 1;
         }
+        checkLoadedPerm(perm, "astLoadCmpFrame(CmpFrame)");
     }
 
     /** The Frame item {@code key} of a CmpFrame's description holds, or a one-axis Frame if it is missing. */
@@ -112,7 +113,7 @@ public class CmpFrame extends Frame {
         if (desc == null) {
             return new Frame(1);
         }
-        AstObject obj = ObjectRegistry.load(desc);
+        AstObject obj = ObjectRegistry.loadNested(desc, key);
         if (!(obj instanceof Frame)) {
             throw Ast.err(
                     AstException.AST__LDERR,

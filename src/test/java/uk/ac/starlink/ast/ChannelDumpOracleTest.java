@@ -27,7 +27,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * Its MocChan cases are out of scope and are not run: the {@code mocchan} cases ({@link
  * #MOCCHAN_CASES}) need MocChan, and its loads are recognised by the class they hold. For the same
  * reason {@code a_clone_shares_the_sink} and {@code a_channel_read_from_a_dump_has_no_source} are
- * deferred. The {@code fitschan_used} case reads a FITS-WCS header first and is left to Task 23.
+ * deferred.
  */
 class ChannelDumpOracleTest {
 
@@ -42,6 +42,7 @@ class ChannelDumpOracleTest {
             "fitschan_attrs",
             "fitschan_attrs_default",
             "fitschan_guessed_encoding",
+            "fitschan_used",
             "fitschan_source");
 
     /** The cards the source of the {@code fitschan_source} case gives. */
@@ -93,24 +94,11 @@ class ChannelDumpOracleTest {
                         + " Warnings=, Skip=1, Full=-1");
                 break;
             case "fitschan_guessed_encoding":
-                for (String card : new String[] {
-                    "NAXIS   =                    2",
-                    "CTYPE1  = 'RA---TAN'",
-                    "CTYPE2  = 'DEC--TAN'",
-                    "CRVAL1  =                 10.0",
-                    "CRVAL2  =                 20.0",
-                    "CRPIX1  =                 50.0",
-                    "CRPIX2  =                 60.0",
-                    "CDELT1  =               -0.001",
-                    "CDELT2  =                0.001",
-                    "OTHER   =                    1",
-                }) {
-                    fc.putFits(card, false);
-                }
-                fc.clear("Card");
-                fc.findFits("CRVAL2", false);
-                fc.retainFits();
-                fc.clear("Card");
+                wcsHeader(fc);
+                break;
+            case "fitschan_used":
+                wcsHeader(fc);
+                fc.read();
                 break;
             case "fitschan_source":
                 return new FitsChan(SOURCE.iterator());
@@ -118,6 +106,31 @@ class ChannelDumpOracleTest {
                 throw new IllegalArgumentException("no case " + name);
         }
         return fc;
+    }
+
+    /**
+     * Puts the header the {@code fitschan_guessed_encoding} and {@code fitschan_used} cases start
+     * from: a FITS-WCS header whose CRVAL2 card is retained.
+     */
+    private static void wcsHeader(FitsChan fc) {
+        for (String card : new String[] {
+            "NAXIS   =                    2",
+            "CTYPE1  = 'RA---TAN'",
+            "CTYPE2  = 'DEC--TAN'",
+            "CRVAL1  =                 10.0",
+            "CRVAL2  =                 20.0",
+            "CRPIX1  =                 50.0",
+            "CRPIX2  =                 60.0",
+            "CDELT1  =               -0.001",
+            "CDELT2  =                0.001",
+            "OTHER   =                    1",
+        }) {
+            fc.putFits(card, false);
+        }
+        fc.clear("Card");
+        fc.findFits("CRVAL2", false);
+        fc.retainFits();
+        fc.clear("Card");
     }
 
     /** The Channel each Channel or FitsChan case of the probe makes. */
@@ -159,7 +172,7 @@ class ChannelDumpOracleTest {
         if (CHANNEL_CASES.contains(name) || FITSCHAN_CASES.contains(name)) {
             return false;
         }
-        assertTrue(MOCCHAN_CASES.contains(name) || "fitschan_used".equals(name), "unknown case " + name);
+        assertTrue(MOCCHAN_CASES.contains(name), "unknown case " + name);
         return true;
     }
 

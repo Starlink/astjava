@@ -180,6 +180,7 @@ tests/test_equal_oracle.rs::equality_matches_the_c_library | astEqual (out-of-sc
 tests/test_equal_oracle.rs::wcsmap_equality_is_symmetric_where_c_checks_it | astEqual (out-of-scope method)
 tests/test_trangrid.rs::tranmap | TranMap (out of scope)
 tests/test_trangrid.rs::nonlinear_mathmap_1d | MathMap (out of scope)
+tests/test_trangrid.rs::fits_wcs_pixel_to_sky | out-of-scope method FitsChan.read of the FITS-AIPS encoding
 tests/test_tran_grid_oracle.rs::quadratic_fits_match_c | astQuadApprox (out-of-scope method)
 tests/test_tran_grid_oracle.rs::quadratic_fit_needs_two_inputs | astQuadApprox (out-of-scope method)
 tests/test_map_split.rs::normmap_split_picks_axes | NormMap (out of scope)
@@ -332,9 +333,7 @@ tests/test_skyframe.rs::skyframe_is_send | Rust-only API (Send)
 tests/test_skyframe.rs::debug_formatting | Rust-only API (Debug formatting)
 tests/test_skyframe.rs::serialise_skyframe_not_a_mapping | Rust-only API (AnyObject::as_mapping; in AST every Frame is a Mapping)
 tests/test_sky_convert.rs::fk_licences_name_existing_cases | hardware SIMD
-tests/test_sky_pole_oracle.rs::sky_pole_matches_the_c_library | needs FitsChan
-tests/test_sky_pole_oracle.rs::refused_cases_are_ill_conditioned | needs FitsChan
-tests/test_skyref_offset_mapping.rs::skyref_offset_mapping_matches_oracle | needs FitsChan
+tests/test_sky_pole_oracle.rs::sky_pole_matches_the_c_library | out-of-scope method FitsChan.write
 tests/test_timeframe.rs::test_equal | astEqual (out-of-scope method)
 tests/test_timeframe.rs::test_map_from_timescale_change | Rust-only API (Frame::map_from)
 tests/test_spec_use_defs.rs::titles_match_the_c_library | SpecFrame (out of scope)
@@ -411,3 +410,53 @@ src/fitschan/mod.rs::native_round_trip | out-of-scope method FitsChan.write
 src/fitschan/mod.rs::rewrite_after_read_re_emits_wcs_cards | out-of-scope method FitsChan.write
 tests/test_fitschan_cursor_oracle.rs::excluded_cases_still_differ | out-of-scope method FitsChan.write
 tests/test_fitschan_cursor_oracle.rs::native_full_1_matches_c_but_for_process_counts | out-of-scope method FitsChan.write
+src/fitschan/wcs_read.rs::decode_1d_spectral | SpecFrame (out of scope)
+src/fitschan/wcs_read.rs::decode_3d_mixed | SpecFrame (out of scope)
+src/fitschan/wcs_read.rs::build_pixel_to_world_handles_non_adjacent_celestial_axes | SpecFrame (out of scope)
+src/fitschan/spec_trans.rs::rename_keyword_moves_value_and_comment_to_new_name | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::rename_keyword_no_op_when_source_absent | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::rename_keyword_no_op_when_destination_already_present | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::translates_radecsys_to_radesys | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::keeps_radesys_when_both_present | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::translates_longpole_to_lonpole | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::translates_cdjjjiii_to_pc_with_unit_cdelt_for_fits_iraf | out-of-scope method FitsChan.read(FITS-IRAF)
+src/fitschan/spec_trans.rs::cdjjjiii_translated_and_consumed_under_fits_iraf | out-of-scope method FitsChan.read(FITS-IRAF)
+src/fitschan/spec_trans.rs::translates_projp_to_pv_on_latitude_axis | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::projp_used_when_pv_set_is_incomplete | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::translates_cnxxx_to_alt_letter_form_for_fits_pc | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::cnxxx_zero_cdelt_falls_back_to_crval_or_one | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::translates_class_spectral_crval_and_specsys | out-of-scope method FitsChan.read(FITS-CLASS)
+src/fitschan/spec_trans.rs::rename_keyword_handles_float_values | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/wcs_write/mod.rs::date_str_to_mjd_roundtrip_modern | out-of-scope method FitsChan.write
+src/fitschan/wcs_write/mod.rs::date_str_to_mjd_roundtrip_legacy | out-of-scope method FitsChan.write
+tests/test_fitschan_wcs.rs::read_spectral_header | SpecFrame (out of scope)
+tests/test_fitschan_wcs.rs::axes_swap_non_adjacent_celestial_axes | SpecFrame (out of scope)
+tests/test_fitschan_wcs.rs::jan_class_no_naxis_keyword | FITS-CLASS encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_wcs.rs::serpens_dut1_is_seconds | FITS-IRAF encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_wcs.rs::serpens_swapped_axis_transform | FITS-IRAF encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_wcs.rs::class_noproj_builds_sfl | FITS-CLASS encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_wcs.rs::crota_3d_forward_matches_oracle_inverse_undefined | SpecFrame (out of scope)
+tests/test_fitschan_wcs.rs::carlin_off_car_header_keeps_the_spherical_projection | needs simplification
+tests/test_fitschan_read.rs::log_suffix_is_stripped_from_the_domain_and_symbol | MathMap (out of scope)
+tests/test_fitschan_read.rs::unset_system_still_leaves_system_unset | Rust-only API (SkyFrame::unset_system)
+tests/test_fitschan_read.rs::dsb_centre_prefers_axref_over_crval | DSBSpecFrame (out of scope)
+tests/test_fitschan_astwarn.rs::badpv_warning_names_each_unusable_parameter_in_ascending_order | FITS-IRAF encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_astwarn.rs::badctype_warning_names_the_legal_ctype_and_precedes_naxis1 | SpecFrame (out of scope)
+tests/test_fitschan_astwarn.rs::strict_write_warning_is_an_error | out-of-scope method FitsChan.write
+tests/test_fitschan_astwarn.rs::strict_read_warning_is_an_error | FITS-PC encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_astwarn.rs::strict_sweep_warning_is_an_error | FITS-PC encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_time.rs::dtai_set_on_world_frame_for_jcmt | SpecFrame (out of scope)
+tests/test_fitschan_time.rs::dtai_set_on_world_frame_for_ukirt | SpecFrame (out of scope)
+tests/test_fitschan_time.rs::dtai_ignored_for_other_telescope | SpecFrame (out of scope)
+tests/test_fitschan_time.rs::dtai_ignored_when_telescop_absent | SpecFrame (out of scope)
+tests/test_fitschan_time.rs::dut1_set_on_world_frame_regardless_of_telescop | SpecFrame (out of scope)
+tests/test_fitschan_c_inline.rs::sip_header_does_not_write_as_fits_wcs | out-of-scope method FitsChan.write
+tests/test_fitschan_c_inline.rs::alternate_axes_with_a_bad_set | SpecFrame (out of scope)
+tests/test_fitschan_c_inline.rs::show_fits_succeeds | astShowFits (out-of-scope method; jniast has no showFits)
+tests/test_fitschan_c_inline.rs::azel_writes_as_fits_wcs | out-of-scope method FitsChan.write
+tests/test_fitschan_c_inline.rs::non_linear_spectral_writes | SpecFrame (out of scope)
+tests/test_fitschan_c_inline.rs::supergalactic_writes_slon | out-of-scope method FitsChan.write
+tests/test_fitschan_c_inline.rs::sky_systems_through_five_encodings | out-of-scope method FitsChan.write
+tests/test_fitschan_c_inline.rs::spectral_systems_through_fits_wcs | SpecFrame (out of scope)
+tests/test_fitschan_c_inline.rs::log_spectral_axis_writes_freq_log | MathMap and SpecFrame (out of scope)
+tests/test_fitschan_c_inline.rs::date_and_observatory_write_back | out-of-scope method FitsChan.write

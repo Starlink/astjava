@@ -1194,4 +1194,33 @@ public class WcsMap extends Mapping {
         }
         out.initPrjPrm();
     }
+
+    /**
+     * C's {@code astWcsPrjType}: the type number of the projection whose FITS {@code CTYPE}
+     * suffix, such as {@code "-TAN"}, is {@code ctype} without its white space, or {@link
+     * #AST__WCSBAD} if there is none.
+     */
+    static int wcsPrjTypeNumber(String ctype) {
+        WcsProjection p = wcsPrjType(ctype);
+        for (int i = 0; i < TYPES.length; i++) {
+            if (TYPES[i] == p) {
+                return i + 1;
+            }
+        }
+        return AST__WCSBAD;
+    }
+
+    /**
+     * C's {@code astWcsPrjName}: the FITS {@code CTYPE} suffix, such as {@code "-TAN"}, of
+     * projection type {@code type}, four blanks for an unknown type.
+     */
+    static String wcsPrjName(int type) {
+        WcsProjection p = projection(type);
+        return p == WcsProjection.UNKNOWN ? "    " : "-" + p.code();
+    }
+
+    /** C's {@code astWcsPrjDesc}: the description of projection type {@code type}. */
+    static String wcsPrjDesc(int type) {
+        return projection(type).description();
+    }
 }

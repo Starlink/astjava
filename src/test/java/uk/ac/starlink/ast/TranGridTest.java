@@ -13,8 +13,9 @@ import org.junit.jupiter.api.Test;
  * with initial scale sizes of 100 and 4. The results are transformed back with {@code tranP}
  * rather than C's {@code astTranN}, and, as in C, the unit MatrixMap is made in its unit form.
  *
- * <p>{@code fits_wcs_pixel_to_sky} is translated in Task 23. {@code tranmap} needs a TranMap and
- * {@code nonlinear_mathmap_1d} a MathMap, which are outside the first phase.
+ * <p>{@code tranmap} needs a TranMap and {@code nonlinear_mathmap_1d} a MathMap, which are outside
+ * the first phase. {@code fits_wcs_pixel_to_sky} reads a header with a {@code CROTA1} card, which
+ * C's FitsChan guesses to be FITS-AIPS (fitschan.c:12880), an encoding whose read is out of scope.
  */
 class TranGridTest {
 

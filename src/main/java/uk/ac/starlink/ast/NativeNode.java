@@ -226,6 +226,9 @@ final class NativeNode {
     static final class Progress {
         /** The reader's mark, or -1 if no loader has asked for its part. */
         int mark = -1;
+
+        /** Whether a failed load of a nested Object has had its context added (C's {@code astreadclassdata_msg}). */
+        boolean nestedMsg;
     }
 
     NativeNode(String className) {

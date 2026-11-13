@@ -47,4 +47,16 @@ class NativeClassesTest {
         assertEquals(Collections.emptyList(), NativeClasses.missing(dump));
         assertNull(NativeClasses.needs(dump));
     }
+
+    @Test
+    void aFitsHeaderNeedsTheClassesOfItsBegastCards() {
+        String header = "BEGAST_A= 'FrameSet'           / Set of inter-related coordinate systems\n"
+                + "BEGAST_B= 'Frame   '           / Coordinate system description\n"
+                + "BEGAST_C= 'MathMap '           / Transformation using mathematical functions\n"
+                + "BEGAST_D= 'LutMap  '\n"
+                + "BEGAST_E= 'MathMap '\n"
+                + "CTYPE1  = 'RA---TAN'\n";
+        assertEquals("needs LutMap, MathMap", NativeClasses.needsInFitsHeader(header));
+        assertNull(NativeClasses.needsInFitsHeader("BEGAST_A= 'ZoomMap '\nZOOM_A  =                  2.0\n"));
+    }
 }

@@ -32,6 +32,12 @@ class RustLiteralTest {
     }
 
     @Test
+    void concatOfStringLiterals() {
+        assertEquals("a\tb\nc\n", one("pub const C: &str = concat!(\n    \"a\\tb\\n\",\n    \"c\\n\",\n);", "C"));
+        assertThrows(IllegalArgumentException.class, () -> RustLiteral.parse("const C: &str = concat!(\"a\", 1);"));
+    }
+
+    @Test
     void sliceOfStrings() {
         assertEquals(Arrays.asList("a", "b\"c"), one("pub const S: &[&str] = &[\"a\", \"b\\\"c\"];", "S"));
     }
