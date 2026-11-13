@@ -298,7 +298,7 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 
 - C: `WcsToStore` reads every card in order into the FitsStore (`WcsFcRead`), so of two cards with one keyword the last is used, and `RADESYS = 'FK5'` followed by `RADESYS = 'BADVAL'` fails with AST__BDFTS (`fitschan.c:40234`).
 - Rust: `fitschan/wcs_keywords.rs` looks each keyword up and takes the first card, so that header reads as FK5.
-- Java: as Rust; both ports differ from C, and `FitsChanErrorsTest.excludedCasesStillDiffer` fails when the difference goes.
+- Java: as C; of the cards for one keyword the last whose value converts gives the value, and a later card that does not convert is passed over (`fitschan.c:37357-37373`).
 
 ### SpecTrans translations of FITS-PC keywords for every encoding
 

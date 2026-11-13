@@ -94,7 +94,7 @@ final class FitsWcsRead {
      */
     private static FrameSet decodeWcsStores(
             FitsChan fc, FitsCardList trans, boolean defB1950, List<int[]> cursors, FitsWarnings warnings) {
-        FitsWcsKeywords.WcsStores stores = FitsWcsKeywords.extractWcsKeywordsWithAlts(trans);
+        FitsWcsKeywords.WcsStores stores = FitsWcsKeywords.extractWcsKeywordsWithAlts(trans, fc.getFitsRounding());
         boolean sipReplace = fc.getSipReplace();
         boolean carLin = fc.getCarLin();
         if (stores.primary != null) {

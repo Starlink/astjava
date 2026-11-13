@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.Fixtures;
 
 /**
@@ -15,7 +16,8 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * FITS-WCS keywords of one axis description into a {@link FitsStore}, as C's {@code WcsFcRead}
  * (fitschan.c:36696) stores them. Further tests cover where the extraction follows C rather than
  * the Rust port: the observation details C reads for the primary description only, the SIP
- * distortion code, and the order in which repeated SIP coefficients are stored.
+ * distortion code, the order in which repeated SIP coefficients are stored, and which of two cards
+ * for one keyword gives its value.
  */
 class FitsWcsKeywordsTest {
 
@@ -288,14 +290,14 @@ class FitsWcsKeywordsTest {
     void epochPrefersMjdAvgAndIgnoresDateObs() {
         FitsStore store = new FitsStore(1);
         FitsWcsKeywords.readEpochIntoStore(
-                FitsCardList.fromHeader("MJD-OBS = 50000.0\nMJD-AVG = 50000.5\nTIMESYS = 'TAI     '\nEND"), store);
+                FitsCardList.fromHeader("MJD-OBS = 50000.0\nMJD-AVG = 50000.5\nTIMESYS = 'TAI     '\nEND"), store, 10);
         assertEquals(50000.5, store.mjdobs);
         assertEquals("TAI", store.timesys);
         store = new FitsStore(1);
-        FitsWcsKeywords.readEpochIntoStore(FitsCardList.fromHeader("MJD-OBS = 50000.0\nEND"), store);
+        FitsWcsKeywords.readEpochIntoStore(FitsCardList.fromHeader("MJD-OBS = 50000.0\nEND"), store, 10);
         assertEquals(50000.0, store.mjdobs);
         store = new FitsStore(1);
-        FitsWcsKeywords.readEpochIntoStore(FitsCardList.fromHeader("DATE-OBS= '2000-01-01'\nEND"), store);
+        FitsWcsKeywords.readEpochIntoStore(FitsCardList.fromHeader("DATE-OBS= '2000-01-01'\nEND"), store, 10);
         assertNull(store.mjdobs);
     }
 
@@ -331,5 +333,57 @@ class FitsWcsKeywordsTest {
         assertTrue(Arrays.equals(new double[] {BAD, 3.0e-5}, store.sipA[0]));
         assertTrue(Arrays.equals(new double[] {2.0e-5}, store.sipA[2]));
         assertEquals(0, store.sipB.length);
+    }
+
+    /** A celestial header with {@code extra} cards after it. */
+    private static FrameSet readWithDuplicates(String... extra) {
+        String[] base = {
+            "NAXIS1  =                  100",
+            "NAXIS2  =                  100",
+            "CTYPE1  = 'RA---TAN'",
+            "CTYPE2  = 'DEC--TAN'",
+            "CRVAL2  =               45.000",
+            "CRPIX1  =               50.000",
+            "CRPIX2  =               50.000",
+            "CDELT1  =              -0.0100",
+            "CDELT2  =               0.0100",
+            "RADESYS = 'FK5'",
+            "EQUINOX =               2000.0"
+        };
+        String[] cards = Arrays.copyOf(base, base.length + extra.length);
+        System.arraycopy(extra, 0, cards, base.length, extra.length);
+        return FitsHeaders.readFrameSet(FitsHeaders.chan(cards));
+    }
+
+    private static void assertReferencePoint(FrameSet fs, double lon, double lat) {
+        double[] world = FitsHeaders.tran(fs, new double[] {50.0, 50.0}, true);
+        assertTrue(CValues.cValueEq(world[0], lon), "longitude " + world[0] + ", C " + lon);
+        assertTrue(CValues.cValueEq(world[1], lat), "latitude " + world[1] + ", C " + lat);
+    }
+
+    // C's WcsFcRead stores every card it can convert, in order, so a later card for a keyword
+    // replaces the value of an earlier one, and a card it cannot convert stores nothing
+    // (fitschan.c:37357-37373). The expected values are the pinned C library's.
+
+    @Test
+    void aLaterCardForAKeywordGivesItsValue() {
+        assertReferencePoint(
+                readWithDuplicates("CRVAL1  =              180.000", "CRVAL1  =              190.000"),
+                -2.967059728390361,
+                0.7853981633974484);
+    }
+
+    @Test
+    void aLaterCardThatDoesNotConvertIsPassedOver() {
+        assertReferencePoint(
+                readWithDuplicates("CRVAL1  =              180.000", "CRVAL1  = 'abc'"),
+                3.141592653589793,
+                0.7853981633974484);
+    }
+
+    @Test
+    void aLaterStringCardGivesItsValue() {
+        FrameSet fs = readWithDuplicates("RADESYS = 'FK4'", "CRVAL1  =              180.000");
+        assertEquals("FK4", fs.getC("System"));
     }
 }

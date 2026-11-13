@@ -58,16 +58,11 @@ class FitsChanErrorsTest {
                 "error-unknown-spectral-algorithm")) {
             m.put(name, "needs SpecFrame");
         }
-        m.put(
-                "error-bad-radesys",
-                "the header has RADESYS = 'FK5' and then RADESYS = 'BADVAL'; C's WcsToStore reads every card"
-                        + " into the FitsStore in order (WcsFcRead), so the last duplicate wins and the read fails"
-                        + " with AST__BDFTS; the port looks each keyword up and takes the first, so it reads FK5");
         return Collections.unmodifiableMap(m);
     }
 
     /** The number of cases run: every case of C's table but those excluded. */
-    private static final int RUNNABLE = 26;
+    private static final int RUNNABLE = 27;
 
     private static String text(JsonNode c, String field) {
         JsonNode v = c.get(field);

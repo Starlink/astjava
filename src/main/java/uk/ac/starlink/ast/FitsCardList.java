@@ -317,6 +317,83 @@ final class FitsCardList {
         return value == null ? null : value.substring(0, FitsCard.chrLen(value));
     }
 
+    // ------------------------------------------------------------------
+    // The values C's WcsFcRead stores in a FitsStore
+    // ------------------------------------------------------------------
+
+    /**
+     * The value C's {@code WcsFcRead} stores for {@code keyword}: it visits the cards not consumed
+     * in order, and stores the value of each card with that keyword that {@code CnvValue} converts
+     * to {@code want}, so that a later card replaces an earlier one's value, while a card whose
+     * value does not convert stores nothing (fitschan.c:37357-37373). Null if no card converts.
+     */
+    private FitsCardValue.Got lastConverted(String keyword, FitsCardValue.Want want, int fitsrnd) {
+        FitsCardValue.Got got = null;
+        for (FitsCard c : list) {
+            if (!c.isConsumed() && c.keyword.equalsIgnoreCase(keyword)) {
+                FitsCardValue.Got g;
+                try {
+                    g = FitsCardValue.cnvType(c.value, want, fitsrnd, c.keyword);
+                } catch (AstException e) {
+                    // A card with no value; the sweep of the cards reports it.
+                    g = null;
+                }
+                if (g != null) {
+                    got = g;
+                }
+            }
+        }
+        return got;
+    }
+
+    /** The floating value C's {@code WcsFcRead} stores for {@code keyword}, or null. */
+    Double getStoredFloat(String keyword) {
+        FitsCardValue.Got g = lastConverted(keyword, FitsCardValue.Want.FLOAT, 0);
+        return g == null ? null : g.d;
+    }
+
+    /**
+     * The string value C's {@code WcsFcRead} stores for {@code keyword}, or null; {@code fitsrnd}
+     * is the FitsChan's FitsRounding, which shapes the text of a floating value.
+     */
+    String getStoredString(String keyword, int fitsrnd) {
+        FitsCardValue.Got g = lastConverted(keyword, FitsCardValue.Want.STRING, fitsrnd);
+        return g == null ? null : g.s;
+    }
+
+    /** {@link #getStoredFloat}, recording the keyword as consumed when a value is stored. */
+    Double getStoredFloatMarked(String keyword) {
+        Double v = getStoredFloat(keyword);
+        if (v != null) {
+            recordConsumed(keyword);
+        }
+        return v;
+    }
+
+    /** {@link #getStoredString}, recording the keyword as consumed when a value is stored. */
+    String getStoredStringMarked(String keyword, int fitsrnd) {
+        String v = getStoredString(keyword, fitsrnd);
+        if (v != null) {
+            recordConsumed(keyword);
+        }
+        return v;
+    }
+
+    /**
+     * The comment C's {@code WcsFcRead} stores for a CTYPE keyword: that of the last card not
+     * consumed with {@code keyword}, whether or not its value converts (fitschan.c:36848-36860),
+     * or null if there is none.
+     */
+    String getStoredComment(String keyword) {
+        FitsCard last = null;
+        for (FitsCard c : list) {
+            if (!c.isConsumed() && c.keyword.equalsIgnoreCase(keyword)) {
+                last = c;
+            }
+        }
+        return last == null ? null : last.cComment();
+    }
+
     /** {@link #find}, recording the keyword as consumed when a card is found. */
     FitsCard findMarked(String keyword) {
         FitsCard c = find(keyword);

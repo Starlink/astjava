@@ -9,15 +9,19 @@ import java.util.function.BiFunction;
  * The extraction of the FITS-WCS keywords of one axis description from a card list into a {@link
  * FitsStore}: the values C's {@code WcsFcRead} (fitschan.c:36696) stores.
  *
- * <p>Each keyword is looked up by name, the first card holding it giving its value, whereas C's
- * {@code WcsFcRead} sweeps the cards and stores every one it recognises, so that of two cards for
- * one keyword C keeps the last. The SIP coefficients are read by a sweep, as C reads them.
+ * <p>Each keyword is looked up by name and given the value C's {@code WcsFcRead} stores for it:
+ * that sweep visits the cards in order and stores each one it recognises whose value converts, so
+ * of two cards for one keyword the last that converts gives the value ({@link
+ * FitsCardList#getStoredFloat}). The SIP coefficients are read by a sweep, as C reads them.
  *
  * <p>Ported from Rust {@code fitschan/wcs_keywords.rs}.
  */
 final class FitsWcsKeywords {
 
     private FitsWcsKeywords() {}
+
+    /** The default of a FitsChan's FitsRounding attribute. */
+    private static final int DEFAULT_FITS_ROUNDING = 10;
 
     /** C's {@code AST__DD2R}: degrees to radians. */
     private static final double DD2R = 0.017453292519943295;
@@ -69,12 +73,12 @@ final class FitsWcsKeywords {
      * SpecTrans} translates DATE-OBS to MJD-OBS when there is no MJD-OBS (fitschan.c:32157-32184).
      * The cards are read without being consumed, as C reads them with {@code mark} 0.
      */
-    static void readEpochIntoStore(FitsCardList cards, FitsStore store) {
+    static void readEpochIntoStore(FitsCardList cards, FitsStore store, int fitsrnd) {
         // TIMESYS is never consumed but is stripped as WcsFcRead strips every string it stores.
-        store.timesys = FitsCardList.stripWcsStoreString(cards.getString("TIMESYS"));
-        Double mjd = cards.getFloat("MJD-AVG");
+        store.timesys = FitsCardList.stripWcsStoreString(cards.getStoredString("TIMESYS", fitsrnd));
+        Double mjd = cards.getStoredFloat("MJD-AVG");
         if (mjd == null) {
-            mjd = cards.getFloat("MJD-OBS");
+            mjd = cards.getStoredFloat("MJD-OBS");
         }
         store.mjdobs = mjd;
     }
@@ -97,8 +101,16 @@ final class FitsWcsKeywords {
      * @throws AstException with status {@code AST__BDFTS} if there are no WCS axes
      */
     static FitsStore extractWcsKeywords(FitsCardList cards, char s, int npix) {
+        return extractWcsKeywords(cards, s, npix, DEFAULT_FITS_ROUNDING);
+    }
+
+    /**
+     * {@link #extractWcsKeywords(FitsCardList, char, int)} for a FitsChan whose FitsRounding is
+     * {@code fitsrnd}, which shapes the text of a floating value stored as a string.
+     */
+    static FitsStore extractWcsKeywords(FitsCardList cards, char s, int npix, int fitsrnd) {
         // C reads WCSAXES as a floating value and rounds it (fitschan.c:38276-38281).
-        Double wcsaxesValue = cards.getFloat(keyFor("WCSAXES", 0, s));
+        Double wcsaxesValue = cards.getStoredFloat(keyFor("WCSAXES", 0, s));
         Integer wcsaxes = wcsaxesValue == null ? null : (int) Math.max(0.0, roundHalfAway(wcsaxesValue));
         int naxis = wcsaxes != null ? wcsaxes : npix;
         if (naxis == 0) {
@@ -112,41 +124,41 @@ final class FitsWcsKeywords {
 
         for (int i = 0; i < naxis; i++) {
             int axisNum = i + 1;
-            store.crpix[i] = lookupWithFallback(cards, "CRPIX", axisNum, s, FitsCardList::getFloatMarked);
-            store.crval[i] = lookupWithFallback(cards, "CRVAL", axisNum, s, FitsCardList::getFloatMarked);
-            store.cdelt[i] = lookupWithFallback(cards, "CDELT", axisNum, s, FitsCardList::getFloatMarked);
+            store.crpix[i] = lookupWithFallback(cards, "CRPIX", axisNum, s, FitsCardList::getStoredFloatMarked);
+            store.crval[i] = lookupWithFallback(cards, "CRVAL", axisNum, s, FitsCardList::getStoredFloatMarked);
+            store.cdelt[i] = lookupWithFallback(cards, "CDELT", axisNum, s, FitsCardList::getStoredFloatMarked);
             // NAXISn describes the array, not the WCS, and is never consumed.
             store.dims[i] = cards.getFloat("NAXIS" + axisNum);
             store.ctype[i] = FitsCardList.stripWcsStoreString(
-                    lookupWithFallback(cards, "CTYPE", axisNum, s, FitsCardList::getStringMarked));
+                    lookupWithFallback(cards, "CTYPE", axisNum, s, (c, k) -> c.getStoredStringMarked(k, fitsrnd)));
             // The comment of the CTYPE card (fitschan.c:36845-36860).
-            FitsCard ctypeCard = cards.find(keyFor("CTYPE", axisNum, s));
-            store.ctypeCom[i] = ctypeCard == null ? null : ctypeCard.cComment();
+            store.ctypeCom[i] = cards.getStoredComment(keyFor("CTYPE", axisNum, s));
             store.cunit[i] = FitsCardList.stripWcsStoreString(
-                    lookupWithFallback(cards, "CUNIT", axisNum, s, FitsCardList::getStringMarked));
+                    lookupWithFallback(cards, "CUNIT", axisNum, s, (c, k) -> c.getStoredStringMarked(k, fitsrnd)));
             store.cname[i] = FitsCardList.stripWcsStoreString(
-                    lookupWithFallback(cards, "CNAME", axisNum, s, FitsCardList::getStringMarked));
+                    lookupWithFallback(cards, "CNAME", axisNum, s, (c, k) -> c.getStoredStringMarked(k, fitsrnd)));
             for (int j = 0; j < naxis; j++) {
-                store.pc[i][j] = cards.getFloatMarked(keyFor2("PC", axisNum, j + 1, s));
+                store.pc[i][j] = cards.getStoredFloatMarked(keyFor2("PC", axisNum, j + 1, s));
             }
             for (int m = 0; m < store.pv[i].length; m++) {
-                store.pv[i][m] = cards.getFloatMarked(keyFor2("PV", axisNum, m, s));
+                store.pv[i][m] = cards.getStoredFloatMarked(keyFor2("PV", axisNum, m, s));
             }
             for (int m = 0; m < store.ps[i].length; m++) {
-                store.ps[i][m] = FitsCardList.stripWcsStoreString(cards.getStringMarked(keyFor2("PS", axisNum, m, s)));
+                store.ps[i][m] = FitsCardList.stripWcsStoreString(
+                        cards.getStoredStringMarked(keyFor2("PS", axisNum, m, s), fitsrnd));
             }
         }
 
         store.radesys = FitsCardList.stripWcsStoreString(
-                lookupWithFallback(cards, "RADESYS", 0, s, FitsCardList::getStringMarked));
-        store.equinox = lookupWithFallback(cards, "EQUINOX", 0, s, FitsCardList::getFloatMarked);
-        store.lonpole = lookupWithFallback(cards, "LONPOLE", 0, s, FitsCardList::getFloatMarked);
-        store.latpole = lookupWithFallback(cards, "LATPOLE", 0, s, FitsCardList::getFloatMarked);
-        readEpochIntoStore(cards, store);
+                lookupWithFallback(cards, "RADESYS", 0, s, (c, k) -> c.getStoredStringMarked(k, fitsrnd)));
+        store.equinox = lookupWithFallback(cards, "EQUINOX", 0, s, FitsCardList::getStoredFloatMarked);
+        store.lonpole = lookupWithFallback(cards, "LONPOLE", 0, s, FitsCardList::getStoredFloatMarked);
+        store.latpole = lookupWithFallback(cards, "LATPOLE", 0, s, FitsCardList::getStoredFloatMarked);
+        readEpochIntoStore(cards, store, fitsrnd);
         store.specsys = FitsCardList.stripWcsStoreString(
-                lookupWithFallback(cards, "SPECSYS", 0, s, FitsCardList::getStringMarked));
-        store.restfrq = lookupWithFallback(cards, "RESTFRQ", 0, s, FitsCardList::getFloatMarked);
-        store.restwav = lookupWithFallback(cards, "RESTWAV", 0, s, FitsCardList::getFloatMarked);
+                lookupWithFallback(cards, "SPECSYS", 0, s, (c, k) -> c.getStoredStringMarked(k, fitsrnd)));
+        store.restfrq = lookupWithFallback(cards, "RESTFRQ", 0, s, FitsCardList::getStoredFloatMarked);
+        store.restwav = lookupWithFallback(cards, "RESTWAV", 0, s, FitsCardList::getStoredFloatMarked);
 
         // DUT1 and DTAI have only primary branches in WcsFcRead (fitschan.c:37025-37046), and the
         // Frame of an alternate description takes the values stored for its own letter
@@ -156,28 +168,28 @@ final class FitsWcsKeywords {
         if (s == ' ') {
             String telescop = cards.getString("TELESCOP");
             boolean jcmtOrUkirt = telescop != null && (telescop.startsWith("JCMT") || telescop.startsWith("UKIRT"));
-            store.dtai = jcmtOrUkirt ? cards.getFloat("DTAI") : null;
-            store.dut1 = cards.getFloat("DUT1");
+            store.dtai = jcmtOrUkirt ? cards.getStoredFloat("DTAI") : null;
+            store.dut1 = cards.getStoredFloat("DUT1");
         }
 
         store.wcsname = FitsCardList.stripWcsStoreString(
-                lookupWithFallback(cards, "WCSNAME", 0, s, FitsCardList::getStringMarked));
+                lookupWithFallback(cards, "WCSNAME", 0, s, (c, k) -> c.getStoredStringMarked(k, fitsrnd)));
         // OBSGEO-X/Y/Z have only primary branches, are read for the primary description whichever
         // description uses them (fitschan.c:39868-39870), and are never consumed.
-        store.obsgeox = cards.getFloat("OBSGEO-X");
-        store.obsgeoy = cards.getFloat("OBSGEO-Y");
-        store.obsgeoz = cards.getFloat("OBSGEO-Z");
+        store.obsgeox = cards.getStoredFloat("OBSGEO-X");
+        store.obsgeoy = cards.getStoredFloat("OBSGEO-Y");
+        store.obsgeoz = cards.getStoredFloat("OBSGEO-Z");
         // SSYSSRC and ZSOURCE have secondary branches; IMAGFREQ has only a primary one
         // (fitschan.c:37171-37178). RFVAL has no WcsFcRead branch.
-        store.ssyssrc = FitsCardList.stripWcsStoreString(cards.getStringMarked(keyFor("SSYSSRC", 0, s)));
-        store.zsource = cards.getFloatMarked(keyFor("ZSOURCE", 0, s));
-        store.imagfreq = s == ' ' ? cards.getFloatMarked("IMAGFREQ") : null;
-        store.skyrefis = FitsCardList.stripWcsStoreString(cards.getStringMarked(keyFor("SREFIS", 0, s)));
+        store.ssyssrc = FitsCardList.stripWcsStoreString(cards.getStoredStringMarked(keyFor("SSYSSRC", 0, s), fitsrnd));
+        store.zsource = cards.getStoredFloatMarked(keyFor("ZSOURCE", 0, s));
+        store.imagfreq = s == ' ' ? cards.getStoredFloatMarked("IMAGFREQ") : null;
+        store.skyrefis = FitsCardList.stripWcsStoreString(cards.getStoredStringMarked(keyFor("SREFIS", 0, s), fitsrnd));
         for (int i = 0; i < naxis; i++) {
             int axisNum = i + 1;
-            store.skyref[i] = cards.getFloatMarked(keyFor("SREF", axisNum, s));
-            store.skyrefp[i] = cards.getFloatMarked(keyFor("SREFP", axisNum, s));
-            store.axref[i] = cards.getFloatMarked(keyFor("AXREF", axisNum, s));
+            store.skyref[i] = cards.getStoredFloatMarked(keyFor("SREF", axisNum, s));
+            store.skyrefp[i] = cards.getStoredFloatMarked(keyFor("SREFP", axisNum, s));
+            store.axref[i] = cards.getStoredFloatMarked(keyFor("AXREF", axisNum, s));
         }
 
         extractSip(cards, store, s);
@@ -213,14 +225,22 @@ final class FitsWcsKeywords {
 
     /** Every axis description of a FITS-WCS header. */
     static WcsStores extractWcsKeywordsWithAlts(FitsCardList cards) {
+        return extractWcsKeywordsWithAlts(cards, DEFAULT_FITS_ROUNDING);
+    }
+
+    /**
+     * {@link #extractWcsKeywordsWithAlts(FitsCardList)} for a FitsChan whose FitsRounding is
+     * {@code fitsrnd}.
+     */
+    static WcsStores extractWcsKeywordsWithAlts(FitsCardList cards, int fitsrnd) {
         FitsWcsMark.WcsVersions versions = FitsWcsMark.wcsVersions(cards);
         int npix = versions.npix;
-        FitsStore primary = versions.primary ? extractWcsKeywords(cards, ' ', npix) : null;
+        FitsStore primary = versions.primary ? extractWcsKeywords(cards, ' ', npix, fitsrnd) : null;
         List<Character> letters = new ArrayList<>();
         List<FitsStore> alts = new ArrayList<>();
         for (char s : versions.alternates) {
             letters.add(s);
-            alts.add(extractWcsKeywords(cards, s, npix));
+            alts.add(extractWcsKeywords(cards, s, npix, fitsrnd));
         }
         return new WcsStores(npix, primary, letters, alts);
     }
