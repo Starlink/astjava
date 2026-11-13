@@ -22,7 +22,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * holds a pair of adjacent conversions that C's {@code astSimplify} cancels or merges (slamap.c
  * {@code MapMerge}): C transforms with the simplified SlaMap, whose results can differ by more than
  * libm rounding (an iterative FK4 conversion and its inverse, a longitude left unnormalised), and
- * this library does not simplify. The test fails if no such case differs any more. The Rust test's list of cases licensed
+ * this library does not simplify, though by no more than {@link #SIMPLIFICATION_BOUND}. The test fails if no such
+ * case differs any more. The Rust test's list of cases licensed
  * to drift by its vectorised SlaMap kernels, and {@code fk_licences_name_existing_cases}, which
  * checks that list, have no counterpart here (the port has no such kernels).
  */
@@ -144,12 +145,46 @@ class SkyConvertTest {
         return v;
     }
 
+    /**
+     * The largest difference, in radians, allowed in a case whose SlaMap C simplifies: the
+     * differences measured are at most 1.97e-8 rad (FK5 to FK5 in configurations 0 and 1, whose
+     * SlaMap holds conversions C merges), with a median of 5.6e-11 rad; the bound leaves room of
+     * more than a factor of two above the largest, so that a real fault in a pair C cancels or
+     * merges is not excused.
+     */
+    private static final double SIMPLIFICATION_BOUND = 5.0e-8;
+
+    /**
+     * The largest difference between {@code got} and {@code want}, pairs of longitude and latitude
+     * in radians, a longitude difference taken modulo 2 pi; infinite if one is bad and the other not.
+     */
+    private static double largestDifference(double[] got, double[] want) {
+        double largest = 0.0;
+        for (int i = 0; i < got.length; i++) {
+            boolean gotBad = got[i] == CValues.BAD || Double.isNaN(got[i]);
+            boolean wantBad = want[i] == CValues.BAD || Double.isNaN(want[i]);
+            if (gotBad || wantBad) {
+                if (gotBad != wantBad) {
+                    return Double.POSITIVE_INFINITY;
+                }
+                continue;
+            }
+            double d = got[i] - want[i];
+            if (i % 2 == 0) {
+                d = Math.IEEEremainder(d, 2.0 * Math.PI);
+            }
+            largest = Math.max(largest, Math.abs(d));
+        }
+        return largest;
+    }
+
     @Test
     void convertMatchesTheCLibrary() {
         JsonNode data = ProbeData.load("sky_convert");
         JsonNode cases = data.get("CASES");
         List<String> failures = new ArrayList<>();
         int excused = 0;
+        double largest = 0.0;
         for (JsonNode c : cases) {
             int config = c.get(0).asInt();
             String fromSys = c.get(1).asText();
@@ -171,12 +206,19 @@ class SkyConvertTest {
                 boolean same = CValues.cValuesEq(got, want);
                 if (simp[0] && !same) {
                     excused++;
+                    double d = largestDifference(got, want);
+                    largest = Math.max(largest, d);
+                    if (d > SIMPLIFICATION_BOUND || Double.isNaN(d)) {
+                        failures.add(label + ": differs from C by " + d + " rad, beyond the "
+                                + SIMPLIFICATION_BOUND + " rad a merged pair explains: got " + Arrays.toString(got)
+                                + ", C gives " + Arrays.toString(want));
+                    }
                 } else if (!same) {
                     failures.add(label + ": got " + Arrays.toString(got) + ", C gives " + Arrays.toString(want));
                 }
             }
         }
-        assertTrue(excused > 0, "no case needs simplification any more");
+        assertTrue(excused > 0, "no case needs simplification any more (largest difference " + largest + ")");
         assertTrue(
                 failures.isEmpty(),
                 failures.size() + " of " + cases.size() + " cases differ from C:\n" + String.join("\n", failures));
