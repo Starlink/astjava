@@ -47,9 +47,11 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  * Frame is a Mapping, as in C, so Rust's list of untransformable fixtures has no counterpart: a
  * bare Frame's sections are compared like any other.
  *
- * <p>Left to later tasks: Task 20 translates {@code
- * bare_frame_is_untransformable_and_says_why} as a check that a bare Frame transforms as the
- * identity; Task 23 loads {@code .head} fixtures through a FitsChan (until then every {@code .head}
+ * <p>{@code bare_frame_is_untransformable_and_says_why} becomes {@code
+ * bareFrameTransformsAsTheIdentity}, a check that a bare Frame transforms as the identity, as in
+ * C.
+ *
+ * <p>Left to later tasks: Task 23 loads {@code .head} fixtures through a FitsChan (until then every {@code .head}
  * fixture is deferred as {@value #HEAD_NEEDS}) and translates {@code
  * loads_head_frameset_with_frames} and {@code skyframe_longitude_is_cyclic_pixel_is_not}.
  */
@@ -998,6 +1000,36 @@ class TransformOracleTest {
         assertNull(l.failure);
         assertEquals(2, l.map.getNin());
         assertNotEquals("FrameSet", l.map.astClass(), "a bare Mapping has no Frame");
+    }
+
+    /**
+     * Translation of Rust {@code bare_frame_is_untransformable_and_says_why}. A bare Frame is a
+     * Mapping that transforms as the identity in both directions (frame.c {@code Transform}), so
+     * C's oracle sections for one record each output equal to its input and a loaded bare Frame
+     * reproduces them. Rust's fixture, {@code wcsconv/inputs/specflux.ast}, holds a SpecFrame; this
+     * uses the bare CmpFrame {@code wcsconv/framesets/timeplot-head.ast}, of a TimeFrame and a
+     * Frame, whose sections C writes the same way.
+     */
+    @Test
+    void bareFrameTransformsAsTheIdentity() throws TransformFailure {
+        String relpath = "wcsconv/framesets/timeplot-head.ast";
+        Loaded l = loadFixture(relpath);
+        assertNull(l.failure);
+        assertEquals("CmpFrame", l.map.astClass());
+        int nsections = 0;
+        for (OracleSection s : parseOracle("framesets")) {
+            if (!s.path.equals(relpath)) {
+                continue;
+            }
+            nsections++;
+            assertEquals(2, s.nin);
+            assertEquals(2, s.nout);
+            double[][] in = s.inputs();
+            double[][] out = s.outputs();
+            assertTrue(Arrays.deepEquals(in, out), s + ": C records the identity");
+            assertTrue(Arrays.deepEquals(in, transformSection(l.map, s, in)), s.toString());
+        }
+        assertEquals(2, nsections, "a forward and an inverse section");
     }
 
     // ------------------------------------------------------------------

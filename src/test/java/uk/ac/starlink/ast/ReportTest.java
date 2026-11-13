@@ -21,9 +21,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * dumped and read back as C does. The expected text comes from C ({@code oracle/report.json},
  * from {@code tools/oracle_fixtures/report_probe.c}).
  *
- * <p>The FrameSet parts of {@code reports_follow_the_c_library} and {@code a_clone_clears_report}
- * are translated in Task 20 (they need a SkyFrame and a FrameSet); their Circle parts need a class
- * outside the first phase.
+ * <p>The Circle parts of {@code reports_follow_the_c_library} and {@code a_clone_clears_report} need
+ * a class outside the first phase and are left out.
  */
 class ReportTest {
 
@@ -85,6 +84,15 @@ class ReportTest {
         got = reportOf(() -> shift.tran1(x.length, x, true));
         assertEquals(CASES.get("SHIFT").asText(), got, "ShiftMap");
 
+        FrameSet fs = new FrameSet(new Frame(2));
+        fs.setReport(true);
+        fs.addFrame(FrameSet.AST__BASE, new ZoomMap(2, 0.01), new SkyFrame());
+        got = reportOf(() -> {
+            fs.tran2(x.length, x, y, true);
+            fs.tran2(x.length, x, y, false);
+        });
+        assertEquals(CASES.get("FRAMESET").asText(), got, "FrameSet");
+
         // Without Report, nothing is written.
         zoom.clear("Report");
         assertEquals("", reportOf(() -> zoom.tran2(x.length, x, y, true)));
@@ -93,8 +101,10 @@ class ReportTest {
         ZoomMap zoomOff = (ZoomMap) zoom.copy();
         zoomOff.setReport(false);
         List<String> failures = new ArrayList<>();
-        String[][] cases = {{"ZoomMap", "ZOOM_DUMP"}, {"ZoomMap Report=0", "ZOOM_DUMP_OFF"}};
-        Mapping[] objects = {zoom, zoomOff};
+        String[][] cases = {
+            {"ZoomMap", "ZOOM_DUMP"}, {"ZoomMap Report=0", "ZOOM_DUMP_OFF"}, {"FrameSet", "FRAMESET_DUMP"}
+        };
+        Mapping[] objects = {zoom, zoomOff, fs};
         for (int i = 0; i < cases.length; i++) {
             String name = cases[i][0];
             String want = dumpText(cases[i][1]);
@@ -112,7 +122,7 @@ class ReportTest {
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 
-    /** A copy clears Report, as C's {@code astCopy} does. */
+    /** A copy clears Report, as C's {@code astCopy} does for a Mapping and a FrameSet alike. */
     @Test
     void aCloneClearsReport() {
         ZoomMap zoom = new ZoomMap(3, 2.0);
@@ -120,6 +130,10 @@ class ReportTest {
         Mapping copy = (Mapping) zoom.copy();
         assertFalse(copy.test("Report"));
         assertTrue(zoom.test("Report") && zoom.getReport());
+
+        FrameSet fs = new FrameSet(new Frame(2));
+        fs.setReport(true);
+        assertFalse(fs.copy().test("Report"));
     }
 
     /** Writing a Mapping held as a Mapping reference is not a copy, so the dump records Report. */

@@ -97,6 +97,17 @@ class RustLiteralTest {
     }
 
     @Test
+    void hexadecimalIntegersAreReadAsUnsigned() {
+        Map<String, Object> m = RustLiteral.parse(
+                "pub const C: &[(&str, u64)] = &[(\"a\", 0x3930ee3d0ff6ff8a), (\"b\", 0xaecea120c074adde)];\n");
+        assertEquals(
+                Arrays.asList(
+                        Arrays.asList("a", 0x3930ee3d0ff6ff8aL),
+                        Arrays.asList("b", new java.math.BigInteger("aecea120c074adde", 16))),
+                m.get("C"));
+    }
+
+    @Test
     void unknownConstructThrowsWithLineNumber() {
         IllegalArgumentException e = assertThrows(
                 IllegalArgumentException.class, () -> RustLiteral.parse("// x\n\npub const X: u8 = foo!();\n"));

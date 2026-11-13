@@ -31,9 +31,9 @@ import uk.ac.starlink.ast.testsupport.CValues;
  *
  * <p>{@code default_skyframe_file_round_trip_is_equal} compares the SkyFrame read back with the
  * original, which C does with {@code astEqual}, by comparing their dumps, since a native round
- * trip writes back what it read. The tests that write and read several classes together, {@code
- * round_trip_multiple_types}, {@code write_and_read_frameset_via_channel} and {@code
- * converted_frameset_string_round_trip}, are translated in Task 20.
+ * trip writes back what it read. {@code converted_frameset_string_round_trip} likewise leaves out
+ * C's {@code astEqual} of the FrameSet read back with the original, and checks only that it writes
+ * the same text again.
  *
  * <p>The Rust tests that use the real standard input and output run a child copy of the test
  * program; here standard input and output are replaced for the duration of the test.
@@ -271,6 +271,32 @@ class ChannelTest {
         assertEquals(1, readMapping(wide).getNin());
     }
 
+    @Test
+    void roundTripMultipleTypes() throws IOException {
+        Mapping zoom = readMapping(ChannelText.dump(new ZoomMap(2, 5.0)));
+        assertEquals(2, zoom.getNin());
+
+        Mapping shift = readMapping(ChannelText.dump(new ShiftMap(new double[] {1.0, 2.0})));
+        assertEquals(2, shift.getNin());
+
+        SkyFrame sky = new SkyFrame();
+        sky.setSystem("GALACTIC");
+        Frame f = assertInstanceOf(Frame.class, ChannelText.read(ChannelText.dump(sky)));
+        assertEquals(2, f.getNaxes());
+        assertEquals("GALACTIC", f.getSystem());
+
+        Frame base = new Frame(2);
+        base.setDomain("PIXEL");
+        FrameSet fs = new FrameSet(base);
+        Frame current = new Frame(2);
+        current.setDomain("SKY");
+        fs.addFrame(FrameSet.AST__BASE, new ZoomMap(2, 2.0), current);
+        String text = ChannelText.dump(fs);
+        assertTrue(text.contains("Begin FrameSet"));
+        Frame restored = assertInstanceOf(Frame.class, ChannelText.read(text));
+        assertEquals(2, restored.getNaxes());
+    }
+
     /**
      * A CmpMap of a ZoomMap with an ID and a ShiftMap: nested objects and a set Object attribute,
      * which the text must keep.
@@ -314,6 +340,47 @@ class ChannelTest {
         Mapping m2 = readMapping(text2);
         assertEquals(1, m2.getNin());
         assertEquals(7.0, transform1(m2, 2.0)[0], 1e-10, "shift 2+5");
+    }
+
+    @Test
+    void writeAndReadFramesetViaChannel() throws IOException {
+        // PIXEL to GRID by a zoom of 2.
+        Frame pixel = new Frame(2);
+        pixel.setDomain("PIXEL");
+        FrameSet fs = new FrameSet(pixel);
+        Frame grid = new Frame(2);
+        grid.setDomain("GRID");
+        fs.addFrame(FrameSet.AST__BASE, new ZoomMap(2, 2.0), grid);
+
+        String text = channelWrite(fs, ch -> {});
+        assertTrue(text.contains("Begin FrameSet"));
+        assertTrue(text.contains("PIXEL"));
+
+        // A FrameSet is both a Frame and a Mapping.
+        Mapping m = readMapping(text);
+        assertEquals(2, m.getNin());
+        assertEquals(2, m.getNout());
+        double[] out = transform1(m, 3.0, 4.0);
+        assertEquals(6.0, out[0], 1e-10, "fs zoom axis 1");
+        assertEquals(8.0, out[1], 1e-10, "fs zoom axis 2");
+    }
+
+    /**
+     * testobject.c {@code TestCheckToString}: the FrameSet {@code astConvert} makes from a
+     * SKY-domain Frame to a SkyFrame writes to a string, reads back, and writes the same string
+     * again.
+     */
+    @Test
+    void convertedFramesetStringRoundTrip() {
+        SkyFrame sf = new SkyFrame();
+        sf.setSystem("ICRS");
+        Frame bf = new Frame(2);
+        bf.setDomain("SKY");
+        FrameSet fs = bf.convert(sf, "");
+        assertNotNull(fs, "astConvert failed");
+        String pickle1 = ChannelText.dump(fs);
+        FrameSet fs2 = assertInstanceOf(FrameSet.class, ChannelText.read(pickle1));
+        assertEquals(pickle1, ChannelText.dump(fs2), "round-tripped strings differ");
     }
 
     // ------------------------------------------------------------------

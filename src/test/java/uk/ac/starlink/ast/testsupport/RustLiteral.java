@@ -283,6 +283,9 @@ public final class RustLiteral {
     }
 
     private Object number() {
+        if (peek() == '0' && pos + 1 < src.length() && src.charAt(pos + 1) == 'x') {
+            return hexNumber();
+        }
         int start = pos;
         while (pos < src.length() && (Character.isDigit(peek()) || peek() == '_')) {
             pos++;
@@ -323,6 +326,21 @@ public final class RustLiteral {
             err.initCause(e);
             throw err;
         }
+    }
+
+    /** A hexadecimal integer such as {@code 0x3930ee3d0ff6ff8a}, which has no type suffix. */
+    private Object hexNumber() {
+        pos += 2;
+        int start = pos;
+        while (pos < src.length() && (Character.digit(peek(), 16) >= 0 || peek() == '_')) {
+            pos++;
+        }
+        String text = src.substring(start, pos).replace("_", "");
+        if (text.isEmpty() || (pos < src.length() && (Character.isLetter(peek()) || peek() == '_'))) {
+            throw error("unsupported hexadecimal literal");
+        }
+        BigInteger big = new BigInteger(text, 16);
+        return big.bitLength() < Long.SIZE ? (Object) big.longValue() : (Object) big;
     }
 
     private String string() {

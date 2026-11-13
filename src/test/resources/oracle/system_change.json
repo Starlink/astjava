@@ -1,0 +1,8 @@
+{
+  "source": "crates/starlink-ast/tests/system_change_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/system_change_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "CASES": [["spec_set_vrad","VRAD","Radio velocity","VRAD","Radio velocity, rest frequency = 100000 GHz","km/s"],["spec_set_back_to_freq","FREQ","Frequency","FREQ","Frequency","MHz"],["spec_clear","WAVE","Wavelength","WAVE","Wavelength","Angstrom"],["spec_clear_unchanged","WAVE","Mine","M","Mine","nm"],["time_set_jd","JD","Julian Date","JD","Julian Date","d"],["time_clear","MJD","Modified Julian Date","MJD","Modified Julian Date","d"],["time_clear_bepoch","MJD","Modified Julian Date","MJD","Modified Julian Date","d"],["flux_set_sfcbr","SFCBR","Surface brightness","mu_nu","Surface brightness","W/m^2/Hz/arcmin**2"]]
+  }
+}

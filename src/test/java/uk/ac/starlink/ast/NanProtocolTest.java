@@ -11,11 +11,10 @@ import org.junit.jupiter.api.Test;
  * Translation of Rust {@code tests/test_nan_protocol.rs}: the NaN protocol ({@link
  * Mapping#transformNanProtocol}) gives the results of {@link Mapping#transform}.
  *
- * <p>The tests of other classes are translated in the tasks that port them: {@code
- * nan_protocol_forward_matches_transform}, {@code
- * nan_protocol_inverse_matches_transform} and {@code nan_protocol_propagates_bad_and_nan_inputs},
- * which read {@code lsst.ast}, in Task 20. The others need classes outside the first phase and are
- * deferred.
+ * <p>{@code nan_protocol_forward_matches_transform}, {@code
+ * nan_protocol_inverse_matches_transform} and {@code nan_protocol_propagates_bad_and_nan_inputs}
+ * run through the simplified FrameSet read from {@code wcsconv/inputs/lsst.ast}. The tests of
+ * classes outside the first phase are deferred.
  */
 class NanProtocolTest {
 
@@ -169,5 +168,68 @@ class NanProtocolTest {
         rows[7][0] = BAD;
         rows[11][0] = Double.NaN;
         assertNanProtocolMatchesTransform(map, fromRows(rows), 32, true, 1e-14);
+    }
+
+    /** The simplified FrameSet read from {@code lsst.ast}. */
+    private static Mapping loadLsst() {
+        return LsstOracleTest.loadLsst().simplify();
+    }
+
+    /** {@code n} pixel positions (100 + i*0.01, 200 + i*0.005), one row per point. */
+    private static double[][] lsstRows(int n) {
+        double[][] rows = new double[n][];
+        for (int i = 0; i < n; i++) {
+            rows[i] = new double[] {100.0 + i * 0.01, 200.0 + i * 0.005};
+        }
+        return rows;
+    }
+
+    /** Asserts that each output of {@code a} is within {@code tol} of that of {@code b}. */
+    private static void assertWithin(double[][] a, double[][] b, int npoint, double tol) {
+        for (int i = 0; i < npoint; i++) {
+            for (int axis = 0; axis < 2; axis++) {
+                double diff = Math.abs(a[axis][i] - b[axis][i]);
+                assertTrue(
+                        diff < tol,
+                        "pt " + i + " axis " + axis + ": regular=" + a[axis][i] + " nan_protocol=" + b[axis][i]
+                                + " diff=" + diff);
+            }
+        }
+    }
+
+    @Test
+    void nanProtocolForwardMatchesTransform() {
+        Mapping map = loadLsst();
+        double[][] pts = fromRows(lsstRows(1024));
+        double[][] regular = map.transform(pts, 1024, true);
+        double[][] viaNan = map.transformNanProtocol(pts, 1024, true);
+        assertWithin(regular, viaNan, 1024, 1e-14);
+    }
+
+    @Test
+    void nanProtocolInverseMatchesTransform() {
+        Mapping map = loadLsst();
+        double[][] sky = map.transform(fromRows(lsstRows(1024)), 1024, true);
+        double[][] regular = map.transform(sky, 1024, false);
+        double[][] viaNan = map.transformNanProtocol(sky, 1024, false);
+        assertWithin(regular, viaNan, 1024, 1e-10);
+    }
+
+    @Test
+    void nanProtocolPropagatesBadAndNanInputs() {
+        Mapping map = loadLsst();
+        double[][] rows = lsstRows(200);
+        rows[0][0] = BAD;
+        rows[5][1] = Double.NaN;
+        rows[100][0] = Double.NaN;
+        rows[100][1] = BAD;
+        double[][] out = map.transformNanProtocol(fromRows(rows), 200, true);
+        for (int i : new int[] {0, 5, 100}) {
+            assertEquals(BAD, out[0][i], "pt " + i + " axis 0");
+            assertEquals(BAD, out[1][i], "pt " + i + " axis 1");
+        }
+        // The neighbouring valid point stays finite.
+        assertTrue(Double.isFinite(out[0][1]) && out[0][1] != BAD);
+        assertTrue(Double.isFinite(out[1][1]) && out[1][1] != BAD);
     }
 }
