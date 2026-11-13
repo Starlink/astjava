@@ -33,8 +33,20 @@ class PalTest {
 
     private static final double FRAC_PI_2 = Math.PI / 2.0;
 
+    /**
+     * The bits of {@code v}, every NaN giving the same bits: Java leaves the sign and payload of a
+     * NaN that arithmetic produces unspecified, so comparisons through this are blind to them.
+     */
     private static long bits(double v) {
-        return Double.doubleToRawLongBits(v);
+        return Double.doubleToLongBits(v);
+    }
+
+    @Test
+    void bitsTreatsEveryNanAlike() {
+        // Java leaves the sign and payload of a NaN that arithmetic produces unspecified, and the
+        // JIT can change them between two identical calls (seen on Java 25 x86-64).
+        assertEquals(
+                bits(Double.longBitsToDouble(0x7FF8000000000000L)), bits(Double.longBitsToDouble(0xFFF8000000000000L)));
     }
 
     private static void assertClose(double a, double b, double tol) {
