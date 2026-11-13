@@ -380,8 +380,6 @@ tests/test_frame_api.rs::ref_pos_follows_the_c_library | SpecFrame (out of scope
 tests/test_frame_api.rs::density_follows_the_c_library | FluxFrame (out of scope)
 tests/test_channel_dump_oracle.rs::a_clone_shares_the_sink | MocChan (out of scope)
 tests/test_channel_dump_oracle.rs::a_channel_read_from_a_dump_has_no_source | MocChan (out of scope)
-tests/test_channel_dump_oracle.rs::a_dump_leaves_the_source_cards_in_the_fitschan | needs FitsChan
-tests/test_channel_dump_oracle.rs::a_keymap_holding_a_fitschan_round_trips | needs FitsChan
 tests/test_fixture_full_dump_oracle.rs::write_full_dumps | Rust-only API (ignored test writing the port's text for comparison by hand; the gate lists every difference)
 tests/test_serialisation.rs::any_object_as_mapping_returns_none_for_basic_frame | Rust-only API (AnyObject::as_mapping; in AST every Frame is a Mapping)
 tests/test_serialisation.rs::any_object_as_frame_returns_none_for_zoom_map | Rust-only API (AnyObject)
@@ -402,3 +400,11 @@ tests/test_serialisation.rs::round_trip_pointlist | PointList (Region, out of sc
 tests/test_serialisation.rs::round_trip_cmpregion | CmpRegion and Circle (Region, out of scope)
 tests/test_serialisation.rs::round_trip_prism | Prism, Circle and Interval (Region, out of scope)
 tests/test_serialisation.rs::round_trip_negated_circle | Circle (Region, out of scope)
+tests/test_fitschan.rs::native_round_trip_zoommap | out-of-scope method FitsChan.write
+tests/test_fitschan.rs::native_round_trip_skyframe | out-of-scope method FitsChan.write
+tests/test_fitschan.rs::native_rewind_and_reread | out-of-scope method FitsChan.write
+tests/test_fitschan.rs::translate_projp_retains_source_cards | out-of-scope method FitsChan.write
+src/fitschan/mod.rs::native_round_trip | out-of-scope method FitsChan.write
+src/fitschan/mod.rs::rewrite_after_read_re_emits_wcs_cards | out-of-scope method FitsChan.write
+tests/test_fitschan_cursor_oracle.rs::excluded_cases_still_differ | out-of-scope method FitsChan.write
+tests/test_fitschan_cursor_oracle.rs::native_full_1_matches_c_but_for_process_counts | out-of-scope method FitsChan.write

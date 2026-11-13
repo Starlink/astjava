@@ -248,6 +248,20 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: raises an error.
 - Java: as C.
 
+## FitsChan
+
+### An equals sign in a keyword name is reported as an `astPutFits` error from every method
+
+- C: `CheckFitsName` reports the error with the method that called it, so `astGetFitsF( fc, "A=B", ... )` reports "astGetFitsF(FitsChan): An equals sign ('=') was found before column 9 ..." (`fitschan.c:6185`).
+- Rust: `FitsCard::split` in `fitschan/card.rs` always names `astPutFits`, whichever getter, setter or `astTestFits` read the name.
+- Java: as C; `FitsCard.split` takes the method's name.
+
+### IgnoreBadAlt and SipOK are stored as booleans
+
+- C: `astMAKE_SET` stores the integer given for IgnoreBadAlt and SipOK (`fitschan.c:43022`, `fitschan.c:43241`), so after `astSetI( fc, "SipOK", 5 )` the attribute is 5, and a dump writes 5.
+- Rust: `fitschan/mod.rs` holds both as `Option<bool>`, so the value becomes 1.
+- Java: as C.
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails

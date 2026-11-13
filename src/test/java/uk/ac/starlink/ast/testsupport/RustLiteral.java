@@ -15,22 +15,24 @@ import java.util.regex.Pattern;
  * A reader for the constants of a generated {@code cases.rs} file, the C probe tables committed in
  * the Rust repository.
  *
- * <p>It understands the subset of Rust those files use for data: {@code const} items (public or
- * not) whose values are integer, float, string, raw string and boolean literals, tuples, arrays and
+ * <p>It understands the subset of Rust those files use for data: {@code const} items (public,
+ * public within a module such as {@code pub(super)}, or not) whose values are integer, float, string, raw string and boolean literals, tuples, arrays and
  * {@code &[...]} slices, {@code Some(x)} and {@code None}, negation, the {@code f64} constants
  * ({@code f64::NAN}, {@code f64::INFINITY}, {@code f64::NEG_INFINITY}, {@code f64::MAX}), AST's bad
  * value ({@code BAD_VALUE}, however qualified, or the name a {@code use ... BAD_VALUE as NAME}
  * item gives it), and names of constants defined earlier in the same
- * file, the variants of an {@code enum} the file declares, and {@code Ok(x)} and {@code Err(x)},
- * read as variants named {@code Ok} and {@code Err}. {@code type} and other {@code use} items,
+ * file, the variants of an {@code enum} the file declares, the unit variants of an enum it imports
+ * (a path such as {@code ErrorCode::Rderr} whose last two names start with capital letters), {@code
+ * Ok(x)} and {@code Err(x)}, read as variants named {@code Ok} and {@code Err}, and struct literals
+ * such as {@code Row { name: "a", n: 1 }}. {@code type} and other {@code use} items,
  * {@code enum} declarations, attributes and comments are skipped. Anything else throws {@link
  * IllegalArgumentException} naming its line.
  *
  * <p>Values are {@link Double}, {@link Long}, {@link BigInteger} (an unsigned integer too large for
  * a {@code long}), {@link String}, {@link Boolean}, {@link List} (tuples, arrays and slices), {@link
  * Map} (an enum variant: key {@code variant} its name and, unless it is a unit variant, key {@code
- * value} its field, or a list of its fields if it has more than one) and null ({@code None}); {@code
- * Some(x)} is read as {@code x}.
+ * value} its field, or a list of its fields if it has more than one; a struct literal: one key per
+ * field, in order) and null ({@code None}); {@code Some(x)} is read as {@code x}.
  */
 public final class RustLiteral {
 
@@ -82,6 +84,10 @@ public final class RustLiteral {
             String word = ident();
             if ("pub".equals(word)) {
                 skipSpace();
+                if (peek() == '(') {
+                    skipBalanced();
+                    skipSpace();
+                }
                 word = ident();
             }
             if ("const".equals(word)) {
@@ -233,6 +239,13 @@ public final class RustLiteral {
         if (sep > 0 && enums.contains(p.substring(0, sep))) {
             return variant(last);
         }
+        int save = pos;
+        skipSpace();
+        if (peek() == '{' && Character.isUpperCase(p.charAt(0))) {
+            pos++;
+            return struct();
+        }
+        pos = save;
         switch (p) {
             case "true":
                 return true;
@@ -265,7 +278,46 @@ public final class RustLiteral {
                 if (all.containsKey(p)) {
                     return all.get(p);
                 }
+                if (isImportedVariant(p)) {
+                    return variant(last);
+                }
                 throw error("unknown name \"" + p + "\"");
+        }
+    }
+
+    /**
+     * Whether {@code p} names a variant of an enum the file imports rather than declares: a path
+     * whose last two names start with capital letters, as in {@code ErrorCode::Rderr}.
+     */
+    private static boolean isImportedVariant(String p) {
+        int sep = p.lastIndexOf("::");
+        if (sep <= 0) {
+            return false;
+        }
+        int start = p.lastIndexOf("::", sep - 1);
+        String type = p.substring(start < 0 ? 0 : start + 2, sep);
+        return Character.isUpperCase(type.charAt(0)) && Character.isUpperCase(p.charAt(sep + 2));
+    }
+
+    /** The fields of a struct literal, after its opening brace, as a map in field order. */
+    private Map<String, Object> struct() {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        while (true) {
+            skipSpace();
+            if (peek() == '}') {
+                pos++;
+                return fields;
+            }
+            String field = ident();
+            skipSpace();
+            expect(':');
+            fields.put(field, expr());
+            skipSpace();
+            if (peek() == ',') {
+                pos++;
+            } else if (peek() != '}') {
+                throw error("expected , or }");
+            }
         }
     }
 

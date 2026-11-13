@@ -32,6 +32,8 @@ final class ObjectRegistry {
                 return CmpFrame::new;
             case "CmpMap":
                 return CmpMap::new;
+            case "FitsChan":
+                return FitsChan::new;
             case "Frame":
                 return Frame::new;
             case "FrameSet":
