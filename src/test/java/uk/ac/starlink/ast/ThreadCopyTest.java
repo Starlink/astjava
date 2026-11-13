@@ -17,10 +17,12 @@ import org.junit.jupiter.api.Test;
  * Several threads, each transforming through its own {@code copy()} of a FrameSet, get exactly the
  * results of a single thread. This test has no Rust counterpart.
  *
- * <p>Eight threads each copy the FrameSet read from {@code wcsconv/inputs/lsst.ast} and an
- * FK5-to-Galactic conversion FrameSet with Epoch 1990, whose SlaMap and SkyFrame keep caches, and
- * transform the same 10,000 points through each copy 20 times. Every result must equal, bit for
- * bit, the result of transforming the points through the original in the test's own thread.
+ * <p>The test's own thread makes eight copies of the FrameSet read from {@code
+ * wcsconv/inputs/lsst.ast} and of an FK5-to-Galactic conversion FrameSet with Epoch 1990, whose
+ * SlaMap and SkyFrame keep caches, and hands one copy of each to each of eight threads, which
+ * transform the same 10,000 points through them 20 times: no object is used by two threads at
+ * once, as the design requires. Every result must equal, bit for bit, the result of transforming
+ * the points through the original in the test's own thread.
  */
 class ThreadCopyTest {
 
@@ -83,9 +85,9 @@ class ThreadCopyTest {
         try {
             List<Future<Integer>> futures = new ArrayList<>();
             for (int t = 0; t < NTHREAD; t++) {
+                FrameSet myLsst = (FrameSet) lsst.copy();
+                FrameSet mySky = (FrameSet) sky.copy();
                 futures.add(pool.submit(() -> {
-                    FrameSet myLsst = (FrameSet) lsst.copy();
-                    FrameSet mySky = (FrameSet) sky.copy();
                     for (int r = 0; r < REPEATS; r++) {
                         double[][] a = transform(myLsst, pix);
                         double[][] b = transform(mySky, pos);
