@@ -22,7 +22,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * {@code error-set-readonly}) run here.
  *
  * <p>Left to Task 23: the cases that read the header (all but those that skip the read or fail
- * while setting an attribute), and {@code port_gap_cases_still_differ}, whose case reads it.
+ * while setting an attribute), whose cards are all read with the FITS-WCS encoding, and {@code
+ * port_gap_cases_still_differ}, whose case reads it.
  * {@code excluded_cases_are_in_the_c_table} has no counterpart, since no case is excluded.
  */
 class FitsChanErrorsTest {
