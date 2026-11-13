@@ -95,7 +95,7 @@ The commits on the branch give these times (local time, UTC-7); a task's time is
 Porting (Tasks 1 to 23) took 9 hours 59 minutes from Task 1's commit; benchmarking took 2 hours 15 minutes, of which two JMH runs took 56 minutes each.
 
 The work followed the plan's rules: tests first (each task recorded a failing run before porting, except Tasks 6 and 11, checked instead with mutants and with stubs swapped back in), expected values only from C, every deferred item named with its reason and checked to still fail, and every disagreement between C and Rust resolved by reading both.
-The ledger `.superpowers/sdd/2026-11-04-pure-java-ast-phase1/progress.md` records each task's rulings.
+The 243 rulings made while executing the plan, each with its reason and its cost if wrong, are in [`2026-11-13-phase1-rulings.md`](2026-11-13-phase1-rulings.md).
 
 ## Tests and runtimes
 
