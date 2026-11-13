@@ -3,6 +3,7 @@ package uk.ac.starlink.ast.internal.pal;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 import uk.ac.starlink.ast.internal.erfa.Cal2jd;
 import uk.ac.starlink.ast.internal.erfa.D2tf;
 import uk.ac.starlink.ast.internal.erfa.Jd2cal;
@@ -33,20 +35,45 @@ class PalTest {
 
     private static final double FRAC_PI_2 = Math.PI / 2.0;
 
-    /**
-     * The bits of {@code v}, every NaN giving the same bits: Java leaves the sign and payload of a
-     * NaN that arithmetic produces unspecified, so comparisons through this are blind to them.
-     */
     private static long bits(double v) {
-        return Double.doubleToLongBits(v);
+        return Double.doubleToRawLongBits(v);
+    }
+
+    /**
+     * Asserts that each element of {@code actual} has the bits of the element of {@code expected},
+     * except that where the expected element is NaN the actual one need only be NaN: Java does not
+     * specify the sign or payload of a NaN that arithmetic produces, and the JIT can change them
+     * between two identical calls (seen on Java 25 x86-64).
+     */
+    private static void assertSameBits(double[] expected, double[] actual, String what) {
+        assertEquals(expected.length, actual.length, what + ": length");
+        for (int k = 0; k < expected.length; k++) {
+            if (Double.isNaN(expected[k])) {
+                assertTrue(Double.isNaN(actual[k]), what + ": element " + k + " is " + actual[k] + ", not NaN");
+            } else {
+                assertEquals(
+                        bits(expected[k]),
+                        bits(actual[k]),
+                        what + ": element " + k + " is " + actual[k] + ", not " + expected[k]);
+            }
+        }
     }
 
     @Test
-    void bitsTreatsEveryNanAlike() {
-        // Java leaves the sign and payload of a NaN that arithmetic produces unspecified, and the
-        // JIT can change them between two identical calls (seen on Java 25 x86-64).
-        assertEquals(
-                bits(Double.longBitsToDouble(0x7FF8000000000000L)), bits(Double.longBitsToDouble(0xFFF8000000000000L)));
+    void sameBitsAcceptsANanOfAnotherSignAndRejectsAnythingElse() {
+        double nanPlus = Double.longBitsToDouble(0x7FF8000000000000L);
+        double nanMinus = Double.longBitsToDouble(0xFFF8000000000000L);
+        assertSameBits(new double[] {1.0, nanPlus}, new double[] {1.0, nanMinus}, "NaNs of either sign");
+        assertSameBits(new double[] {nanMinus}, new double[] {nanPlus}, "NaNs of either sign");
+        assertThrows(
+                AssertionFailedError.class,
+                () -> assertSameBits(new double[] {nanPlus}, new double[] {0.0}, "a number for a NaN"));
+        assertThrows(
+                AssertionFailedError.class,
+                () -> assertSameBits(new double[] {0.0}, new double[] {nanPlus}, "a NaN for a number"));
+        assertThrows(
+                AssertionFailedError.class,
+                () -> assertSameBits(new double[] {0.0}, new double[] {-0.0}, "zeros of each sign"));
     }
 
     private static void assertClose(double a, double b, double tol) {
@@ -114,14 +141,6 @@ class PalTest {
         return out;
     }
 
-    private static long[] bitsOf(double[] v) {
-        long[] out = new long[v.length];
-        for (int i = 0; i < v.length; i++) {
-            out[i] = bits(v[i]);
-        }
-        return out;
-    }
-
     @Test
     void dcc2sSliceGivesEachPointTheSameBitsAtAnyLength() {
         List<double[]> all = mixedVectors();
@@ -130,7 +149,7 @@ class PalTest {
             int start = all.size() - n;
             double[][] part = sliceC2s(all.subList(start, all.size()));
             for (int i = 0; i < n; i++) {
-                assertArrayEquals(bitsOf(whole[start + i]), bitsOf(part[i]), Arrays.toString(all.get(start + i)));
+                assertSameBits(whole[start + i], part[i], Arrays.toString(all.get(start + i)));
             }
         }
     }
@@ -207,7 +226,7 @@ class PalTest {
             int start = all.size() - n;
             double[][] part = sliceS2c(all.subList(start, all.size()));
             for (int i = 0; i < n; i++) {
-                assertArrayEquals(bitsOf(whole[start + i]), bitsOf(part[i]), Arrays.toString(all.get(start + i)));
+                assertSameBits(whole[start + i], part[i], Arrays.toString(all.get(start + i)));
             }
         }
     }
@@ -227,10 +246,7 @@ class PalTest {
                 continue;
             }
             double[] e = Pal.dcs2c(p[0], p[1]);
-            for (int k = 0; k < 3; k++) {
-                boolean same = bits(got[i][k]) == bits(e[k]) || (Double.isNaN(got[i][k]) && Double.isNaN(e[k]));
-                assertTrue(same, Arrays.toString(p) + ": " + Arrays.toString(got[i]) + " vs " + Arrays.toString(e));
-            }
+            assertSameBits(e, got[i], Arrays.toString(p));
         }
     }
 
@@ -254,8 +270,8 @@ class PalTest {
         return all;
     }
 
-    /** An FK slice entry over {@code v} at {@code bepoch}, one position per row, as bits. */
-    private static long[][] throughFkSlice(FkSliceFn slice, double bepoch, List<double[]> v) {
+    /** An FK slice entry over {@code v} at {@code bepoch}, one position per row. */
+    private static double[][] throughFkSlice(FkSliceFn slice, double bepoch, List<double[]> v) {
         int n = v.size();
         double[] a = new double[n];
         double[] b = new double[n];
@@ -266,9 +282,9 @@ class PalTest {
         double[] c = new double[n];
         double[] d = new double[n];
         slice.apply(bepoch, a, b, c, d);
-        long[][] out = new long[n][];
+        double[][] out = new double[n][];
         for (int i = 0; i < n; i++) {
-            out[i] = new long[] {bits(c[i]), bits(d[i])};
+            out[i] = new double[] {c[i], d[i]};
         }
         return out;
     }
@@ -280,7 +296,7 @@ class PalTest {
     private static void assertFkSliceSameBitsWhateverItsLength(FkSliceFn slice) {
         List<double[]> all = mixedFkPositions();
         for (double bepoch : KernelInputs.fkEpochs()) {
-            long[][] alone = new long[all.size()][];
+            double[][] alone = new double[all.size()][];
             for (int i = 0; i < all.size(); i++) {
                 alone[i] = throughFkSlice(slice, bepoch, all.subList(i, i + 1))[0];
             }
@@ -292,9 +308,9 @@ class PalTest {
             for (int len : lens) {
                 for (int start = 0; start < all.size(); start += len) {
                     List<double[]> chunk = all.subList(start, Math.min(start + len, all.size()));
-                    long[][] got = throughFkSlice(slice, bepoch, chunk);
+                    double[][] got = throughFkSlice(slice, bepoch, chunk);
                     for (int i = 0; i < got.length; i++) {
-                        assertArrayEquals(
+                        assertSameBits(
                                 alone[start + i],
                                 got[i],
                                 "length " + len + " at " + bepoch + ": " + Arrays.toString(chunk.get(i)));
@@ -314,11 +330,11 @@ class PalTest {
     void fk45zSliceGivesFk45zOutsideTheKernelDomain() {
         List<double[]> all = mixedFkPositions();
         for (double bepoch : KernelInputs.fkEpochs()) {
-            long[][] got = throughFkSlice(Pal::fk45zSlice, bepoch, all);
+            double[][] got = throughFkSlice(Pal::fk45zSlice, bepoch, all);
             for (int i = 0; i < all.size(); i++) {
                 double[] p = all.get(i);
                 double[] e = Pal.fk45z(p[0], p[1], bepoch);
-                assertArrayEquals(new long[] {bits(e[0]), bits(e[1])}, got[i], Arrays.toString(p) + " at " + bepoch);
+                assertSameBits(Arrays.copyOf(e, 2), got[i], Arrays.toString(p) + " at " + bepoch);
             }
         }
     }
@@ -333,11 +349,11 @@ class PalTest {
     void fk54zSliceGivesFk54zOutsideTheKernelDomain() {
         List<double[]> all = mixedFkPositions();
         for (double bepoch : KernelInputs.fkEpochs()) {
-            long[][] got = throughFkSlice(Pal::fk54zSlice, bepoch, all);
+            double[][] got = throughFkSlice(Pal::fk54zSlice, bepoch, all);
             for (int i = 0; i < all.size(); i++) {
                 double[] p = all.get(i);
                 double[] e = Pal.fk54z(p[0], p[1], bepoch);
-                assertArrayEquals(new long[] {bits(e[0]), bits(e[1])}, got[i], Arrays.toString(p) + " at " + bepoch);
+                assertSameBits(Arrays.copyOf(e, 2), got[i], Arrays.toString(p) + " at " + bepoch);
             }
         }
     }
