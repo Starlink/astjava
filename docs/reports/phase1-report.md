@@ -52,7 +52,7 @@ Every class is ported from the Rust port (`reference/starlink-ast-rs`, commit `1
 | Total | 215 | 72,840 | |
 
 The tests are 217 files and 46,573 lines: the Rust port's tests translated to JUnit 5, the C oracle and probe checks, and the deferred-list gates.
-The build runs 2,286 tests.
+The build runs 2,284 tests.
 
 ## Time and method
 
@@ -101,7 +101,7 @@ The ledger `.superpowers/sdd/2026-11-04-pure-java-ast-phase1/progress.md` record
 
 | Runtime | Platform | Tests | Result |
 | --- | --- | ---: | --- |
-| OpenJDK 21.0.13 (Homebrew), `mvn verify` | macOS aarch64 | 2,286 | All pass |
+| OpenJDK 21.0.13 (Homebrew), `mvn verify` | macOS aarch64 | 2,284 | All pass |
 | OpenJDK 27.0.1 (Homebrew), `mvn test -Djvm=...`, at `7be4d84` | macOS aarch64 | 2,257 | All pass |
 | Temurin 21 (CI `build`), at commit `b5404cf` (Task 21) | Linux x86-64 | 2,012 | 1 failure: `WcslibGoldenTest` |
 | Temurin 8 (CI `runtime`), at `b5404cf` | Linux x86-64 | 2,012 | 1 failure: `WcslibGoldenTest` |
