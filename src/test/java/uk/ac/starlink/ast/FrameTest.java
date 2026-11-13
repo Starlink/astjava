@@ -15,11 +15,12 @@ import org.junit.jupiter.api.Test;
  * ast_tester/testframe.c}, and a table of Unit and NormUnit pairs read back from a one-axis C
  * Frame.
  *
- * <p>The parts for a plain Frame, a SkyFrame and a FrameSet holding a SkyFrame are translated
- * here. The TimeFrame parts are translated in Task 19, and the CmpFrame parts ({@code
+ * <p>The parts for a plain Frame, a SkyFrame, a TimeFrame and a FrameSet holding a SkyFrame are
+ * translated here; of {@code spectral_time_and_flux_frames_normalise_the_unit_they_report}, the
+ * TimeFrame part. The CmpFrame parts ({@code
  * cmp_frame_norm_unit_comes_from_the_component}, {@code cmp_frame_norm_unit_keeps_a_sky_description},
  * and the CmpFrame cases of {@code units_of_an_axis_out_of_range_are_an_error} and {@code
- * picked_sky_axis_has_an_internal_unit_of_radians}) in Task 20. The SpecFrame, FluxFrame,
+ * picked_sky_axis_has_an_internal_unit_of_radians}) are translated in Task 20. The SpecFrame, FluxFrame,
  * DSBSpecFrame and Circle parts need classes outside the first phase.
  */
 class FrameTest {
@@ -57,6 +58,19 @@ class FrameTest {
             assertEquals(
                     skyFrame.getUnit(axis), skyFrame.getNormUnit(axis), "NormUnit(" + axis + ") of a default SkyFrame");
         }
+        TimeFrame timeFrame = new TimeFrame();
+        timeFrame.setSystem("MJD");
+        assertEquals(timeFrame.getUnit(1), timeFrame.getNormUnit(1), "NormUnit(1) of a default TimeFrame");
+    }
+
+    /** A TimeFrame normalises the Unit it reports, its default included. */
+    @Test
+    void spectralTimeAndFluxFramesNormaliseTheUnitTheyReport() {
+        TimeFrame time = new TimeFrame();
+        time.setSystem("MJD");
+        assertEquals("d", time.getNormUnit(1));
+        time.setUnit(1, "1000*s");
+        assertEquals("ks", time.getNormUnit(1));
     }
 
     @Test

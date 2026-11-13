@@ -53,6 +53,7 @@ class JniastApiTest {
             "SkyFrame",
             "SlaMap",
             "SphMap",
+            "TimeFrame",
             "TimeMap",
             "UinterpCalculator",
             "Ukern1Calculator",

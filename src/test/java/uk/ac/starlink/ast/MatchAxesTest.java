@@ -20,8 +20,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  *
  * <p>The probe's Frames are numbered as its {@code make} function builds them. The cases whose
  * Frames this version can build run here: the SkyFrame (0), the SkyFrame with its axes swapped
- * (1), the one-axis plain Frame (3) and the FrameSet whose current Frame is a SkyFrame (8). The
- * TimeFrame (12) is added in Task 19, and the CmpFrames (4, 5, 7) in Task 20. The cases using
+ * (1), the one-axis plain Frame (3), the FrameSet whose current Frame is a SkyFrame (8) and the
+ * TimeFrame (12). The CmpFrames (4, 5, 7) are added in Task 20. The cases using
  * Frames that hold a SpecFrame (2, 6, 9, 11) or a Circle (10) are outside this version.
  *
  * <p>{@code frm1.matchAxes(frm2)} is called, as the probe calls {@code astMatchAxes}, so that a
@@ -48,6 +48,8 @@ class MatchAxesTest {
                 FrameSet fs = new FrameSet(new Frame(2));
                 fs.addFrame(FrameSet.AST__BASE, new UnitMap(2), new SkyFrame());
                 return fs;
+            case 12:
+                return new TimeFrame();
             default:
                 return null;
         }
@@ -77,7 +79,7 @@ class MatchAxesTest {
                         + Arrays.toString(expected));
             }
         }
-        assertEquals(16, ran, "the cases with Frames this version builds");
+        assertEquals(25, ran, "the cases with Frames this version builds");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

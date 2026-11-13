@@ -32,8 +32,8 @@ simplify/cap_cmpperm_resume.map | needs MathMap
 simplify/cap_cmpperm_resume.simp | needs MathMap
 simplify/cap_cmpperm_resume_inv.map | needs MathMap
 simplify/cap_cmpperm_resume_inv.simp | needs MathMap
-simplify/cap_interval_01.map | needs Box, CmpFrame, Interval, NullRegion, PointSet, Prism, SpecFrame, TimeFrame
-simplify/cap_interval_01.simp | needs Box, CmpFrame, Interval, PointSet, SpecFrame, TimeFrame
+simplify/cap_interval_01.map | needs Box, CmpFrame, Interval, NullRegion, PointSet, Prism, SpecFrame
+simplify/cap_interval_01.simp | needs Box, CmpFrame, Interval, PointSet, SpecFrame
 simplify/cap_lutmap_01.map | needs LutMap, MathMap
 simplify/cap_lutmap_01.simp | needs MathMap
 simplify/cap_mathmap_01.map | needs MathMap
@@ -42,10 +42,10 @@ simplify/cap_normmap_cmpframe.map | needs CmpFrame, NormMap
 simplify/cap_normmap_cmpframe.simp | needs CmpFrame, NormMap
 simplify/cap_permmap_01.map | needs CmpFrame, NormMap, SpecFrame
 simplify/cap_permmap_01.simp | needs CmpFrame, NormMap, SpecFrame
-simplify/cap_pointlist_01.map | needs Box, CmpFrame, PointList, PointSet, Prism, SpecFrame, TimeFrame
-simplify/cap_pointlist_01.simp | needs Box, CmpFrame, PointList, PointSet, Prism, SpecFrame, TimeFrame
-simplify/cap_pointlist_02.map | needs CmpFrame, Interval, PointList, PointSet, Prism, SpecFrame, TimeFrame
-simplify/cap_pointlist_02.simp | needs CmpFrame, PointList, PointSet, SpecFrame, TimeFrame
+simplify/cap_pointlist_01.map | needs Box, CmpFrame, PointList, PointSet, Prism, SpecFrame
+simplify/cap_pointlist_01.simp | needs Box, CmpFrame, PointList, PointSet, Prism, SpecFrame
+simplify/cap_pointlist_02.map | needs CmpFrame, Interval, PointList, PointSet, Prism, SpecFrame
+simplify/cap_pointlist_02.simp | needs CmpFrame, PointList, PointSet, SpecFrame
 simplify/cap_poly_bend_allowed.map | needs Box, MathMap, PointSet, Polygon
 simplify/cap_poly_bend_allowed.simp | needs Box, MathMap, PointSet, Polygon
 simplify/cap_poly_bent_edges.map | needs Box, MathMap, PointSet, Polygon
@@ -54,8 +54,8 @@ simplify/cap_poly_unc_frame.map | needs Box, PointSet, Polygon
 simplify/cap_poly_unc_frame.simp | needs Box, PointSet, Polygon
 simplify/cap_restricted_component_flags.map | needs MathMap
 simplify/cap_restricted_component_flags.simp | needs MathMap
-simplify/cap_slamap_02.map | needs Box, CmpFrame, PointSet, SpecFrame, TimeFrame
-simplify/cap_slamap_02.simp | needs Box, CmpFrame, PointSet, Polygon, Prism, SpecFrame, TimeFrame
+simplify/cap_slamap_02.map | needs Box, CmpFrame, PointSet, SpecFrame
+simplify/cap_slamap_02.simp | needs Box, CmpFrame, PointSet, Polygon, Prism, SpecFrame
 simplify/cap_slamap_07.map | needs Box, Circle, CmpRegion, PointSet
 simplify/cap_slamap_07.simp | needs NullRegion
 simplify/cap_specmap_01.map | needs SpecMap
@@ -83,8 +83,8 @@ simplify/cap_specmap_13.map | needs SpecMap
 simplify/cap_specmap_13.simp | needs SpecMap
 simplify/cap_specmap_14.map | needs MathMap, SpecMap
 simplify/cap_specmap_14.simp | needs MathMap
-simplify/cap_timemap_02.map | needs Box, CmpFrame, Interval, PointSet, SpecFrame, StcResourceProfile, TimeFrame
-simplify/cap_timemap_02.simp | needs Box, CmpFrame, Interval, PointSet, SpecFrame, StcResourceProfile, TimeFrame
+simplify/cap_timemap_02.map | needs Box, CmpFrame, Interval, PointSet, SpecFrame, StcResourceProfile
+simplify/cap_timemap_02.simp | needs Box, CmpFrame, Interval, PointSet, SpecFrame, StcResourceProfile
 simplify/cap_unitnormmap_01.map | needs UnitNormMap
 simplify/cap_unitnormmap_01.simp | needs UnitNormMap
 simplify/cap_winmap_01.map | needs SpecMap
@@ -466,7 +466,7 @@ wcsconv/framesets/skyspec3d-class-head.ast | needs CmpFrame, SpecFrame
 wcsconv/framesets/skyspec3d-head.ast | needs CmpFrame, SpecFrame
 wcsconv/framesets/specflux-head.ast | needs CmpFrame, SpecFrame
 wcsconv/framesets/ssysobs-head.ast | needs CmpFrame, SpecFrame
-wcsconv/framesets/timeplot-head.ast | needs CmpFrame, TimeFrame
+wcsconv/framesets/timeplot-head.ast | needs CmpFrame
 wcsconv/framesets/velo-aips-head.ast | needs SpecFrame
 wcsconv/framesets/velo-vel-head.ast | needs SpecFrame
 wcsconv/framesets/vopt-f2w-head.ast | needs CmpFrame, SpecFrame, SpecMap
@@ -486,7 +486,7 @@ programs/testfitschan/sparse.ast | needs CmpFrame, DSBSpecFrame, LutMap, SpecMap
 programs/testmocchan/backcompat_json.ast | needs MocChan
 programs/testmocchan/backcompat_string.ast | needs MocChan
 programs/testplot3d/plot3d-test1.ast | needs CmpFrame, DSBSpecFrame, SpecMap
-programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, CmpFrame, PointList, PointSet, Prism, SpecFrame, TimeFrame
+programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, CmpFrame, PointList, PointSet, Prism, SpecFrame
 serialisation/c_dssmap.ast | needs DssMap
 serialisation/cmpframe.ast | needs CmpFrame, SpecFrame
 serialisation/degen1.ast | needs CmpFrame
@@ -495,4 +495,3 @@ serialisation/frameset_skyspec.ast | needs CmpFrame, SpecFrame
 serialisation/jan-dsb.ast | needs DSBSpecFrame
 serialisation/region_in_cmpframe.ast | needs Box, CmpFrame, PointSet
 serialisation/specframe.ast | needs SpecFrame
-serialisation/timeframe.ast | needs TimeFrame

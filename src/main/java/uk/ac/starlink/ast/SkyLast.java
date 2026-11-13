@@ -76,23 +76,32 @@ final class SkyLast {
     }
 
     /**
-     * The exact LAST: the Epoch converted from TDB to LAST, both as MJDs with an origin at the
-     * integer part of the Epoch for accuracy. C converts between two TimeFrames; the Mapping their
-     * conversion gives is this TimeMap (timeframe.c {@code MakeMap}, for frames that differ only in
-     * their time scale), the observer's longitude negated as the TimeMap needs it.
+     * The exact LAST: the Epoch converted from TDB to LAST through the conversion between two MJD
+     * TimeFrames, both with the observer's position, DUT1 and DTAI, and both with their TimeOrigin
+     * at the integer part of the Epoch for accuracy (C's {@code CalcLAST}).
      */
     private static double exactLast(
             double epoch, double obslon, double obslat, double obsalt, double dut1, double dtai) {
+        TimeFrame tdbframe = new TimeFrame();
+        tdbframe.set("system=mjd,timescale=tdb");
+        TimeFrame lastframe = new TimeFrame();
+        lastframe.set("system=mjd,timescale=last");
         double origin = (int) epoch;
-        TimeMap map = new TimeMap();
-        map.timeAdd("TDBTOTT", new double[] {origin, -obslon, obslat, obsalt, dtai});
-        map.timeAdd("TTTOTAI", new double[] {origin});
-        map.timeAdd("TAITOUTC", new double[] {origin, dtai});
-        map.timeAdd("UTCTOUT", new double[] {dut1});
-        map.timeAdd("UTTOGMST", new double[] {origin});
-        map.timeAdd("GMSTTOLMST", new double[] {origin, -obslon, obslat});
-        map.timeAdd("LMSTTOLAST", new double[] {origin, -obslon, obslat});
-        double day = map.tran1(1, new double[] {epoch - origin}, true)[0];
+        tdbframe.setTimeOriginValue(origin);
+        lastframe.setTimeOriginValue(origin);
+        for (TimeFrame f : new TimeFrame[] {tdbframe, lastframe}) {
+            f.setObsLonValue(obslon);
+            f.setObsLatValue(obslat);
+            f.setObsAlt(obsalt);
+            f.setDut1(dut1);
+            if (dtai == AstObject.AST__BAD) {
+                f.clearDtai();
+            } else {
+                f.setDtai(dtai);
+            }
+        }
+        FrameSet fs = tdbframe.convert(lastframe, "");
+        double day = fs.tran1(1, new double[] {epoch - origin}, true)[0];
         return (day - (int) day) * 2 * Math.PI;
     }
 
