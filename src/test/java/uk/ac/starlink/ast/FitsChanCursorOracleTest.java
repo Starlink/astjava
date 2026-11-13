@@ -1,7 +1,6 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,6 +21,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.ac.starlink.ast.testsupport.CValues;
+import uk.ac.starlink.ast.testsupport.Deferred;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
 /**
@@ -36,9 +36,12 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * here, through the same string attribute interface the probe uses, and the transcripts compared.
  *
  * <p>Cases whose scripts read from the FitsChan ({@code R}, {@code RN} and {@code PW}) run when
- * their reads need only the NATIVE encoding. Those whose reads reach the FITS-WCS read, or that of
- * another foreign encoding, which throw {@code UnsupportedOperationException}, are left to Task 23;
- * their number is pinned by {@link #WAITING_FOR_FOREIGN_READ}. Cases whose scripts write to the
+ * their reads need only the NATIVE and FITS-WCS encodings. A read that reaches another foreign
+ * encoding (FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++, FITS-CLASS or DSS), whose read is out of
+ * scope, throws {@code UnsupportedOperationException}; the number of such cases is pinned by {@link
+ * #WAITING_FOR_ANOTHER_ENCODING}. A read that stops at another out-of-scope class (such as {@code
+ * needs SpecFrame}) must be in {@link #EXCLUDED} with that reason, measured from the exception.
+ * Cases whose scripts write to the
  * FitsChan ({@code W}, {@code WF}, {@code WFT}, {@code WC}, {@code WCF}, {@code RW}, {@code RCIW}
  * and {@code RSW}) need {@code FitsChan.write}, which is out of scope, as do the Rust tests {@code
  * excluded_cases_still_differ} (whose list holds a writing case) and {@code
@@ -53,15 +56,19 @@ class FitsChanCursorOracleTest {
     /** The operations that only read from the FitsChan. */
     private static final Set<String> READS = new HashSet<>(Arrays.asList("R", "RN", "PW"));
 
-    /** The number of cases run here: those that write no Object and whose reads need only NATIVE. */
-    private static final int RUNNABLE = 86;
+    /**
+     * The number of cases run here: those that write no Object, are not excluded, and whose reads
+     * need only the NATIVE and FITS-WCS encodings.
+     */
+    private static final int RUNNABLE = 141;
 
-    /** The number of cases whose reads reach the read of a foreign encoding, left to Task 23. */
-    private static final int WAITING_FOR_FOREIGN_READ = 71;
+    /** The number of cases whose reads reach the read of an encoding other than NATIVE and FITS-WCS. */
+    private static final int WAITING_FOR_ANOTHER_ENCODING = 5;
 
     /**
      * Cases read differently from C, with the reason; {@link #excludedReadCasesStillDiffer} fails
-     * once one matches. C's ZoomMap loader reads the zoom factor with {@code astReadDouble}, which
+     * once one matches, or, for a {@code needs} reason, once the read no longer stops for want of
+     * that class. C's ZoomMap loader reads the zoom factor with {@code astReadDouble}, which
      * reports AST__BADIN for a string value; here a string where a number is expected is taken
      * without error, as the Channel takes it (see {@code ChannelReadOracleTest}).
      */
@@ -71,6 +78,21 @@ class FitsChanCursorOracleTest {
         Map<String, String> m = new LinkedHashMap<>();
         m.put("native_bad_value", "a string read as a number is not an error");
         m.put("native_bad_value_clean", "a string read as a number is not an error");
+        // Headers with a spectral axis, whose FITS-WCS read builds a SpecFrame.
+        for (String name : Arrays.asList(
+                "dist_sip_axis3",
+                "dist_zpx_three",
+                "sao_three_ctypes",
+                "iwc_on_spectral",
+                "iwc_off_spectral",
+                "iwc_on_spectral_cunit")) {
+            m.put(name, "needs SpecFrame");
+        }
+        // Their transcripts show the FrameSet read, whose pixel to world Mapping C simplifies
+        // (fitschan.c WcsMapFrm returns astSimplify of it).
+        for (String name : Arrays.asList("iwc_off", "iwc_on", "iwc_on_alt", "iwc_on_linear", "iwc_on_cunit")) {
+            m.put(name, "needs simplification");
+        }
         return Collections.unmodifiableMap(m);
     }
 
@@ -506,20 +528,36 @@ class FitsChanCursorOracleTest {
 
     @Test
     void excludedReadCasesStillDiffer() throws IOException {
+        List<String> problems = new ArrayList<>();
         for (Map.Entry<String, String> e : EXCLUDED.entrySet()) {
             JsonNode c = findCase(e.getKey());
-            assertNotEquals(
-                    c.get(2).asText(),
-                    transcript(ops(c)),
-                    e.getKey() + " now matches C; remove it from EXCLUDED (" + e.getValue() + ")");
+            boolean needs = e.getValue().startsWith("needs ") && !"needs simplification".equals(e.getValue());
+            String got;
+            try {
+                got = transcript(ops(c));
+            } catch (UnsupportedOperationException ex) {
+                String reason = Deferred.unavailableReason(ex.getMessage());
+                if (!e.getValue().equals(reason)) {
+                    problems.add(e.getKey() + " is excluded as \"" + e.getValue() + "\" but its read gives: "
+                            + ex.getMessage());
+                }
+                continue;
+            }
+            if (needs) {
+                problems.add(e.getKey() + " is excluded as \"" + e.getValue() + "\" but its read no longer stops;"
+                        + " compare it with C and remove it from EXCLUDED");
+            } else if (c.get(2).asText().equals(got)) {
+                problems.add(e.getKey() + " now matches C; remove it from EXCLUDED (" + e.getValue() + ")");
+            }
         }
+        assertTrue(problems.isEmpty(), String.join("\n", problems));
     }
 
     @Test
     void cardFunctionsMatchTheCLibrary() throws IOException {
         List<String> failed = new ArrayList<>();
+        List<String> waitingCases = new ArrayList<>();
         int run = 0;
-        int waiting = 0;
         for (JsonNode c : ProbeData.load("fitschan_cursor").get("CASES")) {
             List<String> ops = ops(c);
             String name = c.get(0).asText();
@@ -532,7 +570,13 @@ class FitsChanCursorOracleTest {
                 got = transcript(ops);
             } catch (UnsupportedOperationException e) {
                 assertTrue(uses(ops, READS), name + ": " + e.getMessage());
-                waiting++;
+                String reason = Deferred.unavailableReason(e.getMessage());
+                if (reason != null && reason.startsWith("encoding ") && !"encoding FITS-WCS".equals(reason)) {
+                    waitingCases.add(name + " (" + reason + ")");
+                } else {
+                    failed.add(name + ": the read stops (" + e.getMessage() + "); list it in EXCLUDED with \"" + reason
+                            + "\"");
+                }
                 continue;
             }
             run++;
@@ -549,7 +593,10 @@ class FitsChanCursorOracleTest {
         }
         assertTrue(failed.isEmpty(), String.join("\n\n", failed));
         assertEquals(RUNNABLE, run, "cases run");
-        assertEquals(WAITING_FOR_FOREIGN_READ, waiting, "cases waiting for the read of a foreign encoding");
+        assertEquals(
+                WAITING_FOR_ANOTHER_ENCODING,
+                waitingCases.size(),
+                "cases waiting for the read of another encoding: " + waitingCases);
     }
 
     private static String context(List<String> lines, int at) {

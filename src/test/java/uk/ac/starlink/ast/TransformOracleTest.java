@@ -13,10 +13,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
@@ -51,17 +55,31 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  * bareFrameTransformsAsTheIdentity}, a check that a bare Frame transforms as the identity, as in
  * C.
  *
- * <p>Left to later tasks: Task 23 loads {@code .head} fixtures through a FitsChan (until then every {@code .head}
- * fixture is deferred as {@value #HEAD_NEEDS}) and translates {@code
- * loads_head_frameset_with_frames} and {@code skyframe_longitude_is_cyclic_pixel_is_not}.
+ * <p>A {@code .head} fixture is read as C's {@code oracle_load_mapping} ({@code
+ * ast_tester/transform_oracle_util.c}) reads it: each line is stored with {@code putFits}, the
+ * first card is made current, and the FitsChan is read; the sections are then transformed by the
+ * FrameSet's base-to-current Mapping, and its base and current Frames say which axes are angular.
+ * Why a {@code .head} fixture cannot be read is measured, not listed by hand: when the read throws
+ * {@code UnsupportedOperationException}, the reason is the text of its message from {@code needs}
+ * on (such as {@code needs SpecFrame}), or {@code encoding <name>} for an encoding whose read is not
+ * available; a failed read of the NATIVE encoding needs the classes its {@code BEGAST} cards name
+ * that are not ported. Any other read that gives no FrameSet, or throws {@code AstException}, is a
+ * failure the gate reports unless a measured cause is written for it by hand.
+ *
+ * <p>{@code loads_head_frameset_with_frames} and {@code skyframe_longitude_is_cyclic_pixel_is_not}
+ * read {@code wcsconv/inputs/galactic-tan.head} rather than Rust's {@code cobe.head}, which is
+ * guessed to be FITS-AIPS, an encoding whose read is out of scope.
+ *
+ * <p>Single rows may be excused by {@code deferred/oracle-rows.txt}, one line per section, {@code
+ * <fixture> <forward|inverse> <rows> | <measured cause>}, for rows that differ from C only because
+ * C's oracle was computed with a multiply and an add fused (BAD on one side and finite on the
+ * other, beside a singularity). A listed row that matches C, or an entry naming no section or a
+ * row beyond the section, fails the gate.
  */
 class TransformOracleTest {
 
     /** The oracle files, by their name without {@code .oracle}. */
     private static final List<String> ORACLES = Arrays.asList("simplify_fixtures", "headers", "framesets");
-
-    /** The reason a {@code .head} fixture cannot be loaded. */
-    private static final String HEAD_NEEDS = "needs FitsChan";
 
     private static final double TWO_PI = Math.PI * 2.0;
 
@@ -140,20 +158,33 @@ class TransformOracleTest {
     // Fixtures
     // ------------------------------------------------------------------
 
-    /** A fixture loaded as a Mapping, or why it could not be. */
+    /**
+     * A fixture loaded as a Mapping, with the base and current Frames of the FrameSet it came from
+     * (both null for a bare Mapping), or why it could not be.
+     */
     static final class Loaded {
         final Mapping map;
+        final Frame base;
+        final Frame current;
         final String failure;
 
         Loaded(Mapping map, String failure) {
+            this(map, null, null, failure);
+        }
+
+        Loaded(Mapping map, Frame base, Frame current, String failure) {
             this.map = map;
+            this.base = base;
+            this.current = current;
             this.failure = failure;
         }
     }
 
     /**
-     * The fixture an oracle relpath names: a {@code .head} through a FitsChan, anything else
-     * through a Channel. The relpath names exactly one file under the fixture root.
+     * The fixture an oracle relpath names, as C's {@code oracle_load_mapping} loads it: a {@code
+     * .head} read through a FitsChan, giving its FrameSet's base-to-current Mapping; anything else
+     * read through a Channel, a FrameSet being used whole. The relpath names exactly one file under
+     * the fixture root.
      */
     static Loaded loadFixture(String relpath) {
         Path path = resolveFixture(relpath);
@@ -161,7 +192,16 @@ class TransformOracleTest {
             return new Loaded(null, "fixture not found: " + relpath);
         }
         if (relpath.endsWith(".head")) {
-            return new Loaded(null, HEAD_NEEDS);
+            HeadRead h = readHead(relpath);
+            if (h.frameSet == null) {
+                return new Loaded(null, h.failure);
+            }
+            FrameSet fs = h.frameSet;
+            return new Loaded(
+                    fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT),
+                    fs.getFrame(FrameSet.AST__BASE),
+                    fs.getFrame(FrameSet.AST__CURRENT),
+                    null);
         }
         AstObject obj;
         try {
@@ -169,10 +209,70 @@ class TransformOracleTest {
         } catch (AstException e) {
             return new Loaded(null, "read " + relpath + ": " + e.getMessage());
         }
+        if (obj instanceof FrameSet) {
+            FrameSet fs = (FrameSet) obj;
+            return new Loaded(fs, fs.getFrame(FrameSet.AST__BASE), fs.getFrame(FrameSet.AST__CURRENT), null);
+        }
         if (!(obj instanceof Mapping)) {
             return new Loaded(null, "not a Mapping: " + obj.astClass());
         }
         return new Loaded((Mapping) obj, null);
+    }
+
+    /**
+     * What reading a {@code .head} fixture gave: a FrameSet, or why there is none and, when the
+     * read stopped at something not available, the measured reason.
+     */
+    static final class HeadRead {
+        final FrameSet frameSet;
+        final String needs;
+        final String failure;
+
+        HeadRead(FrameSet frameSet, String needs, String failure) {
+            this.frameSet = frameSet;
+            this.needs = needs;
+            this.failure = failure;
+        }
+    }
+
+    /**
+     * Reads a {@code .head} fixture as {@code oracle_load_mapping} does: each line, without its
+     * line ending, is stored with {@code astPutFits} without overwriting, the first card is made
+     * current, and the FitsChan is read. The measured reason is {@link Deferred#unavailableReason}
+     * of an {@code UnsupportedOperationException} the read throws, or, when a read of the NATIVE
+     * encoding fails, the classes its {@code BEGAST} cards name that are not ported. Every line of the fixtures is shorter than the 256-byte
+     * buffer C reads them with, so each is one card.
+     */
+    static HeadRead readHead(String relpath) {
+        FitsChan fc = new FitsChan();
+        AstObject obj;
+        try {
+            for (String line : CValues.lines(Fixtures.read(relpath))) {
+                int n = line.length();
+                while (n > 0 && (line.charAt(n - 1) == '\n' || line.charAt(n - 1) == '\r')) {
+                    n--;
+                }
+                fc.putFits(line.substring(0, n), false);
+            }
+            fc.clear("Card");
+            obj = fc.read();
+        } catch (UnsupportedOperationException e) {
+            return new HeadRead(
+                    null, Deferred.unavailableReason(e.getMessage()), "read " + relpath + ": " + e.getMessage());
+        } catch (AstException e) {
+            // A header of the NATIVE encoding fails to read when it holds a class the library has
+            // no loading constructor for.
+            String needs =
+                    "NATIVE".equals(fc.getEncoding()) ? NativeClasses.needsInFitsHeader(Fixtures.read(relpath)) : null;
+            return new HeadRead(null, needs, "read " + relpath + ": " + e.getMessage());
+        }
+        if (obj == null) {
+            return new HeadRead(null, null, "FitsChan read returned null: " + relpath);
+        }
+        if (!(obj instanceof FrameSet)) {
+            return new HeadRead(null, null, "FitsChan read gave a " + obj.astClass() + ", not a FrameSet: " + relpath);
+        }
+        return new HeadRead((FrameSet) obj, null, null);
     }
 
     /** The file a relpath names, or null if there is none. */
@@ -181,30 +281,45 @@ class TransformOracleTest {
         return Files.isRegularFile(p) ? p : null;
     }
 
-    /** The reason a fixture cannot be loaded for want of classes, or null if it uses none. */
+    /**
+     * The reason a fixture cannot be loaded for want of classes, or null if it uses none: for a
+     * {@code .head} the reason its read measures (see {@link #readHead}), for a native dump the
+     * classes it names that are not ported.
+     */
     static String needs(String relpath) {
         if (relpath.endsWith(".head")) {
-            return HEAD_NEEDS;
+            return readHead(relpath).needs;
         }
         return NativeClasses.needs(Fixtures.read(relpath));
     }
 
     /**
-     * Which output axes of a section are angular. For a FrameSet they are the cyclic axes of the
-     * Frame the section's output is in, the current Frame for a forward section and the base Frame
-     * for an inverse one. A bare Mapping has no Frame to ask, so every axis is, as in C.
+     * Which output axes of a section are angular: the cyclic axes of the Frame the section's output
+     * is in, the current Frame for a forward section and the base Frame for an inverse one. A bare
+     * Mapping has no Frame to ask, so every axis is, as in C.
      */
+    static boolean[] angularFlags(Loaded loaded, OracleSection s) {
+        return angularFlags(s.forward ? loaded.current : loaded.base, s.nout);
+    }
+
+    /** {@link #angularFlags(Loaded, OracleSection)} for a Mapping loaded from a native dump. */
     static boolean[] angularFlags(Mapping map, OracleSection s) {
-        boolean[] flags = new boolean[s.nout];
         if (map instanceof FrameSet) {
             FrameSet fs = (FrameSet) map;
-            Frame frame = fs.getFrame(s.forward ? FrameSet.AST__CURRENT : FrameSet.AST__BASE);
-            for (int axis = 0; axis < s.nout; axis++) {
-                flags[axis] = axisIsCyclic(frame, axis);
-            }
+            return angularFlags(fs.getFrame(s.forward ? FrameSet.AST__CURRENT : FrameSet.AST__BASE), s.nout);
+        }
+        return angularFlags((Frame) null, s.nout);
+    }
+
+    private static boolean[] angularFlags(Frame frame, int nout) {
+        boolean[] flags = new boolean[nout];
+        if (frame == null) {
+            Arrays.fill(flags, true);
             return flags;
         }
-        Arrays.fill(flags, true);
+        for (int axis = 0; axis < nout; axis++) {
+            flags[axis] = axisIsCyclic(frame, axis);
+        }
         return flags;
     }
 
@@ -390,6 +505,159 @@ class TransformOracleTest {
 
     static Overrides committedOverrides() {
         return parseOverrides(Fixtures.read("oracle/transform_oracle_overrides.txt"));
+    }
+
+    // ------------------------------------------------------------------
+    // Excused rows
+    // ------------------------------------------------------------------
+
+    /** The name of the row-level exclusion list in {@code deferred/}. */
+    static final String ORACLE_ROWS = "oracle-rows";
+
+    /** The rows of one section that {@code deferred/oracle-rows.txt} excuses, and why. */
+    static final class ExcusedRows {
+        final String relpath;
+        final boolean forward;
+        final SortedSet<Integer> rows;
+        final String cause;
+
+        ExcusedRows(String relpath, boolean forward, SortedSet<Integer> rows, String cause) {
+            this.relpath = relpath;
+            this.forward = forward;
+            this.rows = Collections.unmodifiableSortedSet(rows);
+            this.cause = cause;
+        }
+    }
+
+    /** The key of a section in a map of {@link ExcusedRows}. */
+    static String sectionKey(String relpath, boolean forward) {
+        return relpath + (forward ? " forward" : " inverse");
+    }
+
+    /**
+     * Parses the text of {@code deferred/oracle-rows.txt}: lines {@code <fixture> <forward|inverse>
+     * <rows> | <cause>}, the rows numbered from 0 and separated by commas, with {@code #} comments
+     * and blank lines ignored. The result is keyed by {@link #sectionKey}.
+     *
+     * @throws IllegalArgumentException for a malformed line, or a section listed twice
+     */
+    static Map<String, ExcusedRows> parseOracleRows(String text, String what) {
+        return oracleRowsFrom(Deferred.parse(text, what), what);
+    }
+
+    /** The committed {@code deferred/oracle-rows.txt}. */
+    static Map<String, ExcusedRows> committedOracleRows() {
+        return oracleRowsFrom(Deferred.load(ORACLE_ROWS), "deferred/" + ORACLE_ROWS + ".txt");
+    }
+
+    private static Map<String, ExcusedRows> oracleRowsFrom(Map<String, String> entries, String what) {
+        Map<String, ExcusedRows> out = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : entries.entrySet()) {
+            String[] toks = CValues.splitWhitespace(e.getKey());
+            if (toks.length != 3) {
+                throw new IllegalArgumentException(
+                        what + ": expected \"<fixture> <forward|inverse> <rows> | <cause>\": " + e.getKey());
+            }
+            boolean forward;
+            if ("forward".equals(toks[1])) {
+                forward = true;
+            } else if ("inverse".equals(toks[1])) {
+                forward = false;
+            } else {
+                throw new IllegalArgumentException(what + ": direction must be forward or inverse: " + e.getKey());
+            }
+            SortedSet<Integer> rows = new TreeSet<>();
+            String list = toks[2];
+            int i = 0;
+            while (i <= list.length()) {
+                int j = list.indexOf(',', i);
+                if (j < 0) {
+                    j = list.length();
+                }
+                String tok = list.substring(i, j);
+                int row;
+                try {
+                    row = Integer.parseInt(tok);
+                } catch (NumberFormatException ex) {
+                    throw (IllegalArgumentException) new IllegalArgumentException(
+                                    what + ": rows must be numbers from 0, separated by commas: " + e.getKey())
+                            .initCause(ex);
+                }
+                if (row < 0 || tok.startsWith("+") || !rows.add(row)) {
+                    throw new IllegalArgumentException(
+                            what + ": rows must be distinct numbers from 0, separated by commas: " + e.getKey());
+                }
+                i = j + 1;
+            }
+            String key = sectionKey(toks[0], forward);
+            if (out.put(key, new ExcusedRows(toks[0], forward, rows, e.getValue())) != null) {
+                throw new IllegalArgumentException(what + ": " + key + " listed twice");
+            }
+        }
+        return out;
+    }
+
+    /** The misses of a section left once listed rows are excused, and the listed rows that match C. */
+    static final class Excusal {
+        final List<AxisMiss> misses;
+        final SortedSet<Integer> matching;
+
+        Excusal(List<AxisMiss> misses, SortedSet<Integer> matching) {
+            this.misses = misses;
+            this.matching = matching;
+        }
+    }
+
+    /**
+     * Excuses every miss on a listed row, whichever check found it; a listed row with no miss
+     * matches C.
+     */
+    static Excusal excuseRows(List<AxisMiss> misses, Set<Integer> listed) {
+        List<AxisMiss> kept = new ArrayList<>();
+        Set<Integer> missed = new HashSet<>();
+        for (AxisMiss m : misses) {
+            if (listed.contains(m.row)) {
+                missed.add(m.row);
+            } else {
+                kept.add(m);
+            }
+        }
+        SortedSet<Integer> matching = new TreeSet<>(listed);
+        matching.removeAll(missed);
+        return new Excusal(kept, matching);
+    }
+
+    /**
+     * What is wrong with the entries of {@code listed} that {@code inGate} covers, given the
+     * number of rows of each section the gate compared (keyed by {@link #sectionKey}): an entry
+     * naming no such section, or a row beyond its last.
+     */
+    static List<String> excusedRowEntryProblems(
+            Map<String, ExcusedRows> listed, Map<String, Integer> npoints, Predicate<String> inGate) {
+        List<String> problems = new ArrayList<>();
+        for (Map.Entry<String, ExcusedRows> e : listed.entrySet()) {
+            ExcusedRows x = e.getValue();
+            if (!inGate.test(x.relpath)) {
+                continue;
+            }
+            Integer npoint = npoints.get(e.getKey());
+            if (npoint == null) {
+                problems.add(ORACLE_ROWS + ".txt names " + e.getKey() + ", which is not an oracle section");
+            } else if (x.rows.last() >= npoint) {
+                problems.add(ORACLE_ROWS + ".txt names row " + x.rows.last() + " of " + e.getKey() + ", which has "
+                        + npoint + " rows");
+            }
+        }
+        return problems;
+    }
+
+    /** The problem a section with listed rows that match C gives, or null if it has none. */
+    static String matchingRowsProblem(SectionReport r) {
+        if (r.matchingListedRows == null || r.matchingListedRows.isEmpty()) {
+            return null;
+        }
+        return sectionKey(r.relpath(), r.section.forward) + " rows " + r.matchingListedRows + " are listed in "
+                + ORACLE_ROWS + ".txt but match C; remove them";
     }
 
     // ------------------------------------------------------------------
@@ -592,6 +860,12 @@ class TransformOracleTest {
         /** The equivalence check ran. */
         boolean equiv;
 
+        /**
+         * The rows {@code deferred/oracle-rows.txt} lists for this section that match C, or null if
+         * it lists none or the section was not compared.
+         */
+        SortedSet<Integer> matchingListedRows;
+
         SectionReport(String oracle, OracleSection section) {
             this.oracle = oracle;
             this.section = section;
@@ -636,7 +910,7 @@ class TransformOracleTest {
      * Runs every section of one oracle file, recording an outcome for each. The pairing of sections
      * follows the order C's generator writes them in.
      */
-    static List<SectionReport> runOracle(String oracle, Overrides overrides) {
+    static List<SectionReport> runOracle(String oracle, Overrides overrides, Map<String, ExcusedRows> excused) {
         List<SectionReport> reports = new ArrayList<>();
         OracleSection prevFwdAny = null;
         OracleSection prevMapAny = null;
@@ -674,7 +948,7 @@ class TransformOracleTest {
                 r.detail = e.getMessage();
                 continue;
             }
-            boolean[] angular = angularFlags(map, s);
+            boolean[] angular = angularFlags(loaded, s);
             List<AxisMiss> misses = new ArrayList<>();
             boolean skippedByOverride = false;
             if (overrides.goldenOff(s.path, s.forward)) {
@@ -704,6 +978,12 @@ class TransformOracleTest {
                     prevMap = s;
                     prevMapLive = live;
                 }
+            }
+            ExcusedRows listed = excused.get(sectionKey(s.path, s.forward));
+            if (listed != null) {
+                Excusal x = excuseRows(misses, listed.rows);
+                misses = x.misses;
+                r.matchingListedRows = x.matching;
             }
             if (!misses.isEmpty()) {
                 r.outcome = Outcome.MISMATCH;
@@ -800,8 +1080,9 @@ class TransformOracleTest {
     }
 
     /**
-     * One gate: the sections of the named oracles for which {@code inGate} holds either match C or
-     * belong to a deferred fixture, which must fail and give a current reason; the gate covers
+     * One gate: the sections of the named oracles for which {@code inGate} holds either match C,
+     * apart from the rows {@code deferred/oracle-rows.txt} excuses (each of which must still differ),
+     * or belong to a deferred fixture, which must fail and give a current reason; the gate covers
      * {@code nsections} sections, and the round-trip and equivalence checks pair {@code nrtrip}
      * and {@code nequiv} of them. Gives what is wrong, or with {@code -Dast.writeDeferred=true}
      * rewrites the deferred lists and gives the failures it could not explain.
@@ -809,12 +1090,23 @@ class TransformOracleTest {
     private static List<String> gate(
             List<String> oracles, Predicate<String> inGate, int nsections, int nrtrip, int nequiv) {
         Overrides ov = committedOverrides();
+        Map<String, ExcusedRows> excused = committedOracleRows();
         List<String> problems = new ArrayList<>();
+        Map<String, Integer> npoints = new LinkedHashMap<>();
         int sections = 0;
         int rtripPaired = 0;
         int equivPaired = 0;
         for (String oracle : oracles) {
-            List<SectionReport> all = runOracle(oracle, ov);
+            List<SectionReport> all = runOracle(oracle, ov, excused);
+            for (SectionReport r : all) {
+                if (inGate.test(r.relpath())) {
+                    npoints.put(sectionKey(r.relpath(), r.section.forward), r.section.npoint());
+                    String p = matchingRowsProblem(r);
+                    if (p != null) {
+                        problems.add(p);
+                    }
+                }
+            }
             if (Deferred.writeRequested()) {
                 problems.addAll(writeDeferred(oracle, all));
                 continue;
@@ -855,6 +1147,7 @@ class TransformOracleTest {
                 }
             }
         }
+        problems.addAll(excusedRowEntryProblems(excused, npoints, inGate));
         if (Deferred.writeRequested()) {
             return problems;
         }
@@ -1003,6 +1296,26 @@ class TransformOracleTest {
     }
 
     /**
+     * A celestial header the FitsChan reads as FITS-WCS, used instead of Rust's {@code
+     * wcsconv/inputs/cobe.head}, which the FitsChan guesses to be FITS-AIPS, an encoding whose read
+     * is out of scope.
+     */
+    private static final String CELESTIAL_HEAD = "wcsconv/inputs/galactic-tan.head";
+
+    /**
+     * A {@code .head} fixture reads as a FrameSet, whose base-to-current Mapping is transformed and
+     * whose base and current Frames are kept for the angular axes.
+     */
+    @Test
+    void loadsHeadFramesetWithFrames() {
+        Loaded l = loadFixture(CELESTIAL_HEAD);
+        assertNull(l.failure);
+        assertEquals(2, l.map.getNin());
+        assertNotNull(l.current, "forward -> current frame");
+        assertNotNull(l.base, "inverse -> base frame");
+    }
+
+    /**
      * Translation of Rust {@code bare_frame_is_untransformable_and_says_why}. A bare Frame is a
      * Mapping that transforms as the identity in both directions (frame.c {@code Transform}), so
      * C's oracle sections for one record each output equal to its input and a loaded bare Frame
@@ -1099,6 +1412,112 @@ class TransformOracleTest {
     }
 
     // ------------------------------------------------------------------
+    // Excused rows
+    // ------------------------------------------------------------------
+
+    @Test
+    void parsesOracleRowLines() {
+        String text = "# comment\n\n"
+                + "wcsconv/inputs/a.head inverse 3,0,12 | BAD in C, finite here, beside the pole\n"
+                + "simplify/b.map  forward  5 | finite in C, BAD here\n";
+        Map<String, ExcusedRows> rows = parseOracleRows(text, "test");
+        assertEquals(
+                Arrays.asList("wcsconv/inputs/a.head inverse", "simplify/b.map forward"),
+                new ArrayList<>(rows.keySet()));
+        ExcusedRows a = rows.get(sectionKey("wcsconv/inputs/a.head", false));
+        assertEquals("wcsconv/inputs/a.head", a.relpath);
+        assertFalse(a.forward);
+        assertEquals(Arrays.asList(0, 3, 12), new ArrayList<>(a.rows));
+        assertEquals("BAD in C, finite here, beside the pole", a.cause);
+        ExcusedRows b = rows.get(sectionKey("simplify/b.map", true));
+        assertTrue(b.forward);
+        assertEquals(Collections.singletonList(5), new ArrayList<>(b.rows));
+        assertTrue(parseOracleRows("# only a comment\n", "test").isEmpty());
+    }
+
+    @Test
+    void malformedOracleRowLinesAreHardErrors() {
+        List<String> bad = Arrays.asList(
+                "a.head inverse 3",
+                "a.head inverse 3 |",
+                "a.head 3 | cause",
+                "a.head backward 3 | cause",
+                "a.head inverse 3 4 | cause",
+                "a.head inverse -1 | cause",
+                "a.head inverse +1 | cause",
+                "a.head inverse 1,,2 | cause",
+                "a.head inverse 1, | cause",
+                "a.head inverse x | cause",
+                "a.head inverse 1,1 | cause",
+                "a.head inverse 1 | cause\na.head inverse 2 | cause");
+        for (String line : bad) {
+            assertThrows(IllegalArgumentException.class, () -> parseOracleRows(line + "\n", "test"), line);
+        }
+        // The two directions of one fixture are two sections.
+        assertEquals(
+                2,
+                parseOracleRows("a.head forward 1 | c\na.head inverse 1 | c\n", "test")
+                        .size());
+    }
+
+    @Test
+    void parsesCommittedOracleRows() {
+        for (ExcusedRows x : committedOracleRows().values()) {
+            assertFalse(x.rows.isEmpty(), x.relpath);
+        }
+    }
+
+    @Test
+    void listedRowsAreExcusedAndThoseMatchingCReported() {
+        List<AxisMiss> misses = Arrays.asList(
+                new AxisMiss(CheckKind.GOLDEN_INV, 1, 0, 1.0, 2.0),
+                new AxisMiss(CheckKind.GOLDEN_INV, 2, 0, CValues.BAD, 2.0),
+                new AxisMiss(CheckKind.ROUND_TRIP, 2, 1, 1.0, 3.0));
+        Excusal x = excuseRows(misses, new TreeSet<>(Arrays.asList(2, 5)));
+        assertEquals(1, x.misses.size());
+        assertEquals(1, x.misses.get(0).row);
+        assertEquals(Collections.singletonList(5), new ArrayList<>(x.matching));
+
+        Excusal all = excuseRows(misses, new TreeSet<>(Arrays.asList(1, 2)));
+        assertTrue(all.misses.isEmpty());
+        assertTrue(all.matching.isEmpty());
+
+        OracleSection s = OracleFile.parseText(TOL_LINE + "[x.head nin=1 nout=1 dir=inverse]\n 1 1\n", "test")
+                .get(0);
+        SectionReport r = new SectionReport("headers", s);
+        assertNull(matchingRowsProblem(r), "no rows listed");
+        r.matchingListedRows = all.matching;
+        assertNull(matchingRowsProblem(r), "every listed row still differs");
+        r.matchingListedRows = x.matching;
+        String p = matchingRowsProblem(r);
+        assertNotNull(p);
+        assertTrue(p.contains("x.head inverse") && p.contains("[5]"), p);
+    }
+
+    @Test
+    void oracleRowEntriesMustNameComparedSections() {
+        Map<String, ExcusedRows> listed = parseOracleRows(
+                "a.head inverse 0,3 | c\nb.head forward 1 | c\nc.head forward 4 | c\nd.map forward 9 | c\n", "test");
+        Map<String, Integer> npoints = new LinkedHashMap<>();
+        npoints.put(sectionKey("a.head", false), 4);
+        npoints.put(sectionKey("b.head", true), 2);
+        npoints.put(sectionKey("c.head", true), 4);
+        npoints.put(sectionKey("c.head", false), 8);
+        List<String> problems = excusedRowEntryProblems(listed, npoints, TransformOracleTest::isHeadSection);
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("row 4 of c.head forward"), problems.get(0));
+        npoints.remove(sectionKey("b.head", true));
+        problems = excusedRowEntryProblems(listed, npoints, TransformOracleTest::isHeadSection);
+        assertEquals(2, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("b.head forward, which is not an oracle section"), problems.get(0));
+        // d.map belongs to another gate.
+        assertEquals(
+                1,
+                excusedRowEntryProblems(listed, npoints, TransformOracleTest::isSimplifySection)
+                        .size());
+    }
+
+    // ------------------------------------------------------------------
     // transform_tests
     // ------------------------------------------------------------------
 
@@ -1124,6 +1543,26 @@ class TransformOracleTest {
             assertEquals(2, flags.length);
             assertFalse(flags[0] || flags[1], dir);
         }
+    }
+
+    /**
+     * The longitude axis of a {@code .head} fixture's celestial current Frame is angular; the GRID
+     * axes of its base Frame, a plain Frame that normalises nothing, are not.
+     */
+    @Test
+    void skyframeLongitudeIsCyclicPixelIsNot() {
+        Loaded l = loadFixture(CELESTIAL_HEAD);
+        assertNull(l.failure);
+        boolean[] fwd = angularFlags(
+                l,
+                OracleFile.parseText(TOL_LINE + "[galactic-tan.head nin=2 nout=2 dir=forward]\n", "test")
+                        .get(0));
+        assertTrue(fwd[0] || fwd[1], "at least one axis cyclic (sky longitude)");
+        boolean[] inv = angularFlags(
+                l,
+                OracleFile.parseText(TOL_LINE + "[galactic-tan.head nin=2 nout=2 dir=inverse]\n", "test")
+                        .get(0));
+        assertFalse(inv[0] || inv[1], "pixel axes are not cyclic");
     }
 
     @Test
@@ -1188,7 +1627,10 @@ class TransformOracleTest {
 
     @Test
     void runsFramesetsOracleWithoutPanicking() {
-        assertEquals(353, runOracle("framesets", committedOverrides()).size());
+        assertEquals(
+                353,
+                runOracle("framesets", committedOverrides(), committedOracleRows())
+                        .size());
     }
 
     // ------------------------------------------------------------------
@@ -1260,7 +1702,9 @@ class TransformOracleTest {
         for (String oracle : ORACLES) {
             for (Map.Entry<String, String> e :
                     Deferred.load(deferredName(oracle)).entrySet()) {
-                if (e.getValue().startsWith("needs ") && loadFixture(e.getKey()).map != null) {
+                boolean measured =
+                        e.getValue().startsWith("needs ") || e.getValue().startsWith("encoding ");
+                if (measured && loadFixture(e.getKey()).map != null) {
                     nowLoading.add(e.getKey() + " (" + e.getValue() + ")");
                 }
             }

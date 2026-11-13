@@ -792,11 +792,15 @@ public class FitsChan extends Channel {
             if (enc == Encoding.NATIVE) {
                 obj = readNative();
             } else if (!cardList.testCard()) {
-                obj = readForeign(enc);
-                if (obj == null) {
-                    cardList.clearCard();
-                } else {
-                    cardList.setCard(Integer.MAX_VALUE);
+                try {
+                    obj = readForeign(enc);
+                } finally {
+                    // C's ClearCard does not check the error status, so a failed read rewinds too.
+                    if (obj == null) {
+                        cardList.clearCard();
+                    } else {
+                        cardList.setCard(Integer.MAX_VALUE);
+                    }
                 }
             }
         } finally {

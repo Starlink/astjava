@@ -30,6 +30,7 @@ A variant of an `enum` the file declares becomes an object: `{"variant": "Split"
 A `Result` is written the same way: `Ok(x)` becomes `{"variant": "Ok", "value": x}` and `Err(x)` becomes `{"variant": "Err", "value": x}`.
 A unit variant of an enum the file imports, a path whose last two names start with capital letters such as `ErrorCode::Rderr`, becomes `{"variant": "Rderr"}` in the same way.
 A struct literal such as `BadHeaderTest { name: "a", skip_read: false }` becomes an object with one key per field, in order: `{"name": "a", "skip_read": false}`.
+`concat!` of string literals, as in `concat!("a\n", "b\n")`, becomes the joined string `"a\nb\n"`.
 An integer too large for a Java `long` (a `u64` hash) is written as it is, and is read with `JsonNode.bigIntegerValue()`.
 A hexadecimal integer (`0x3930ee3d0ff6ff8a`) is written as the decimal value of its unsigned bits, so a `u64` hash with the top bit set is written above the `long` range like any other.
 Doubles are written in Java's `Double.toString` form, so they read back to the same value; NaN, the infinities and C's bad value (`AST__BAD`) are the strings `"NaN"`, `"Infinity"`, `"-Infinity"` and `"BAD"`, which `ProbeData.toDouble` turns back into numbers.

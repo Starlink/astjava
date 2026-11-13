@@ -17,8 +17,9 @@ import java.util.Map;
  * {@code <key> | <reason>}, with {@code #} comments and blank lines ignored.
  *
  * <p>The fixture gates write their lists themselves when the system property {@value
- * #WRITE_PROPERTY} is {@code true}. A written reason is {@code needs <classes>}, naming the classes
- * the library cannot load yet; a reason written by hand for a fixture that fails with every class
+ * #WRITE_PROPERTY} is {@code true}. A written reason is measured: {@code needs <classes>}, naming
+ * the classes the library cannot load yet, or {@code encoding <name>}, naming a FITS encoding whose
+ * read is not available; a reason written by hand for a fixture that fails with every class
  * present is kept; any other failure is written as {@value #UNEXPLAINED}, which the gates reject
  * until a person replaces it with the measured cause.
  */
@@ -32,6 +33,14 @@ public final class Deferred {
 
     private static final String NEEDS = "needs ";
 
+    private static final String ENCODING = "encoding ";
+
+    /** The start of the message of a FitsChan read of an encoding that is not available. */
+    private static final String UNAVAILABLE_PREFIX = "FitsChan: reading the ";
+
+    /** The end of the message of a FitsChan read of an encoding that is not available. */
+    private static final String UNAVAILABLE_SUFFIX = " encoding is not available";
+
     private Deferred() {}
 
     /** Whether the gates are to rewrite their deferred lists rather than check them. */
@@ -39,18 +48,45 @@ public final class Deferred {
         return Boolean.getBoolean(WRITE_PROPERTY);
     }
 
+    /** Whether a reason is measured rather than written by hand. */
+    private static boolean isMeasured(String reason) {
+        return reason.startsWith(NEEDS) || reason.startsWith(ENCODING);
+    }
+
+    /**
+     * The measured reason the message of an {@code UnsupportedOperationException} gives: the text
+     * from {@code needs} on (the library ends the message of an exception for an out-of-scope class
+     * with {@code needs <class>}), or {@code encoding <name>} for a FitsChan read of an encoding
+     * whose read is not available; null for any other message.
+     */
+    public static String unavailableReason(String message) {
+        if (message == null) {
+            return null;
+        }
+        int at = message.lastIndexOf(" " + NEEDS);
+        if (at >= 0) {
+            return message.substring(at + 1);
+        }
+        if (message.startsWith(UNAVAILABLE_PREFIX) && message.endsWith(UNAVAILABLE_SUFFIX)) {
+            String name =
+                    message.substring(UNAVAILABLE_PREFIX.length(), message.length() - UNAVAILABLE_SUFFIX.length());
+            return name.isEmpty() || name.indexOf(' ') >= 0 ? null : ENCODING + name;
+        }
+        return null;
+    }
+
     /**
      * The reason to write for an item that fails.
      *
-     * @param needs the {@code needs <classes>} reason for the item, or null if it uses no missing
-     *     class
+     * @param needs the measured reason for the item ({@code needs <classes>} or {@code encoding
+     *     <name>}), or null if nothing missing explains its failure
      * @param old the reason listed now, or null
      */
     public static String newReason(String needs, String old) {
         if (needs != null) {
             return needs;
         }
-        if (old != null && !old.startsWith(NEEDS) && !UNEXPLAINED.equals(old)) {
+        if (old != null && !isMeasured(old) && !UNEXPLAINED.equals(old)) {
             return old;
         }
         return UNEXPLAINED;
@@ -58,12 +94,12 @@ public final class Deferred {
 
     /**
      * What is wrong with the listed reason of an item that fails, or null if nothing is: {@value
-     * #UNEXPLAINED}, a {@code needs} reason other than the current one, or a hand-written reason
-     * for an item that uses missing classes.
+     * #UNEXPLAINED}, a measured reason other than the current one, or a hand-written reason for an
+     * item that something missing explains.
      *
      * @param reason the listed reason
-     * @param needs the {@code needs <classes>} reason for the item, or null if it uses no missing
-     *     class
+     * @param needs the measured reason for the item ({@code needs <classes>} or {@code encoding
+     *     <name>}), or null if nothing missing explains its failure
      */
     public static String reasonProblem(String reason, String needs) {
         if (UNEXPLAINED.equals(reason)) {
@@ -72,8 +108,8 @@ public final class Deferred {
         if (needs != null && !needs.equals(reason)) {
             return "is listed as \"" + reason + "\" but " + needs + "; rerun with -D" + WRITE_PROPERTY + "=true";
         }
-        if (needs == null && reason.startsWith(NEEDS)) {
-            return "is listed as \"" + reason + "\" but every class it uses is ported, and it still fails";
+        if (needs == null && isMeasured(reason)) {
+            return "is listed as \"" + reason + "\" but nothing it needs is missing, and it still fails";
         }
         return null;
     }

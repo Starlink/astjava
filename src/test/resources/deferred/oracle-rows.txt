@@ -1,0 +1,10 @@
+# Rows of fixtures/oracle/*.oracle sections that differ from C only because C computes them in a
+# different order: with a multiply and an add fused, or through the Mapping C's astSimplify makes
+# (BAD on one side and finite on the other, beside a singularity or the edge of a projection).
+# <path relative to ast_tester/fixtures> <forward|inverse> <rows from 0, comma-separated> | <measured cause>
+# Read by the gates of TransformOracleTest, which excuse every miss on a listed row, and fail if a
+# listed row matches C or an entry names no section or a row beyond it. Written by hand.
+programs/joye_car_headers/CHIPASS_Equ.head forward 1 | needs simplification: pixel 5401 is 180 degrees from CRPIX1; unsimplified, CDELT1 then the degree-to-radian scale give native longitude -180-1.14e-13 degrees, beyond wcsmap.c's 1e-13 CAR tolerance, so BAD; C's simplified WinMap has the two scales merged and gives -180-8.5e-14, set to -180
+wcsconv/inputs/car6.head forward 1 | needs simplification: pixel 5401 is 180 degrees from CRPIX1; unsimplified, CDELT1 then the degree-to-radian scale give native longitude -180-1.14e-13 degrees, beyond wcsmap.c's 1e-13 CAR tolerance, so BAD; C's simplified WinMap has the two scales merged and gives -180-8.5e-14, set to -180
+programs/joye_car_headers/CHIPASS_Equ.head inverse 1 | needs simplification: the input, C's forward output at RA 0, is on the CAR seam opposite CRVAL1 = 180, native longitude +-180; through the unsimplified Mapping it comes out at -180 (pixel 1.0000000000009), through C's simplified one at +180 (pixel 5401)
+wcsconv/inputs/car6.head inverse 1 | needs simplification: the input, C's forward output at RA 0, is on the CAR seam opposite CRVAL1 = 180, native longitude +-180; through the unsimplified Mapping it comes out at -180 (pixel 1.0000000000009), through C's simplified one at +180 (pixel 5401)

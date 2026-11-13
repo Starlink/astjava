@@ -5,8 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.Deferred;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
 /**
@@ -19,17 +24,50 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * rewinds, sets any attributes, reads the header, and then checks the expected error or warning.
  * The attributes are set through the string interface, as C's test sets them, so the cases the
  * Rust test leaves out for want of it ({@code error-bad-encoding}, {@code error-bad-altaxes} and
- * {@code error-set-readonly}) run here.
+ * {@code error-set-readonly}) run here; {@code excluded_cases_are_in_the_c_table} has no
+ * counterpart, since none of those is excluded.
  *
- * <p>Left to Task 23: the cases that read the header (all but those that skip the read or fail
- * while setting an attribute), whose cards are all read with the FITS-WCS encoding, and {@code
- * port_gap_cases_still_differ}, whose case reads it.
- * {@code excluded_cases_are_in_the_c_table} has no counterpart, since no case is excluded.
+ * <p>A case naming a write encoding ({@code write_enc}) is checked by C writing the FrameSet read to
+ * that encoding, which must refuse it, and to FITS-WCS, which must accept it; {@code
+ * FitsChan.write} is out of scope, so those cases are run up to the read and the writes are left
+ * out. A case whose read stops at something out of scope ({@code UnsupportedOperationException})
+ * cannot be compared with C, and is in {@link #EXCLUDED} with the reason measured from the
+ * exception; {@code port_gap_cases_still_differ} becomes {@code excludedCasesStillDiffer}, which
+ * checks every excluded case still differs from C, for that reason where it is measured.
  */
 class FitsChanErrorsTest {
 
-    /** The number of cases that neither read the header nor reach the read. */
-    private static final int RUNNABLE = 6;
+    /**
+     * Cases that do not match C, each with why: {@code needs <class>} where the read stops at an
+     * out-of-scope class, otherwise the gap the case exposes.
+     */
+    private static final Map<String, String> EXCLUDED = excludedCases();
+
+    private static Map<String, String> excludedCases() {
+        Map<String, String> m = new LinkedHashMap<>();
+        // A spectral CTYPE is reached after the celestial axes are decoded (C WcsMapFrm calls
+        // WcsSpectral after WcsCelestial), so these reads stop at the SpecFrame before C's error
+        // or warning is checked.
+        for (String name : Arrays.asList(
+                "distortion-sip-on-axis3",
+                "noctype-missing",
+                "aips-reject-wave",
+                "aips++-reject-wave",
+                "aips-reject-topocent",
+                "aips++-reject-topocent",
+                "error-unknown-spectral-algorithm")) {
+            m.put(name, "needs SpecFrame");
+        }
+        m.put(
+                "error-bad-radesys",
+                "the header has RADESYS = 'FK5' and then RADESYS = 'BADVAL'; C's WcsToStore reads every card"
+                        + " into the FitsStore in order (WcsFcRead), so the last duplicate wins and the read fails"
+                        + " with AST__BDFTS; the port looks each keyword up and takes the first, so it reads FK5");
+        return Collections.unmodifiableMap(m);
+    }
+
+    /** The number of cases run: every case of C's table but those excluded. */
+    private static final int RUNNABLE = 26;
 
     private static String text(JsonNode c, String field) {
         JsonNode v = c.get(field);
@@ -87,12 +125,27 @@ class FitsChanErrorsTest {
                         : "error setting " + attrs + ": " + e.getMessage();
             }
         }
+        AstException readError = null;
         if (!c.get("skip_read").asBoolean()) {
-            throw new IllegalStateException(c.get("name").asText() + " reads the header");
+            try {
+                fc.read();
+            } catch (AstException e) {
+                readError = e;
+            } catch (UnsupportedOperationException e) {
+                String reason = Deferred.unavailableReason(e.getMessage());
+                return "read " + (reason == null ? "unavailable" : reason) + ": " + e.getMessage();
+            }
         }
         if (expect != null) {
-            return "expected status " + expect + " but there was no error";
+            if (readError == null) {
+                return "expected status " + expect + " but there was no error";
+            }
+            return expect == readError.getStatus()
+                    ? null
+                    : "expected status " + expect + ", got " + readError.getMessage();
         }
+        // C clears an error from the read of any other case: a warning case checks the warnings
+        // whatever the read did.
         if (warnCat != null) {
             KeyMap km = fc.warnings();
             if (km == null) {
@@ -109,7 +162,10 @@ class FitsChanErrorsTest {
                     return "warning text does not contain '" + want + "'";
                 }
             }
+            return null;
         }
+        // A write_enc case goes on in C to write the FrameSet read (testfitschanerrors.c
+        // test_bad_header); FitsChan.write is out of scope, so that is left out.
         return null;
     }
 
@@ -130,8 +186,7 @@ class FitsChanErrorsTest {
         List<String> failures = new ArrayList<>();
         int run = 0;
         for (JsonNode c : ProbeData.load("fitschanerrors").get("CASES")) {
-            boolean reads = !c.get("skip_read").asBoolean() && text(c, "attrs") == null;
-            if (reads) {
+            if (EXCLUDED.containsKey(c.get("name").asText())) {
                 continue;
             }
             run++;
@@ -142,5 +197,33 @@ class FitsChanErrorsTest {
         }
         assertTrue(failures.isEmpty(), String.join("\n", failures));
         assertEquals(RUNNABLE, run, "cases run");
+    }
+
+    /**
+     * Translation of Rust {@code port_gap_cases_still_differ}: every excluded case is a row of C's
+     * table and still differs from C, a {@code needs} case because its read stops at that class, so
+     * that the list shrinks when a gap closes.
+     */
+    @Test
+    void excludedCasesStillDiffer() {
+        Map<String, JsonNode> byName = new LinkedHashMap<>();
+        for (JsonNode c : ProbeData.load("fitschanerrors").get("CASES")) {
+            byName.put(c.get("name").asText(), c);
+        }
+        List<String> problems = new ArrayList<>();
+        for (Map.Entry<String, String> e : EXCLUDED.entrySet()) {
+            JsonNode c = byName.get(e.getKey());
+            if (c == null) {
+                problems.add(e.getKey() + " is not a row of C's table");
+                continue;
+            }
+            String err = check(c);
+            if (err == null) {
+                problems.add(e.getKey() + " now matches C; remove it from EXCLUDED. Reason on record: " + e.getValue());
+            } else if (e.getValue().startsWith("needs ") && !err.startsWith("read " + e.getValue() + ":")) {
+                problems.add(e.getKey() + " is excluded as \"" + e.getValue() + "\" but gives: " + err);
+            }
+        }
+        assertTrue(problems.isEmpty(), String.join("\n", problems));
     }
 }

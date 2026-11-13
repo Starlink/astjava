@@ -286,6 +286,120 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `format_value_with_continues` in `fitschan/enc_native.rs` ends the string at the first card that is not a `CONTINUE` card.
 - Java: as C.
 
+### Duplicate WCS keywords in a FITS-WCS header
+
+- C: `WcsToStore` reads every card in order into the FitsStore (`WcsFcRead`), so of two cards with one keyword the last is used, and `RADESYS = 'FK5'` followed by `RADESYS = 'BADVAL'` fails with AST__BDFTS (`fitschan.c:40234`).
+- Rust: `fitschan/wcs_keywords.rs` looks each keyword up and takes the first card, so that header reads as FK5.
+- Java: as Rust; both ports differ from C, and `FitsChanErrorsTest.excludedCasesStillDiffer` fails when the difference goes.
+
+### SpecTrans translations of FITS-PC keywords for every encoding
+
+- C: `SpecTrans` reads RADECSYS, LONGPOLE and CmVALi, CmPIXi, CmYPEi and CmNITi, and writes CDELTis and PCj_is from CmELTi, whatever the encoding (`fitschan.c:31656-31675`, `fitschan.c:31962-32098`).
+- Rust: `fitschan/spec_trans.rs` does these only for FITS-PC and FITS-IRAF.
+- Java: as C for the FITS-WCS read; the FITS-PC, FITS-IRAF and FITS-CLASS reads are out of scope.
+
+### SpecTrans PC matrix translations
+
+- C: the size of a CD matrix comes from `astKeyFields(..., 1, ...)`, the highest column index (`fitschan.c:31767`); CROTA becomes a PC matrix only for the primary description (`fitschan.c:31863`); CDELT for CROTA, CAR and CmELTi, and CRVAL for NCP, are read with `report` set, so a missing value is an AST__BDFTS error (`fitschan.c:31870`, `fitschan.c:32218`, `fitschan.c:32479`).
+- Rust: `fitschan/spec_trans.rs` takes the larger of the two CD indices, translates CROTA for every description, and skips a translation whose keyword is missing.
+- Java: as C.
+
+### SpecTrans string comparisons
+
+- C: CUNIT values are compared including trailing spaces (`fitschan.c:32597`), so `'HZ      '` is not normalised; `LAMBDA` must be exactly `"LAMBDA  "` and SPECSYS is set without the version letter (`fitschan.c:32566-32568`); an EQUINOX string takes a B or J prefix only in upper case at its first character, and allows text after the number (`fitschan.c:32128-32133`). **C quirk.**
+- Rust: `fitschan/spec_trans.rs` trims and upper-cases the values and writes `SPECSYS<s>`.
+- Java: as C.
+
+### SpecTrans IRAF keywords
+
+- C: the IRAF mini-WCS keywords consumed are those matching `WAT%d_%d`, `LTM%d_%d`, `LTV%d`, `WSV%d_LEN` and `WSV%d_%d` (`fitschan.c:32618-32637`); `WATCoeffs` raises AST__BDFTS for a word that is not a number (`fitschan.c:35745`), tries every occurrence of `cor`, and allows white space in `projp%d=%lf`; the early paper III rewrite keeps the characters after the eighth; NCP, GLS and ATF use the projection of the last celestial axis found.
+- Rust: `fitschan/spec_trans.rs` matches prefixes (consuming MWCS too), returns not-ok instead of the error, truncates the order with `as i64`, looks only at the first `cor`, parses `projp` digits only, truncates the CTYPE after eight characters, and requires the longitude and latitude projections to agree.
+- Java: as C.
+
+### DATE-OBS scanning
+
+- C: `DateObs` scans with `sscanf` patterns using `%2d`, `%4d` and `%d`, which allow a sign and leading white space, accept a legacy year of any width, and reject a trailing `.`, a repeated `Z` and a five-digit year (`fitschan.c:8662-8710`).
+- Rust: `date_str_to_mjd` in `fitschan/wcs_write/mod.rs` splits on `-`, `T`, `:` and `.`, rejects a legacy year outside 0 to 99, and accepts `"12:00:00."` and a repeated `Z`.
+- Java: as C (`FitsDates`).
+
+### A PC or CD matrix with no inverse
+
+- C: `WcsPCMatrix` raises AST__BDFTS "Unusable rotation matrix (PC or CD) ..." (`fitschan.c:38502`), so the `badmat` warning of `WcsIntWorld` (`fitschan.c:38134`) is never issued: `Warn` does nothing once an error is set. **C quirk.**
+- Rust: `fitschan/wcs_matrix.rs` issues the `badmat` warning and carries on.
+- Java: as C.
+
+### Case of the `-SIP` distortion code
+
+- C: `DistortMaps` compares the end of the CTYPE with `strcmp( ..., "-SIP" )` (`fitschan.c:9036`, `fitschan.c:9041`).
+- Rust: `extract_sip` in `fitschan/wcs_keywords.rs` upper-cases the value first, so `-sip` matches too.
+- Java: as C.
+
+### Observation keywords of an alternate axis description
+
+- C: `WcsFcRead` reads DUT1, DTAI and IMAGFREQ for the primary description only, and SSYSSRC and ZSOURCE for each description (`fitschan.c:37025-37046`, `fitschan.c:37171`); a Frame takes the values stored for its own letter (`fitschan.c:38360-38365`).
+- Rust: `fitschan/wcs_keywords.rs` reads `DUT1<s>` and `DTAI<s>`, and gives every description the primary SSYSSRC, ZSOURCE and IMAGFREQ.
+- Java: as C.
+
+### The CRPIX shift of a FITS-WCS read
+
+- C: `WcsShift` makes a WinMap from corners, mapping 0 and 1 to `-crpix` and `1-crpix` (`fitschan.c:39532-39539`), so its scale is computed, not given.
+- Rust: `fitschan/wcs_matrix.rs` makes the WinMap from a shift and a scale of 1.
+- Java: as C.
+
+### SIP coefficient cards
+
+- C: `WcsFcRead` passes over cards already used and converts each value with `CnvType` (`fitschan.c:37354-37365`).
+- Rust: `read_sip_coeffs` in `fitschan/wcs_keywords.rs` also reads used cards, and parses strings with Rust's `f64` parser.
+- Java: as C.
+
+### Tolerance of `WcsNatPole`
+
+- C: `TOL1` is `10.0*DBL_EPSILON` (`fitschan.c:1587`), as `WcsNatPole` uses it (`fitschan.c:39094`).
+- Rust: `fitschan/fset_to_store/sky_pole.rs` uses `1.0e-13`.
+- Java: as C.
+
+### LONPOLE and LATPOLE from projection parameters 3 and 4
+
+- C: `WcsNative` takes LONPOLE and LATPOLE from `PVi_3` and `PVi_4` of the longitude axis when they are set, except for TPN, and only otherwise from the LONPOLE and LATPOLE keywords (`fitschan.c:38746-38759`).
+- Rust: `fitschan/wcs_celestial.rs` always uses the keywords, so a header with `PV1_3` and no LONPOLE gets the default pole and a `nolonpole` warning.
+- Java: as C.
+
+### A fiducial point moved by `PVi_0`
+
+- C: `WcsCelestial` adds a ShiftMap for the projection-plane coordinates of the fiducial point (`GetFiducialPPC`) when `PVi_0` of the longitude axis is not zero and the projection is not TPN (`fitschan.c:36491-36520`).
+- Rust: `fitschan/wcs_celestial.rs` has no such shift, so CRVAL does not map to the origin of intermediate world coordinates then.
+- Java: as C.
+
+### The native to celestial rotation of a FITS-WCS read
+
+- C: `WcsNative` makes the rotation matrix and its inverse with three `astMtrRot` calls (`fitschan.c:38790-38830`).
+- Rust: `fitschan/wcs_celestial.rs` uses its own `mtr_rot` and `compress_matrix`, with the inverse taken as the transpose.
+- Java: as C, through `MatrixMap.mtrRot`.
+
+### The WCS Frame of a header with latitude before longitude and other axes
+
+- C: `WcsCelestial` puts an unpermuted SkyFrame into `CmpFrame( others, sky )` and permutes the CmpFrame; it permutes the SkyFrame itself only when the SkyFrame is the whole Frame (`fitschan.c:36574-36601`).
+- Rust: `fitschan/wcs_read.rs` permutes the SkyFrame and orders the celestial axes in ascending order; the axes behave the same, but the dumps differ.
+- Java: as C.
+
+### AXREF on a SkyFrame with latitude first
+
+- C: AXREF is stored with `astSetSkyRef( sfrm, 0/1 )` after the SkyFrame has been permuted, so its latitude takes the reference longitude (`fitschan.c:36683-36685`). **C quirk.**
+- Rust: `set_sky_ref_on_frame` in `fitschan/wcs_read.rs` sets longitude and latitude by name.
+- Java: as C.
+
+### Warnings of a foreign read and `FixUsed`
+
+- C: `Read` stores the warnings, then calls `FixUsed` (`fitschan.c:26007`).
+- Rust: `finish_foreign_read` in `fitschan/mod.rs` calls `fix_used` first, so the cards already used are passed over by the search for the NAXIS card the warnings go in front of.
+- Java: as C.
+
+### The Domain of unclassified axes
+
+- C: `WcsOthers` cuts the Domain made by joining the CTYPE values to 499 characters after each join (`fitschan.c:39316`). **C quirk.**
+- Rust: `fitschan/wcs_read.rs` has no limit.
+- Java: as C.
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails

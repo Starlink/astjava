@@ -34,6 +34,30 @@ public final class NativeClasses {
         return m.isEmpty() ? null : "needs " + String.join(", ", m);
     }
 
+    /**
+     * The reason a FITS header of the NATIVE encoding cannot be read for want of classes: {@code
+     * needs <A>, <B>} naming the classes on its {@code BEGAST} cards that the library has no loading
+     * constructor for, sorted and without repeats, or null if there are none.
+     */
+    public static String needsInFitsHeader(String headerText) {
+        SortedSet<String> out = new TreeSet<>();
+        for (String line : CValues.lines(headerText)) {
+            if (!line.startsWith("BEGAST")) {
+                continue;
+            }
+            int q1 = line.indexOf('\'');
+            int q2 = q1 < 0 ? -1 : line.indexOf('\'', q1 + 1);
+            if (q2 < 0) {
+                continue;
+            }
+            String name = line.substring(q1 + 1, q2).trim();
+            if (!RegisteredClasses.isRegistered(name)) {
+                out.add(name);
+            }
+        }
+        return out.isEmpty() ? null : "needs " + String.join(", ", out);
+    }
+
     /** The class names on the {@code Begin} lines of {@code dumpText}, in order. */
     static List<String> begun(String dumpText) {
         List<String> out = new ArrayList<>();

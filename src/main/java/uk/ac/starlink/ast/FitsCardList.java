@@ -1167,4 +1167,13 @@ final class FitsCardList {
         double scale = (Math.abs(a) + Math.abs(b)) * Math.ulp(1.0);
         return Math.abs(a - b) <= 1.0e5 * Math.max(scale, Double.MIN_NORMAL);
     }
+
+    /**
+     * Stores a value of any type as {@link #setFloat} stores a floating value: C's {@code SetValue}
+     * given the data and type of another card, as {@code SpecTrans} copies a QVi_m card to PVi_m.
+     */
+    void setValue(String keyword, FitsCard.Value value, String comment) {
+        noteWritten(keyword);
+        putOrAppend(new FitsCard(keyword.toUpperCase(Locale.ROOT), value, nullIfEmpty(comment)));
+    }
 }

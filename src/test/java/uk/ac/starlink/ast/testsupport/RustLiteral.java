@@ -24,7 +24,8 @@ import java.util.regex.Pattern;
  * file, the variants of an {@code enum} the file declares, the unit variants of an enum it imports
  * (a path such as {@code ErrorCode::Rderr} whose last two names start with capital letters), {@code
  * Ok(x)} and {@code Err(x)}, read as variants named {@code Ok} and {@code Err}, and struct literals
- * such as {@code Row { name: "a", n: 1 }}. {@code type} and other {@code use} items,
+ * such as {@code Row { name: "a", n: 1 }}, and {@code concat!} of string literals, read as the
+ * joined string. {@code type} and other {@code use} items,
  * {@code enum} declarations, attributes and comments are skipped. Anything else throws {@link
  * IllegalArgumentException} naming its line.
  *
@@ -234,6 +235,10 @@ public final class RustLiteral {
             sb.append("::").append(ident());
         }
         String p = sb.toString();
+        if ("concat".equals(p) && pos < src.length() && peek() == '!') {
+            pos++;
+            return concat();
+        }
         String last = p.substring(p.lastIndexOf(':') + 1);
         int sep = p.indexOf("::");
         if (sep > 0 && enums.contains(p.substring(0, sep))) {
@@ -283,6 +288,20 @@ public final class RustLiteral {
                 }
                 throw error("unknown name \"" + p + "\"");
         }
+    }
+
+    /** The arguments of {@code concat!(...)}, after the {@code !}: string literals, joined. */
+    private String concat() {
+        skipSpace();
+        expect('(');
+        StringBuilder sb = new StringBuilder();
+        for (Object part : list(')').values) {
+            if (!(part instanceof String)) {
+                throw error("concat! of a value that is not a string literal");
+            }
+            sb.append((String) part);
+        }
+        return sb.toString();
     }
 
     /**
