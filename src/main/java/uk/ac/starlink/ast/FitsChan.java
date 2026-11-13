@@ -2,6 +2,7 @@ package uk.ac.starlink.ast;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -224,7 +225,7 @@ public class FitsChan extends Channel {
      */
     private static boolean overridesSink(Class<?> cls) {
         for (Class<?> c = cls; c != FitsChan.class && c != null; c = c.getSuperclass()) {
-            for (java.lang.reflect.Method m : c.getDeclaredMethods()) {
+            for (Method m : c.getDeclaredMethods()) {
                 Class<?>[] params = m.getParameterTypes();
                 if ("sink".equals(m.getName()) && params.length == 1 && params[0] == String.class) {
                     return true;
