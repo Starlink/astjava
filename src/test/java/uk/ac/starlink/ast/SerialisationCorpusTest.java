@@ -34,8 +34,11 @@ import uk.ac.starlink.ast.testsupport.NativeClasses;
  * {@code deferred/serialisation.txt}, and a listed fixture must fail; with {@code
  * -Dast.writeDeferred=true} the tests rewrite that list instead (see {@link Deferred}).
  *
- * <p>The other tests of {@code test_serialisation.rs}, which round-trip Objects made in the test,
- * are translated in Task 20.
+ * <p>Rust's {@code ROUND_TRIP_EXCLUDED} has no counterpart: {@code frame_in_map_slot.ast}, a
+ * CmpFrame in a Mapping slot, loads as in C, since a Frame is a Mapping here, and the MocChan
+ * fixtures are deferred with the other fixtures holding classes out of scope. The other tests of
+ * {@code test_serialisation.rs}, which round-trip Objects made in the test, are translated in
+ * {@link SerialisationTest}.
  */
 class SerialisationCorpusTest {
 
