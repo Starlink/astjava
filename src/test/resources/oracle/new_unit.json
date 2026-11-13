@@ -1,0 +1,8 @@
+{
+  "source": "crates/starlink-ast/tests/new_unit_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/new_unit_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "CASES": [["active_log","log( Dist )","log( d )",false,"log(m)"],["active_km","Dist","d",false,"km"],["active_same","Dist","d",true,"m"],["inactive_log","Dist","d",true,"log(m)"],["active_clear","Dist","d",false,""],["active_trailing_spaces","Dist","d",false,"km"],["spec_log","log((1.0000000000000001e-09/ Nu )**-1)","log((1.0000000000000001e-09/ n )**-1)",false,"log(Hz)"],["spec_mhz","Nu","FREQ",false,"MHz"],["time_s","When","MJD",false,"s"]]
+  }
+}

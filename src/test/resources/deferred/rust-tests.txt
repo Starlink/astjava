@@ -1,0 +1,462 @@
+# Rust tests that are not translated, one per line:
+# <rust test file>::<test name> | <reason>
+# Valid reasons: a named out-of-scope class or method; needs simplification;
+# hardware SIMD; Rust-only API; no C value.
+tests/error_model.rs::with_context_appends | Rust-only API (AstError context)
+tests/error_model.rs::display_includes_context | Rust-only API (AstError context)
+tests/error_model.rs::new_tracked_captures_location | Rust-only API (AstError source location)
+tests/error_model.rs::new_has_no_location | Rust-only API (AstError source location)
+tests/test_keymap.rs::clone_preserves_every_entry | SpecFrame (out of scope)
+tests/test_keymap.rs::vector_puts_replace_scalars | SpecFrame (out of scope)
+tests/test_keymap.rs::vector_reads | SpecFrame (out of scope)
+tests/test_keymap.rs::element_reads | SpecFrame (out of scope)
+tests/test_keymap.rs::remove_then_read_fails | SpecFrame (out of scope)
+tests/test_keymap.rs::check_dump_round_trip | SpecFrame (out of scope)
+tests/test_keymap_serial.rs::the_c_fixture_keymap_round_trips | Box (Region, out of scope)
+tests/test_keymap_serial.rs::the_c_fixture_map_sz_matches | Box (Region, out of scope)
+src/keymap/serial.rs::a_non_ascii_key_does_not_panic_the_presize_filter | Rust-only API (HashMap presizing)
+tests/test_zoommap.rs::zoom_parallel_merge_different_factors | needs simplification
+tests/test_zoommap.rs::zoom_parallel_merge_same_factor | needs simplification
+tests/test_zoommap.rs::a_merged_zoom_that_underflows_to_zero_is_an_error | needs simplification
+tests/test_nan_protocol.rs::nan_protocol_lutmap | LutMap (out of scope)
+tests/test_nan_protocol.rs::nan_protocol_grismmap | GrismMap (out of scope)
+tests/test_nan_protocol.rs::nan_protocol_specmap | SpecMap (out of scope)
+tests/test_nan_protocol.rs::nan_protocol_normmap | NormMap (out of scope)
+tests/test_nan_protocol.rs::nan_protocol_unitnormmap | UnitNormMap (out of scope)
+tests/test_nan_protocol.rs::nan_protocol_carries_a_bad_output_of_a_mapping_without_its_own_nan_path | XphMap (out of scope)
+tests/test_bulk_kernels.rs::unitnormmap_kernel_keeps_each_points_state_across_blocks | UnitNormMap (out of scope)
+tests/test_bulk_kernels.rs::unitnormmap_inverse_kernel_keeps_each_points_state | UnitNormMap (out of scope)
+tests/test_bulk_kernels.rs::unitnormmap_forward_kernel_matches_c_for_each_axis_count | UnitNormMap (out of scope)
+tests/test_bulk_kernels.rs::transforms_that_fill_every_output_leave_surplus_axes_alone | UnitNormMap and NullRegion (out of scope)
+tests/points.rs::a_view_over_columns_reads_points_and_axes | Rust-only API (Points)
+tests/points.rs::no_axes_is_ncoin | Rust-only API (Points)
+tests/points.rs::one_short_axis_is_ncpin | Rust-only API (Points)
+tests/points.rs::the_trann_layout_reads_axes_at_a_stride | Rust-only API (Points)
+tests/points.rs::a_stride_below_npoint_is_dimin | Rust-only API (Points)
+tests/points.rs::a_stride_whose_extent_overflows_is_dimin | Rust-only API (Points)
+tests/points.rs::a_buffer_too_short_for_its_stride_is_dimin | Rust-only API (Points)
+tests/points.rs::writable_strided_views_write_only_their_points | Rust-only API (Points)
+tests/points.rs::point_and_axis_ranges_are_views_of_the_same_data | Rust-only API (Points)
+tests/points.rs::splitting_writable_axes_gives_disjoint_views | Rust-only API (Points)
+tests/points.rs::zero_points_is_a_valid_view | Rust-only API (Points)
+tests/points.rs::nine_axes_spill_to_the_heap_with_the_same_results | Rust-only API (Points)
+tests/points.rs::point_bufs_compare_with_slices_arrays_and_vectors | Rust-only API (Points)
+tests/points.rs::a_transform_can_write_into_a_callers_trann_buffers | Rust-only API (Points)
+tests/points.rs::tran2_matches_transform | Rust-only API (Points)
+tests/points.rs::a_transform_of_no_points_still_checks_the_axes | Rust-only API (Points)
+tests/points.rs::writable_axes_are_reborrowed_and_counted | Rust-only API (Points)
+tests/pointset.rs::zeros_creates_correct_shape | Rust-only API (PointSet)
+tests/pointset.rs::from_rows_basic | Rust-only API (PointSet)
+tests/pointset.rs::from_columns_basic | Rust-only API (PointSet)
+tests/pointset.rs::from_columns_mismatched_lengths | Rust-only API (PointSet)
+tests/pointset.rs::from_columns_empty | Rust-only API (PointSet)
+tests/pointset.rs::set_point_modifies_in_place | Rust-only API (PointSet)
+tests/pointset.rs::each_axis_is_one_contiguous_slice | Rust-only API (PointSet)
+tests/pointset.rs::a_point_set_and_its_views_agree | Rust-only API (PointSet)
+tests/pointset.rs::a_point_set_of_no_points_has_empty_axes | Rust-only API (PointSet)
+tests/pointset.rs::axis_iter_returns_column | Rust-only API (PointSet)
+tests/pointset.rs::view_and_into_ndarray | Rust-only API (PointSet)
+tests/test_winmap.rs::winmap_parallel_merge | needs simplification
+tests/test_winmap.rs::winmap_parallel_merge_with_zoommap | needs simplification
+tests/test_winmap.rs::winmap_merge_with_diagonal_matrix | needs simplification
+tests/test_winmap.rs::winmap_no_merge_with_full_matrix | needs simplification
+tests/test_winmap.rs::winmap_simplifies_to_shiftmap | needs simplification
+tests/test_winmap.rs::winmap_simplifies_to_zoommap | needs simplification
+tests/test_winmap.rs::winmap_simplifies_to_unitmap | needs simplification
+tests/test_winmap.rs::winmap_cancels_with_own_inverse_exactly | needs simplification
+tests/test_winmap.rs::offdiagonal_cd_chain_fuses_deg2rad_into_the_matrixmap | needs simplification
+tests/test_winmap.rs::nonuniform_cdelt_chain_keeps_deg2rad_in_the_winmap | needs simplification
+tests/test_winmap.rs::winmap_merge_with_a_bad_term_is_undefined | needs simplification
+tests/test_matrixmap.rs::matrix_merge_with_permmap_after | needs simplification
+tests/test_matrixmap.rs::matrix_merge_with_permmap_before | needs simplification
+tests/test_matrixmap.rs::permmap_try_merge_with_matrixmap | needs simplification
+tests/test_matrixmap.rs::matrix_merge_with_inverted_permmap | needs simplification
+tests/test_matrixmap.rs::matrix_no_merge_with_constant_permmap | needs simplification
+tests/test_matrixmap.rs::diagonal_matrix_merge_with_winmap | needs simplification
+tests/test_matrixmap.rs::non_diagonal_matrix_no_merge_with_winmap | needs simplification
+tests/test_matrixmap.rs::diagonal_matrix_merge_with_winmap_scales | needs simplification
+tests/test_matrixmap.rs::simplified_switches_full_to_diagonal_when_offdiagonals_are_zero | needs simplification
+tests/test_matrixmap.rs::merging_with_an_inverted_singular_matrix_is_an_error | needs simplification
+tests/test_matrixmap.rs::an_inverted_non_square_matrixmap_equals_its_copy | astEqual (out-of-scope method)
+tests/test_permmap.rs::perm_parallel_merge | needs simplification
+tests/test_permmap.rs::perm_simplified_checks_both_perms | needs simplification
+tests/test_permmap.rs::perm_equal_same_constant_index_differing_values | astEqual (out-of-scope method)
+tests/test_permmap.rs::perm_equal_same_constant_index_same_value | astEqual (out-of-scope method)
+tests/test_permmap.rs::perm_equal_different_index_same_referenced_value | astEqual (out-of-scope method)
+tests/test_permmap.rs::perm_equal_different_index_different_referenced_value | astEqual (out-of-scope method)
+tests/test_permmap.rs::perm_equal_ignores_unreferenced_surplus_constants | astEqual (out-of-scope method)
+tests/test_cmpmap.rs::series_inverse_pair_of_mathmaps_cancels_to_unitmap | MathMap (out of scope)
+tests/test_cmpmap.rs::parallel_with_inverted_cmpmap_child_canonicalises_for_serialisation | MathMap (out of scope)
+tests/test_cmpmap.rs::cmpmap_equality_compares_components_as_applied | astEqual (out-of-scope method)
+tests/test_constructor_checks.rs::a_tranmap_needs_its_two_directions | TranMap and RateMap (out of scope)
+tests/test_constructor_checks.rs::a_switchmap_selector_needs_its_direction | SwitchMap and RateMap (out of scope)
+tests/test_constructor_checks.rs::a_splinemap_checks_its_arguments | SplineMap (out of scope)
+tests/test_constructor_checks.rs::a_unitnormmap_needs_a_centre | UnitNormMap (out of scope)
+tests/test_constructor_checks.rs::a_selectormap_needs_regions_in_one_frame | SelectorMap and Circle (out of scope)
+tests/test_constructor_checks.rs::a_mathmap_needs_a_function_per_output | MathMap (out of scope)
+tests/test_mapping_load.rs::a_dssmap_dump_needs_its_plate_solution | DssMap (out of scope)
+tests/test_equal.rs::float_tolerance_within | astEqual (out-of-scope method)
+tests/test_equal.rs::float_tolerance_outside | astEqual (out-of-scope method)
+tests/test_equal.rs::bad_value_comparison | astEqual (out-of-scope method)
+tests/test_equal.rs::bad_vs_non_bad_same_index_is_not_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::bad_vs_non_bad_different_index_is_not_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::unitmap_identity | astEqual (out-of-scope method)
+tests/test_equal.rs::unitmap_same_ncoord | astEqual (out-of-scope method)
+tests/test_equal.rs::unitmap_different_ncoord | astEqual (out-of-scope method)
+tests/test_equal.rs::zoommap_identity | astEqual (out-of-scope method)
+tests/test_equal.rs::zoommap_same_values | astEqual (out-of-scope method)
+tests/test_equal.rs::zoommap_different_factor | astEqual (out-of-scope method)
+tests/test_equal.rs::zoommap_different_ncoord | astEqual (out-of-scope method)
+tests/test_equal.rs::zoommap_invert_aware | astEqual (out-of-scope method)
+tests/test_equal.rs::zoommap_invert_aware_mismatch | astEqual (out-of-scope method)
+tests/test_equal.rs::shiftmap_identity | astEqual (out-of-scope method)
+tests/test_equal.rs::shiftmap_same_values | astEqual (out-of-scope method)
+tests/test_equal.rs::shiftmap_different_shifts | astEqual (out-of-scope method)
+tests/test_equal.rs::shiftmap_different_length | astEqual (out-of-scope method)
+tests/test_equal.rs::shiftmap_invert_aware | astEqual (out-of-scope method)
+tests/test_equal.rs::shiftmap_invert_aware_mismatch | astEqual (out-of-scope method)
+tests/test_equal.rs::matrixmap_same | astEqual (out-of-scope method)
+tests/test_equal.rs::matrixmap_different_element | astEqual (out-of-scope method)
+tests/test_equal.rs::matrixmap_inverted_not_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::permmap_same | astEqual (out-of-scope method)
+tests/test_equal.rs::permmap_different_perm | astEqual (out-of-scope method)
+tests/test_equal.rs::permmap_equal_cross_inversion | astEqual (out-of-scope method)
+tests/test_equal.rs::winmap_same | astEqual (out-of-scope method)
+tests/test_equal.rs::winmap_different_scale | astEqual (out-of-scope method)
+tests/test_equal.rs::winmap_inverted_not_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::winmap_equal_cross_inversion | astEqual (out-of-scope method)
+tests/test_equal.rs::cmpmap_series_same | astEqual (out-of-scope method)
+tests/test_equal.rs::cmpmap_different_component | astEqual (out-of-scope method)
+tests/test_equal.rs::cmpmap_different_kind | astEqual (out-of-scope method)
+tests/test_equal.rs::polymap_same | astEqual (out-of-scope method)
+tests/test_equal.rs::polymap_different_coeff | astEqual (out-of-scope method)
+tests/test_equal.rs::chebymap_same | astEqual (out-of-scope method)
+tests/test_equal.rs::chebymap_different_bounds | astEqual (out-of-scope method)
+tests/test_equal.rs::lutmap_same | astEqual (out-of-scope method)
+tests/test_equal.rs::lutmap_different_values | astEqual (out-of-scope method)
+tests/test_equal.rs::lutmap_different_start | astEqual (out-of-scope method)
+tests/test_equal.rs::wcsmap_same | astEqual (out-of-scope method)
+tests/test_equal.rs::wcsmap_different_proj | astEqual (out-of-scope method)
+tests/test_equal.rs::wcsmap_different_axes | astEqual (out-of-scope method)
+tests/test_equal.rs::slamap_same | astEqual (out-of-scope method)
+tests/test_equal.rs::slamap_different_type | astEqual (out-of-scope method)
+tests/test_equal.rs::slamap_different_args | astEqual (out-of-scope method)
+tests/test_equal.rs::sphmap_same | astEqual (out-of-scope method)
+tests/test_equal.rs::sphmap_different_polar_long | astEqual (out-of-scope method)
+tests/test_equal.rs::sphmap_different_unit_radius | astEqual (out-of-scope method)
+tests/test_equal.rs::sphmap_inverted | astEqual (out-of-scope method)
+tests/test_equal.rs::cmpmap_equal_different_tree_structure | astEqual (out-of-scope method)
+tests/test_equal.rs::cross_type_zoom_vs_shift | astEqual (out-of-scope method)
+tests/test_equal.rs::cross_type_unit_vs_zoom | astEqual (out-of-scope method)
+tests/test_equal.rs::cross_type_winmap_vs_shiftmap | astEqual (out-of-scope method)
+tests/test_equal.rs::basicframe_same | astEqual (out-of-scope method)
+tests/test_equal.rs::basicframe_different_naxes | astEqual (out-of-scope method)
+tests/test_equal.rs::basicframe_different_title_is_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::basicframe_different_domain | astEqual (out-of-scope method)
+tests/test_equal.rs::basicframe_different_epoch_is_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::basicframe_epoch_set_vs_unset_is_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::basicframe_different_labels_is_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::cmpframe_same | astEqual (out-of-scope method)
+tests/test_equal.rs::cmpframe_different_child | astEqual (out-of-scope method)
+tests/test_equal.rs::skyframe_same | astEqual (out-of-scope method)
+tests/test_equal.rs::skyframe_different_system | astEqual (out-of-scope method)
+tests/test_equal.rs::skyframe_different_equinox | astEqual (out-of-scope method)
+tests/test_equal.rs::skyframe_equinox_set_vs_unset_default_is_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::skyframe_different_epoch | astEqual (out-of-scope method)
+tests/test_equal.rs::skyframe_sky_ref_is_origin_without_sky_ref_is_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::skyframe_offset_origin_with_sky_ref_is_not_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::skyframe_sky_ref_without_sky_ref_is_is_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::skyframe_different_neglon_is_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::skyframe_different_title_is_equal | astEqual (out-of-scope method)
+tests/test_equal.rs::cross_type_skyframe_vs_basicframe | astEqual (out-of-scope method)
+tests/test_equal.rs::cross_type_basicframe_vs_skyframe | astEqual (out-of-scope method)
+tests/test_equal.rs::frameset_same | astEqual (out-of-scope method)
+tests/test_equal.rs::frameset_different_mapping | astEqual (out-of-scope method)
+tests/test_equal.rs::serialise_round_trip_zoommap | astEqual (out-of-scope method)
+tests/test_equal.rs::serialise_round_trip_shiftmap | astEqual (out-of-scope method)
+tests/test_equal.rs::serialise_round_trip_skyframe | astEqual (out-of-scope method)
+tests/test_equal.rs::matrixmap_equal_cross_inversion | astEqual (out-of-scope method)
+tests/test_equal_oracle.rs::equality_matches_the_c_library | astEqual (out-of-scope method)
+tests/test_equal_oracle.rs::wcsmap_equality_is_symmetric_where_c_checks_it | astEqual (out-of-scope method)
+tests/test_trangrid.rs::tranmap | TranMap (out of scope)
+tests/test_trangrid.rs::nonlinear_mathmap_1d | MathMap (out of scope)
+tests/test_trangrid.rs::fits_wcs_pixel_to_sky | out-of-scope method FitsChan.read of the FITS-AIPS encoding
+tests/test_tran_grid_oracle.rs::quadratic_fits_match_c | astQuadApprox (out-of-scope method)
+tests/test_tran_grid_oracle.rs::quadratic_fit_needs_two_inputs | astQuadApprox (out-of-scope method)
+tests/test_map_split.rs::normmap_split_picks_axes | NormMap (out of scope)
+tests/test_map_split.rs::normmap_split_full_inputs_via_default | NormMap (out of scope)
+tests/test_map_split.rs::normmap_split_refuses_out_of_range_and_repeated_axes | NormMap (out of scope)
+tests/test_map_split.rs::tranmap_split_picks_per_axis | TranMap (out of scope)
+tests/test_map_split.rs::ratemap_split_diff_output_dropped_returns_none | RateMap (out of scope)
+tests/test_map_split.rs::ratemap_split_rejects_when_inverted | RateMap (out of scope)
+tests/test_map_split.rs::testcmpmap_split_of_splittest1 | LutMap (out of scope)
+tests/test_map_split_oracle.rs::issimp_component_exclusions_still_differ | RateMap and TranMap (out of scope)
+tests/test_tran_definedness.rs::chebymap_forward_only_has_no_inverse | ChebyMap (out of scope)
+tests/test_tran_definedness.rs::tranmap_needs_both_directions | TranMap (out of scope)
+tests/test_rate.rs::tran_map | TranMap (out of scope)
+tests/test_numeric_rate.rs::numeric_rate_tan_at_zero | MathMap (out of scope)
+tests/test_numeric_rate.rs::numeric_rate_chebymap_quadratic | ChebyMap (out of scope)
+tests/test_numeric_rate.rs::numeric_rate_chebymap_cubic | ChebyMap (out of scope)
+tests/test_rate_oracle.rs::rates_match_the_c_library | RateMap, TranMap and SwitchMap (out of scope)
+src/mappings/linear_approx.rs::returns_correct_type | Rust-only API (LinearFit)
+tests/test_transform_oracle.rs::fma_substitutions_replace_rows_that_really_differ | Rust-only API (FMA_SUBSTITUTIONS_LICENSED is empty; a row that differs for that cause goes on the deferred lists)
+tests/test_transform_oracle.rs::transform_oracle_report | Rust-only API (ignored investigative JSON report; the gates list every failure)
+tests/test_native_roundtrip_all.rs::round_trip_lutmap | LutMap (out of scope)
+tests/test_native_roundtrip_all.rs::round_trip_chebymap | ChebyMap (out of scope)
+tests/test_native_roundtrip_all.rs::round_trip_pcdmap | PcdMap (out of scope)
+tests/test_native_roundtrip_all.rs::round_trip_grismmap | GrismMap (out of scope)
+tests/test_native_roundtrip_all.rs::round_trip_unitnormmap | UnitNormMap (out of scope)
+tests/test_native_roundtrip_all.rs::round_trip_normmap | NormMap (out of scope)
+tests/test_native_roundtrip_all.rs::round_trip_tranmap | TranMap (out of scope)
+tests/test_native_roundtrip_all.rs::round_trip_ratemap | RateMap (out of scope)
+tests/test_native_roundtrip_all.rs::round_trip_specmap | SpecMap (out of scope)
+tests/test_native_roundtrip_all.rs::round_trip_splinemap | SplineMap (out of scope)
+tests/test_native_roundtrip_all.rs::round_trip_mathmap | MathMap (out of scope)
+src/erfa/c2s.rs::c2s_kernel_is_within_one_ulp_of_c2s | hardware SIMD
+src/erfa/s2c.rs::s2c_kernel_is_within_its_derived_bound_of_the_exact_value | hardware SIMD
+src/erfa/fk45z.rs::fk45z_kernel_is_within_bound_of_fk45z | hardware SIMD
+src/erfa/fk54z.rs::fk54z_kernel_is_within_bound_of_fk54z | hardware SIMD
+src/pal/mod.rs::every_build_of_the_slice_loops_gives_the_same_bits | hardware SIMD
+src/pal/mod.rs::every_build_of_the_fk_slice_loops_gives_the_same_bits | hardware SIMD
+src/pal/mod.rs::eqgal_counts_by_symbol | Rust-only API (call counts)
+src/wcslib/trig.rs::kernel_trig_is_within_two_ulp_of_libm_where_it_covers | hardware SIMD
+src/wcslib/trig.rs::sincosd_covers_is_the_remainder_test_within_the_domain | hardware SIMD
+src/wcslib/trig.rs::sincosd_covers_is_the_rounding_test_for_every_input | hardware SIMD
+src/wcslib/trig.rs::atand_builds_agree_at_extreme_arguments | hardware SIMD
+src/wcslib/trig.rs::covers_rejects_wcstrig_exact_arguments | hardware SIMD
+src/wcslib/prj.rs::tan_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::tan_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::sin_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::sin_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::zpn_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::zpn_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::tpn_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::tpn_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::arc_zea_and_air_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::stg_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::azp_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::szp_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::stg_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::azp_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::szp_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::zenithal_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::cyp_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::cyp_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::cyp_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::ait_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::ait_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::ait_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::conic_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::cop_margins_cover_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::coe_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::conic_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::polyconic_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::polyconic_slice_builds_agree | hardware SIMD
+src/wcslib/prj.rs::quadcube_slices_are_within_kernel_drift_of_the_per_value_body | hardware SIMD
+src/wcslib/prj.rs::cube_face_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::csc_margin_covers_the_kernels_drift_and_a_zero_margin_does_not | hardware SIMD
+src/wcslib/prj.rs::quadcube_slice_builds_agree | hardware SIMD
+src/mappings/wcsmap.rs::inverse_longitudes_near_a_limit_are_decided_as_per_value | hardware SIMD
+src/mappings/sphmap.rs::counts_only_the_calls_c_makes | Rust-only API (call counts)
+tests/test_sphmap.rs::sphmap_inv_fwd_cancels_without_unit_radius | needs simplification
+tests/test_sphmap.rs::sphmap_fwd_inv_needs_unit_radius_on_first_only | needs simplification
+tests/test_sphmap.rs::sphmap_fwd_inv_fails_without_unit_radius | needs simplification
+tests/test_sphmap.rs::sphmap_cancellation_requires_matching_polar_long | needs simplification
+tests/test_wcsmap.rs::wcsmap_equal_different_params | astEqual (out-of-scope method)
+tests/test_wcsmap.rs::wcsmap_equal_same_params | astEqual (out-of-scope method)
+tests/test_wcsmap.rs::wcsmap_no_cancel_different_params | needs simplification
+tests/test_wcsmap.rs::wcsmap_cancel_same_params | needs simplification
+tests/test_wcsmap.rs::wcsmap_perm_swap_cancel_simplify | needs simplification
+tests/test_wcsmap.rs::wcsmap_perm_swap_simplify_constants | needs simplification
+tests/test_wcsmap.rs::wcsmap_absorbs_adjacent_permmap | needs simplification
+tests/test_polymap.rs::polymap_bad_powers_len_rejected | Rust-only API (PolyTerm power vectors; C's coefficient array has none)
+tests/test_polymap.rs::polymap_linear_decomposes_to_matrixmap | needs simplification
+tests/test_polymap.rs::polymap_affine_decomposes | needs simplification
+tests/test_polymap.rs::polymap_affine_diagonal_decomposes_to_winmap | needs simplification
+tests/test_polymap.rs::polymap_whose_terms_all_cancel_becomes_a_matrixmap | needs simplification
+tests/test_polymap.rs::polymap_does_not_cancel_against_a_different_inverse | needs simplification
+tests/test_polymap.rs::polymap_equal_compares_the_inverse_coefficients | astEqual (out-of-scope method)
+tests/test_polymap.rs::polymap_fitted_inverse_cancels_soundly | needs simplification
+tests/test_polymap.rs::polymap_with_more_outputs_than_inputs_equals_its_copy | astEqual (out-of-scope method)
+tests/test_polymap.rs::ident_set_polymap_nominated_in_a_list_is_left_alone | needs simplification
+tests/test_polymap.rs::c_simplify | needs simplification
+tests/test_polymap.rs::polymap_affine_general_merges_with_a_neighbour | needs simplification
+tests/test_polymap_simd.rs::simd_falls_back_below_threshold | hardware SIMD
+tests/test_polymap_simd.rs::simd_inverse_falls_back_below_threshold | hardware SIMD
+tests/test_slamap.rs::cvt_from_int | Rust-only API (SlaCvtType integer codes)
+tests/test_slamap.rs::slamap_merge_concatenates_steps | needs simplification
+tests/test_slamap.rs::slamap_merge_cancels_inverse_pairs | needs simplification
+tests/test_slamap.rs::slamap_merge_combines_precession | needs simplification
+tests/test_slamap.rs::slamap_merge_precession_to_identity | needs simplification
+tests/test_slamap.rs::simplify_inverted_map_step_swaps_date_and_equinox | needs simplification
+tests/test_timemap.rs::equality | astEqual (out-of-scope method)
+tests/test_timemap.rs::try_merge_cancellation | needs simplification
+tests/test_timemap.rs::cvt_type_codes_match_c | Rust-only API (TimeCvtType integer codes)
+tests/test_timemap.rs::cvt_type_from_int | Rust-only API (TimeCvtType integer codes)
+tests/test_timemap.rs::cvt_type_inverse | Rust-only API (TimeCvtType::inverse)
+tests/test_timemap.rs::timemap_merge_concatenates | needs simplification
+tests/test_timemap.rs::timemap_merge_cancels_inverse | needs simplification
+tests/test_timemap.rs::timemap_merge_eliminates_no_effect | needs simplification
+tests/test_timemap.rs::timemap_merge_mjd_to_jd_cancels | needs simplification
+tests/test_timemap.rs::timemap_merge_mjd_to_mjd_equal_offsets | needs simplification
+tests/test_timemap.rs::timemap_simplified_chain | needs simplification
+src/units/tests.rs::log_hz_to_hz_is_mathmap | MathMap (out of scope)
+src/units/tests.rs::sqrt_hz_to_hz_is_mathmap | MathMap (out of scope)
+src/units/tests.rs::log_kms_to_ms_is_mathmap | MathMap (out of scope)
+src/units/tests.rs::hz_to_log_hz_is_mathmap | MathMap (out of scope)
+tests/test_unit_mapper.rs::spec_frame_unit_changes_match_the_c_library | SpecFrame (out of scope)
+tests/test_unit_mapper.rs::zoom_map_chains_simplify_as_the_c_library_does | needs simplification
+tests/test_basicframe.rs::map_from_returns_unit | Rust-only API (Frame::map_from)
+tests/test_frame_equality.rs::basic_frames_differing_only_in_cosmetics_are_equal | astEqual (out-of-scope method)
+tests/test_frame_equality.rs::basic_frames_differing_in_domain_are_not_equal | astEqual (out-of-scope method)
+tests/test_frame_equality.rs::skyframes_differing_only_in_title_are_equal | astEqual (out-of-scope method)
+tests/test_frame_equality.rs::skyframe_explicit_default_domain_equals_unset_domain | astEqual (out-of-scope method)
+tests/test_frame_equality.rs::skyframes_differing_in_system_are_not_equal | astEqual (out-of-scope method)
+tests/test_frame_equality.rs::normmap_pair_over_cosmetically_different_frames_cancels | NormMap (out of scope)
+tests/test_frame_geometry.rs::match_axes_finds_sky_in_cmp | SpecFrame (out of scope)
+tests/test_norm_points.rs::a_circle_mesh_is_normalised_as_c_does | Circle (Region, out of scope)
+tests/test_frameset.rs::debug_formatting | Rust-only API (Debug)
+tests/test_frameset.rs::convert_stops_at_the_first_domain_that_gives_a_conversion | MathMap (out of scope)
+tests/test_find_frame.rs::cmpframe_match_against_cmpframe_template | SpecFrame (out of scope)
+tests/test_find_frame.rs::cmpframe_match_with_default_max_axes_fails | SpecFrame (out of scope)
+tests/test_find_frame.rs::cmpframe_match_against_skyframe_template_with_max_axes | SpecFrame (out of scope)
+tests/test_find_frame.rs::find_frame_specframe_template_into_cmpframe_sky_spec | SpecFrame (out of scope)
+tests/test_find_frame.rs::find_frame_specframe_template_into_cmpframe_spec_sky | SpecFrame (out of scope)
+tests/test_convert.rs::convert_basic_cmp_permmap | SpecFrame (out of scope)
+tests/test_convert.rs::convert_sky_cmp_permmap | SpecFrame (out of scope)
+tests/test_convert.rs::find_frame_cmp_needs_widened_axes | SpecFrame (out of scope)
+tests/test_convert.rs::convert_between_regions_does_not_clip | Circle (Region, out of scope)
+tests/test_frame_in_map_slot.rs::a_region_inside_a_cmpmap_still_reads | Region classes (out of scope)
+tests/test_frame_in_map_slot.rs::a_region_inside_a_cmpframe_still_reads | Box (Region, out of scope)
+src/frames/skyframe.rs::skyframe_is_send | Rust-only API (Send trait bound)
+tests/test_skyframe.rs::skyframe_is_send | Rust-only API (Send)
+tests/test_skyframe.rs::debug_formatting | Rust-only API (Debug formatting)
+tests/test_skyframe.rs::serialise_skyframe_not_a_mapping | Rust-only API (AnyObject::as_mapping; in AST every Frame is a Mapping)
+tests/test_sky_convert.rs::fk_licences_name_existing_cases | hardware SIMD
+tests/test_sky_pole_oracle.rs::sky_pole_matches_the_c_library | out-of-scope method FitsChan.write
+tests/test_timeframe.rs::test_equal | astEqual (out-of-scope method)
+tests/test_timeframe.rs::test_map_from_timescale_change | Rust-only API (Frame::map_from)
+tests/test_spec_use_defs.rs::titles_match_the_c_library | SpecFrame (out of scope)
+tests/test_cmpframe.rs::norm_box_probe_carries_bad_on_the_other_components_axes | astNormBox (out-of-scope method)
+tests/test_cmpframe.rs::norm_box_reaches_the_sky_component | astNormBox (out-of-scope method)
+tests/test_cmpframe.rs::norm_box_delegates_to_a_second_component_of_a_different_size | astNormBox (out-of-scope method)
+tests/test_cmpframe.rs::norm_box_reaches_a_sky_second_component | astNormBox (out-of-scope method)
+tests/test_cmpframe.rs::norm_box_bounds_do_not_depend_on_component_order | Circle (Region, out of scope)
+src/frames/cmpframe.rs::overlay_template_clean_partition_copies_skyframe_system | SpecFrame (out of scope)
+src/frames/cmpframe.rs::overlay_template_fallback_non_cmpframe_result | SpecFrame (out of scope)
+src/frames/cmpframe.rs::overlay_template_falls_through_when_partition_unclean | SpecFrame (out of scope)
+tests/test_frameset_integrity.rs::unit_change_leaves_mappings_alone | DSBSpecFrame, LutMap and SpecMap (out of scope)
+tests/test_lsst_oracle.rs::lsst_simplified_inverse_matches_c | needs simplification
+tests/test_show_tostring_oracle.rs::a_concrete_class_writes_what_its_anyobject_writes | Rust-only API (AnyObject)
+tests/test_show_tostring_oracle.rs::try_from_returns_the_class_and_rejects_another | Rust-only API (AnyObject)
+tests/test_show_tostring_oracle.rs::try_from_unboxes_boxed_variants | Rust-only API (AnyObject)
+tests/test_clear_on_set.rs::lut_interp_discards_the_record | LutMap (out of scope)
+tests/test_clear_on_set.rs::math_simp_fi_discards_the_record | MathMap (out of scope)
+tests/test_clear_on_set.rs::math_simp_if_discards_the_record | MathMap (out of scope)
+tests/test_clear_on_set.rs::math_seed_discards_the_record | MathMap (out of scope)
+tests/test_clear_on_set.rs::clearing_math_seed_discards_the_record | MathMap (out of scope)
+tests/test_clear_on_set.rs::spline_inv_niter_discards_the_record | SplineMap (out of scope)
+tests/test_clear_on_set.rs::spline_inv_tol_discards_the_record | SplineMap (out of scope)
+tests/test_clear_on_set.rs::spline_out_unit_discards_the_record | SplineMap (out of scope)
+tests/test_clear_on_set.rs::lut_epsilon_discards_the_record | LutMap (out of scope)
+tests/test_clear_on_set.rs::pcd_disco_discards_the_record | PcdMap (out of scope)
+tests/test_clear_on_set.rs::grism_nr_discards_the_record | GrismMap (out of scope)
+tests/test_clear_on_set.rs::grism_nrp_discards_the_record | GrismMap (out of scope)
+tests/test_clear_on_set.rs::grism_wave_r_discards_the_record | GrismMap (out of scope)
+tests/test_clear_on_set.rs::grism_alpha_discards_the_record | GrismMap (out of scope)
+tests/test_clear_on_set.rs::grism_g_discards_the_record | GrismMap (out of scope)
+tests/test_clear_on_set.rs::grism_m_discards_the_record | GrismMap (out of scope)
+tests/test_clear_on_set.rs::grism_eps_discards_the_record | GrismMap (out of scope)
+tests/test_clear_on_set.rs::grism_theta_discards_the_record | GrismMap (out of scope)
+tests/test_clear_on_set.rs::grism_setters_recompute_the_constants | GrismMap (out of scope)
+tests/test_clear_on_set.rs::grism_sentinel_restores_the_default_and_untests_the_attribute | GrismMap (out of scope)
+tests/test_clear_on_set.rs::setting_an_unset_seed_to_its_own_default_discards_the_record | MathMap (out of scope)
+tests/test_clear_on_set.rs::re_setting_an_explicit_seed_to_the_same_value_keeps_the_record | MathMap (out of scope)
+tests/test_class_attrs.rs::spec_frame_domain_is_cleaned | SpecFrame (out of scope)
+tests/test_class_attrs.rs::dsb_centre_with_no_topocentric_frequency_is_rejected | DSBSpecFrame (out of scope)
+tests/test_class_attrs.rs::flux_frame_domain_is_cleaned | FluxFrame (out of scope)
+tests/test_frame_api.rs::ref_pos_follows_the_c_library | SpecFrame (out of scope)
+tests/test_frame_api.rs::density_follows_the_c_library | FluxFrame (out of scope)
+tests/test_channel_dump_oracle.rs::a_clone_shares_the_sink | MocChan (out of scope)
+tests/test_channel_dump_oracle.rs::a_channel_read_from_a_dump_has_no_source | MocChan (out of scope)
+tests/test_fixture_full_dump_oracle.rs::write_full_dumps | Rust-only API (ignored test writing the port's text for comparison by hand; the gate lists every difference)
+tests/test_serialisation.rs::any_object_as_mapping_returns_none_for_basic_frame | Rust-only API (AnyObject::as_mapping; in AST every Frame is a Mapping)
+tests/test_serialisation.rs::any_object_as_frame_returns_none_for_zoom_map | Rust-only API (AnyObject)
+tests/test_serialisation.rs::any_object_into_mapping | Rust-only API (AnyObject)
+tests/test_serialisation.rs::any_object_into_frame | Rust-only API (AnyObject)
+tests/test_serialisation.rs::any_object_frameset_is_both | Rust-only API (AnyObject)
+tests/test_serialisation.rs::any_object_debug | Rust-only API (Debug formatting)
+tests/test_serialisation.rs::round_trip_skyframe_into_frame | Rust-only API (AnyObject)
+tests/test_serialisation.rs::any_object_skyframe_not_a_mapping | Rust-only API (AnyObject::as_mapping; in AST every Frame is a Mapping)
+tests/test_serialisation.rs::a_keymap_is_neither_a_mapping_nor_a_frame_nor_a_region | Rust-only API (AnyObject)
+tests/test_serialisation.rs::round_trip_circle | Circle (Region, out of scope)
+tests/test_serialisation.rs::round_trip_box_region | Box (Region, out of scope)
+tests/test_serialisation.rs::round_trip_polygon | Polygon (Region, out of scope)
+tests/test_serialisation.rs::round_trip_interval | Interval (Region, out of scope)
+tests/test_serialisation.rs::round_trip_null_region | NullRegion (Region, out of scope)
+tests/test_serialisation.rs::round_trip_ellipse | Ellipse (Region, out of scope)
+tests/test_serialisation.rs::round_trip_pointlist | PointList (Region, out of scope)
+tests/test_serialisation.rs::round_trip_cmpregion | CmpRegion and Circle (Region, out of scope)
+tests/test_serialisation.rs::round_trip_prism | Prism, Circle and Interval (Region, out of scope)
+tests/test_serialisation.rs::round_trip_negated_circle | Circle (Region, out of scope)
+tests/test_fitschan.rs::native_round_trip_zoommap | out-of-scope method FitsChan.write
+tests/test_fitschan.rs::native_round_trip_skyframe | out-of-scope method FitsChan.write
+tests/test_fitschan.rs::native_rewind_and_reread | out-of-scope method FitsChan.write
+tests/test_fitschan.rs::translate_projp_retains_source_cards | out-of-scope method FitsChan.write
+tests/test_fitschan_native_keyword.rs::polco_loads | MathMap (out of scope)
+tests/test_fitschan_native_keyword.rs::polco2_loads | MathMap (out of scope)
+tests/test_fitschan_native_keyword.rs::specflux_loads | SpecFrame (out of scope)
+src/fitschan/mod.rs::native_round_trip | out-of-scope method FitsChan.write
+src/fitschan/mod.rs::rewrite_after_read_re_emits_wcs_cards | out-of-scope method FitsChan.write
+tests/test_fitschan_cursor_oracle.rs::excluded_cases_still_differ | out-of-scope method FitsChan.write
+tests/test_fitschan_cursor_oracle.rs::native_full_1_matches_c_but_for_process_counts | out-of-scope method FitsChan.write
+src/fitschan/wcs_read.rs::decode_1d_spectral | SpecFrame (out of scope)
+src/fitschan/wcs_read.rs::decode_3d_mixed | SpecFrame (out of scope)
+src/fitschan/wcs_read.rs::build_pixel_to_world_handles_non_adjacent_celestial_axes | SpecFrame (out of scope)
+src/fitschan/spec_trans.rs::rename_keyword_moves_value_and_comment_to_new_name | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::rename_keyword_no_op_when_source_absent | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::rename_keyword_no_op_when_destination_already_present | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::translates_radecsys_to_radesys | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::keeps_radesys_when_both_present | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::translates_longpole_to_lonpole | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::translates_cdjjjiii_to_pc_with_unit_cdelt_for_fits_iraf | out-of-scope method FitsChan.read(FITS-IRAF)
+src/fitschan/spec_trans.rs::cdjjjiii_translated_and_consumed_under_fits_iraf | out-of-scope method FitsChan.read(FITS-IRAF)
+src/fitschan/spec_trans.rs::translates_projp_to_pv_on_latitude_axis | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::projp_used_when_pv_set_is_incomplete | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::translates_cnxxx_to_alt_letter_form_for_fits_pc | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::cnxxx_zero_cdelt_falls_back_to_crval_or_one | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/spec_trans.rs::translates_class_spectral_crval_and_specsys | out-of-scope method FitsChan.read(FITS-CLASS)
+src/fitschan/spec_trans.rs::rename_keyword_handles_float_values | out-of-scope method FitsChan.read(FITS-PC)
+src/fitschan/wcs_write/mod.rs::date_str_to_mjd_roundtrip_modern | out-of-scope method FitsChan.write
+src/fitschan/wcs_write/mod.rs::date_str_to_mjd_roundtrip_legacy | out-of-scope method FitsChan.write
+tests/test_fitschan_wcs.rs::read_spectral_header | SpecFrame (out of scope)
+tests/test_fitschan_wcs.rs::axes_swap_non_adjacent_celestial_axes | SpecFrame (out of scope)
+tests/test_fitschan_wcs.rs::jan_class_no_naxis_keyword | FITS-CLASS encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_wcs.rs::serpens_dut1_is_seconds | FITS-IRAF encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_wcs.rs::serpens_swapped_axis_transform | FITS-IRAF encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_wcs.rs::class_noproj_builds_sfl | FITS-CLASS encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_wcs.rs::crota_3d_forward_matches_oracle_inverse_undefined | SpecFrame (out of scope)
+tests/test_fitschan_wcs.rs::carlin_off_car_header_keeps_the_spherical_projection | needs simplification
+tests/test_fitschan_read.rs::log_suffix_is_stripped_from_the_domain_and_symbol | MathMap (out of scope)
+tests/test_fitschan_read.rs::unset_system_still_leaves_system_unset | Rust-only API (SkyFrame::unset_system)
+tests/test_fitschan_read.rs::dsb_centre_prefers_axref_over_crval | DSBSpecFrame (out of scope)
+tests/test_fitschan_astwarn.rs::badpv_warning_names_each_unusable_parameter_in_ascending_order | FITS-IRAF encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_astwarn.rs::badctype_warning_names_the_legal_ctype_and_precedes_naxis1 | SpecFrame (out of scope)
+tests/test_fitschan_astwarn.rs::strict_write_warning_is_an_error | out-of-scope method FitsChan.write
+tests/test_fitschan_astwarn.rs::strict_read_warning_is_an_error | FITS-PC encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_astwarn.rs::strict_sweep_warning_is_an_error | FITS-PC encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_time.rs::dtai_set_on_world_frame_for_jcmt | SpecFrame (out of scope)
+tests/test_fitschan_time.rs::dtai_set_on_world_frame_for_ukirt | SpecFrame (out of scope)
+tests/test_fitschan_time.rs::dtai_ignored_for_other_telescope | SpecFrame (out of scope)
+tests/test_fitschan_time.rs::dtai_ignored_when_telescop_absent | SpecFrame (out of scope)
+tests/test_fitschan_time.rs::dut1_set_on_world_frame_regardless_of_telescop | SpecFrame (out of scope)
+tests/test_fitschan_c_inline.rs::sip_header_does_not_write_as_fits_wcs | out-of-scope method FitsChan.write
+tests/test_fitschan_c_inline.rs::alternate_axes_with_a_bad_set | SpecFrame (out of scope)
+tests/test_fitschan_c_inline.rs::show_fits_succeeds | astShowFits (out-of-scope method; jniast has no showFits)
+tests/test_fitschan_c_inline.rs::azel_writes_as_fits_wcs | out-of-scope method FitsChan.write
+tests/test_fitschan_c_inline.rs::non_linear_spectral_writes | SpecFrame (out of scope)
+tests/test_fitschan_c_inline.rs::supergalactic_writes_slon | out-of-scope method FitsChan.write
+tests/test_fitschan_c_inline.rs::sky_systems_through_five_encodings | out-of-scope method FitsChan.write
+tests/test_fitschan_c_inline.rs::spectral_systems_through_fits_wcs | SpecFrame (out of scope)
+tests/test_fitschan_c_inline.rs::log_spectral_axis_writes_freq_log | MathMap and SpecFrame (out of scope)
+tests/test_fitschan_c_inline.rs::date_and_observatory_write_back | out-of-scope method FitsChan.write

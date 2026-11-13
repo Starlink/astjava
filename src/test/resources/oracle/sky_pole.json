@@ -1,0 +1,8 @@
+{
+  "source": "crates/starlink-ast/tests/sky_pole_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/sky_pole_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "CASES": [["tan_pole","TAN","LONPOLE = 170.0\n",170.0,null,true],["sin_zenithal_pole","SIN","LONPOLE = 170.0\n",170.0,null,true],["sin_slant_pole","SIN","PV2_1   = 0.1\nLONPOLE = 170.0\n",170.0,null,true],["azp_zenithal_pole","AZP","PV2_1   = 2.0\nLONPOLE = 170.0\n",170.0,null,true],["azp_tilted_pole","AZP","PV2_1   = 2.0\nPV2_2   = 10.0\nLONPOLE = 170.0\n",170.0,null,true],["szp_default_pole","SZP","LONPOLE = 170.0\n",170.0,null,true],["hpx_pole","HPX","LONPOLE = 170.0\n",null,null,false],["car_pole","CAR","LONPOLE = 170.0\n",null,null,false],["hpx_default","HPX","",360.0,null,true],["car_default","CAR","",360.0,null,true],["sin_slant_default","SIN","PV2_1   = 0.1\n",null,null,true],["azp_tilted_default","AZP","PV2_1   = 2.0\nPV2_2   = 10.0\n",null,null,true],["szp_default","SZP","",null,null,true],["sin_slant_latpole","SIN","PV2_1   = 0.1\nLATPOLE = 20.0\n",null,null,true]]
+  }
+}
