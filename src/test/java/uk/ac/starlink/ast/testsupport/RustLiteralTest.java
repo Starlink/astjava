@@ -82,6 +82,17 @@ class RustLiteralTest {
     }
 
     @Test
+    void structLiteralsAndImportedVariantsInARestrictedConstant() {
+        Map<String, Object> m = RustLiteral.parse("use super::Row;\nuse x::ErrorCode;\n"
+                + "pub(super) const C: &[Row] = &[Row { name: \"a\", code: Some(ErrorCode::Rderr), n: None },"
+                + " Row { name: \"b\", code: None, n: Some(2), }];\n");
+        assertEquals(
+                "[{\"name\":\"a\",\"code\":{\"variant\":\"Rderr\"},\"n\":null},"
+                        + "{\"name\":\"b\",\"code\":null,\"n\":2}]",
+                CasesToJson.toJson(m.get("C")));
+    }
+
+    @Test
     void aTypeItemWithAnArrayTypeIsSkipped() {
         Map<String, Object> m =
                 RustLiteral.parse("pub type Quad = (&'static str, [f64; 2], usize);\npub const N: i32 = 3;\n");

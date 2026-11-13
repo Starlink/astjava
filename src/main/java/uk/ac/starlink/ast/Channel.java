@@ -474,6 +474,11 @@ public class Channel extends AstObject {
         return km;
     }
 
+    /** Adds a warning to those {@link #warnings} gives for the most recent read or write. */
+    void addWarning(String text) {
+        warningList.add(text);
+    }
+
     /** The texts of the warnings from the most recent read or write. */
     List<String> warningTexts() {
         return new ArrayList<>(warningList);

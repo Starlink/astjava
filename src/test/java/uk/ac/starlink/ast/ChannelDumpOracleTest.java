@@ -24,12 +24,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * which this library does not have. The dumps are compared line for line with C's.
  *
  * <p>{@code oracle/channel_dump.json} comes from {@code tools/oracle_fixtures/channel_dump_probe.c}.
- * Its MocChan and FitsChan cases are out of scope and are not run: the {@code mocchan} cases ({@link
- * #MOCCHAN_CASES}) need MocChan, and the {@code fitschan} cases need FitsChan; the loads of each are
- * recognised by the class they hold. For the same reason {@code a_clone_shares_the_sink} and {@code
- * a_channel_read_from_a_dump_has_no_source} (MocChan), and {@code
- * a_dump_leaves_the_source_cards_in_the_fitschan} and {@code
- * a_keymap_holding_a_fitschan_round_trips} (FitsChan) are deferred.
+ * Its MocChan cases are out of scope and are not run: the {@code mocchan} cases ({@link
+ * #MOCCHAN_CASES}) need MocChan, and its loads are recognised by the class they hold. For the same
+ * reason {@code a_clone_shares_the_sink} and {@code a_channel_read_from_a_dump_has_no_source} are
+ * deferred. The {@code fitschan_used} case reads a FITS-WCS header first and is left to Task 23.
  */
 class ChannelDumpOracleTest {
 
@@ -37,12 +35,96 @@ class ChannelDumpOracleTest {
     private static final List<String> CHANNEL_CASES =
             Arrays.asList("channel", "channel_set", "channel_set_defaults", "channel_clamped", "channel_full_negative");
 
+    /** The cases of the probe made with a FitsChan. */
+    private static final List<String> FITSCHAN_CASES = Arrays.asList(
+            "fitschan",
+            "fitschan_cards",
+            "fitschan_attrs",
+            "fitschan_attrs_default",
+            "fitschan_guessed_encoding",
+            "fitschan_source");
+
+    /** The cards the source of the {@code fitschan_source} case gives. */
+    private static final List<String> SOURCE = Arrays.asList("A       =                    1", "B       = 'two'");
+
     /** The cases of the probe made with a MocChan, which is out of scope. */
     private static final List<String> MOCCHAN_CASES =
             Arrays.asList("mocchan", "mocchan_string", "mocchan_json", "mocchan_ident");
 
-    /** The Channel each Channel case of the probe makes. */
+    /** The FitsChan a FitsChan case of the probe makes. */
+    private static FitsChan fitschan(String name) {
+        FitsChan fc = new FitsChan();
+        switch (name) {
+            case "fitschan":
+                break;
+            case "fitschan_cards":
+                for (String card : new String[] {
+                    "INTKEY  =                   42 / an integer",
+                    "FLTKEY  =                  1.5 / a float",
+                    "STRKEY  = 'hello   '           / a string",
+                    "LOGKEY  =                    T",
+                }) {
+                    fc.putFits(card, false);
+                }
+                fc.setFits("CPXF", 1.5, -2.25, "complex float", false);
+                fc.setFits("CPXI", 3, 4, "", false);
+                for (String card : new String[] {
+                    "BIGINT  =         123456789012 / 64-bit",
+                    "UNDEFKEY=                      / no value",
+                    "COMMENT a comment card",
+                    "HISTORY   history text   ",
+                    "        blank keyword",
+                    "LONGSTR = 'abc&'",
+                    "CONTINUE  'def'",
+                }) {
+                    fc.putFits(card, false);
+                }
+                fc.setCard(3);
+                break;
+            case "fitschan_attrs":
+                fc.set("Encoding=FITS-WCS, FitsDigits=10, FitsRounding=5, AltAxes=IDENT, DefB1950=0,"
+                        + " IgnoreBadAlt=1, CDMatrix=1, CarLin=1, SipReplace=0, FitsTol=0.5, PolyTan=1,"
+                        + " SipOK=0, Iwc=1, Clean=1, Warnings=BadKeyName, FitsAxisOrder=<copy>, Ident=fc,"
+                        + " Skip=0, Full=0");
+                break;
+            case "fitschan_attrs_default":
+                fc.set("Encoding=NATIVE, FitsDigits=17, AltAxes=ALL, DefB1950=1, IgnoreBadAlt=0, CDMatrix=0,"
+                        + " CarLin=0, SipReplace=1, FitsTol=0.1, PolyTan=-1, SipOK=1, Iwc=0, Clean=0,"
+                        + " Warnings=, Skip=1, Full=-1");
+                break;
+            case "fitschan_guessed_encoding":
+                for (String card : new String[] {
+                    "NAXIS   =                    2",
+                    "CTYPE1  = 'RA---TAN'",
+                    "CTYPE2  = 'DEC--TAN'",
+                    "CRVAL1  =                 10.0",
+                    "CRVAL2  =                 20.0",
+                    "CRPIX1  =                 50.0",
+                    "CRPIX2  =                 60.0",
+                    "CDELT1  =               -0.001",
+                    "CDELT2  =                0.001",
+                    "OTHER   =                    1",
+                }) {
+                    fc.putFits(card, false);
+                }
+                fc.clear("Card");
+                fc.findFits("CRVAL2", false);
+                fc.retainFits();
+                fc.clear("Card");
+                break;
+            case "fitschan_source":
+                return new FitsChan(SOURCE.iterator());
+            default:
+                throw new IllegalArgumentException("no case " + name);
+        }
+        return fc;
+    }
+
+    /** The Channel each Channel or FitsChan case of the probe makes. */
     private static Channel object(String name) {
+        if (FITSCHAN_CASES.contains(name)) {
+            return fitschan(name);
+        }
         Channel ch = new Channel(null, null);
         if ("channel".equals(name)) {
             return ch;
@@ -74,10 +156,10 @@ class ChannelDumpOracleTest {
 
     /** Whether a case of the probe needs a class that is out of scope. */
     private static boolean outOfScope(String name) {
-        if (CHANNEL_CASES.contains(name)) {
+        if (CHANNEL_CASES.contains(name) || FITSCHAN_CASES.contains(name)) {
             return false;
         }
-        assertTrue(MOCCHAN_CASES.contains(name) || name.startsWith("fitschan"), "unknown case " + name);
+        assertTrue(MOCCHAN_CASES.contains(name) || "fitschan_used".equals(name), "unknown case " + name);
         return true;
     }
 
@@ -107,7 +189,7 @@ class ChannelDumpOracleTest {
             String again = ChannelText.dump(ChannelText.read(text));
             assertEquals(strings(c.get(2)), CValues.lines(again), name + ": dump read back");
         }
-        assertEquals(CHANNEL_CASES.size(), run, "cases run");
+        assertEquals(CHANNEL_CASES.size() + FITSCHAN_CASES.size(), run, "cases run");
     }
 
     @Test
@@ -126,7 +208,7 @@ class ChannelDumpOracleTest {
             String text = new String(out.toByteArray(), StandardCharsets.UTF_8);
             assertEquals(strings(c.get(1)), CValues.lines(text), name);
         }
-        assertEquals(CHANNEL_CASES.size(), run, "cases run");
+        assertEquals(CHANNEL_CASES.size() + FITSCHAN_CASES.size(), run, "cases run");
     }
 
     @Test
@@ -136,7 +218,7 @@ class ChannelDumpOracleTest {
             String name = c.get(0).asText();
             String text = String.join("\n", strings(c.get(1)));
             List<String> missing = NativeClasses.missing(text);
-            if (missing.contains("MocChan") || missing.contains("FitsChan")) {
+            if (missing.contains("MocChan")) {
                 continue;
             }
             run++;
@@ -153,6 +235,27 @@ class ChannelDumpOracleTest {
             assertEquals(0, status, name + ": C reported an error");
             assertEquals(dump, CValues.lines(ChannelText.dump(obj)), name);
         }
-        assertEquals(1, run, "cases run");
+        assertEquals(9, run, "cases run");
+    }
+
+    /** A dump reads the source, leaving its cards in the FitsChan, and a second dump is the same. */
+    @Test
+    void aDumpLeavesTheSourceCardsInTheFitschan() {
+        FitsChan fc = new FitsChan(SOURCE.iterator());
+        String first = ChannelText.dump(fc);
+        assertEquals(first, ChannelText.dump(fc));
+        assertEquals(2, fc.getNcard());
+    }
+
+    @Test
+    void aKeymapHoldingAFitschanRoundTrips() {
+        FitsChan fc = new FitsChan();
+        fc.putFits("A       =                    1", false);
+        KeyMap km = new KeyMap();
+        km.mapPut0A("fc", fc, null);
+        KeyMap back = (KeyMap) ChannelText.read(ChannelText.dump(km));
+        FitsChan read = (FitsChan) back.mapGet0A("fc");
+        read.clear("Card");
+        assertEquals(1, (int) read.getFitsI("A"));
     }
 }
