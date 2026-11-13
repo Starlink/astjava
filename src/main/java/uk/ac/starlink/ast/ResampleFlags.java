@@ -21,7 +21,7 @@ public class ResampleFlags {
     private boolean conserveFlux;
 
     /** Constructs a set of flags, all false. */
-    public ResampleFlags() {}
+    ResampleFlags() {}
 
     /**
      * Sets the NoBad flag: whether output pixels that cannot be given a value are left unchanged

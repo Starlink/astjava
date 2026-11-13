@@ -27,7 +27,9 @@ import uk.ac.starlink.ast.testsupport.Deferred;
  * Checks the public API against jniast's, as extracted into {@code jniast-api.txt} by
  * {@code tools/ExtractApi.java}: every member of every jniast class this library has exists with
  * the same name, parameter types, return type and access, except the members listed in
- * {@code jniast-api-exclusions.txt}, which must not exist.
+ * {@code jniast-api-exclusions.txt}, which must not exist; and every public or protected member
+ * of those classes is a jniast member, overrides one or a member of a JDK type, or is listed with
+ * its reason in {@code jniast-api-additions.txt}.
  */
 class JniastApiTest {
 
@@ -288,9 +290,146 @@ class JniastApiTest {
         assertEquals(new TreeSet<>(IN_SCOPE), present);
     }
 
-    private static String readExclusions() throws IOException {
-        try (InputStream in = JniastApiTest.class.getResourceAsStream("/jniast-api-exclusions.txt")) {
+    private static String readResource(String name) throws IOException {
+        try (InputStream in = JniastApiTest.class.getResourceAsStream("/" + name)) {
             return new String(readAll(in), StandardCharsets.UTF_8);
         }
+    }
+
+    private static String readExclusions() throws IOException {
+        return readResource("jniast-api-exclusions.txt");
+    }
+
+    /** A class as jniast names it: {@code Mapping.Interpolator} for a nested class. */
+    private static String jniastName(Class<?> c) {
+        return display(c);
+    }
+
+    /** Whether a member with access modifiers {@code mods} is part of the API. */
+    private static boolean isApi(int mods) {
+        return Modifier.isPublic(mods) || Modifier.isProtected(mods);
+    }
+
+    /** The in-scope classes and the public or protected classes nested in them. */
+    private static List<Class<?>> apiClasses() {
+        List<Class<?>> out = new ArrayList<>();
+        List<Class<?>> todo = new ArrayList<>();
+        for (String name : IN_SCOPE) {
+            todo.add(lookup(name));
+        }
+        while (!todo.isEmpty()) {
+            Class<?> c = todo.remove(0);
+            out.add(c);
+            for (Class<?> n : c.getDeclaredClasses()) {
+                if (isApi(n.getModifiers())) {
+                    todo.add(n);
+                }
+            }
+        }
+        return out;
+    }
+
+    /** Whether {@code k}, a supertype of an API class, belongs to the JDK. */
+    private static boolean isJdk(Class<?> k) {
+        return !k.getName().startsWith(PACKAGE + ".");
+    }
+
+    /**
+     * Whether {@code method}, declared in {@code c}, overrides a method of a JDK type {@code c}
+     * inherits from, such as {@code Object.toString} or {@code Iterator.next}.
+     */
+    private static boolean overridesJdk(Class<?> c, Method method) {
+        List<Class<?>> types = new ArrayList<>(hierarchy(c));
+        types.add(Object.class);
+        for (Class<?> k : types) {
+            if (k == c || !isJdk(k)) {
+                continue;
+            }
+            for (Method km : k.getDeclaredMethods()) {
+                if (km.getName().equals(method.getName())
+                        && Arrays.equals(km.getParameterTypes(), method.getParameterTypes())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The keys of the public and protected members of the API classes that are not jniast members
+     * of the class or of a class it inherits from, as {@code jniast-api.txt} keys them ({@code
+     * Class.name(types)}, {@code Class.name} for a field, {@code Class} for a type).
+     */
+    private static Set<String> additions(List<Member> api) {
+        Set<String> jniast = new TreeSet<>();
+        Set<String> types = new TreeSet<>();
+        for (Member m : api) {
+            if ("type".equals(m.kind)) {
+                types.add(m.owner);
+            } else {
+                jniast.add("field".equals(m.kind) ? m.owner + "." + m.name : m.key);
+            }
+        }
+        Set<String> out = new TreeSet<>();
+        for (Class<?> c : apiClasses()) {
+            String owner = jniastName(c);
+            List<String> owners = new ArrayList<>();
+            for (Class<?> k : hierarchy(c)) {
+                if (!isJdk(k)) {
+                    owners.add(jniastName(k));
+                }
+            }
+            if (!types.contains(owner)) {
+                out.add(owner);
+            }
+            for (Field f : c.getDeclaredFields()) {
+                if (isApi(f.getModifiers()) && !f.isSynthetic() && !inherited(jniast, owners, f.getName())) {
+                    out.add(owner + "." + f.getName());
+                }
+            }
+            for (Constructor<?> k : c.getDeclaredConstructors()) {
+                String sig = "<init>(" + String.join(",", paramNames(k.getParameterTypes())) + ")";
+                if (isApi(k.getModifiers()) && !k.isSynthetic() && !jniast.contains(owner + "." + sig)) {
+                    out.add(owner + "." + sig);
+                }
+            }
+            for (Method m : c.getDeclaredMethods()) {
+                if (!isApi(m.getModifiers()) || m.isSynthetic() || m.isBridge() || overridesJdk(c, m)) {
+                    continue;
+                }
+                String sig = m.getName() + "(" + String.join(",", paramNames(m.getParameterTypes())) + ")";
+                if (!inherited(jniast, owners, sig)) {
+                    out.add(owner + "." + sig);
+                }
+            }
+        }
+        return out;
+    }
+
+    /** Whether one of {@code owners} has the jniast member {@code member}. */
+    private static boolean inherited(Set<String> jniast, List<String> owners, String member) {
+        for (String o : owners) {
+            if (jniast.contains(o + "." + member)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Test
+    void everyPublicMemberIsAJniastMemberOrAListedAddition() throws IOException {
+        Map<String, String> listed =
+                Deferred.parse(readResource("jniast-api-additions.txt"), "jniast-api-additions.txt");
+        Set<String> extra = additions(api());
+        Set<String> unlisted = new TreeSet<>(extra);
+        unlisted.removeAll(listed.keySet());
+        Set<String> stale = new TreeSet<>(listed.keySet());
+        stale.removeAll(extra);
+        assertTrue(
+                unlisted.isEmpty(),
+                "Public members that jniast lacks, not in jniast-api-additions.txt:\n" + String.join("\n", unlisted));
+        assertTrue(
+                stale.isEmpty(),
+                "jniast-api-additions.txt entries naming no such member:\n" + String.join("\n", stale));
     }
 }
