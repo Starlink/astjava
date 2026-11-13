@@ -31,8 +31,10 @@ import uk.ac.starlink.ast.testsupport.CValues;
  * it, so outputs are compared with {@link CValues#withinLibmRounding}; two NaN outputs compare
  * equal whatever their sign and payload. At the points of {@link #WIDER}, a formula amplifies a
  * one-ULP difference of a libm function far beyond that; each is listed with its measured size
- * and cause, and the test fails if one of them comes within libm rounding, so the list holds only
- * points that need it.
+ * and cause, and its tolerance is an upper bound on the difference. The sizes were measured with
+ * the {@code Math} of one runtime (aarch64 HotSpot), which is not C's libm and whose last bits
+ * differ between platforms and JIT compilers, so on another runtime a listed point may come within
+ * libm rounding; that is not a failure, only a difference beyond the bound is.
  */
 class WcslibGoldenTest {
 
@@ -221,9 +223,9 @@ class WcslibGoldenTest {
                 return;
             }
             widerSeen.add(what);
-            if (close) {
-                failures.add(what + " is listed in WIDER but is within libm rounding" + values);
-            } else if (wider.tol != null && Math.max(scaled(out[0], w0), scaled(out[1], w1)) > wider.tol) {
+            // A listed point within libm rounding passes: whether it needs its wider bound depends
+            // on the runtime's Math (on x86-64 most of them do not).
+            if (!close && wider.tol != null && Math.max(scaled(out[0], w0), scaled(out[1], w1)) > wider.tol) {
                 failures.add(what + " is beyond its wider tolerance " + wider.tol + " (" + wider.cause + ")" + values);
             }
         }
