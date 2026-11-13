@@ -300,6 +300,13 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `fitschan/wcs_keywords.rs` looks each keyword up and takes the first card, so that header reads as FK5.
 - Java: as C; of the cards for one keyword the last whose value converts gives the value, and a later card that does not convert is passed over (`fitschan.c:37357-37373`).
 
+### More than 99 WCS axes
+
+- C: the FitsStore holds the keywords of intermediate axes 0 to 98 only, and `GetItem`, `GetItemC`, `SetItem` and `SetItemC` raise AST__INTER for any other axis (`fitschan.c:13354-13357`, `fitschan.c:13869-13872`, `fitschan.c:27993-27996`), so a header with `WCSAXES = 1000` fails with "intermediate axis index 99 is invalid".
+  With `WCSAXES = 2147483647` C first builds a Frame of that many axes in `WcsMapFrm`, until its memory runs out.
+- Rust: `fitschan/fits_store.rs` `FitsStore::new` makes arrays of WCSAXES elements, and WCSAXES by WCSAXES for the PC and CD matrices, with no limit.
+- Java: as C for `WCSAXES = 1000`, and AST__INTER, with the same message, for any number of WCS axes above 99.
+
 ### SpecTrans translations of FITS-PC keywords for every encoding
 
 - C: `SpecTrans` reads RADECSYS, LONGPOLE and CmVALi, CmPIXi, CmYPEi and CmNITi, and writes CDELTis and PCj_is from CmELTi, whatever the encoding (`fitschan.c:31656-31675`, `fitschan.c:31962-32098`).

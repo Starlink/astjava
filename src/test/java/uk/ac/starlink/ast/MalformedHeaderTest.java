@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.Fixtures;
 
 /**
  * Malformed cards in a celestial FITS-WCS header: a {@code CRVAL1} whose value is a string, and a
@@ -171,5 +172,38 @@ class MalformedHeaderTest {
             fail("the read threw " + e.getClass().getName() + ", which C cannot", e);
         }
         fail("Strict makes the badval warning an error");
+    }
+
+    /** The error of reading {@code wcsconv/inputs/sfl-origin.head} with a WCSAXES card of {@code n} first. */
+    // Any exception or error other than an AstException is caught to report its type.
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private static AstException wcsaxesError(String n) {
+        FitsChan fc = FitsHeaders.chanFromLines(
+                "WCSAXES =           " + n + "\n" + Fixtures.read("wcsconv/inputs/sfl-origin.head"));
+        try {
+            fc.read();
+        } catch (AstException e) {
+            return e;
+        } catch (RuntimeException | Error e) {
+            throw new AssertionError("the read threw " + e.getClass().getName() + ", which C cannot", e);
+        }
+        return fail("the read gave no error");
+    }
+
+    /**
+     * C's FitsStore holds the keywords of intermediate axes 0 to 98 only, and the read fails with
+     * AST__INTER when it asks for the 100th axis (fitschan.c:13869-13872); the pinned C library
+     * reports that for WCSAXES = 1000. For WCSAXES = 2147483647 it first makes a Frame of that
+     * many axes, until its memory runs out.
+     */
+    @Test
+    void moreWcsAxesThanAFitsStoreHolds() {
+        for (String n : Arrays.asList("2147483647", "1000")) {
+            AstException e = wcsaxesError(n);
+            assertEquals(AstException.AST__INTER, e.getStatus(), n + ": " + e.getMessage());
+            assertTrue(
+                    e.getMsgText().contains("AST internal error; intermediate axis index 99 is invalid."),
+                    e.getMsgText());
+        }
     }
 }

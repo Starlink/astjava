@@ -20,6 +20,9 @@ final class FitsWcsKeywords {
 
     private FitsWcsKeywords() {}
 
+    /** The number of intermediate axes C's FitsStore holds keywords for. */
+    private static final int MAX_WCS_AXES = 99;
+
     /** The default of a FitsChan's FitsRounding attribute. */
     private static final int DEFAULT_FITS_ROUNDING = 10;
 
@@ -98,7 +101,8 @@ final class FitsWcsKeywords {
      * <p>The keywords describing the WCS are recorded as consumed, as C's {@code WcsFcRead} marks
      * them; the observation details (the date, DUT1, DTAI and OBSGEO) are not.
      *
-     * @throws AstException with status {@code AST__BDFTS} if there are no WCS axes
+     * @throws AstException with status {@code AST__BDFTS} if there are no WCS axes, or {@code
+     *     AST__INTER} if there are more than the 99 C's FitsStore holds
      */
     static FitsStore extractWcsKeywords(FitsCardList cards, char s, int npix) {
         return extractWcsKeywords(cards, s, npix, DEFAULT_FITS_ROUNDING);
@@ -115,6 +119,14 @@ final class FitsWcsKeywords {
         int naxis = wcsaxes != null ? wcsaxes : npix;
         if (naxis == 0) {
             throw Ast.err(AstException.AST__BDFTS, "WCSAXES is zero");
+        }
+        // C's FitsStore holds the keywords of intermediate axes 0 to 98 only: GetItem, GetItemC,
+        // SetItem and SetItemC raise AST__INTER for any other axis (fitschan.c:13354-13357,
+        // 13869-13872, 27993-27996), and the read asks for every axis up to the number of WCS axes.
+        if (naxis > MAX_WCS_AXES) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    "GetItemC(fitschan): AST internal error; intermediate axis index " + MAX_WCS_AXES + " is invalid.");
         }
         FitsStore store = new FitsStore(naxis);
         store.wcsaxes = wcsaxes;
