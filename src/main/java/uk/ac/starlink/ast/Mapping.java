@@ -573,7 +573,15 @@ public abstract class Mapping extends AstObject {
      * Transforms {@code npoint} points under the NaN protocol: bad input values (and any that are
      * not finite) are turned into NaN once, the transformation runs through {@link
      * #transformIntoNan}, and NaN and infinite outputs are turned into {@link #AST__BAD} once at
-     * the end. The result is that of {@link #transform}.
+     * the end.
+     *
+     * <p>The result is that of {@link #transform} except where the transformation makes a value
+     * that is not finite from finite inputs, such as an overflow: {@link #transform} returns that
+     * value as it is, as C's {@code astTransform} does by default, where this returns {@link
+     * #AST__BAD}, as C does only when the environment variable {@code AST_REPLACE_NAN} is set to 1
+     * (mapping.c:24815, pointset.c:1896). A ZoomMap with factor 1.0e300 applied to 1.0e300 gives Infinity
+     * through {@link #transform} and in C by default, and {@link #AST__BAD} here. The public
+     * transformation methods use {@link #transform}, not this.
      *
      * @return the transformed points, {@code [ncoord][npoint]}
      */

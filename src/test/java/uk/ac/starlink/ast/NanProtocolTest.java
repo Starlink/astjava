@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Translation of Rust {@code tests/test_nan_protocol.rs}: the NaN protocol ({@link
- * Mapping#transformNanProtocol}) gives the results of {@link Mapping#transform}.
+ * Mapping#transformNanProtocol}) gives the results of {@link Mapping#transform}, except for a value
+ * that is not finite made from finite inputs.
  *
  * <p>{@code nan_protocol_forward_matches_transform}, {@code
  * nan_protocol_inverse_matches_transform} and {@code nan_protocol_propagates_bad_and_nan_inputs}
@@ -231,5 +232,16 @@ class NanProtocolTest {
         // The neighbouring valid point stays finite.
         assertTrue(Double.isFinite(out[0][1]) && out[0][1] != BAD);
         assertTrue(Double.isFinite(out[1][1]) && out[1][1] != BAD);
+    }
+
+    @Test
+    void anOverflowIsBadOnlyUnderTheNanProtocol() {
+        // The pinned C library gives Infinity for this by default, and AST__BAD with
+        // AST_REPLACE_NAN=1.
+        ZoomMap zoom = new ZoomMap(1, 1.0e300);
+        double[][] in = {{1.0e300}};
+        assertEquals(Double.POSITIVE_INFINITY, zoom.transform(in, 1, true)[0][0]);
+        assertEquals(Double.POSITIVE_INFINITY, zoom.tran1(1, new double[] {1.0e300}, true)[0]);
+        assertEquals(BAD, zoom.transformNanProtocol(in, 1, true)[0][0]);
     }
 }
