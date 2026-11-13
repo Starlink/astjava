@@ -1,7 +1,5 @@
 package uk.ac.starlink.ast;
 
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -9,10 +7,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.ProbeData;
@@ -30,22 +25,6 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * if none), the status and the warnings.
  */
 class ChannelReadOracleTest {
-
-    /**
-     * Cases read differently from C, with the reason; {@code excludedCasesStillDiffer} fails once
-     * one matches. C's loaders read their numbers with {@code astReadDouble} and {@code
-     * astReadInt}, which report AST__BADIN for a string value, and C has then read only up to that
-     * class's part of the Object, so its next read starts there; here the string is taken without
-     * error and the whole Object is read before it is loaded.
-     */
-    private static final Map<String, String> EXCLUDED = excludedCases();
-
-    private static Map<String, String> excludedCases() {
-        Map<String, String> m = new LinkedHashMap<>();
-        m.put("string_for_double", "a string read as a number is not an error");
-        m.put("string_for_int", "a string read as a number is not an error");
-        return Collections.unmodifiableMap(m);
-    }
 
     /** One read as the probe prints it: the class read, the status and the warnings. */
     private static List<Object> read(Channel ch) {
@@ -115,30 +94,10 @@ class ChannelReadOracleTest {
     }
 
     @Test
-    void excludedCasesStillDiffer() {
-        for (Map.Entry<String, String> e : EXCLUDED.entrySet()) {
-            JsonNode found = null;
-            for (JsonNode c : cases()) {
-                if (c.get(0).asText().equals(e.getKey())) {
-                    found = c;
-                }
-            }
-            assertNotNull(found, "no case " + e.getKey());
-            assertNotEquals(
-                    want(found.get(3)),
-                    got(found),
-                    e.getKey() + " now matches C; remove it from EXCLUDED (" + e.getValue() + ")");
-        }
-    }
-
-    @Test
     void readsMatchC() {
         List<String> failed = new ArrayList<>();
         for (JsonNode c : cases()) {
             String name = c.get(0).asText();
-            if (EXCLUDED.containsKey(name)) {
-                continue;
-            }
             List<List<Object>> want = want(c.get(3));
             List<List<Object>> got = got(c);
             for (int i = 0; i < want.size(); i++) {

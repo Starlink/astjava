@@ -1,7 +1,10 @@
 package uk.ac.starlink.ast;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * One Object's description in AST's native text format: its class name, then its items in order.
@@ -146,6 +149,12 @@ final class NativeNode {
         final boolean helpful;
         final Flag read = new Flag();
 
+        /**
+         * The value's text as C's reader holds it (channel.c {@code AstChannelValue}), with any
+         * quotes removed, for an item read from a stream; null for one a dump made.
+         */
+        String text;
+
         Item(String key, Value value, boolean set, String comment, boolean helpful) {
             this.key = key;
             this.value = value;
@@ -196,6 +205,28 @@ final class NativeNode {
 
     /** Whether a loader has looked anything up in this description, shared by its sections. */
     Flag accessed = new Flag();
+
+    /** The class of the Channel reading this description, which C's read errors name. */
+    String channelClass = "Channel";
+
+    /**
+     * For a description read from a stream, the reader's mark after the part of each class, where
+     * C's {@code ReadClassData} has read to when that class's loader starts; null otherwise.
+     */
+    Map<String, Integer> partEnds;
+
+    /**
+     * For a description read from a stream, shared by it, its sections and the descriptions nested
+     * in it: the mark after the part of the class whose loader last asked for it, which is how far
+     * C has read if that loader fails; null otherwise.
+     */
+    Progress progress;
+
+    /** How far C's reader has read while an Object read from a stream is loaded. */
+    static final class Progress {
+        /** The reader's mark, or -1 if no loader has asked for its part. */
+        int mark = -1;
+    }
 
     NativeNode(String className) {
         this.className = className;
@@ -333,40 +364,229 @@ final class NativeNode {
         return asLong(getAny(key));
     }
 
-    /** The integer value of {@code key}, or null if it is absent, unset or not a number. */
-    Long getIntIfSet(String key) {
-        return asLong(get(key));
-    }
-
-    /** The integer value of {@code key}, truncating a double, or {@code dflt}. */
-    long readLong(String key, long dflt) {
-        Long v = asLong(get(key));
-        return v == null ? dflt : v;
-    }
-
-    /** The integer value of {@code key}, truncating a double, or {@code dflt}. */
-    int readInt(String key, int dflt) {
-        Long v = asLong(get(key));
-        return v == null ? dflt : (int) (long) v;
-    }
-
-    /** The double value of {@code key}, promoting an integer, or {@code dflt}. */
-    double readDouble(String key, double dflt) {
-        Value v = get(key);
-        if (v == null) {
-            return dflt;
+    /**
+     * The first item called {@code key}, ignoring ASCII case, or null if there is none or its value
+     * is not set. Records the read.
+     */
+    private Item setItem(String key) {
+        accessed.set();
+        for (Item item : items) {
+            if (keyMatches(item.key, key)) {
+                if (!item.set) {
+                    return null;
+                }
+                item.read.set();
+                return item;
+            }
         }
+        return null;
+    }
+
+    /** The text C's reader holds for {@code item}'s value. */
+    private static String cText(Item item) {
+        if (item.text != null) {
+            return item.text;
+        }
+        Value v = item.value;
         switch (v.kind) {
-            case DOUBLE:
-                return v.doubleValue;
             case INT:
-                return v.intValue;
+                return Long.toString(v.intValue);
+            case DOUBLE:
+                return CFormat.format("%.17g", v.doubleValue);
             case STRING:
+                return v.stringValue;
             case OBJECT:
-                return dflt;
+                return "<" + v.object.className + ">";
             default:
                 throw Ast.err(AstException.AST__INTER, "NativeNode: unknown value kind " + v.kind + ".");
         }
+    }
+
+    /** The text C scans for the string value of {@code item}. */
+    private static String scanText(Item item) {
+        return item.text != null ? item.text : item.value.stringValue;
+    }
+
+    /** C's error for a value that cannot be read as {@code what} (channel.c ReadInt, ReadDouble). */
+    private AstException notA(Item item, String what) {
+        String name = item.key.toLowerCase(Locale.ROOT);
+        if (item.value.kind == Kind.OBJECT) {
+            return Ast.err(
+                    AstException.AST__BADIN,
+                    "astRead(" + channelClass + "): The Object \"" + name + " = <" + item.value.object.className
+                            + ">\" cannot be read as " + what + ".");
+        }
+        return Ast.err(
+                AstException.AST__BADIN,
+                "astRead(" + channelClass + "): The value \"" + name + " = " + cText(item) + "\" cannot be read as "
+                        + what + ".");
+    }
+
+    /**
+     * C's {@code astReadInt} of an item (channel.c:3165-3180): its text read with {@code sscanf}'s
+     * {@code " %d %n"}, which must take all of it, or AST__BADIN. A number beyond the range of an
+     * {@code int} is AST__BADIN too: {@code sscanf}'s result for it is undefined in C, and the
+     * pinned library on macOS keeps its low 32 bits, which can make a valid-looking count or
+     * index; this check has no counterpart in C.
+     */
+    private int cInt(Item item) {
+        Value v = item.value;
+        Long n;
+        switch (v.kind) {
+            case INT:
+                n = v.intValue;
+                break;
+            case DOUBLE:
+                // A decimal point, an exponent, "<bad>" or an integer beyond a long, at which %d
+                // stops before the end of the text or which it cannot hold.
+                n = null;
+                break;
+            case STRING:
+                n = CScan.scanLong(scanText(item));
+                break;
+            case OBJECT:
+                throw notA(item, "an integer");
+            default:
+                throw Ast.err(AstException.AST__INTER, "NativeNode: unknown value kind " + v.kind + ".");
+        }
+        if (n == null || n < Integer.MIN_VALUE || n > Integer.MAX_VALUE) {
+            throw notA(item, "an integer");
+        }
+        return (int) (long) n;
+    }
+
+    /**
+     * C's {@code astReadInt64} of an item (channel.c {@code ReadInt64}): its text read with {@code
+     * sscanf}'s {@code " %" SCNd64 " %n"}, which must take all of it, or AST__BADIN. A number
+     * beyond the range of a {@code long}, for which {@code sscanf}'s result is undefined in C, is
+     * AST__BADIN too; this check has no counterpart in C.
+     */
+    private long cInt64(Item item) {
+        Value v = item.value;
+        switch (v.kind) {
+            case INT:
+                return v.intValue;
+            case DOUBLE:
+                throw notA(item, "a 64 bit integer");
+            case STRING:
+                // CScan.scanLong checks the form of the text; the exact value then shows whether a
+                // long holds it.
+                String t = scanText(item);
+                BigInteger exact = CScan.scanLong(t) == null ? null : exactInteger(t);
+                if (exact == null || exact.bitLength() > 63) {
+                    throw notA(item, "a 64 bit integer");
+                }
+                return exact.longValue();
+            case OBJECT:
+                throw notA(item, "a 64 bit integer");
+            default:
+                throw Ast.err(AstException.AST__INTER, "NativeNode: unknown value kind " + v.kind + ".");
+        }
+    }
+
+    /** The integer {@code s} holds, with optional white space and sign, or null. */
+    private static BigInteger exactInteger(String s) {
+        String t = s.trim();
+        if (t.startsWith("+")) {
+            t = t.substring(1);
+        }
+        try {
+            return new BigInteger(t);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * C's {@code astReadDouble} of an item (channel.c:3039-3075): {@code <bad>} is {@code AST__BAD};
+     * otherwise its text read with {@code sscanf}'s {@code " %lf %n"}, which must take all of it,
+     * and a value that is not finite, are AST__BADIN.
+     */
+    private double cDouble(Item item) {
+        Value v = item.value;
+        double d;
+        switch (v.kind) {
+            case DOUBLE:
+                d = v.doubleValue;
+                break;
+            case INT:
+                return v.intValue;
+            case STRING:
+                String t = scanText(item);
+                if ("<bad>".equals(t.trim())) {
+                    return AstObject.AST__BAD;
+                }
+                Double scanned = CScan.scanDouble(t);
+                if (scanned == null) {
+                    throw notA(item, "a double precision floating point number");
+                }
+                d = scanned;
+                break;
+            case OBJECT:
+                throw notA(item, "a double precision floating point number");
+            default:
+                throw Ast.err(AstException.AST__INTER, "NativeNode: unknown value kind " + v.kind + ".");
+        }
+        if (Double.isNaN(d) || Double.isInfinite(d)) {
+            throw Ast.err(
+                    AstException.AST__BADIN,
+                    "astRead(" + channelClass + "): Illegal double precision floating point value \"" + cText(item)
+                            + "\" read for \"" + item.key.toLowerCase(Locale.ROOT) + "\".");
+        }
+        return d;
+    }
+
+    /**
+     * The integer value of {@code key}, as C's {@code astReadInt} reads it, or null if it is absent
+     * or unset.
+     *
+     * @throws AstException with status AST__BADIN if the value cannot be read as an integer
+     */
+    Long getIntIfSet(String key) {
+        Item item = setItem(key);
+        return item == null ? null : (long) cInt(item);
+    }
+
+    /**
+     * The 64-bit integer value of {@code key}, as C's {@code astReadInt64} reads it, or {@code
+     * dflt}.
+     *
+     * @throws AstException with status AST__BADIN if the value cannot be read as such an integer
+     */
+    long readLong(String key, long dflt) {
+        Item item = setItem(key);
+        return item == null ? dflt : cInt64(item);
+    }
+
+    /**
+     * The integer value of {@code key}, as C's {@code astReadInt} reads it, or {@code dflt}.
+     *
+     * @throws AstException with status AST__BADIN if the value cannot be read as an integer
+     */
+    int readInt(String key, int dflt) {
+        Item item = setItem(key);
+        return item == null ? dflt : cInt(item);
+    }
+
+    /**
+     * The double value of {@code key}, as C's {@code astReadDouble} reads it, or {@code dflt}.
+     *
+     * @throws AstException with status AST__BADIN if the value cannot be read as a finite double
+     */
+    double readDouble(String key, double dflt) {
+        Item item = setItem(key);
+        return item == null ? dflt : cDouble(item);
+    }
+
+    /**
+     * The double value of {@code key}, as C's {@code astReadDouble} reads it, or null if it is
+     * absent or unset.
+     *
+     * @throws AstException with status AST__BADIN if the value cannot be read as a finite double
+     */
+    Double getDoubleIfSet(String key) {
+        Item item = setItem(key);
+        return item == null ? null : cDouble(item);
     }
 
     /** The string value of {@code key}, or {@code dflt}. */
@@ -412,6 +632,11 @@ final class NativeNode {
     NativeNode section(String cls) {
         NativeNode node = new NativeNode(className, classComment);
         node.accessed = accessed;
+        node.channelClass = channelClass;
+        node.progress = progress;
+        if (progress != null && partEnds != null && partEnds.containsKey(cls)) {
+            progress.mark = partEnds.get(cls);
+        }
         List<Item> current = new ArrayList<>();
         for (Item item : items) {
             if (item.isIsA()) {

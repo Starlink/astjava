@@ -58,9 +58,11 @@ The entries are grouped by area, in the order the Java classes were ported.
 
 ### A string where a dump expects a number
 
-- C: raises AST__BADIN.
-- Rust: reads it without an error (`test_channel_read_oracle.rs` excludes `string_for_double` and `string_for_int`).
-- Java: as Rust; both ports differ from C here.
+- C: `ReadDouble`, `ReadInt` and `ReadInt64` scan the text of the value with `sscanf`, which must read all of it, and raise AST__BADIN when it cannot; `ReadDouble` also raises it for a value that is not finite (`channel.c:3049-3063`, `channel.c:3168-3173`).
+  The loader fails with the stream read only to the end of its class's part, so the next read starts there.
+- Rust: `serial/node.rs` `get_double` and `get_int` give the default for a string and read a NaN or an infinity as it is (`test_channel_read_oracle.rs` excludes `string_for_double` and `string_for_int`).
+- Java: as C.
+  An integer beyond the range of an `int` (or of a `long`, for `ReadInt64`) is AST__BADIN too, where the result of C's `sscanf` is undefined (the pinned library on macOS keeps the low 32 bits).
 
 ## Mappings
 
@@ -266,7 +268,7 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 
 - C: `Read` reads a NATIVE Object through the Channel class's reader, whose `GetNextData` the FitsChan overrides to give one item per card (`fitschan.c:26091`, `fitschan.c:17917`), so each class loader takes its part of the Object as it is read: an item no loader reads is reported as a warning, or with Strict set as an error, and with Clean set a failed read removes the cards read up to the failure.
 - Rust: `fitschan/enc_native.rs` turns the cards from `BEGASTxx` to the matching `ENDASTxx` into native text and parses it whole, so it reports no unread item, ignores Strict, and cannot know how far C's reader got when Clean removes the cards after a failure (`test_fitschan_cursor_oracle.rs` excludes `native_unknown_item`, `native_unknown_item_strict`, `native_bad_value` and `native_bad_value_clean`).
-- Java: as C; `FitsNativeReader` gives the items of the cards to the Channel reader `NativeStream`, whose limits (see "A string where a dump expects a number") are the Channel's.
+- Java: as C; `FitsNativeReader` gives the items of the cards to the Channel reader `NativeStream`.
 
 ### Floating values of a NATIVE read
 

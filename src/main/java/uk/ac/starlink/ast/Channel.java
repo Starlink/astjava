@@ -391,8 +391,8 @@ public class Channel extends AstObject {
 
     /**
      * C's {@code Read} for a Channel: the next Object {@code reader} reads, loaded, or null at the
-     * end of the data. When an item no loader reads is an error (Strict set), {@code rewind} is
-     * given the reader's mark where C raised it, before the error is thrown.
+     * end of the data. When a loader fails, or an item no loader reads is an error (Strict set),
+     * {@code rewind} is given the reader's mark where C raised it, before the error is thrown.
      */
     AstObject readObject(NativeStream reader, IntConsumer rewind) throws IOException {
         String cls = reader.channelClass();
@@ -404,6 +404,11 @@ public class Channel extends AstObject {
         try {
             loaded = ObjectRegistry.load(object.node);
         } catch (AstException e) {
+            // C reads each class's part as its loader starts, so it has read only to the end of
+            // the part of the class whose loader failed; the rest is left for the next read.
+            if (object.node.progress != null && object.node.progress.mark >= 0) {
+                rewind.accept(object.node.progress.mark);
+            }
             // channel.c:2672
             throw Ast.withContext(e, "Error while reading a " + object.node.className + " from a " + cls + ".");
         }

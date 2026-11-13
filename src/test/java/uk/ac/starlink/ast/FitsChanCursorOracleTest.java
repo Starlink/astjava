@@ -60,7 +60,7 @@ class FitsChanCursorOracleTest {
      * The number of cases run here: those that write no Object, are not excluded, and whose reads
      * need only the NATIVE and FITS-WCS encodings.
      */
-    private static final int RUNNABLE = 141;
+    private static final int RUNNABLE = 143;
 
     /** The number of cases whose reads reach the read of an encoding other than NATIVE and FITS-WCS. */
     private static final int WAITING_FOR_ANOTHER_ENCODING = 5;
@@ -68,16 +68,12 @@ class FitsChanCursorOracleTest {
     /**
      * Cases read differently from C, with the reason; {@link #excludedReadCasesStillDiffer} fails
      * once one matches, or, for a {@code needs} reason, once the read no longer stops for want of
-     * that class. C's ZoomMap loader reads the zoom factor with {@code astReadDouble}, which
-     * reports AST__BADIN for a string value; here a string where a number is expected is taken
-     * without error, as the Channel takes it (see {@code ChannelReadOracleTest}).
+     * that class.
      */
     private static final Map<String, String> EXCLUDED = excludedCases();
 
     private static Map<String, String> excludedCases() {
         Map<String, String> m = new LinkedHashMap<>();
-        m.put("native_bad_value", "a string read as a number is not an error");
-        m.put("native_bad_value_clean", "a string read as a number is not an error");
         // Headers with a spectral axis, whose FITS-WCS read builds a SpecFrame.
         for (String name : Arrays.asList(
                 "dist_sip_axis3",

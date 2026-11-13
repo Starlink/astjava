@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -31,11 +32,13 @@ import java.util.Locale;
  * <p>The data items come from a {@link DataSource}, C's {@code GetNextData}: a Channel's is
  * {@link #lineData}, which reads lines of text, and a FitsChan's reads header cards.
  *
- * <p>Two things C does are not reproduced. When a read fails partway, C's loaders for the classes
- * before the failure have already taken their items, so the items they left are reported; this
- * reader, which loads only a whole description, reports only the items of values lists no loader
- * could see. And when a loader fails, C has read only up to that class's part, where this reader
- * has read the whole Object.
+ * <p>When a loader fails, C has read only to the end of that class's part: the reader records the
+ * mark after each class's part in the description ({@link NativeNode#partEnds}), the description
+ * records the part last asked for ({@link NativeNode#progress}), and the lines after it are handed
+ * back to the source. One thing C does is not reproduced: when a read fails partway, C's loaders
+ * for the classes before the failure have already taken their items, so the items they left are
+ * reported; this reader, which loads only a whole description, reports only the items of values
+ * lists no loader could see.
  *
  * <p>Ported from Rust {@code serial/native_stream.rs}.
  */
@@ -423,6 +426,9 @@ final class NativeStream {
         this.reportLevel = reportLevel;
     }
 
+    /** How far C has read while the Object being read, and those nested in it, are loaded. */
+    private NativeNode.Progress progress;
+
     /** A reader of the data items {@code data} gives, for the Channel class {@code cls}. */
     NativeStream(DataSource data, String cls, boolean strict, int reportLevel) {
         this.data = data;
@@ -604,6 +610,12 @@ final class NativeStream {
                     "astGetLoader: Object of unknown class \"" + objClass + "\" cannot be loaded.");
         }
         NativeNode node = new NativeNode(objClass, datum.comment);
+        node.channelClass = cls;
+        node.partEnds = new HashMap<>();
+        if (top) {
+            progress = new NativeNode.Progress();
+        }
+        node.progress = progress;
         try {
             return new ReadObject(node, readClasses(node, objClass, chain));
         } catch (AstException e) {
@@ -671,7 +683,9 @@ final class NativeStream {
                         String msg = "The value \"" + datum.name + " = " + datum.val
                                 + "\" was not recognised as valid input.";
                         values.add(new Value(index, datum.name, msg));
-                        node.items.add(new NativeNode.Item(datum.key, datum.value, true, datum.comment, true));
+                        NativeNode.Item item = new NativeNode.Item(datum.key, datum.value, true, datum.comment, true);
+                        item.text = datum.val;
+                        node.items.add(item);
                     } else {
                         nestedMsg = false;
                         ReadObject nested;
@@ -692,6 +706,7 @@ final class NativeStream {
                     }
                 }
             }
+            node.partEnds.put(want, data.mark());
         }
         // Read's own ClearValues, after the loader. A values list no loader could look in is
         // reported now, the read having failed.

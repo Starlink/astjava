@@ -166,7 +166,7 @@ public class KeyMap extends AstObject {
         if (v != null) {
             applyMapLocked(v != 0);
         }
-        members = part.readLong("MemCnt", 0);
+        members = part.readInt("MemCnt", 0);
     }
 
     @Override
@@ -323,16 +323,16 @@ public class KeyMap extends AstObject {
         for (String nm : names) {
             switch (type) {
                 case AST__INTTYPE:
-                    values.add((int) part.readLong(nm, 0));
+                    values.add(part.readInt(nm, 0));
                     break;
                 case AST__SINTTYPE:
-                    values.add((short) part.readLong(nm, 0));
+                    values.add((short) part.readInt(nm, 0));
                     break;
                 case AST__KINTTYPE:
                     values.add(part.readLong(nm, 0));
                     break;
                 case AST__BYTETYPE:
-                    values.add((int) (part.readLong(nm, 0) & 0xff));
+                    values.add(part.readInt(nm, 0) & 0xff);
                     break;
                 case AST__DOUBLETYPE:
                     values.add(part.readDouble(nm, AST__BAD));

@@ -307,9 +307,9 @@ public class FitsChan extends Channel {
         if (v != null) {
             sipReplace = v != 0 ? 1 : 0;
         }
-        NativeNode.Value tol = part.get("FitsTol");
-        if (tol != null && (tol.kind == NativeNode.Kind.DOUBLE || tol.kind == NativeNode.Kind.INT)) {
-            fitsTol = Math.max(tol.kind == NativeNode.Kind.DOUBLE ? tol.doubleValue : (double) tol.intValue, 0.0);
+        Double tol = part.getDoubleIfSet("FitsTol");
+        if (tol != null) {
+            fitsTol = Math.max(tol, 0.0);
         }
         v = part.getIntIfSet("PolyTan");
         if (v != null) {
@@ -339,7 +339,7 @@ public class FitsChan extends Channel {
             }
             cardList.push(readCard(part, n, type));
         }
-        cardList.setCard(part.readLong("Card", 0));
+        cardList.setCard(part.readInt("Card", 0));
         NativeNode t = part.readObject("Tables");
         if (t != null) {
             AstObject obj = ObjectRegistry.load(t);
@@ -375,20 +375,20 @@ public class FitsChan extends Channel {
                 value = FitsCard.Value.ofContinue(part.readString("Dt" + n, ""));
                 break;
             case INT:
-                value = FitsCard.Value.ofInt(part.readLong("Dt" + n, 0));
+                value = FitsCard.Value.ofInt(part.readInt("Dt" + n, 0));
                 break;
             case KINT:
                 value = FitsCard.Value.ofKInt(part.readLong("Dt" + n, 0));
                 break;
             case LOGICAL:
-                value = FitsCard.Value.ofLogical(part.readLong("Dt" + n, 0) != 0);
+                value = FitsCard.Value.ofLogical(part.readInt("Dt" + n, 0) != 0);
                 break;
             case COMPLEXF:
                 value = FitsCard.Value.ofComplexFloat(
                         part.readDouble("Dr" + n, AST__BAD), part.readDouble("Di" + n, AST__BAD));
                 break;
             case COMPLEXI:
-                value = FitsCard.Value.ofComplexInt(part.readLong("Dr" + n, 0), part.readLong("Di" + n, 0));
+                value = FitsCard.Value.ofComplexInt(part.readInt("Dr" + n, 0), part.readInt("Di" + n, 0));
                 break;
             case COMMENT:
                 value = FitsCard.Value.ofComment(comment == null ? "" : comment);
@@ -401,9 +401,9 @@ public class FitsChan extends Channel {
                 throw Ast.err(AstException.AST__INTER, "astLoadFitsChan: unexpected card type " + type);
         }
         // Dumps made before AST V1.5 hold only the deletion flag, "Dl".
-        long flags = part.readLong("Fl" + n, 0);
+        long flags = part.readInt("Fl" + n, 0);
         if (flags == 0) {
-            flags = part.readLong("Dl" + n, 0);
+            flags = part.readInt("Dl" + n, 0);
         }
         FitsCard card = new FitsCard(keyword, value, type == FitsCard.CardType.COMMENT ? null : comment);
         card.flags = FitsCard.Flags.fromCBits(flags);
