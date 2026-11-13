@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -205,8 +204,10 @@ public class FitsChan extends Channel {
     // applies them.
     @SuppressWarnings("this-escape")
     private FitsChan(Iterator<?> cardIt, boolean applyEnv) {
-        this.cardIt = cardIt == null ? Collections.emptyIterator() : cardIt;
-        this.sourcePending = true;
+        // With no Iterator the FitsChan has no source, as a C FitsChan made without a source
+        // function has none, so its first use does not move the current card to end-of-file.
+        this.cardIt = cardIt;
+        this.sourcePending = cardIt != null;
         this.hasSink = overridesSink(getClass());
         if (applyEnv) {
             String settings = FitsChanOptions.envOptions();
@@ -756,15 +757,101 @@ public class FitsChan extends Channel {
     // ------------------------------------------------------------------
 
     /**
-     * Reads an Object from this FitsChan, using the encoding the Encoding attribute gives.
+     * Reads an Object from this FitsChan, using the encoding the Encoding attribute gives, from
+     * the current card on.
+     *
+     * <p>With the NATIVE encoding, the cards hold any number of Objects, and the next is read as a
+     * Channel reads one: with Skip set, the cards before it are passed over; with it clear, any
+     * but a comment card is an error. The cards it was read from are then deleted, and the card
+     * after them is current.
+     *
+     * <p>With any other encoding, the cards hold at most one Object, a FrameSet, which is read only
+     * when the first card is current; otherwise null is returned. When a FrameSet is read, the
+     * cards it was made from are marked as used, so that later reads and writes pass over them,
+     * and the FitsChan is left at end-of-file; when none is read, the first card is made current.
+     *
+     * <p>When the read fails or finds no Object, the cards it looked at are made available again,
+     * unless the Clean attribute is set, when they are removed as after a successful read.
      *
      * @return the Object read, or null if there is none
-     * @throws UnsupportedOperationException always: reading Objects from a FitsChan is not yet
+     * @throws AstException as {@link Channel#read} does for the NATIVE encoding, with status {@code
+     *     AST__BADIN} also if a long string has a {@code CONTINUE} card missing; or the error of
+     *     making the FrameSet for another encoding
+     * @throws UnsupportedOperationException if the encoding is not NATIVE and its reading is not
      *     available
      */
     @Override
     public AstObject read() {
-        throw new UnsupportedOperationException("FitsChan.read is not available");
+        // fitschan.c:26007 Read.
+        clearWarnings();
+        readFromSource();
+        Encoding enc = encoding();
+        boolean remove = enc == Encoding.NATIVE;
+        AstObject obj = null;
+        try {
+            if (enc == Encoding.NATIVE) {
+                obj = readNative();
+            } else if (!cardList.testCard()) {
+                obj = readForeign(enc);
+                if (obj == null) {
+                    cardList.clearCard();
+                } else {
+                    cardList.setCard(Integer.MAX_VALUE);
+                }
+            }
+        } finally {
+            // An error leaves no Object, and the provisionally used cards are made available again
+            // unless Clean is set.
+            if (obj == null && !getClean()) {
+                cardList.fixUsed(false, false);
+            } else {
+                cardList.fixUsed(true, remove);
+            }
+        }
+        return obj;
+    }
+
+    /**
+     * The next Object of the NATIVE encoding, read through the Channel reader from the cards
+     * (fitschan.c {@code GetNextData}), or null if there is none.
+     */
+    private AstObject readNative() {
+        FitsNativeReader data = new FitsNativeReader(cardList, getFitsRounding());
+        NativeStream reader = new NativeStream(data, "FitsChan", getStrict(), getReportLevel());
+        try {
+            return readObject(reader, data::rewind);
+        } catch (IOException e) {
+            throw (AstException) Ast.err(AstException.AST__INTER, "astRead(FitsChan): " + e.getMessage())
+                    .initCause(e);
+        } finally {
+            for (String w : reader.warnings) {
+                addWarning(w);
+            }
+        }
+    }
+
+    /**
+     * The FrameSet the cards describe in {@code enc}, an encoding other than NATIVE, or null if they
+     * describe none (C's {@code FitsToStore} and {@code FsetFromStore}).
+     *
+     * @throws UnsupportedOperationException for an encoding whose reading is not available
+     */
+    private AstObject readForeign(Encoding enc) {
+        // MODERN-JAVA(21): switch expression
+        switch (enc) {
+            case FITS_WCS:
+                return FitsWcsRead.read(this);
+            case FITS_PC:
+            case FITS_IRAF:
+            case FITS_AIPS:
+            case FITS_AIPSPP:
+            case FITS_CLASS:
+            case DSS:
+                throw new UnsupportedOperationException(
+                        "FitsChan: reading the " + enc.cName() + " encoding is not available");
+            default:
+                throw Ast.err(AstException.AST__INTER, "astRead(FitsChan): unexpected encoding " + enc + ".");
+        }
     }
 
     /**
@@ -1016,7 +1103,8 @@ public class FitsChan extends Channel {
      * fails, and then every remaining card with a WCS keyword is removed as a read removes it. The
      * first remaining card is then current.
      *
-     * @throws UnsupportedOperationException while reading Objects from a FitsChan is not available
+     * @throws UnsupportedOperationException if the Encoding is not NATIVE and its reading is not
+     *     available
      */
     public void purgeWCS() {
         readFromSource();

@@ -22,11 +22,11 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
 /**
  * Translation of the card-handling tests of Rust {@code tests/test_fitschan.rs}: parsing a header,
  * the typed getters and setters, finding, deleting and emptying cards, the Encoding, FitsDigits
- * and FitsRounding attributes, defaults chosen from a source not yet read, and {@code
- * FITSCHAN_OPTIONS}.
+ * and FitsRounding attributes, defaults chosen from a source not yet read and the read that
+ * follows them, and {@code FITSCHAN_OPTIONS}. None of its tests waits for the FITS-WCS read (Task
+ * 23).
  *
- * <p>Left to later tasks: {@code cd_matrix_from_a_source_leaves_end_of_file_as_c_does} reads the
- * FitsChan (Task 22). The tests that write to the FitsChan ({@code native_round_trip_zoommap},
+ * <p>The tests that write to the FitsChan ({@code native_round_trip_zoommap},
  * {@code native_round_trip_skyframe}, {@code native_rewind_and_reread} and {@code
  * translate_projp_retains_source_cards}) are listed in {@code deferred/rust-tests.txt}.
  */
@@ -319,6 +319,28 @@ class FitsChanTest {
         assertEquals("FITS-WCS", withCdSource().getEncoding());
         assertTrue(withCdSource().getCDMatrix());
         assertFalse(withCdSource().getDefB1950());
+    }
+
+    /**
+     * Asked first, CDMatrix leaves the FitsChan at end-of-file, since the card it puts back is the
+     * one current before the source was read, while Encoding and DefB1950 leave the first source
+     * card current. C probe: CDMatrix first gives Card 12 of 11 cards, and a following read returns
+     * null with no error, a FITS-WCS read needing the first card current; Encoding or DefB1950
+     * first gives Card 1.
+     */
+    @Test
+    void cdMatrixFromASourceLeavesEndOfFileAsCDoes() {
+        FitsChan fc = withCdSource();
+        assertTrue(fc.getCDMatrix());
+        assertEquals(12, fc.getCard());
+        assertNull(fc.read());
+
+        fc = withCdSource();
+        fc.getEncoding();
+        assertEquals(1, fc.getCard());
+        fc = withCdSource();
+        fc.getDefB1950();
+        assertEquals(1, fc.getCard());
     }
 
     /** A set Encoding is given without reading a source (C probe). */

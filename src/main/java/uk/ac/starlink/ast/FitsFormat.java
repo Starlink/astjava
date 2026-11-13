@@ -139,7 +139,7 @@ final class FitsFormat {
      * C's {@code CheckZero}: no minus sign on a zero value, and otherwise {@code RoundFString} on
      * the text, which {@code width} is the field width of.
      */
-    private static String checkZero(String text, double value, int width, int fitsrnd) {
+    static String checkZero(String text, double value, int width, int fitsrnd) {
         if (value == 0.0) {
             int lead = leadingBlanks(text);
             if (lead < text.length() && text.charAt(lead) == '-') {

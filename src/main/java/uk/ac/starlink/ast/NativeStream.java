@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * A Channel's reader: one Object at a time from a source of text lines, as channel.c {@code
+ * A Channel's reader: one Object at a time from a source of data items, as channel.c {@code
  * Read}, {@code ReadClassData}, {@code GetNextData}, {@code InputTextItem} and {@code ClearValues}
  * read it.
  *
@@ -28,6 +28,9 @@ import java.util.Locale;
  * C's hash table. With Strict set the first is an error, and the lines read after the values list
  * it was in are handed back to the source, where C stops reading.
  *
+ * <p>The data items come from a {@link DataSource}, C's {@code GetNextData}: a Channel's is
+ * {@link #lineData}, which reads lines of text, and a FitsChan's reads header cards.
+ *
  * <p>Two things C does are not reproduced. When a read fails partway, C's loaders for the classes
  * before the failure have already taken their items, so the items they left are reported; this
  * reader, which loads only a whole description, reports only the items of values lists no loader
@@ -43,6 +46,25 @@ final class NativeStream {
     interface LineSource {
         /** The next line, without its terminator, or null at the end of the text. */
         String next() throws IOException;
+    }
+
+    /**
+     * C's {@code GetNextData}, which each class of Channel provides: the data items, one at a time.
+     */
+    interface DataSource {
+        /**
+         * The next data item, or null at the end of the data. With {@code skip} set, a new Object
+         * is wanted and anything before the next {@code Begin} item is passed over; otherwise every
+         * item is significant. Unset values met on the way, which C ignores, may be added to {@code
+         * defaults} to keep them in the description.
+         */
+        Datum next(boolean skip, List<NativeNode.Item> defaults) throws IOException;
+
+        /**
+         * A mark of how far the data have been read, which the source can return to: the reader
+         * records one whenever C would clear a values list.
+         */
+        int mark();
     }
 
     /** Loads a nested Object that no loader read, as C loads every nested Object it reads. */
@@ -274,7 +296,7 @@ final class NativeStream {
     }
 
     /** One data item, as C's {@code GetNextData} gives it. */
-    private static final class Datum {
+    static final class Datum {
         /** The name, in lower case: {@code begin}, {@code isa}, {@code end} or an item's name. */
         final String name;
         /**
@@ -284,16 +306,16 @@ final class NativeStream {
         final String val;
         /** The item's name as written. */
         final String key;
-        /** The item's value as written, quotes included. */
-        final String raw;
-        /** The comment after the item. */
+        /** The item's typed value; null for a {@code begin}, {@code isa} or {@code end}, or an Object. */
+        final NativeNode.Value value;
+        /** The comment after the item, or null. */
         final String comment;
 
-        Datum(String name, String val, String key, String raw, String comment) {
+        Datum(String name, String val, String key, NativeNode.Value value, String comment) {
             this.name = name;
             this.val = val;
             this.key = key;
-            this.raw = raw;
+            this.value = value;
             this.comment = comment;
         }
     }
@@ -327,22 +349,22 @@ final class NativeStream {
         final List<Event> events;
         /** For a cleared values list, its items. */
         final List<Value> values;
-        /** For a cleared values list, the number of lines read when it was cleared. */
-        final int lines;
+        /** For a cleared values list, the source's mark when it was cleared. */
+        final int mark;
 
-        private Event(int item, List<Event> events, List<Value> values, int lines) {
+        private Event(int item, List<Event> events, List<Value> values, int mark) {
             this.item = item;
             this.events = events;
             this.values = values;
-            this.lines = lines;
+            this.mark = mark;
         }
 
         static Event nested(int item, List<Event> events) {
             return new Event(item, events, null, 0);
         }
 
-        static Event clear(List<Value> values, int lines) {
-            return new Event(-1, null, values, lines);
+        static Event clear(List<Value> values, int mark) {
+            return new Event(-1, null, values, mark);
         }
     }
 
@@ -357,23 +379,26 @@ final class NativeStream {
         }
     }
 
-    /** An error from reporting the unread items, with the number of lines C had read at it. */
+    /** An error from reporting the unread items, with the source's mark where C raised it. */
     static final class Failure {
         final AstException error;
-        final int lines;
+        final int mark;
 
-        Failure(AstException error, int lines) {
+        Failure(AstException error, int mark) {
             this.error = error;
-            this.lines = lines;
+            this.mark = mark;
         }
     }
 
-    private final LineSource source;
+    private final DataSource data;
 
     /** The class of the Channel, for messages. */
     private final String cls;
 
-    /** Every line read, so that those after an error can be handed back. */
+    /**
+     * Every line {@link #lineData} has read, so that those after an error can be handed back; the
+     * number read is its mark.
+     */
     final List<String> lines = new ArrayList<>();
 
     /**
@@ -390,11 +415,25 @@ final class NativeStream {
     /** The warnings made, as C's {@code astAddWarning} stores them. */
     final List<String> warnings = new ArrayList<>();
 
+    /** A reader of the lines {@code source} gives, as a Channel reads them. */
     NativeStream(LineSource source, String cls, boolean strict, int reportLevel) {
-        this.source = source;
+        this.data = lineData(source);
         this.cls = cls;
         this.strict = strict;
         this.reportLevel = reportLevel;
+    }
+
+    /** A reader of the data items {@code data} gives, for the Channel class {@code cls}. */
+    NativeStream(DataSource data, String cls, boolean strict, int reportLevel) {
+        this.data = data;
+        this.cls = cls;
+        this.strict = strict;
+        this.reportLevel = reportLevel;
+    }
+
+    /** The class of the Channel, as its messages name it. */
+    String channelClass() {
+        return cls;
     }
 
     private AstException error(int status, String message) {
@@ -454,7 +493,7 @@ final class NativeStream {
                     try {
                         loader.load(child);
                     } catch (AstException e) {
-                        return new Failure(e, lines.size());
+                        return new Failure(e, data.mark());
                     }
                 }
                 Failure f = reportEvents(child, event.events, loader);
@@ -465,7 +504,7 @@ final class NativeStream {
                 try {
                     reportUnread(event.values, i -> !node.items.get(i).read.get());
                 } catch (AstException e) {
-                    return new Failure(e, event.lines);
+                    return new Failure(e, event.mark);
                 }
             }
         }
@@ -473,10 +512,26 @@ final class NativeStream {
     }
 
     /**
-     * C's {@code GetNextData}, adding to {@code defaults} the unset values met on the way, which C
-     * ignores and this reader keeps in the description. Gives null at the end of the text.
+     * The Channel class's {@code GetNextData}, reading the lines {@code source} gives and recording
+     * them in {@link #lines}; it adds to {@code defaults} the unset values met on the way, which C
+     * ignores and this reader keeps in the description.
      */
-    private Datum nextDatum(boolean skip, List<NativeNode.Item> defaults) throws IOException {
+    private DataSource lineData(LineSource source) {
+        return new DataSource() {
+            @Override
+            public Datum next(boolean skip, List<NativeNode.Item> defaults) throws IOException {
+                return nextLineDatum(source, skip, defaults);
+            }
+
+            @Override
+            public int mark() {
+                return lines.size();
+            }
+        };
+    }
+
+    /** C's {@code GetNextData} for a Channel; null at the end of the text. */
+    private Datum nextLineDatum(LineSource source, boolean skip, List<NativeNode.Item> defaults) throws IOException {
         while (true) {
             String raw = source.next();
             if (raw == null) {
@@ -502,19 +557,19 @@ final class NativeStream {
                     String name = key.toLowerCase(Locale.ROOT);
                     String value = line.substring(m[1]);
                     return value.isEmpty()
-                            ? new Datum(name, null, key, "", comment)
-                            : new Datum(name, unquote(value), key, value, comment);
+                            ? new Datum(name, null, key, null, comment)
+                            : new Datum(name, unquote(value), key, NativeReader.parseScalarValue(value), comment);
                 }
             }
             String begin = matchKeyword(line, "begin");
             if (begin != null) {
-                return new Datum("begin", begin, "", "", comment);
+                return new Datum("begin", begin, "", null, comment);
             }
             if (!skip) {
                 for (String keyword : new String[] {"isa", "end"}) {
                     String c = matchKeyword(line, keyword);
                     if (c != null) {
-                        return new Datum(keyword, c, "", "", comment);
+                        return new Datum(keyword, c, "", null, comment);
                     }
                 }
                 String shown = line.length() > 50 ? line.substring(0, 50) + "..." : line;
@@ -528,7 +583,7 @@ final class NativeStream {
      * is a top-level Object, before which other data are skipped when {@code skip} is set.
      */
     ReadObject read(boolean top, boolean skip) throws IOException {
-        Datum datum = nextDatum(top && skip, new ArrayList<>());
+        Datum datum = data.next(top && skip, new ArrayList<>());
         if (datum == null) {
             if (top) {
                 return null;
@@ -569,7 +624,7 @@ final class NativeStream {
         boolean endOfObject = false;
         for (String want : chain) {
             if (valuesOk) {
-                events.add(Event.clear(values, lines.size()));
+                events.add(Event.clear(values, data.mark()));
                 values = new ArrayList<>();
                 valuesClass = null;
             }
@@ -586,7 +641,7 @@ final class NativeStream {
             } else {
                 while (true) {
                     List<NativeNode.Item> defaults = new ArrayList<>();
-                    Datum datum = nextDatum(false, defaults);
+                    Datum datum = data.next(false, defaults);
                     node.items.addAll(defaults);
                     if (datum == null) {
                         // channel.c:2824
@@ -616,8 +671,7 @@ final class NativeStream {
                         String msg = "The value \"" + datum.name + " = " + datum.val
                                 + "\" was not recognised as valid input.";
                         values.add(new Value(index, datum.name, msg));
-                        node.items.add(new NativeNode.Item(
-                                datum.key, NativeReader.parseScalarValue(datum.raw), true, datum.comment, true));
+                        node.items.add(new NativeNode.Item(datum.key, datum.value, true, datum.comment, true));
                     } else {
                         nestedMsg = false;
                         ReadObject nested;
@@ -649,7 +703,7 @@ final class NativeStream {
             }
             reportUnread(values, i -> true);
         } else {
-            events.add(Event.clear(values, lines.size()));
+            events.add(Event.clear(values, data.mark()));
         }
         if (!endOfObject) {
             // channel.c:2663

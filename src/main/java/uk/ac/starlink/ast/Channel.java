@@ -16,6 +16,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.function.IntConsumer;
 
 /**
  * Reads Objects from text and writes them as text, in AST's native format.
@@ -378,40 +379,49 @@ public class Channel extends AstObject {
      */
     public AstObject read() throws IOException {
         warningList.clear();
-        String cls = astClass();
-        NativeStream reader = new NativeStream(this::readLine, cls, getStrict(), getReportLevel());
+        NativeStream reader = new NativeStream(this::readLine, astClass(), getStrict(), getReportLevel());
         List<String> returned = new ArrayList<>();
-        AstObject loaded;
         try {
-            NativeStream.ReadObject object = reader.read(true, getSkip());
-            if (object == null) {
-                return null;
-            }
-            try {
-                loaded = ObjectRegistry.load(object.node);
-            } catch (AstException e) {
-                // channel.c:2672
-                throw Ast.withContext(e, "Error while reading a " + object.node.className + " from a " + cls + ".");
-            }
-            // C loads every nested Object it reads, so one no loader read is loaded here for its
-            // reports. A class that cannot be loaded on its own here is left.
-            NativeStream.Failure failure = reader.reportObject(object, node -> {
-                try {
-                    ObjectRegistry.load(node);
-                } catch (AstException e) {
-                    if (e.getStatus() != AstException.AST__LDERR) {
-                        throw e;
-                    }
-                }
-            });
-            if (failure != null) {
-                returned.addAll(reader.lines.subList(failure.lines, reader.lines.size()));
-                throw Ast.withContext(
-                        failure.error, "Error while reading a " + object.node.className + " from a " + cls + ".");
-            }
+            return readObject(reader, mark -> returned.addAll(reader.lines.subList(mark, reader.lines.size())));
         } finally {
             warningList = new ArrayList<>(reader.warnings);
             returnLines(returned);
+        }
+    }
+
+    /**
+     * C's {@code Read} for a Channel: the next Object {@code reader} reads, loaded, or null at the
+     * end of the data. When an item no loader reads is an error (Strict set), {@code rewind} is
+     * given the reader's mark where C raised it, before the error is thrown.
+     */
+    AstObject readObject(NativeStream reader, IntConsumer rewind) throws IOException {
+        String cls = reader.channelClass();
+        NativeStream.ReadObject object = reader.read(true, getSkip());
+        if (object == null) {
+            return null;
+        }
+        AstObject loaded;
+        try {
+            loaded = ObjectRegistry.load(object.node);
+        } catch (AstException e) {
+            // channel.c:2672
+            throw Ast.withContext(e, "Error while reading a " + object.node.className + " from a " + cls + ".");
+        }
+        // C loads every nested Object it reads, so one no loader read is loaded here for its
+        // reports. A class that cannot be loaded on its own here is left.
+        NativeStream.Failure failure = reader.reportObject(object, node -> {
+            try {
+                ObjectRegistry.load(node);
+            } catch (AstException e) {
+                if (e.getStatus() != AstException.AST__LDERR) {
+                    throw e;
+                }
+            }
+        });
+        if (failure != null) {
+            rewind.accept(failure.mark);
+            throw Ast.withContext(
+                    failure.error, "Error while reading a " + object.node.className + " from a " + cls + ".");
         }
         return loaded;
     }
@@ -472,6 +482,11 @@ public class Channel extends AstObject {
             km.mapPut0C("Warning_" + (i + 1), warningList.get(i), " ");
         }
         return km;
+    }
+
+    /** Discards the warnings of the previous read or write, as C's {@code astRead} does first. */
+    void clearWarnings() {
+        warningList.clear();
     }
 
     /** Adds a warning to those {@link #warnings} gives for the most recent read or write. */

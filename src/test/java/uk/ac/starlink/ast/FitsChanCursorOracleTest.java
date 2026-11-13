@@ -1,6 +1,7 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -10,9 +11,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -31,12 +35,14 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * transcript C printed: the result of each operation and then the state. The same script is run
  * here, through the same string attribute interface the probe uses, and the transcripts compared.
  *
- * <p>Cases whose scripts read from the FitsChan ({@code R}, {@code RN} and {@code PW}) are left to
- * Tasks 22 and 23, which port the read; cases whose scripts write to it ({@code W}, {@code WF},
- * {@code WFT}, {@code WC}, {@code WCF}, {@code RW}, {@code RCIW} and {@code RSW}) need {@code
- * FitsChan.write}, which is out of scope, as do the Rust tests {@code excluded_cases_still_differ}
- * and {@code native_full_1_matches_c_but_for_process_counts} (listed in {@code
- * deferred/rust-tests.txt}).
+ * <p>Cases whose scripts read from the FitsChan ({@code R}, {@code RN} and {@code PW}) run when
+ * their reads need only the NATIVE encoding. Those whose reads reach the FITS-WCS read, or that of
+ * another foreign encoding, which throw {@code UnsupportedOperationException}, are left to Task 23;
+ * their number is pinned by {@link #WAITING_FOR_FOREIGN_READ}. Cases whose scripts write to the
+ * FitsChan ({@code W}, {@code WF}, {@code WFT}, {@code WC}, {@code WCF}, {@code RW}, {@code RCIW}
+ * and {@code RSW}) need {@code FitsChan.write}, which is out of scope, as do the Rust tests {@code
+ * excluded_cases_still_differ} (whose list holds a writing case) and {@code
+ * native_full_1_matches_c_but_for_process_counts} (listed in {@code deferred/rust-tests.txt}).
  */
 class FitsChanCursorOracleTest {
 
@@ -47,8 +53,26 @@ class FitsChanCursorOracleTest {
     /** The operations that only read from the FitsChan. */
     private static final Set<String> READS = new HashSet<>(Arrays.asList("R", "RN", "PW"));
 
-    /** The number of cases run here: those that neither read nor write an Object. */
-    private static final int RUNNABLE = 79;
+    /** The number of cases run here: those that write no Object and whose reads need only NATIVE. */
+    private static final int RUNNABLE = 86;
+
+    /** The number of cases whose reads reach the read of a foreign encoding, left to Task 23. */
+    private static final int WAITING_FOR_FOREIGN_READ = 71;
+
+    /**
+     * Cases read differently from C, with the reason; {@link #excludedReadCasesStillDiffer} fails
+     * once one matches. C's ZoomMap loader reads the zoom factor with {@code astReadDouble}, which
+     * reports AST__BADIN for a string value; here a string where a number is expected is taken
+     * without error, as the Channel takes it (see {@code ChannelReadOracleTest}).
+     */
+    private static final Map<String, String> EXCLUDED = excludedCases();
+
+    private static Map<String, String> excludedCases() {
+        Map<String, String> m = new LinkedHashMap<>();
+        m.put("native_bad_value", "a string read as a number is not an error");
+        m.put("native_bad_value_clean", "a string read as a number is not an error");
+        return Collections.unmodifiableMap(m);
+    }
 
     @TempDir
     Path tmp;
@@ -340,6 +364,32 @@ class FitsChanCursorOracleTest {
                 return catFile(a1);
             case "CPN":
                 return "= " + fc.copy().getI("Ncard") + "\n";
+            case "PW":
+                fc.purgeWCS();
+                return "";
+            case "R": {
+                AstObject obj = fc.read();
+                if (obj == null) {
+                    return "= null\n";
+                }
+                String cls = obj.astClass();
+                boolean named =
+                        "FrameSet".equals(cls) || "ZoomMap".equals(cls) || "Frame".equals(cls) || "CmpMap".equals(cls);
+                return "= " + (named ? cls : "another class") + "\n";
+            }
+            case "RN": {
+                AstObject obj = fc.read();
+                if (obj == null) {
+                    return "= null\n";
+                }
+                StringBuilder sb = new StringBuilder("= ")
+                        .append("FrameSet".equals(obj.astClass()) ? "FrameSet" : "another class")
+                        .append('\n');
+                for (String line : CValues.lines(ChannelText.dump(obj))) {
+                    sb.append('|').append(line).append('\n');
+                }
+                return sb.toString();
+            }
             default:
                 throw new IllegalArgumentException("unknown op " + op);
         }
@@ -444,19 +494,48 @@ class FitsChanCursorOracleTest {
         return false;
     }
 
+    /** The case called {@code name}. */
+    private static JsonNode findCase(String name) {
+        for (JsonNode c : ProbeData.load("fitschan_cursor").get("CASES")) {
+            if (name.equals(c.get(0).asText())) {
+                return c;
+            }
+        }
+        throw new IllegalArgumentException("no case " + name);
+    }
+
+    @Test
+    void excludedReadCasesStillDiffer() throws IOException {
+        for (Map.Entry<String, String> e : EXCLUDED.entrySet()) {
+            JsonNode c = findCase(e.getKey());
+            assertNotEquals(
+                    c.get(2).asText(),
+                    transcript(ops(c)),
+                    e.getKey() + " now matches C; remove it from EXCLUDED (" + e.getValue() + ")");
+        }
+    }
+
     @Test
     void cardFunctionsMatchTheCLibrary() throws IOException {
         List<String> failed = new ArrayList<>();
         int run = 0;
+        int waiting = 0;
         for (JsonNode c : ProbeData.load("fitschan_cursor").get("CASES")) {
             List<String> ops = ops(c);
-            if (uses(ops, WRITES) || uses(ops, READS)) {
+            String name = c.get(0).asText();
+            if (uses(ops, WRITES) || EXCLUDED.containsKey(name)) {
+                continue;
+            }
+            String want = c.get(2).asText();
+            String got;
+            try {
+                got = transcript(ops);
+            } catch (UnsupportedOperationException e) {
+                assertTrue(uses(ops, READS), name + ": " + e.getMessage());
+                waiting++;
                 continue;
             }
             run++;
-            String name = c.get(0).asText();
-            String want = c.get(2).asText();
-            String got = transcript(ops);
             if (!got.equals(want)) {
                 List<String> g = CValues.lines(got);
                 List<String> w = CValues.lines(want);
@@ -470,6 +549,7 @@ class FitsChanCursorOracleTest {
         }
         assertTrue(failed.isEmpty(), String.join("\n\n", failed));
         assertEquals(RUNNABLE, run, "cases run");
+        assertEquals(WAITING_FOR_FOREIGN_READ, waiting, "cases waiting for the read of a foreign encoding");
     }
 
     private static String context(List<String> lines, int at) {
