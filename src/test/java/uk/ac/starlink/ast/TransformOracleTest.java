@@ -514,6 +514,13 @@ class TransformOracleTest {
     /** The name of the row-level exclusion list in {@code deferred/}. */
     static final String ORACLE_ROWS = "oracle-rows";
 
+    /**
+     * The start of the cause of an entry whose rows may match C on some runtimes: their outcome
+     * hangs on the last bit of an elementary function of {@link Math}, which is not C's libm and
+     * differs between platforms, so the gate does not report such a row for matching C.
+     */
+    static final String MAY_MATCH = "runtime Math:";
+
     /** The rows of one section that {@code deferred/oracle-rows.txt} excuses, and why. */
     static final class ExcusedRows {
         final String relpath;
@@ -521,11 +528,15 @@ class TransformOracleTest {
         final SortedSet<Integer> rows;
         final String cause;
 
+        /** Whether the rows may match C on some runtimes (a cause starting {@link #MAY_MATCH}). */
+        final boolean mayMatch;
+
         ExcusedRows(String relpath, boolean forward, SortedSet<Integer> rows, String cause) {
             this.relpath = relpath;
             this.forward = forward;
             this.rows = Collections.unmodifiableSortedSet(rows);
             this.cause = cause;
+            this.mayMatch = cause.startsWith(MAY_MATCH);
         }
     }
 
@@ -537,7 +548,8 @@ class TransformOracleTest {
     /**
      * Parses the text of {@code deferred/oracle-rows.txt}: lines {@code <fixture> <forward|inverse>
      * <rows> | <cause>}, the rows numbered from 0 and separated by commas, with {@code #} comments
-     * and blank lines ignored. The result is keyed by {@link #sectionKey}.
+     * and blank lines ignored; a cause starting {@link #MAY_MATCH} marks rows that may match C on
+     * some runtimes. The result is keyed by {@link #sectionKey}.
      *
      * @throws IllegalArgumentException for a malformed line, or a section listed twice
      */
@@ -983,7 +995,9 @@ class TransformOracleTest {
             if (listed != null) {
                 Excusal x = excuseRows(misses, listed.rows);
                 misses = x.misses;
-                r.matchingListedRows = x.matching;
+                // A row whose outcome depends on the runtime's Math may match C here and differ
+                // elsewhere; only a row whose outcome is fixed is reported for matching.
+                r.matchingListedRows = listed.mayMatch ? null : x.matching;
             }
             if (!misses.isEmpty()) {
                 r.outcome = Outcome.MISMATCH;
@@ -1492,6 +1506,15 @@ class TransformOracleTest {
         String p = matchingRowsProblem(r);
         assertNotNull(p);
         assertTrue(p.contains("x.head inverse") && p.contains("[5]"), p);
+    }
+
+    @Test
+    void aRowWhoseOutcomeDependsOnTheRuntimeMayMatchC() {
+        Map<String, ExcusedRows> listed = parseOracleRows(
+                "a.head inverse 0 | runtime Math: the sign of a rounding residue\nb.head forward 1 | IEEE arithmetic\n",
+                "test");
+        assertTrue(listed.get(sectionKey("a.head", false)).mayMatch);
+        assertFalse(listed.get(sectionKey("b.head", true)).mayMatch);
     }
 
     @Test
