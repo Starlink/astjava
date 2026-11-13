@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -16,9 +17,7 @@ import org.junit.jupiter.api.Test;
  * FrameSet::find_frame(&template, &[])} is {@code findFrame(template, " ")}, and with {@code
  * &["X"]} it is {@code findFrame(template, "X")}.
  *
- * <p>{@code cmpframe_overlay_template_copies_domain} and {@code cmpframe_sub_frame_identity} need
- * a CmpFrame and are translated in Task 20. The tests whose Frames include a SpecFrame are
- * deferred.
+ * <p>The tests whose Frames include a SpecFrame are deferred.
  *
  * <p>{@code matchEndAndPreserveAxesChooseTheAxes} has no Rust counterpart: it checks the axes
  * frame.c {@code Match} associates under the MatchEnd and PreserveAxes attributes.
@@ -105,6 +104,38 @@ class FindFrameTest {
         assertEquals("A", found.getLabel(1));
         assertEquals("B", found.getLabel(2));
         assertEquals("T", found.getLabel(3), "the template's axis goes with the last result axis");
+    }
+
+    // ---- CmpFrame targets ----
+
+    /** A CmpFrame template with its Domain set matches only a target of that Domain. */
+    @Test
+    void cmpframeOverlayTemplateCopiesDomain() {
+        CmpFrame template = new CmpFrame(new Frame(2), new Frame(1));
+        template.setDomain("MYCMP");
+
+        CmpFrame target = new CmpFrame(new Frame(2), new Frame(1));
+        target.setDomain("MYCMP");
+        FrameSet result = target.findFrame(template, "");
+        assertNotNull(result, "the Domains match");
+        assertEquals(2, result.getNframe());
+        assertEquals(3, result.getFrame(FrameSet.AST__CURRENT).getNaxes());
+
+        CmpFrame otherTarget = new CmpFrame(new Frame(2), new Frame(1));
+        otherTarget.setDomain("OTHER");
+        assertNull(otherTarget.findFrame(template, ""));
+    }
+
+    /** Selecting every axis of a CmpFrame target gives a 3-in, 3-out Mapping to a 3-axis Frame. */
+    @Test
+    void cmpframeSubFrameIdentity() {
+        CmpFrame target = new CmpFrame(new Frame(2), new Frame(1));
+        Mapping[] map = new Mapping[1];
+        Frame[] result = new Frame[1];
+        assertTrue(target.subFrame(null, 3, new int[] {0, 1, 2}, new int[] {0, 1, 2}, map, result));
+        assertEquals(3, map[0].getNin());
+        assertEquals(3, map[0].getNout());
+        assertEquals(3, result[0].getNaxes());
     }
 
     // ---- FrameSet targets ----

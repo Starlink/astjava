@@ -1,6 +1,7 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -18,9 +19,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * {@code astIntersect} on a default SkyFrame and on one with its axes swapped, including bad
  * inputs and the degenerate cases C reports as bad.
  *
- * <p>{@code cmp_frame_resolve_matches_the_c_library} and {@code
- * cmp_frame_resolve_points_matches_the_c_library} use CmpFrames holding a SkyFrame and a SpecFrame
- * or a Frame, and are left to Task 20 (CmpFrame) and SpecFrame.
+ * <p>Of {@code cmp_frame_resolve_matches_the_c_library} and {@code
+ * cmp_frame_resolve_points_matches_the_c_library}, the cases of kind 1, a CmpFrame of a one-axis
+ * Frame and a SkyFrame, run here; those of kind 0, a CmpFrame of a SkyFrame and a SpecFrame, need
+ * a SpecFrame, outside the first phase.
  */
 class SkyGeometryTest {
 
@@ -87,6 +89,91 @@ class SkyGeometryTest {
                 failures.add(describe(c, 4) + ": got " + Arrays.toString(got) + ", C gives " + Arrays.toString(want));
             }
         }
+        assertTrue(failures.isEmpty(), String.join("\n", failures));
+    }
+
+    /**
+     * The probe's CmpFrame of kind 1, a one-axis Frame and a SkyFrame, with axes 1 and 3 swapped
+     * when {@code permuted}; null for kind 0, which holds a SpecFrame.
+     */
+    private static CmpFrame cmp(int kind, boolean permuted) {
+        if (kind == 0) {
+            return null;
+        }
+        CmpFrame f = new CmpFrame(new Frame(1), new SkyFrame());
+        if (permuted) {
+            f.permAxes(new int[] {3, 2, 1});
+        }
+        return f;
+    }
+
+    private static String describeCmp(JsonNode c, int n) {
+        StringBuilder s = new StringBuilder("kind ")
+                .append(c.get(0).asInt())
+                .append(" permuted ")
+                .append(c.get(1).asBoolean());
+        for (int i = 2; i < 2 + n; i++) {
+            s.append(' ').append(c.get(i));
+        }
+        return s.toString();
+    }
+
+    @Test
+    void cmpFrameResolveMatchesTheCLibrary() {
+        List<String> failures = new ArrayList<>();
+        int ran = 0;
+        for (JsonNode c : ProbeData.load("sky_geometry").get("CMP_RESOLVE_CASES")) {
+            CmpFrame f = cmp(c.get(0).asInt(), c.get(1).asBoolean());
+            if (f == null) {
+                continue;
+            }
+            ran++;
+            double[] p4 = new double[3];
+            double[] d = f.resolve(point(c.get(2)), point(c.get(3)), point(c.get(4)), p4);
+            double[] got = {p4[0], p4[1], p4[2], d[0], d[1]};
+            double[] w4 = point(c.get(5));
+            double[] want = {w4[0], w4[1], w4[2], ProbeData.toDouble(c.get(6)), ProbeData.toDouble(c.get(7))};
+            if (!CValues.cValuesEq(got, want)) {
+                failures.add(
+                        describeCmp(c, 3) + ": got " + Arrays.toString(got) + ", C gives " + Arrays.toString(want));
+            }
+        }
+        assertEquals(8, ran, "the cases of kind 1");
+        assertTrue(failures.isEmpty(), String.join("\n", failures));
+    }
+
+    @Test
+    void cmpFrameResolvePointsMatchesTheCLibrary() {
+        List<String> failures = new ArrayList<>();
+        int ran = 0;
+        for (JsonNode c : ProbeData.load("sky_geometry").get("CMP_RESOLVE_POINTS_CASES")) {
+            CmpFrame f = cmp(c.get(0).asInt(), c.get(1).asBoolean());
+            if (f == null) {
+                continue;
+            }
+            ran++;
+            JsonNode pts = c.get(4);
+            int npoint = pts.size();
+            double[][] in = new double[3][npoint];
+            for (int i = 0; i < npoint; i++) {
+                double[] row = point(pts.get(i));
+                for (int k = 0; k < 3; k++) {
+                    in[k][i] = row[k];
+                }
+            }
+            double[][] out = f.resolvePoints(point(c.get(2)), point(c.get(3)), in, npoint);
+            double[] d1s = point(c.get(5));
+            double[] d2s = point(c.get(6));
+            for (int i = 0; i < npoint; i++) {
+                double[] got = {out[0][i], out[1][i]};
+                double[] want = {d1s[i], d2s[i]};
+                if (!CValues.cValuesEq(got, want)) {
+                    failures.add(describeCmp(c, 2) + " point " + i + ": got " + Arrays.toString(got) + ", C gives "
+                            + Arrays.toString(want));
+                }
+            }
+        }
+        assertEquals(4, ran, "the cases of kind 1");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

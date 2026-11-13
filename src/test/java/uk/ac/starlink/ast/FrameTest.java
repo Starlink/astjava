@@ -15,13 +15,10 @@ import org.junit.jupiter.api.Test;
  * ast_tester/testframe.c}, and a table of Unit and NormUnit pairs read back from a one-axis C
  * Frame.
  *
- * <p>The parts for a plain Frame, a SkyFrame, a TimeFrame and a FrameSet holding a SkyFrame are
- * translated here; of {@code spectral_time_and_flux_frames_normalise_the_unit_they_report}, the
- * TimeFrame part. The CmpFrame parts ({@code
- * cmp_frame_norm_unit_comes_from_the_component}, {@code cmp_frame_norm_unit_keeps_a_sky_description},
- * and the CmpFrame cases of {@code units_of_an_axis_out_of_range_are_an_error} and {@code
- * picked_sky_axis_has_an_internal_unit_of_radians}) are translated in Task 20. The SpecFrame, FluxFrame,
- * DSBSpecFrame and Circle parts need classes outside the first phase.
+ * <p>The parts for a plain Frame, a SkyFrame, a TimeFrame, a CmpFrame and a FrameSet holding a
+ * SkyFrame are translated here; of {@code
+ * spectral_time_and_flux_frames_normalise_the_unit_they_report}, the TimeFrame part. The SpecFrame,
+ * FluxFrame, DSBSpecFrame and Circle parts need classes outside the first phase.
  */
 class FrameTest {
 
@@ -202,6 +199,45 @@ class FrameTest {
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 
+    /** A CmpFrame's NormUnit for an axis is that of the component holding it. */
+    @Test
+    void cmpFrameNormUnitComesFromTheComponent() {
+        CmpFrame cmp = new CmpFrame(sky("GALACTIC"), oneAxisFrame("s*(m/s)"));
+        assertEquals("deg", cmp.getNormUnit(1));
+        assertEquals("deg", cmp.getNormUnit(2));
+        assertEquals("m", cmp.getNormUnit(3));
+    }
+
+    /**
+     * A CmpFrame's NormUnit for a SkyFrame axis is the SkyFrame's own, so a Unit that describes the
+     * axis values is left as it is, as the C library leaves it.
+     */
+    @Test
+    void cmpFrameNormUnitKeepsASkyDescription() {
+        // Each case: the Format of axis 1, or null; the Unit of axis 1, or null; the NormUnit.
+        String[][] cases = {
+            {"bhms", null, "hh mm ss"},
+            {"bdms.2", null, "ddd mm ss.ss"},
+            {"btm", null, "minutes of time"},
+            {"bts", null, "seconds of time"},
+            {"bhms", "hh mm ss", "hh mm ss"},
+            {null, null, "hh:mm:ss.s"},
+        };
+        for (String[] c : cases) {
+            SkyFrame skyFrame = sky("ICRS");
+            if (c[0] != null) {
+                skyFrame.setFormat(1, c[0]);
+            }
+            if (c[1] != null) {
+                skyFrame.setUnit(1, c[1]);
+            }
+            String what = "Format " + c[0] + ", Unit " + c[1];
+            assertEquals(c[2], skyFrame.getNormUnit(1), "SkyFrame " + what);
+            CmpFrame cmp = new CmpFrame(skyFrame, new Frame(1));
+            assertEquals(c[2], cmp.getNormUnit(1), "CmpFrame " + what);
+        }
+    }
+
     /**
      * An axis picked out of a SkyFrame keeps the SkyFrame's Unit and NormUnit. C sets the
      * SkyFrame's Unit explicitly on the picked axis, and SkyAxis leaves a set Unit that describes
@@ -256,8 +292,8 @@ class FrameTest {
 
     /**
      * NormUnit and InternalUnit reject an axis out of range with {@code AST__AXIIN}, as the C
-     * library does for a Frame, a SkyFrame and a FrameSet; a FrameSet answers as its current
-     * Frame does.
+     * library does for a Frame, a SkyFrame, a CmpFrame and a FrameSet; a FrameSet answers as its
+     * current Frame does.
      */
     @Test
     void unitsOfAnAxisOutOfRangeAreAnError() {
@@ -270,9 +306,10 @@ class FrameTest {
         }
 
         SkyFrame skyFrame = sky("ICRS");
+        CmpFrame cmp = new CmpFrame((SkyFrame) skyFrame.copy(), new Frame(1));
         FrameSet fs = new FrameSet((SkyFrame) skyFrame.copy());
-        Frame[] frames = {skyFrame, fs};
-        String[] names = {"sky", "frameset"};
+        Frame[] frames = {skyFrame, cmp, fs};
+        String[] names = {"sky", "cmp", "frameset"};
         for (int i = 0; i < frames.length; i++) {
             Frame frame = frames[i];
             for (int axis : new int[] {0, frame.getNaxes() + 1}) {
@@ -284,13 +321,15 @@ class FrameTest {
         }
         // The values the C library gives for axis 1.
         assertEquals("rad", skyFrame.getInternalUnit(1));
+        assertEquals("rad", cmp.getInternalUnit(1));
         assertEquals("rad", fs.getInternalUnit(1));
         assertEquals("hh:mm:ss.s", fs.getNormUnit(1));
+        assertEquals("", cmp.getInternalUnit(3));
     }
 
     /**
      * An axis picked out of a SkyFrame is still a sky axis, whose values are in radians: the C
-     * library gives an InternalUnit of {@code "rad"} for it.
+     * library gives an InternalUnit of {@code "rad"} for it, and for a CmpFrame holding it.
      */
     @Test
     void pickedSkyAxisHasAnInternalUnitOfRadians() {
@@ -303,6 +342,9 @@ class FrameTest {
         }
         Frame picked = f.pickAxes(1, new int[] {1}, null);
         assertEquals("hh:mm:ss.s", picked.getUnit(1));
+        CmpFrame cmp = new CmpFrame(picked, oneAxisFrame("km"));
+        assertEquals("rad", cmp.getInternalUnit(1));
+        assertEquals("km", cmp.getInternalUnit(2));
     }
 
     /**

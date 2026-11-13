@@ -39,6 +39,7 @@ class JniastApiTest {
             "AstObject",
             "Axis",
             "Channel",
+            "CmpFrame",
             "CmpMap",
             "Frame",
             "FrameSet",

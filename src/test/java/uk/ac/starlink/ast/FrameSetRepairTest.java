@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
 import static uk.ac.starlink.ast.MappingTestData.transformRows;
@@ -19,8 +20,11 @@ import org.junit.jupiter.api.Test;
  *
  * <p>{@code frameset_simplified_returns_frameset} is translated as far as this version simplifies:
  * the result is a FrameSet with the same Frames; that the CmpMap of a ZoomMap and its inverse
- * becomes a UnitMap needs simplification. {@code add_frame_allframes_appends_axes} needs a
- * CmpFrame and is translated in Task 20, with {@code allframes_rejected_as_single_frame}.
+ * becomes a UnitMap needs simplification.
+ *
+ * <p>{@code addFrameAllframesAppendsAxes} checks the FrameSet C's {@code AppendAxes} makes
+ * (frameset.c {@code AddFrame} with {@code AST__ALLFRAMES}) by its Frames and transformation:
+ * C simplifies each new CmpMap, which this version does not, so the Mappings are not compared.
  */
 class FrameSetRepairTest {
 
@@ -204,5 +208,49 @@ class FrameSetRepairTest {
         assertNotNull(out, "current FK5 Frame converts to Galactic");
         Mapping m = out.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
         assertTrue(m.getTranForward() && m.getTranInverse());
+    }
+
+    // AST__ALLFRAMES (frameset.c AddFrame and AppendAxes)
+
+    /**
+     * Adding with {@code AST__ALLFRAMES} appends the Frame's axes to every Frame of the set: each
+     * Frame becomes a CmpFrame of itself and the Frame, and each Mapping a parallel CmpMap of
+     * itself and a UnitMap. The Mapping given is ignored. In C, a 2-axis GRID to FPLANE WinMap
+     * FrameSet widened by a 1-axis SPEC Frame maps (5, 5, 42) to (40, 40, 42).
+     */
+    @Test
+    void addFrameAllframesAppendsAxes() {
+        WinMap wm = new WinMap(
+                2, new double[] {1.0, 1.0}, new double[] {10.0, 10.0}, new double[] {0.0, 0.0}, new double[] {90.0, 90.0
+                });
+        FrameSet fs = new FrameSet(named(2, "GRID"));
+        fs.addFrame(FrameSet.AST__CURRENT, wm, named(2, "FPLANE"));
+
+        fs.addFrame(FrameSet.AST__ALLFRAMES, new UnitMap(1), named(1, "SPEC"));
+
+        assertEquals(2, fs.getNframe());
+        assertEquals(3, fs.getNin());
+        assertEquals(3, fs.getNout());
+        assertEquals(
+                3,
+                assertInstanceOf(CmpFrame.class, fs.getFrame(FrameSet.AST__BASE))
+                        .getNaxes());
+        assertEquals(
+                3,
+                assertInstanceOf(CmpFrame.class, fs.getFrame(FrameSet.AST__CURRENT))
+                        .getNaxes());
+
+        double[] out = point(transformRows(fs, true, new double[] {5.0, 5.0, 42.0}), 0);
+        assertTrue(Math.abs(out[0] - 40.0) < 1e-9, "axis 1 " + out[0]);
+        assertTrue(Math.abs(out[1] - 40.0) < 1e-9, "axis 2 " + out[1]);
+        assertTrue(Math.abs(out[2] - 42.0) < 1e-9, "axis 3 " + out[2]);
+    }
+
+    /** {@code AST__ALLFRAMES} is not the index of a Frame (frameset.c {@code ValidateFrameIndex}). */
+    @Test
+    void allframesRejectedAsSingleFrame() {
+        FrameSet fs = threeFrameChain();
+        AstException e = assertThrows(AstException.class, () -> fs.getFrame(FrameSet.AST__ALLFRAMES));
+        assertEquals(AstException.AST__FRMIN, e.getStatus());
     }
 }

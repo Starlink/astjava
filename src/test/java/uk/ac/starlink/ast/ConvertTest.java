@@ -15,9 +15,9 @@ import org.junit.jupiter.api.Test;
  * find_frame_domain_mismatch_returns_none} and {@code convert_basic_sky_unitmap} run here; the
  * last leaves out its {@code astEqual} checks that the base and current Frames of each result are
  * the Frames converted, which need {@code astEqual}, outside the first phase. The tests whose
- * Frames include a CmpFrame ({@code convert_basic_cmp_permmap}, {@code convert_sky_cmp_permmap},
- * {@code find_frame_cmp_needs_widened_axes}) are translated in Task 20; those whose Frames include
- * a SpecFrame or a Circle are deferred.
+ * Frames include a SpecFrame or a Circle are deferred, among them the CmpFrame tests ({@code
+ * convert_basic_cmp_permmap}, {@code convert_sky_cmp_permmap} and {@code
+ * find_frame_cmp_needs_widened_axes}), whose CmpFrames hold a SpecFrame.
  *
  * <p>{@code aFramesetTriesItsBaseFrameFirst} has no Rust counterpart: it checks the order in which
  * frameset.c {@code ConvertX} tries a FrameSet's Frames.

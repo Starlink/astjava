@@ -16,9 +16,6 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * tools/oracle_fixtures/skyframe_attrs_probe.c}). The probe applies each setting to a default
  * SkyFrame, reads every attribute back with its {@code astTest} result, and dumps the SkyFrame;
  * {@link #skyFrame} applies the same settings through the Java API.
- *
- * <p>The CmpFrame half of {@code own_axes_have_no_is_latitude} (a CmpFrame holding the SkyFrame
- * reports no Top on its latitude axis) is left to Task 20, which ports CmpFrame.
  */
 class SkyFrameAttrsTest {
 
@@ -306,8 +303,9 @@ class SkyFrameAttrsTest {
     /**
      * A SkyFrame's own SkyAxes have no IsLatitude set, so the Axis methods C reaches through {@code
      * astGetAxis} treat its latitude axis as a longitude: {@code astAxOffset} wraps -0.1 into [0,
-     * 2pi] on either axis. The SkyFrame itself still gives its latitude a Top of pi/2. Recorded in
-     * the Rust repository's {@code docs/issues/c-library-quirks.md}.
+     * 2pi] on either axis, and a CmpFrame holding the SkyFrame reports no Top on its latitude.
+     * The SkyFrame itself still gives its latitude a Top of pi/2. Recorded in the Rust
+     * repository's {@code docs/issues/c-library-quirks.md}.
      */
     @Test
     void ownAxesHaveNoIsLatitude() {
@@ -317,6 +315,8 @@ class SkyFrameAttrsTest {
             assertTrue(Math.abs(v - (2.0 * Math.PI - 0.1)) < 1.0e-12, "axis " + axis + ": " + v);
         }
         assertTrue(Math.abs(sky.axDistance(2, 0.1, 6.2) - (6.1 - 2.0 * Math.PI)) < 1.0e-12);
+        CmpFrame cmp = new CmpFrame((SkyFrame) sky.copy(), new Frame(1));
+        assertEquals(Double.MAX_VALUE, cmp.getTop(2));
         assertEquals(Math.PI / 2.0, sky.getTop(2));
     }
 

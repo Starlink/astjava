@@ -696,14 +696,28 @@ public class FrameSet extends Frame {
     }
 
     /**
-     * Appends the axes of {@code frame} to every Frame (C's {@code AppendAxes}), which replaces
-     * each Frame by a CmpFrame.
-     *
-     * @throws UnsupportedOperationException always, since this version has no CmpFrame
+     * Appends the axes of {@code frame} to every Frame (C's {@code AppendAxes}): each Frame is
+     * replaced by a CmpFrame of it and {@code frame}, which they all hold, and each Mapping, used
+     * with the Invert value recorded for it, by a parallel CmpMap of it and a UnitMap for the new
+     * axes, which they all share.
      */
-    private static void appendAxes(Frame frame) {
-        throw new UnsupportedOperationException("Appending the axes of a " + frame.astClass()
-                + " to every Frame of a FrameSet needs a CmpFrame, which is not available in this version");
+    private void appendAxes(Frame frame) {
+        for (int iframe = 0; iframe < nframe; iframe++) {
+            frames[iframe] = CmpFrame.transientCmpFrame(frames[iframe], frame);
+        }
+        frame.markShared();
+        UnitMap umap = new UnitMap(frame.getNaxes());
+        if (nnode - 1 > 1) {
+            umap.markShared();
+        }
+        for (int imap = 0; imap < nnode - 1; imap++) {
+            boolean invOrig = maps[imap].getInvert();
+            maps[imap].setInvert(inverts[imap] != 0);
+            Mapping map = CmpMap.transientCmpMap(maps[imap], umap, false);
+            maps[imap].setInvert(invOrig);
+            maps[imap] = map.simplify();
+            inverts[imap] = maps[imap].getInvert() ? 1 : 0;
+        }
     }
 
     /** Makes the arrays of Frame information hold {@code n} Frames. */
