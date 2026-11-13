@@ -20,9 +20,9 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * SubFrame}).
  *
  * <p>The cases of {@code overlay_results_match_the_c_library} whose Frames this version builds run
- * here: {@code frame_pick} and the SkyFrame cases ({@code sky_target_frame_template}, {@code
- * sky_pick_one}). The TimeFrame cases ({@code time_target_frame_template}, {@code
- * time_system_change}, {@code time_pick_padded}) are added in Task 19. The cases with a SpecFrame
+ * here: {@code frame_pick}, the SkyFrame cases ({@code sky_target_frame_template}, {@code
+ * sky_pick_one}) and the TimeFrame cases ({@code time_target_frame_template}, {@code
+ * time_system_change}, {@code time_pick_padded}). The cases with a SpecFrame
  * or a FluxFrame (among them {@code cmp_template_plain_target}, whose CmpFrame holds a SpecFrame)
  * are outside this version.
  */
@@ -36,6 +36,12 @@ class OverlayTest {
         FrameSet fs = target.findFrame(template, "");
         assertNotNull(fs, "a match");
         return fs.getFrame(FrameSet.AST__CURRENT);
+    }
+
+    private static TimeFrame time(String system) {
+        TimeFrame f = new TimeFrame();
+        f.setSystem(system);
+        return f;
     }
 
     private static SkyFrame sky(String system) {
@@ -72,6 +78,22 @@ class OverlayTest {
                 s.setDigits(5);
                 return s.pickAxes(1, new int[] {1}, null);
             }
+            case "time_target_frame_template": {
+                Frame t = new Frame(1);
+                t.setDomain("TIME");
+                t.setTitle("When");
+                t.setLabel(1, "T");
+                t.setDigits(11);
+                return found(time("MJD"), t);
+            }
+            case "time_system_change": {
+                TimeFrame f = time("MJD");
+                f.setLabel(1, "Mine");
+                f.setTitle("Mine");
+                return found(f, time("JD"));
+            }
+            case "time_pick_padded":
+                return time("JD").pickAxes(2, new int[] {1, 0}, null);
             default:
                 return null;
         }
@@ -100,7 +122,7 @@ class OverlayTest {
                 failures.add(name + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(3, ran, "the cases with Frames this version builds");
+        assertEquals(6, ran, "the cases with Frames this version builds");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

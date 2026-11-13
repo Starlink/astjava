@@ -338,3 +338,6 @@ tests/test_sky_interleave.rs::interleaved_sky_axes_match_the_c_library | needs C
 tests/test_sky_pole_oracle.rs::sky_pole_matches_the_c_library | needs FitsChan
 tests/test_sky_pole_oracle.rs::refused_cases_are_ill_conditioned | needs FitsChan
 tests/test_skyref_offset_mapping.rs::skyref_offset_mapping_matches_oracle | needs FitsChan
+tests/test_timeframe.rs::test_equal | astEqual (out-of-scope method)
+tests/test_timeframe.rs::test_map_from_timescale_change | Rust-only API (Frame::map_from)
+tests/test_spec_use_defs.rs::titles_match_the_c_library | SpecFrame (out of scope)

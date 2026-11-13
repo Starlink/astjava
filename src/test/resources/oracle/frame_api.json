@@ -1,0 +1,11 @@
+{
+  "source": "crates/starlink-ast/tests/frame_api_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/frame_api_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "SYSTIME": 1.791333821E9,
+    "TIMES": [[" ",61320.030763888884],["System=JEPOCH,TimeScale=TDB",2026.7639456163447],["System=MJD,TimeScale=UTC,TimeOrigin=60000,Unit(1)=h",31680.728055555548],["System=BEPOCH,TimeScale=TT",2026.7657947819732]],
+    "REF_POS": [["none",[1.0,0.3]],["galactic",[3.007084965954284,-0.4919465061013814]],["fk4_swapped",[0.9875654789681687,0.2973495972165142]]],
+    "DENSITY": [["System=FLXDN","FREQ","Hz"],["System=SFCBRW","WAVE","Angstrom"],["Unit=W/m^2/Angstrom","WAVE","Angstrom"]]
+  }
+}

@@ -4,7 +4,7 @@
 programs/testcmpmap/splittest1.ast | needs LutMap
 programs/testfitschan/sparse.ast | needs CmpFrame, DSBSpecFrame, LutMap, SpecMap
 programs/testplot3d/plot3d-test1.ast | needs CmpFrame, DSBSpecFrame, SpecMap
-programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, CmpFrame, PointList, PointSet, Prism, SpecFrame, TimeFrame
+programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, CmpFrame, PointList, PointSet, Prism, SpecFrame
 serialisation/c_dssmap.ast | needs DssMap
 serialisation/cmpframe.ast | needs CmpFrame, SpecFrame
 serialisation/degen1.ast | needs CmpFrame
@@ -13,7 +13,6 @@ serialisation/frameset_skyspec.ast | needs CmpFrame, SpecFrame
 serialisation/jan-dsb.ast | needs DSBSpecFrame
 serialisation/region_in_cmpframe.ast | needs Box, CmpFrame, PointSet
 serialisation/specframe.ast | needs SpecFrame
-serialisation/timeframe.ast | needs TimeFrame
 wcsconv/expected/jan.ast | needs CmpFrame, DSBSpecFrame
 wcsconv/framesets/a20070718_00010_02_cube-ast.ast | needs CmpFrame, DSBSpecFrame, SpecMap
 wcsconv/framesets/alt-spectral-head.ast | needs CmpFrame, SpecFrame
@@ -57,7 +56,7 @@ wcsconv/framesets/skyspec3d-class-head.ast | needs CmpFrame, SpecFrame
 wcsconv/framesets/skyspec3d-head.ast | needs CmpFrame, SpecFrame
 wcsconv/framesets/specflux-head.ast | needs CmpFrame, SpecFrame
 wcsconv/framesets/ssysobs-head.ast | needs CmpFrame, SpecFrame
-wcsconv/framesets/timeplot-head.ast | needs CmpFrame, TimeFrame
+wcsconv/framesets/timeplot-head.ast | needs CmpFrame
 wcsconv/framesets/velo-aips-head.ast | needs SpecFrame
 wcsconv/framesets/velo-vel-head.ast | needs SpecFrame
 wcsconv/framesets/vopt-f2w-head.ast | needs CmpFrame, SpecFrame, SpecMap

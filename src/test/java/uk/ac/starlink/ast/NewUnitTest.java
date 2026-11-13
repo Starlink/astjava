@@ -16,8 +16,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * Symbol for the new Unit and clears a set Format when the Unit changes (frame.c {@code SetUnit},
  * {@code ClearUnit} and {@code NewUnit}); trailing spaces are dropped from the Unit.
  *
- * <p>The plain Frame cases run here; {@code time_s} is added in Task 19, and {@code spec_log}
- * and {@code spec_mhz} need a SpecFrame, outside the first phase.
+ * <p>The plain Frame cases and {@code time_s} run here; {@code spec_log} and {@code spec_mhz} need
+ * a SpecFrame, outside the first phase.
  */
 class NewUnitTest {
 
@@ -59,6 +59,11 @@ class NewUnitTest {
                 f = frame(true);
                 f.clearUnit(1);
                 return f;
+            case "time_s":
+                f = new TimeFrame();
+                f.set("System=MJD,Label(1)=When,Format(1)=%.3f");
+                f.set("Unit(1)=s");
+                return f;
             default:
                 return null;
         }
@@ -82,7 +87,7 @@ class NewUnitTest {
                 failures.add(name + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(6, ran, "the plain Frame cases");
+        assertEquals(7, ran, "the plain Frame cases and time_s");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 }

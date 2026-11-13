@@ -18,15 +18,15 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * one attribute on the first or last axis of an object of each class and reads every attribute of
  * every axis back).
  *
- * <p>The cases for a plain Frame, a SkyFrame and a FrameSet holding a SkyFrame (with those of its
- * current Frame, "inner1") run here. Those of TimeFrame are added in Task 19, and CmpFrame and
- * PlainCmpFrame in Task 20; SpecFrame, DSBSpecFrame, FluxFrame, SpecFluxFrame and Circle are
+ * <p>The cases for a plain Frame, a SkyFrame, a TimeFrame and a FrameSet holding a SkyFrame (with
+ * those of its current Frame, "inner1") run here. Those of CmpFrame and PlainCmpFrame are added in
+ * Task 20; SpecFrame, DSBSpecFrame, FluxFrame, SpecFluxFrame and Circle are
  * outside the first phase.
  */
 class FrameAxisAttrsTest {
 
     /** The classes whose cases run. */
-    private static final List<String> CLASSES = Arrays.asList("Frame", "SkyFrame", "FrameSet");
+    private static final List<String> CLASSES = Arrays.asList("Frame", "SkyFrame", "TimeFrame", "FrameSet");
 
     private static SkyFrame icrs() {
         SkyFrame f = new SkyFrame();
@@ -40,6 +40,8 @@ class FrameAxisAttrsTest {
                 return new Frame(2);
             case "SkyFrame":
                 return icrs();
+            case "TimeFrame":
+                return new TimeFrame();
             case "FrameSet":
                 return new FrameSet(icrs());
             default:
@@ -176,7 +178,7 @@ class FrameAxisAttrsTest {
                 failures.add(cls + " \"" + setting + "\" " + whose + " " + attr + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(1152, run, "the Frame, SkyFrame and FrameSet cases the C probe recorded");
+        assertEquals(1232, run, "the Frame, SkyFrame, TimeFrame and FrameSet cases the C probe recorded");
         assertTrue(failures.isEmpty(), failures.size() + " cases differ:\n" + String.join("\n", failures));
     }
 
