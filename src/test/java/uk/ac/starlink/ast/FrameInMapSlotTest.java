@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.Fixtures;
 
 /**
  * For Rust {@code tests/test_frame_in_map_slot.rs}: a Frame where a Mapping is expected. C
@@ -15,9 +16,9 @@ import org.junit.jupiter.api.Test;
  * <p>{@code aFrameInAMappingSlotTransformsAsAUnitMap} has no Rust counterpart: it builds the
  * FrameSet of {@code tools/oracle_fixtures/frame_in_map_slot_probe.c} with a plain Frame in place
  * of its CmpFrame, and transforms through it before and after a dump and reload. {@code
- * frame_in_a_map_slot_is_rejected}, which reads the probe's dump, needs a CmpFrame and is
- * translated in Task 20, asserting that the dump is read and transforms as C's does. The two
- * controls, which read Regions, are deferred.
+ * frameInAMapSlotIsRejected} reads the probe's dump, whose Mapping slot holds a CmpFrame, and
+ * asserts C's acceptance: the dump is read, and the FrameSet transforms as the probe reports C's
+ * does, (1, 3) to (2, 6). The two controls, which read Regions, are deferred.
  */
 class FrameInMapSlotTest {
 
@@ -43,6 +44,19 @@ class FrameInMapSlotTest {
 
         FrameSet back = assertInstanceOf(FrameSet.class, ChannelText.read(ChannelText.dump(fs)));
         assertInstanceOf(Frame.class, back.getMapping(2, 3));
+        checkTransform(back);
+    }
+
+    @Test
+    void frameInAMapSlotIsRejected() {
+        String text = Fixtures.read("serialisation/frame_in_map_slot.ast");
+        FrameSet fs = assertInstanceOf(FrameSet.class, ChannelText.read(text));
+        assertEquals(3, fs.getNframe());
+        CmpFrame slot = assertInstanceOf(CmpFrame.class, fs.getMapping(2, 3));
+        assertEquals(2, slot.getNaxes());
+        checkTransform(fs);
+
+        FrameSet back = assertInstanceOf(FrameSet.class, ChannelText.read(ChannelText.dump(fs)));
         checkTransform(back);
     }
 }

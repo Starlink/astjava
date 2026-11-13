@@ -28,6 +28,8 @@ final class ObjectRegistry {
                 return Axis::new;
             case "Channel":
                 return Channel::new;
+            case "CmpFrame":
+                return CmpFrame::new;
             case "CmpMap":
                 return CmpMap::new;
             case "Frame":

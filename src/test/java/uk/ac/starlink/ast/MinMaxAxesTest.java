@@ -15,10 +15,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * unset MinAxes defaults to Naxes but no more than a set MaxAxes, an unset MaxAxes to Naxes but no
  * less than a set MinAxes, and setting either moves a set value of the other to stay consistent
  * (frame.c {@code DefaultMinAxes}, {@code DefaultMaxAxes}, {@code ConsistentMinAxes} and {@code
- * ConsistentMaxAxes}).
- *
- * <p>The plain Frame and SkyFrame cases of {@code min_max_axes_match_the_c_library} run here; the
- * CmpFrame cases are added in Task 20.
+ * ConsistentMaxAxes}). A CmpFrame defaults to 0 and 1000000 instead (cmpframe.c {@code
+ * GetMinAxes}, {@code GetMaxAxes}).
  */
 class MinMaxAxesTest {
 
@@ -46,7 +44,7 @@ class MinMaxAxesTest {
         }
     }
 
-    /** The Frame the probe names {@code cls}, or null for a class whose cases do not run here. */
+    /** The Frame the probe names {@code cls}. */
     private static Frame make(String cls) {
         switch (cls) {
             case "Frame2":
@@ -54,7 +52,7 @@ class MinMaxAxesTest {
             case "SkyFrame":
                 return new SkyFrame();
             case "CmpFrame":
-                return null;
+                return new CmpFrame(new Frame(1), new Frame(1));
             default:
                 throw new IllegalArgumentException("unknown class " + cls);
         }
@@ -67,9 +65,6 @@ class MinMaxAxesTest {
         for (JsonNode c : ProbeData.load("min_max_axes").get("AXES_CASES")) {
             String cls = c.get(0).asText();
             Frame f = make(cls);
-            if (f == null) {
-                continue;
-            }
             ran++;
             String settings = c.get(1).asText();
             apply(f, settings);
@@ -80,7 +75,7 @@ class MinMaxAxesTest {
                 failures.add(cls + " [" + settings + "]: got " + got + ", C gives " + want);
             }
         }
-        assertEquals(20, ran, "the plain Frame and SkyFrame cases");
+        assertEquals(30, ran);
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

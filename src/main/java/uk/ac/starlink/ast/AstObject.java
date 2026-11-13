@@ -911,6 +911,19 @@ public class AstObject implements Cloneable {
         return useDefs == UNSET_FLAG || useDefs != 0;
     }
 
+    /** Whether the UseDefs attribute is set. */
+    final boolean testUseDefs() {
+        return useDefs != UNSET_FLAG;
+    }
+
+    /**
+     * The UseDefs attribute as the Object class gives it (object.c {@code GetUseDefs}), which a
+     * class that overrides {@link #getUseDefs} does not change.
+     */
+    final boolean objectUseDefs() {
+        return useDefs == UNSET_FLAG || useDefs != 0;
+    }
+
     /** Sets the UseDefs attribute. */
     void setUseDefs(boolean value) {
         useDefs = value ? 1 : 0;
