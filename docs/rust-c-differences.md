@@ -162,6 +162,12 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: treats all-zero coefficients as undefined.
 - Java: as C.
 
+### Values that are not finite in a PolyMap
+
+- C: `astTransform` replaces values that are not finite in its result with AST__BAD only when the environment variable `AST_REPLACE_NAN` is set (`mapping.c:24815`, `pointset.c:1896`); by default a NaN or an infinity a polynomial makes, including one inside `IterInverse`, is kept.
+- Rust: `mappings/polymap.rs` writes a NaN output of a polynomial as bad, and replaces the values that are not finite in each set of values inside the iterative inverse with bad (`substitute_nan_to_bad_in_place`), as C does with `AST_REPLACE_NAN=1`.
+- Java: as Rust; both ports differ from C's default here.
+
 ### PolyMap `StoreArrays` caches
 
 - C: keeps the `lintrunc` and Jacobian caches when the arrays are stored again.

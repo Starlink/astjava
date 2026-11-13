@@ -939,7 +939,9 @@ public class PolyMap extends Mapping {
     /**
      * Transforms {@code npoint} points through the original forward ({@code fwd}) or inverse
      * polynomials, as C's {@code Transform} (polymap.c) does, writing {@code bad} (bad or NaN) for
-     * an output that is bad or NaN. With plain powers, good coefficients and enough points, the
+     * an output that is bad, as C does, or NaN, which C leaves as NaN unless the environment
+     * variable {@code AST_REPLACE_NAN} is set (its {@code astTransform} then makes it bad,
+     * mapping.c:24815, pointset.c:1896). An infinite output is kept. With plain powers, good coefficients and enough points, the
      * points are evaluated a block at a time ({@link #polyTransformBlocked}), which gives the same
      * values.
      */
@@ -1215,8 +1217,9 @@ public class PolyMap extends Mapping {
     }
 
     /**
-     * Replaces each value of the first {@code npoint} points that is not finite with bad, as C's
-     * {@code astTransform} does with its results.
+     * Replaces each value of the first {@code npoint} points that is not finite with bad. C's
+     * {@code astTransform} does this to its results only when the environment variable {@code
+     * AST_REPLACE_NAN} is set (mapping.c:24815, pointset.c:1896); by default it leaves them.
      */
     private static void replaceNaN(double[][] pts, int ncoord, int npoint) {
         for (int c = 0; c < ncoord; c++) {
@@ -1239,8 +1242,10 @@ public class PolyMap extends Mapping {
      * bad. A position has converged when its step {@code dx} satisfies {@code |dx|^2 <= tol^2
      * |x|^2}; one that has not converged after NiterInverse iterations keeps its last position. Bad
      * values are carried through the arithmetic as C carries them, so a position bad on one axis
-     * can keep a value on another, and each set of values C gets from {@code astTransform}, and the
-     * result, has its values that are not finite replaced by bad ones, as {@code astTransform} does.
+     * can keep a value on another. Each set of values C gets from {@code astTransform}, and the
+     * result, has its values that are not finite replaced by bad ones here ({@link #replaceNaN}),
+     * which C's {@code astTransform} does only when {@code AST_REPLACE_NAN} is set; by default C
+     * carries an infinity or a NaN that arises in the iteration on through it.
      */
     private void iterativeInverse(double[][] target, int npoint, double[][] result) {
         int ncoord = createdNin();
