@@ -1,0 +1,33 @@
+# Public and protected members of the jniast classes this library provides that jniast lacks.
+# One line per member, keyed as jniast-api.txt keys them: <Class>.<name>(<parameter types>) for
+# methods and constructors, <Class>.<name> for fields, <Class> for a nested type; then | and the
+# reason. JniastApiTest fails on a public member jniast lacks that is not listed, and on a line
+# naming no such member.
+AstException.AST__BASDF | a status code of the pinned C library (ast_err.msg) newer than jniast: "Invalid ASDF object supplied"
+AstException.AST__BDCLS | a status code of the pinned C library (ast_err.msg) newer than jniast: "Wrong class of object supplied"
+AstException.AST__BDSKY | a status code of the pinned C library (ast_err.msg) newer than jniast: "Sky axes cannot be separated from other axes"
+AstException.AST__BDVNM | a status code of the pinned C library (ast_err.msg) newer than jniast: "Bad variant Mapping name"
+AstException.AST__BGMOC | a status code of the pinned C library (ast_err.msg) newer than jniast: "Normalised MOC is too big"
+AstException.AST__BGWRD | a status code of the pinned C library (ast_err.msg) newer than jniast: "Word is too long"
+AstException.AST__BYAML | a status code of the pinned C library (ast_err.msg) newer than jniast: "Invalid YAML object supplied"
+AstException.AST__EXSPIX | a status code of the pinned C library (ast_err.msg) newer than jniast: "Supplied array has too many pixels"
+AstException.AST__IMMUT | a status code of the pinned C library (ast_err.msg) newer than jniast: "Attempt to change an immutable attribute"
+AstException.AST__INMOC | a status code of the pinned C library (ast_err.msg) newer than jniast: "Invalid string-encoded MOC"
+AstException.AST__INVAR | a status code of the pinned C library (ast_err.msg) newer than jniast: "Invalid argument value supplied to an AST method"
+AstException.AST__LYAML | a status code of the pinned C library (ast_err.msg) newer than jniast: "Error in libyaml function"
+AstException.AST__MIRRO | a status code of the pinned C library (ast_err.msg) newer than jniast: "Attempt to add a variant Mapping to a mirror Frame"
+AstException.AST__MNPCK | a status code of the pinned C library (ast_err.msg) newer than jniast: "Error in cminpack Levenberg-Marquardt code"
+AstException.AST__NOBOX | a status code of the pinned C library (ast_err.msg) newer than jniast: "No bounding box available"
+AstException.AST__NOCNV | a status code of the pinned C library (ast_err.msg) newer than jniast: "No mapping found between coordinate systems"
+AstException.AST__NOIMP | a status code of the pinned C library (ast_err.msg) newer than jniast: "Class does not implement the invoked method"
+AstException.AST__NOSKY | a status code of the pinned C library (ast_err.msg) newer than jniast: "Supplied Frame has no sky coordinate axes"
+AstException.AST__NOTMP | a status code of the pinned C library (ast_err.msg) newer than jniast: "No TMapping found"
+AstException.AST__NOTSP | a status code of the pinned C library (ast_err.msg) newer than jniast: "Requested feature is not supported"
+AstException.AST__NOYAML | a status code of the pinned C library (ast_err.msg) newer than jniast: "AST was configured without YAML support"
+AstException.AST__SMBUF | a status code of the pinned C library (ast_err.msg) newer than jniast: "Supplied buffer too small"
+AstException.AST__TOOBG | a status code of the pinned C library (ast_err.msg) newer than jniast: "Array is too big"
+AstException.AST__TRUNC | a status code of the pinned C library (ast_err.msg) newer than jniast: "Text truncated"
+AstException.AST__UASDF | a status code of the pinned C library (ast_err.msg) newer than jniast: "Unsupported ASDF object supplied"
+AstException.AST__YAML | a status code of the pinned C library (ast_err.msg) newer than jniast: "Error reading YAML text"
+WcsMap.AST__HPX | the projection code of the HEALPix projection (wcsmap.h), which the pinned C library has and jniast's predates
+WcsMap.AST__XPH | the projection code of the polar HEALPix projection (wcsmap.h), which the pinned C library has and jniast's predates
