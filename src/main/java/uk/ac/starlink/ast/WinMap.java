@@ -149,6 +149,69 @@ public class WinMap extends Mapping {
         return true;
     }
 
+    /** {@link WinMapMerge#winMapMerge}, winmap.c {@code MapMerge}. */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        return WinMapMerge.winMapMerge(this, list, where, series);
+    }
+
+    /** A copy of the shift terms as stored, for the WinMap as created (C's {@code this->a}). */
+    double[] storedShifts() {
+        return shifts.clone();
+    }
+
+    /** A copy of the scale terms as stored, for the WinMap as created (C's {@code this->b}). */
+    double[] storedScales() {
+        return scales.clone();
+    }
+
+    /**
+     * Copies of the shift and scale terms of the transformation this WinMap applies forward in its
+     * current orientation, as C's {@code astWinTerms} (winmap.c {@code WinTerms}) gives them when
+     * asked to get them: the stored terms, or, if the WinMap is inverted, the terms of their
+     * inverse, bad for an axis with a bad term or a zero scale.
+     *
+     * @return the shift terms at index 0 and the scale terms at index 1
+     */
+    double[][] winTerms() {
+        double[] a = shifts.clone();
+        double[] b = scales.clone();
+        if (getInvert()) {
+            for (int i = 0; i < a.length; i++) {
+                if (a[i] != AST__BAD && b[i] != 0.0 && b[i] != AST__BAD) {
+                    b[i] = 1.0 / b[i];
+                    a[i] *= -b[i];
+                } else {
+                    b[i] = AST__BAD;
+                    a[i] = AST__BAD;
+                }
+            }
+        }
+        return new double[][] {a, b};
+    }
+
+    /**
+     * Stores the shift and scale terms of the transformation this WinMap is to apply forward in its
+     * current orientation, as C's {@code astWinTerms} (winmap.c {@code WinTerms}) does when asked to
+     * set them: as given, or, if the WinMap is inverted, the terms of their inverse, bad for an axis
+     * with a bad term or a zero scale.
+     */
+    void setWinTerms(double[] shift, double[] scale) {
+        boolean inv = getInvert();
+        for (int i = 0; i < shifts.length; i++) {
+            if (!inv) {
+                scales[i] = scale[i];
+                shifts[i] = shift[i];
+            } else if (shift[i] != AST__BAD && scale[i] != 0.0 && scale[i] != AST__BAD) {
+                scales[i] = 1.0 / scale[i];
+                shifts[i] = -shift[i] / scale[i];
+            } else {
+                scales[i] = AST__BAD;
+                shifts[i] = AST__BAD;
+            }
+        }
+    }
+
     /**
      * The rate of change: the scale factor of the axis, or its reciprocal when inverted, where the
      * output is the input, and zero elsewhere ({@code Rate}, winmap.c). An undefined axis gives

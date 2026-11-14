@@ -68,6 +68,94 @@ public class ShiftMap extends Mapping {
         return true;
     }
 
+    /**
+     * A copy of the shifts the ShiftMap applies forward in its current orientation, as C's {@code
+     * astGetShifts} (shiftmap.c {@code GetShifts}) gives them: negated if it is inverted, a bad
+     * shift included.
+     */
+    double[] getShifts() {
+        double[] result = shift.clone();
+        if (getInvert()) {
+            for (int i = 0; i < result.length; i++) {
+                result[i] *= -1;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Whether {@code that} is a ShiftMap equivalent to this one, as C's {@code Equal} (shiftmap.c)
+     * decides it: the same numbers of inputs and outputs, and, if their Invert attributes are the
+     * same, equal shifts, or, if not, shifts equal and opposite, each to within {@code astEQUAL}.
+     */
+    boolean equalTo(Mapping that) {
+        if (!(that instanceof ShiftMap)) {
+            return false;
+        }
+        ShiftMap other = (ShiftMap) that;
+        int nin = getNin();
+        if (other.getNin() != nin || other.getNout() != getNout()) {
+            return false;
+        }
+        boolean same = getInvert() == other.getInvert();
+        for (int i = 0; i < nin; i++) {
+            double want = same ? other.shift[i] : -other.shift[i];
+            if (!MappingHelpers.astEqual(shift[i], want)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * shiftmap.c {@code MapMerge}: the ShiftMap is replaced in the list by the equivalent WinMap,
+     * applied forward, whose own merge ({@link WinMapMerge#winMapMerge}) then decides what changes.
+     * If that changes nothing, or only turns the WinMap back into a ShiftMap equivalent to this one,
+     * the ShiftMap is put back: shared and unchanged if the list applied it forward, or, if the list
+     * applied it inverted, as a copy with its shifts negated, applied forward.
+     */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        int nin = getNin();
+        boolean oldInv = list.invert(where);
+        double[] aa = new double[nin];
+        double[] bb = new double[nin];
+        for (int i = 0; i < nin; i++) {
+            bb[i] = 1.0;
+            aa[i] = oldInv ? -shift[i] : shift[i];
+        }
+        WinMap w1 = new WinMap(aa, bb);
+        list.set(where, w1, false);
+        int oldNmap = list.size();
+        int result = Simplifier.dispatchMapMerge(w1, list, where, series);
+        boolean revert = result == where && list.size() == oldNmap && sameAsThis(list.map(where));
+        if (revert || result == -1) {
+            if (oldInv) {
+                ShiftMap sm = (ShiftMap) copy();
+                for (int i = 0; i < nin; i++) {
+                    sm.shift[i] *= -1.0;
+                }
+                list.set(where, sm, false);
+                result = where;
+            } else {
+                list.set(where, this, false);
+                result = -1;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * C's {@code astEqual(map, this)}: the same object, or, through the {@code Equal} of {@code
+     * map}'s class, which finds no Mapping of another class equal to a ShiftMap, an equivalent
+     * ShiftMap.
+     */
+    // C compares the pointers first (object.c astEqual_): the same object is equal.
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
+    private boolean sameAsThis(Mapping map) {
+        return map == this || (map instanceof ShiftMap && ((ShiftMap) map).equalTo(this));
+    }
+
     /** The rate of change: one where the output is the input, zero elsewhere ({@code Rate}, shiftmap.c). */
     @Override
     double rateAt(double[] at, int ax1, int ax2) {

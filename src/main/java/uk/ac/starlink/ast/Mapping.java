@@ -354,6 +354,22 @@ public abstract class Mapping extends AstObject {
     }
 
     /**
+     * Sets the Invert attribute to {@code invert} for a while and returns the attribute as it was,
+     * for {@link #restoreInvert}: what C's {@code MapMerge} functions do with {@code astGetInvert}
+     * and {@code astSetInvert} to apply a Mapping of a list in the orientation the list gives it.
+     */
+    final int swapInvert(boolean invert) {
+        int saved = invertValue;
+        invertValue = invert ? 1 : 0;
+        return saved;
+    }
+
+    /** Puts back the Invert attribute {@link #swapInvert} returned, set or cleared as it was. */
+    final void restoreInvert(int saved) {
+        invertValue = saved;
+    }
+
+    /**
      * Inverts the Mapping by reversing the sense of its Invert attribute, as C's {@code astInvert}
      * does: the attribute is cleared, and set again only if its default is not the value wanted.
      */
@@ -516,28 +532,12 @@ public abstract class Mapping extends AstObject {
      * {@code list}, whose Mappings are applied in series if {@code series} and in parallel
      * otherwise, changes the list if that makes it simpler, by merging this Mapping with its
      * neighbours, replacing it with a simpler Mapping, or swapping it with a neighbour so that
-     * other merges become possible. This version is Rust's {@link Simplifier#defaultMapMerge}.
+     * other merges become possible. This version, C's, changes nothing.
      *
      * @return the index of the first entry changed, or -1 if the list is unchanged
      */
     int mapMerge(MergeList list, int where, boolean series) {
-        return Simplifier.defaultMapMerge(list, where, series);
-    }
-
-    /**
-     * The Mapping equivalent to this Mapping followed by {@code other} in series, or beside it in
-     * parallel, each applied with the Invert value given; or null if there is none. This is the
-     * pairwise merge of the Rust port, which {@link Simplifier#defaultMapMerge} uses; the
-     * parameters of each Mapping are read in the orientation in which it was made, and the result is
-     * not inverted. This version merges nothing.
-     *
-     * @param other the next Mapping in the list
-     * @param series whether the two are applied in series
-     * @param thisInverted the Invert value this Mapping is applied with
-     * @param otherInverted the Invert value {@code other} is applied with
-     */
-    Mapping tryMerge(Mapping other, boolean series, boolean thisInverted, boolean otherInverted) {
-        return null;
+        return -1;
     }
 
     /**

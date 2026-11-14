@@ -680,6 +680,77 @@ public class MatrixMap extends Mapping {
     }
 
     /**
+     * A copy of this MatrixMap with every element of the matrix it applies forward, in its current
+     * orientation, multiplied by {@code zoom}, and every element of the other matrix divided by it,
+     * as C's {@code astMtrZoom} (matrixmap.c {@code MtrZoom}) makes it. As in C, bad elements are
+     * scaled like any other.
+     */
+    MatrixMap mtrZoom(double zoom) {
+        MatrixMap result = (MatrixMap) copy();
+        int nel = result.getNout() * result.getNin();
+        result.expandMatrix();
+        double[] matrix = result.getInvert() ? result.iMatrix : result.fMatrix;
+        if (matrix != null) {
+            for (int i = 0; i < nel; i++) {
+                matrix[i] *= zoom;
+            }
+        }
+        matrix = result.getInvert() ? result.fMatrix : result.iMatrix;
+        if (matrix != null) {
+            for (int i = 0; i < nel; i++) {
+                matrix[i] /= zoom;
+            }
+        }
+        result.compressMatrix();
+        return result;
+    }
+
+    /**
+     * A copy of the elements of the matrix this MatrixMap applies in direction {@code fwd}, in its
+     * current orientation, as C's {@code astMtrGet} (matrixmap.c {@code MtrGet}) gives them: every
+     * element if {@code expand}, otherwise as the compressed form stores them, which {@code
+     * form[0]} receives ({@link #FULL}, {@link #DIAGONAL} or {@link #UNIT}, which stores none).
+     * The matrix is left compressed.
+     *
+     * @return the elements, or null if there is no such matrix
+     */
+    double[] mtrGet(boolean fwd, boolean expand, int[] formOut) {
+        if (expand) {
+            expandMatrix();
+        } else {
+            compressMatrix();
+        }
+        double[] matrix;
+        if (getInvert()) {
+            matrix = fwd ? iMatrix : fMatrix;
+        } else {
+            matrix = fwd ? fMatrix : iMatrix;
+        }
+        formOut[0] = form;
+        int nel;
+        if (form == FULL) {
+            nel = getNin() * getNout();
+        } else if (form == DIAGONAL) {
+            nel = Math.min(getNin(), getNout());
+        } else {
+            nel = 0;
+        }
+        double[] result = matrix == null ? null : Arrays.copyOf(matrix, nel);
+        compressMatrix();
+        return result;
+    }
+
+    /**
+     * Whether the matrix is diagonal, a unit matrix included, as C's {@code astIsDiagonal}
+     * (matrixmap.c {@code IsDiagonal}) decides it: from the storage form, after compressing the
+     * matrix.
+     */
+    boolean isDiagonal() {
+        compressMatrix();
+        return form == DIAGONAL || form == UNIT;
+    }
+
+    /**
      * A copy of this MatrixMap rotated by {@code theta} radians, as C's {@code astMtrRot} makes
      * it. The matrix this MatrixMap applies forward is post-multiplied by the rotation matrix, and
      * the one it applies in reverse pre-multiplied by the inverse rotation. A MatrixMap with two

@@ -400,47 +400,4 @@ final class Simplifier {
         }
         return false;
     }
-
-    /**
-     * The merge a class inherits (Rust's {@code default_map_merge}): the nominated Mapping merged
-     * with the next one by {@link Mapping#tryMerge}, or, in series, the next one merged with it; the
-     * merged Mapping replaces the pair, decomposed into the list if it is a CmpMap of the list's
-     * kind.
-     *
-     * @return {@code where} if the pair was merged, otherwise -1
-     */
-    static int defaultMapMerge(MergeList list, int where, boolean series) {
-        int i = where;
-        if (i + 1 >= list.size()) {
-            return -1;
-        }
-        Mapping m1 = list.map(i);
-        Mapping m2 = list.map(i + 1);
-        boolean inv1 = list.invert(i);
-        boolean inv2 = list.invert(i + 1);
-        int m1Nin = inv1 ? m1.createdNout() : m1.createdNin();
-        Mapping merged = m1.tryMerge(m2, series, inv1, inv2);
-        // In series a UnitMap is not merged into the next Mapping here: UnitMap's own merge removes
-        // it from the list instead.
-        if (merged == null && series && m1.getClass() != UnitMap.class) {
-            Mapping reverse = m2.tryMerge(m1, series, inv2, inv1);
-            if (reverse != null && reverse.getNin() == m1Nin) {
-                merged = reverse;
-            }
-        }
-        if (merged == null) {
-            return -1;
-        }
-        if (merged instanceof CmpMap && ((CmpMap) merged).isSeries() == series) {
-            MergeList expanded = flatten(merged, series, null);
-            list.removeAt(i + 1);
-            list.removeAt(i);
-            for (int k = 0; k < expanded.size(); k++) {
-                list.insert(i + k, expanded.map(k), expanded.invert(k));
-            }
-            return i;
-        }
-        list.replacePairWith(i, merged, merged.getInvert());
-        return i;
-    }
 }

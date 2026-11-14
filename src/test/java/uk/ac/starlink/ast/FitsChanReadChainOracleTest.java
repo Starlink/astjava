@@ -24,10 +24,11 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  *
  * <p>The cases of {@code oracle/fitschan_read_chain.json} (from {@code
  * tools/oracle_fixtures/fitschan_read_chain_probe.c}) hold C's native dump of the FrameSet, whose
- * Mapping C simplified ({@code WcsMapFrm} returns {@code astSimplify} of it). Here the dumps are
- * compared without the FrameSet's Mappings, which must still differ from C's while the Mapping is
- * not simplified (needs simplification), and each Mapping is compared with C's, read back from C's
- * dump, by the positions they give.
+ * Mapping C simplified ({@code WcsMapFrm} returns {@code astSimplify} of it). The cases in {@link
+ * #WHOLE} are compared with C's whole dump. For the others, whose Mappings still differ from C's
+ * (needs simplification), the dumps are compared without the FrameSet's Mappings, and each Mapping
+ * is compared with C's, read back from C's dump, by the positions they give; such a case whose
+ * whole dump comes to match C's must be moved to {@link #WHOLE}.
  *
  * <p>The cases in {@link #EXCLUDED} have a spectral axis (SpecFrame) or a {@code -LOG} axis (which
  * C maps with a MathMap); each must still stop there.
@@ -45,6 +46,9 @@ class FitsChanReadChainOracleTest {
         return m;
     }
 
+    /** The cases whose whole dump, the simplified Mapping included, matches C's. */
+    private static final Set<String> WHOLE = new HashSet<>(Arrays.asList("other_log_crval_zero"));
+
     /** The pixel positions at which the Mappings are compared, for {@code nin} pixel axes. */
     private static double[][] points(int nin) {
         double[][] pts = new double[4][nin];
@@ -57,7 +61,7 @@ class FitsChanReadChainOracleTest {
     }
 
     /** The first mismatch between the port's read of {@code header} and C's dump {@code want}, or null. */
-    private static String compare(String[] header, String want) {
+    private static String compare(String name, String[] header, String want) {
         AstObject obj;
         try {
             obj = FitsHeaders.chan(header).read();
@@ -69,8 +73,11 @@ class FitsChanReadChainOracleTest {
             return "= none\n".equals(want) ? null : "the read gave no Object";
         }
         String got = ChannelText.dump(obj);
+        if (WHOLE.contains(name)) {
+            return got.equals(want) ? null : "the dump differs from C's:\n--- Java\n" + got + "--- C\n" + want;
+        }
         if (got.equals(want)) {
-            return "the dump matches C's: the Mapping no longer needs simplification, so compare the whole dump";
+            return "the dump matches C's: the Mapping no longer needs simplification, so add the case to WHOLE";
         }
         String gotFrames = FitsHeaders.withoutMappings(got);
         String wantFrames = FitsHeaders.withoutMappings(want);
@@ -107,7 +114,7 @@ class FitsChanReadChainOracleTest {
                     continue;
                 }
                 run++;
-                String problem = compare(header, c.get(2).asText());
+                String problem = compare(name, header, c.get(2).asText());
                 if (problem != null) {
                     failed.add(name + ": " + problem);
                 }

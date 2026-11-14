@@ -94,6 +94,30 @@ final class MergeList {
         }
     }
 
+    /**
+     * Offers the entries from {@code start} to the end of the list, as a list of their own, to the
+     * merge of the Mapping at {@code subIndex} within them ({@link Simplifier#dispatchMapMerge}),
+     * and puts what that leaves in their place, as C does when it passes a {@code MapMerge} the
+     * arrays from an element onwards (Rust {@code MergeCtx::merge_subrange}).
+     *
+     * @return the index within the entries offered of the first one changed, or -1 if none was
+     */
+    int mergeSubrange(int start, int subIndex, boolean series) {
+        List<Mapping> tailMaps = maps.subList(start, maps.size());
+        List<Boolean> tailInverts = inverts.subList(start, inverts.size());
+        MergeList sub = new MergeList(tailMaps, tailInverts);
+        tailMaps.clear();
+        tailInverts.clear();
+        int modified;
+        try {
+            modified = Simplifier.dispatchMapMerge(sub.map(subIndex), sub, subIndex, series);
+        } finally {
+            maps.addAll(sub.maps);
+            inverts.addAll(sub.inverts);
+        }
+        return modified;
+    }
+
     /** The Mappings of the list, in order. */
     List<Mapping> asList() {
         return maps;

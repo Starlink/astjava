@@ -23,8 +23,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * through {@code convert}, whose Mapping this version does not simplify: it is the units Mapping
  * between UnitMaps, which leave the values unchanged.
  *
- * <p>Left to later work: {@code spec_frame_unit_changes_match_the_c_library} (SpecFrame) and
- * {@code zoom_map_chains_simplify_as_the_c_library_does} (needs simplification).
+ * <p>C's {@code ZOOM_CASES} are chains of ZoomMaps, each perhaps inverted, nested as the probe
+ * nests them, {@code ((z1 z2) z3)}, and simplified.
+ *
+ * <p>Left to later work: {@code spec_frame_unit_changes_match_the_c_library} (SpecFrame).
  */
 class UnitMapperTest {
 
@@ -89,6 +91,36 @@ class UnitMapperTest {
             }
         }
         assertEquals(70, cases.size());
+        assertTrue(failures.isEmpty(), failures.size() + " cases differ from C:\n" + String.join("\n", failures));
+    }
+
+    @Test
+    void zoomMapChainsSimplifyAsTheCLibraryDoes() {
+        JsonNode data = ProbeData.load("unit_mapper");
+        double[] values = doubles(data.get("VALUES"));
+        List<String> failures = new ArrayList<>();
+        for (JsonNode c : data.get("ZOOM_CASES")) {
+            double[] factors = doubles(c.get(0));
+            JsonNode inverted = c.get(1);
+            Mapping chain = null;
+            for (int i = 0; i < factors.length; i++) {
+                ZoomMap z = new ZoomMap(1, factors[i]);
+                if (inverted.get(i).asBoolean()) {
+                    z.invert();
+                }
+                chain = chain == null ? z : new CmpMap(chain, z, true);
+            }
+            Mapping simplified = chain.simplify();
+            double[] wantFwd = doubles(c.get(2).get(0));
+            double[] wantInv = doubles(c.get(2).get(1));
+            double[] fwd = simplified.tran1(values.length, values, true);
+            double[] inv = simplified.tran1(values.length, values, false);
+            if (!Arrays.equals(fwd, wantFwd) || !Arrays.equals(inv, wantInv)) {
+                failures.add(Arrays.toString(factors) + " inverted " + inverted + ": forward " + Arrays.toString(fwd)
+                        + " inverse " + Arrays.toString(inv) + ", C gives forward " + Arrays.toString(wantFwd)
+                        + " inverse " + Arrays.toString(wantInv));
+            }
+        }
         assertTrue(failures.isEmpty(), failures.size() + " cases differ from C:\n" + String.join("\n", failures));
     }
 }

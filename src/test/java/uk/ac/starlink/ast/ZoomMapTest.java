@@ -3,21 +3,23 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
 import static uk.ac.starlink.ast.MappingTestData.transformRows;
 
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 /**
  * Translation of Rust {@code tests/test_zoommap.rs}.
  *
  * <p>A ZoomMap's rate is C's {@code Rate} (zoommap.c): the zoom factor, or its reciprocal when
- * inverted, where the output is the input, and zero elsewhere. {@code
- * zoom_parallel_merge_different_factors}, {@code zoom_parallel_merge_same_factor} and {@code
- * a_merged_zoom_that_underflows_to_zero_is_an_error} test simplification, and are deferred.
+ * inverted, where the output is the input, and zero elsewhere. The Rust tests of the pairwise
+ * merge in parallel ({@code try_merge}) offer the two ZoomMaps here, as a list, to the ZoomMap's
+ * {@code MapMerge} (zoommap.c).
  */
 class ZoomMapTest {
 
@@ -213,5 +215,42 @@ class ZoomMapTest {
         assertTrue(inverts[0]);
         assertFalse(inverts[1]);
         assertThrows(AstException.class, () -> zm.setZoom(3.0));
+    }
+
+    /** The list of {@code a} and {@code b}, both applied forward, after {@code a}'s merge in parallel. */
+    private static MergeList mergedInParallel(ZoomMap a, ZoomMap b) {
+        MergeList list = new MergeList(Arrays.asList(a, b), Arrays.asList(false, false));
+        assertEquals(0, a.mapMerge(list, 0, false));
+        assertEquals(1, list.size());
+        assertFalse(list.invert(0));
+        return list;
+    }
+
+    @Test
+    void zoomParallelMergeDifferentFactors() {
+        Mapping m = mergedInParallel(new ZoomMap(1, 2.0), new ZoomMap(1, 3.0)).map(0);
+        // Different factors give a diagonal MatrixMap.
+        assertInstanceOf(MatrixMap.class, m);
+        assertEquals(2, m.getNin());
+        double[][] out = transformRows(m, true, new double[] {5.0, 7.0});
+        assertArrayEquals(new double[] {10.0, 21.0}, point(out, 0));
+    }
+
+    @Test
+    void zoomParallelMergeSameFactor() {
+        Mapping m = mergedInParallel(new ZoomMap(2, 5.0), new ZoomMap(1, 5.0)).map(0);
+        assertInstanceOf(ZoomMap.class, m);
+        assertEquals(3, m.getNin());
+    }
+
+    /**
+     * Two ZoomMaps whose product underflows to zero cannot merge into a ZoomMap, and C passes the
+     * constructor's error up from the simplification.
+     */
+    @Test
+    void aMergedZoomThatUnderflowsToZeroIsAnError() {
+        CmpMap map = new CmpMap(new ZoomMap(1, 1e-200), new ZoomMap(1, 1e-200), true);
+        AstException e = assertThrows(AstException.class, map::simplify);
+        assertEquals(AstException.AST__ZOOMI, e.getStatus());
     }
 }

@@ -180,7 +180,9 @@ class FrameSetVariantsTest {
         FrameSet unshifted = baseFs();
         unshifted.setCurrent(2);
         double[] want = tran(unshifted, 50.5, 100.5);
-        assertArrayEquals(want, pixToFp(fs, 60.5, 120.5));
+        // The Mapping between the two Frames is simplified, the shift merged into the window, so
+        // it agrees with the unshifted route to within rounding.
+        assertArrayEquals(want, pixToFp(fs, 60.5, 120.5), 1e-12);
 
         FrameSet back = assertInstanceOf(FrameSet.class, ChannelText.read(ChannelText.dump(fs)));
         assertArrayEquals(pixToFp(fs, 60.5, 120.5), pixToFp(back, 60.5, 120.5));

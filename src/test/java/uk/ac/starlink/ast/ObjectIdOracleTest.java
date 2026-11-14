@@ -22,15 +22,14 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  *
  * <p>{@code dumps_match_c} runs here the cases whose classes are ported: {@code zoommap}, {@code
  * zoommap_blank}, {@code keymap}, {@code channel}, {@code zoommap_copy}, {@code
- * zoommap_simplified}, {@code cmpmap}, {@code cmpmap_copy}, {@code frame}, {@code skyframe},
- * {@code frameset}, {@code frameset_frame_id}, {@code frameset_part_ids}, {@code cmpframe} and {@code fitschan}. {@code simplify} returns the
- * ZoomMap itself, as C's {@code astSimplify} returns a Mapping it cannot simplify, recording it as
+ * zoommap_simplified}, {@code cmpmap}, {@code cmpmap_copy}, {@code cmpmap_simplified}, {@code
+ * frame}, {@code skyframe}, {@code frameset}, {@code frameset_frame_id}, {@code
+ * frameset_part_ids}, {@code cmpframe} and {@code fitschan}. {@code simplify} returns the ZoomMap
+ * itself, as C's {@code astSimplify} returns a Mapping it cannot simplify, recording it as
  * simplified, and a CmpMap shares its components, as C's does, so the Rust test's exclusions for
- * copies do not arise for them. {@code cmpmap_simplified} is C's simplification of two ZoomMaps
- * into one, which this version does not make: it is in {@link #EXCLUDED}, and {@code
- * excluded_cases_still_differ} fails when it matches. {@code
- * cmpmap_unsimplifiable} needs a LutMap, and the remaining cases other classes outside the first
- * phase.
+ * copies do not arise for them. A case whose dump differs from C's is listed in {@link #EXCLUDED},
+ * and {@code excluded_cases_still_differ} fails when it matches. {@code cmpmap_unsimplifiable}
+ * needs a LutMap, and the remaining cases other classes outside the first phase.
  */
 class ObjectIdOracleTest {
 
@@ -44,6 +43,7 @@ class ObjectIdOracleTest {
             "zoommap_simplified",
             "cmpmap",
             "cmpmap_copy",
+            "cmpmap_simplified",
             "frame",
             "skyframe",
             "frameset",
@@ -53,9 +53,7 @@ class ObjectIdOracleTest {
             "fitschan");
 
     /** The cases whose dump differs from C's, with the reason. */
-    private static final String[][] EXCLUDED = {
-        {"cmpmap_simplified", "needs simplification: C merges the two ZoomMaps into one"},
-    };
+    private static final String[][] EXCLUDED = {};
 
     /** A series CmpMap of two ZoomMaps, with IDs. */
     private static CmpMap cmpmap() {

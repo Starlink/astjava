@@ -4,28 +4,15 @@
 brad | needs LutMap
 lsst1 | needs simplification
 rigby | needs SpecMap
-zoom_series_merge | needs simplification
-zoom_series_cancel | needs simplification
-zoom_parallel_to_matrix | needs simplification
 matrix_unit_to_unit | needs simplification
 matrix_diagonal_to_zoom | needs simplification
 matrix_full_to_diagonal | needs simplification
 matrix_matrix_series_merge | needs simplification
-matrix_zoom_series_merge | needs simplification
 matrix_perm_series_merge | needs simplification
-win_to_shift | needs simplification
-win_to_matrix | needs simplification
-win_shift_series_merge | needs simplification
-win_zoom_series_merge | needs simplification
-win_matrix_series_merge | needs simplification
-win_perm_swap_merge | needs simplification
-win_parallel_merge | needs simplification
-shift_invert_normalize | needs simplification
 perm_series_merge | needs simplification
 perm_parallel_merge | needs simplification
 cmpmap_parallel_series_components | needs simplification
 cmpmap_nested_inverse_cancel | needs simplification
-cmpmap_nested_parallel_flatten | needs simplification
 cmpmap_perm_parallel_swap | needs SpecMap
 sph_inverse_cancel | needs simplification
 sph_matrix_sandwich | needs simplification
@@ -46,25 +33,6 @@ math_inverse_cancel | needs MathMap
 ratemap_inverse_cancel | needs RateMap
 tranmap_equal_components | needs TranMap
 intramap_inverse_cancel | needs IntraMap
-zoom_invert_normalize | needs simplification
-zoom_parallel_all_unit | needs simplification
-zoom_parallel_same_factor | needs simplification
-zoom_absorb_prev_matrix | needs simplification
-zoom_absorb_prev_win | needs simplification
-zoom_absorb_prev_shift | needs simplification
-zoom_absorb_next_matrix | needs simplification
-zoom_absorb_next_win | needs simplification
-zoom_absorb_next_shift | needs simplification
-win_win_series_merge | needs simplification
-win_zoom_series_merge_rev | needs simplification
-win_shift_series_merge_rev | needs simplification
-win_matrix_series_merge_rev | needs simplification
-win_win_parallel_merge | needs simplification
-win_zoom_parallel_merge | needs simplification
-win_diagmatrix_parallel_merge | needs simplification
-win_unit_parallel_merge | needs simplification
-matrix_diagwin_series_merge | needs simplification
-cmpmap_self_simplify | needs simplification
 tranmap_invert_normalize | needs TranMap
 tranmap_component_simplify | needs TranMap
 ratemap_simplify_interior | needs RateMap
@@ -113,14 +81,12 @@ tranmap_adjacent_merge_inverse_order | needs TranMap
 tranmap_adjacent_merge_nonsquare | needs TranMap
 tranmap_invert_in_list | needs TranMap
 tranmap_equal_components_in_list | needs TranMap
-matrix_swap_past_win | needs simplification
 matrix_swap_past_perm | needs simplification
 sla_helioecl_cancel | needs simplification
 sla_ha_cancel | needs simplification
 sla_azel_cancel | needs simplification
 sla_hpc_cancel | needs simplification
 sla_hpr_cancel | needs simplification
-win_swap_past_matrix | needs simplification
 win_swap_past_wcsmap | needs simplification
 selectormap_inverse_cancel | needs Box, PointSet, SelectorMap
 switchmap_inverse_cancel | needs SwitchMap
@@ -182,10 +148,6 @@ cmpmap_series_in_parallel_inverted | needs MathMap
 cmpmap_parallel_series_dim_mismatch | needs MathMap
 unit_parallel_invert_clear | needs MathMap
 perm_bad_propagation | needs simplification
-win_zoom_parallel_merge_rev | needs simplification
-win_shift_parallel_merge_rev | needs simplification
-win_diagmatrix_parallel_merge_rev | needs simplification
-win_unit_parallel_merge_rev | needs simplification
 normmap_inverse_cancel_upper | needs NormMap
 unitnormmap_inv_fwd_cancel | needs UnitNormMap
 perm_outperm_constant_fold | needs simplification
@@ -211,19 +173,12 @@ spec_run4_identity | needs SpecMap
 time_run_identity | needs simplification
 fitschan_iwc_spectral | needs simplification
 fitschan_tab_spectral | needs LutMap
-fitschan_tab_celestial_iwc | needs simplification
 fitschan_alt_diagonal_cdelt | needs simplification
 diag_unit_zoom_parallel | needs simplification
 diag_unit_win_zero_shift | needs simplification
-diag_unit_win_then_matrix | needs simplification
-diag_unit_matrix_then_win | needs simplification
 diag_unit_full_matrix | needs simplification
 diag_unit_matrix_then_zoom | needs simplification
 diag_unit_zoom_parallel_then_matrix | needs simplification
-diag_unit_win_then_diagonal_matrix | needs simplification
-matzoom_inverted_matrix | needs simplification
-matzoom_zoom_then_matrix | needs simplification
-matzoom_zoom_then_inverted_matrix | needs simplification
 offset_skyref_integrity | needs simplification
 switchmap_inverse_cancel_distinct_selectors | needs MathMap, SwitchMap
 cap_cmpmap_01 | needs MathMap, RateMap, SpecMap, TranMap
@@ -234,7 +189,6 @@ cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism, SpecFrame
 cap_lutmap_01 | needs LutMap, MathMap
 cap_mathmap_01 | needs MathMap
 cap_matrixmap_01 | needs simplification
-cap_matrixmap_02 | needs simplification
 cap_matrixmap_03 | needs simplification
 cap_matrixmap_04 | needs ChebyMap
 cap_permmap_01 | needs NormMap, SpecFrame
@@ -265,7 +219,6 @@ cap_sphmap_01 | needs simplification
 cap_timemap_01 | needs simplification
 cap_timemap_02 | needs Box, Interval, PointSet, SpecFrame, StcResourceProfile
 cap_timemap_03 | needs simplification
-cap_timemap_04 | needs simplification
 cap_timemap_05 | needs simplification
 cap_timemap_07 | needs simplification
 cap_unitmap_01 | needs simplification
@@ -273,11 +226,9 @@ cap_unitnormmap_01 | needs UnitNormMap
 cap_wcsmap_01 | needs simplification
 cap_winmap_01 | needs SpecMap
 cap_winmap_02 | needs simplification
-cap_winmap_03 | needs simplification
 cap_winmap_04 | needs simplification
 cap_xphmap_01 | needs XphMap
 cap_xphmap_02 | needs XphMap
-cap_zoommap_01 | needs simplification
 cap_zoommap_02 | needs simplification
 cap_zoommap_03 | needs simplification
 cap_zoommap_04 | needs Box, MathMap, PointList, PointSet, SpecFrame
@@ -351,7 +302,6 @@ neg_unitnormmap_flanked | needs UnitNormMap
 unitnormmap_winmap_inv_refused | needs UnitNormMap
 unitnormmap_fwd_winmap_refused | needs UnitNormMap
 unitnormmap_shift_merge_tail | needs UnitNormMap
-winmap_swap_to_zoom | needs simplification
 chebymap_inverse_cancel | needs ChebyMap
 neg_chebymap_standalone | needs ChebyMap
 interval_nullregion_merge | needs Interval, NullRegion, PointSet
@@ -364,8 +314,6 @@ neg_box_unc_mismatch | needs Box, PointSet
 nullregion_unc_fillfactor_merge | needs Box, NullRegion, PointSet
 pointlist_unc_fillfactor_merge | needs Box, PointList, PointSet
 winmap_perm_swap_to_zoom | needs simplification
-neg_winmap_perm_nonbidir | needs simplification
-matrix_perm_const_swap | needs simplification
 neg_pcd_diff_disco | needs PcdMap
 neg_pcd_diff_centre | needs PcdMap
 neg_pcd_same_invert | needs PcdMap
@@ -404,10 +352,7 @@ rate_inner_reduce_lone | needs RateMap
 cheby_linear_lone_reduce | needs ChebyMap
 neg_cheby_quadratic_no_reduce | needs ChebyMap
 wcs_unknown_lone_reduce | needs simplification
-cap_deep_nest_zoom | needs simplification
-cap_restricted_inverted | needs simplification
 cap_restricted_component_flags | needs MathMap
-cap_ident_frame | needs simplification
 cap_cmpperm_resume | needs MathMap
 cap_cmpperm_resume_inv | needs MathMap
 cap_cheby_consolidate | needs ChebyMap
