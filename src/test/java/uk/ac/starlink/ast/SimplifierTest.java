@@ -833,4 +833,246 @@ class SimplifierTest {
         PermMap pm = assertInstanceOf(PermMap.class, result);
         assertArrayEquals(new double[] {2.0, 1.0}, transformPoints(pm, true, new double[] {1.0, 2.0})[0]);
     }
+
+    // ------------------------------------------------------------------
+    // CmpMap merges (cmpmap.c MapMerge)
+    // ------------------------------------------------------------------
+
+    /** A one-coordinate ZoomMap of factor {@code f}. */
+    private static ZoomMap zoom1(double f) {
+        return new ZoomMap(1, f);
+    }
+
+    /** A one-coordinate ShiftMap of {@code s}. */
+    private static ShiftMap shift1(double s) {
+        return new ShiftMap(new double[] {s});
+    }
+
+    /** Checks that {@code m} is a diagonal MatrixMap with the forward diagonal {@code diagonal}. */
+    private static void assertDiagonal(Mapping m, double... diagonal) {
+        MatrixMap mm = assertInstanceOf(MatrixMap.class, m);
+        assertEquals(MatrixMap.DIAGONAL, mm.storageForm());
+        assertArrayEquals(diagonal, mm.storedForward(), 0.0);
+    }
+
+    /**
+     * Parallel ZoomMaps in series are regrouped into series pairs, each of which merges; C gives a
+     * diagonal MatrixMap of 10 and 21.
+     */
+    @Test
+    void parallelInSeriesBasicZoomMerge() {
+        CmpMap series =
+                new CmpMap(new CmpMap(zoom1(2.0), zoom1(3.0), false), new CmpMap(zoom1(5.0), zoom1(7.0), false), true);
+        Mapping result = series.simplify();
+        assertDiagonal(result, 10.0, 21.0);
+        assertArrayEquals(new double[] {10.0, 21.0}, transformPoints(result, true, new double[] {1.0, 1.0})[0], 1e-12);
+    }
+
+    /** Parallel ShiftMaps in series; C gives one ShiftMap of 7 and 10. */
+    @Test
+    void parallelInSeriesShiftMerge() {
+        CmpMap series = new CmpMap(
+                new CmpMap(shift1(2.0), shift1(3.0), false), new CmpMap(shift1(5.0), shift1(7.0), false), true);
+        Mapping result = series.simplify();
+        ShiftMap shift = assertInstanceOf(ShiftMap.class, result);
+        assertArrayEquals(new double[] {7.0, 10.0}, shift.getShifts(), 0.0);
+        assertArrayEquals(new double[] {8.0, 11.0}, transformPoints(result, true, new double[] {1.0, 1.0})[0], 1e-12);
+    }
+
+    /**
+     * Parallel CmpMaps in series whose components split the coordinates differently, 2 and 1 against
+     * 1, 1 and 1: the runs are matched by number of coordinates; C gives a diagonal MatrixMap of 10,
+     * 14 and 27. (Rust only checks that the simplification ends.)
+     */
+    @Test
+    void parallelInSeriesNoImprovementNoChange() {
+        CmpMap par1 = new CmpMap(new ZoomMap(2, 2.0), zoom1(3.0), false);
+        CmpMap par2 = new CmpMap(new CmpMap(zoom1(5.0), zoom1(7.0), false), zoom1(9.0), false);
+        Mapping result = new CmpMap(par1, par2, true).simplify();
+        assertDiagonal(result, 10.0, 14.0, 27.0);
+    }
+
+    /** Two-coordinate ZoomMaps in parallel, in series; C gives a diagonal MatrixMap of 10, 10, 21, 21. */
+    @Test
+    void parallelInSeriesDimensionMatchingMulticomponent() {
+        CmpMap series = new CmpMap(
+                new CmpMap(new ZoomMap(2, 2.0), new ZoomMap(2, 3.0), false),
+                new CmpMap(new ZoomMap(2, 5.0), new ZoomMap(2, 7.0), false),
+                true);
+        Mapping result = series.simplify();
+        assertDiagonal(result, 10.0, 10.0, 21.0, 21.0);
+        assertArrayEquals(
+                new double[] {10.0, 10.0, 21.0, 21.0},
+                transformPoints(result, true, new double[] {1.0, 1.0, 1.0, 1.0})[0],
+                1e-12);
+    }
+
+    /** Series pairs that cancel, side by side; C gives a UnitMap of 2 coordinates. */
+    @Test
+    void seriesInParallelBasicZoomMerge() {
+        CmpMap parallel = new CmpMap(
+                new CmpMap(zoom1(2.0), zoom1(0.5), true), new CmpMap(zoom1(3.0), zoom1(1.0 / 3.0), true), false);
+        Mapping result = parallel.simplify();
+        assertInstanceOf(UnitMap.class, result);
+        assertEquals(2, result.getNin());
+    }
+
+    /**
+     * Series of different lengths side by side: each series merges on its own, and the two
+     * ZoomMaps then merge into a diagonal MatrixMap; C gives 24 and 30.
+     */
+    @Test
+    void seriesInParallelLengthMismatchNoChange() {
+        CmpMap ser1 = new CmpMap(new CmpMap(zoom1(2.0), zoom1(3.0), true), zoom1(4.0), true);
+        CmpMap ser2 = new CmpMap(zoom1(5.0), zoom1(6.0), true);
+        Mapping result = new CmpMap(ser1, ser2, false).simplify();
+        assertDiagonal(result, 24.0, 30.0);
+    }
+
+    /**
+     * A PermMap swapping two axes before parallel ShiftMaps: the CmpMap is swapped in front of the
+     * PermMap; C gives the swap PermMap followed by one ShiftMap of 10 and 20.
+     */
+    @Test
+    void permmapSwapBasicBlockSwap() {
+        PermMap pm = new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
+        CmpMap series = new CmpMap(pm, new CmpMap(shift1(10.0), shift1(20.0), false), true);
+        Mapping result = series.simplify();
+        CmpMap cm = assertInstanceOf(CmpMap.class, result);
+        assertTrue(cm.isSeries());
+        assertInstanceOf(PermMap.class, cm.getMap1());
+        ShiftMap shift = assertInstanceOf(ShiftMap.class, cm.getMap2());
+        assertArrayEquals(new double[] {10.0, 20.0}, shift.getShifts(), 0.0);
+        assertSameTransform(series, result, true, 1e-12, new double[] {1.0, 2.0});
+    }
+
+    /** The null permutation before parallel ShiftMaps; C gives one ShiftMap of 10 and 20. */
+    @Test
+    void permmapSwapNonBlockNoChange() {
+        PermMap pm = new PermMap(2, new int[] {1, 2}, 2, new int[] {1, 2}, null);
+        CmpMap series = new CmpMap(pm, new CmpMap(shift1(10.0), shift1(20.0), false), true);
+        Mapping result = series.simplify();
+        ShiftMap shift = assertInstanceOf(ShiftMap.class, result);
+        assertArrayEquals(new double[] {10.0, 20.0}, shift.getShifts(), 0.0);
+        assertSameTransform(series, result, true, 1e-12, new double[] {1.0, 2.0});
+    }
+
+    /** A PermMap of 3 coordinates whose outputs are constants 4 to 6 of {@code 0.1, 0.2, 5, 0.3, 0.4, 7}. */
+    private static PermMap constantOutputs(int[] inperm) {
+        return new PermMap(3, inperm, 3, new int[] {-4, -5, -6}, new double[] {0.1, 0.2, 5.0, 0.3, 0.4, 7.0});
+    }
+
+    /** A WcsMap (TAN) in parallel with a ZoomMap of 3. */
+    private static CmpMap wcsBesideZoom() {
+        return new CmpMap(new WcsMap(2, WcsMap.AST__TAN, 1, 2), zoom1(3.0), false);
+    }
+
+    /**
+     * A PermMap whose outputs are all constant, and whose inputs are all bad, before a parallel
+     * CmpMap: both blocks are constant, so the CmpMap is swapped in front of the PermMap as the
+     * second component beside a UnitMap, and the new PermMap holds what the components make of the
+     * constants. C gives a diagonal MatrixMap of 3, 1 and 1, then a PermMap of the constants.
+     */
+    @Test
+    void aSwapWithBothBlocksConstantHoldsTheTransformedConstants() {
+        CmpMap series = new CmpMap(constantOutputs(new int[] {0, 0, 0}), wcsBesideZoom(), true);
+        CmpMap cm = assertInstanceOf(CmpMap.class, series.simplify());
+        assertDiagonal(cm.getMap1(), 3.0, 1.0, 1.0);
+        PermMap pm = assertInstanceOf(PermMap.class, cm.getMap2());
+        assertArrayEquals(
+                new double[] {0.6989710183699915, -2.259583282761333, 21.0},
+                transformPoints(pm, true, new double[] {1.0, 2.0, 3.0})[0],
+                0.0);
+    }
+
+    /**
+     * A PermMap whose outputs and inputs are all constant before a parallel CmpMap of two WcsMaps:
+     * both blocks are constant, and C's swap passes the PermMap's inverse constants through the
+     * second WcsMap's inverse (cmpmap.c:2255-2259), so the forward transformation is kept and the
+     * inverse one changes. The values are C's.
+     */
+    @Test
+    void aSwapWithBothBlocksConstantChangesTheInverseAsCDoes() {
+        CmpMap par = new CmpMap(new WcsMap(2, WcsMap.AST__TAN, 1, 2), new WcsMap(2, WcsMap.AST__SIN, 1, 2), false);
+        PermMap pm = new PermMap(4, new int[] {-1, -2, -3, -4}, 4, new int[] {-5, -6, -7, -8}, new double[] {
+            0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8
+        });
+        CmpMap series = new CmpMap(pm, par, true);
+        Mapping result = series.simplify();
+        double[] in = {0.01, 0.02, 0.03, 0.04};
+        assertSameTransform(series, result, true, 0.0, in);
+        assertArrayEquals(new double[] {0.1, 0.2, 0.3, 0.4}, transformPoints(series, false, in)[0], 0.0);
+        assertArrayEquals(
+                new double[] {2.677945044588987, 1.3452829208967654, 0.3, 0.4},
+                transformPoints(result, false, in)[0],
+                0.0);
+    }
+
+    /**
+     * As {@link #aSwapWithBothBlocksConstantHoldsTheTransformedConstants}, but with the PermMap's
+     * inputs constant too, so that the two blocks store more constants than C allocates room for
+     * (cmpmap.c:2176, written past at 2243): every constant is kept, and the forward transformation
+     * is unchanged.
+     */
+    @Test
+    void aSwapWithMoreConstantsThanCAllocatesKeepsThemAll() {
+        CmpMap series = new CmpMap(constantOutputs(new int[] {-1, -2, -3}), wcsBesideZoom(), true);
+        Mapping result = series.simplify();
+        assertSameTransform(series, result, true, 0.0, new double[] {1.0, 2.0, 3.0});
+    }
+
+    /**
+     * Three parallel CmpMaps in series end in one diagonal MatrixMap (C: 110, 110, 273, 273). The
+     * Rust test of this name checks an iteration cap, which neither C nor this library has.
+     */
+    @Test
+    void anOscillatingListStopsAtThePatternCheck() {
+        CmpMap par = new CmpMap(new ZoomMap(2, 2.0), new ZoomMap(2, 3.0), false);
+        CmpMap par2 = new CmpMap(new ZoomMap(2, 5.0), new ZoomMap(2, 7.0), false);
+        CmpMap par3 = new CmpMap(new ZoomMap(2, 11.0), new ZoomMap(2, 13.0), false);
+        CmpMap outer = new CmpMap(new CmpMap(par, par2, true), par3, true);
+        Mapping result = outer.simplify();
+        assertDiagonal(result, 110.0, 110.0, 273.0, 273.0);
+    }
+
+    /**
+     * A ShiftMap after a WcsMap and a UnitMap in parallel shifts only the UnitMap's coordinate, and
+     * is absorbed into that branch; C gives the WcsMap in parallel with a ShiftMap of 7.5.
+     */
+    @Test
+    void seriesParallelAbsorbTrailingShiftIntoBranch() {
+        WcsMap wcs = new WcsMap(2, WcsMap.AST__TAN, 1, 2);
+        CmpMap par = new CmpMap(wcs, new UnitMap(1), false);
+        CmpMap series = new CmpMap(par, new ShiftMap(new double[] {0.0, 0.0, 7.5}), true);
+        Mapping result = series.simplify();
+        CmpMap cm = assertInstanceOf(CmpMap.class, result);
+        assertFalse(cm.isSeries());
+        assertEquals(3, result.getNin());
+        assertInstanceOf(WcsMap.class, cm.getMap1());
+        ShiftMap shift = assertInstanceOf(ShiftMap.class, cm.getMap2());
+        assertArrayEquals(new double[] {7.5}, shift.getShifts(), 0.0);
+        assertSameTransform(series, result, true, 1e-12, new double[] {0.1, 0.2, 4.0});
+        assertEquals(11.5, transformPoints(result, true, new double[] {0.1, 0.2, 4.0})[0][2], 1e-12);
+    }
+
+    /**
+     * An FK5 conversion and its inverse in parallel CmpMaps, with a ShiftMap on the other axis in a
+     * parallel CmpMap between them: C swaps the CmpMaps so that the SlaMaps cancel, and gives a
+     * ShiftMap of 0.001 on the third axis. (Rust only logs the result.)
+     */
+    @Test
+    @org.junit.jupiter.api.Disabled("needs SlaMap's MapMerge")
+    void parallelInSeriesWithBlockingDelta() {
+        SlaMap sla1 = new SlaMap();
+        sla1.add("HFK5Z", new double[] {2000.0});
+        SlaMap sla2 = new SlaMap();
+        sla2.add("FK5HZ", new double[] {2000.0});
+        CmpMap pair1 = new CmpMap(sla1, new UnitMap(1), false);
+        CmpMap pair2 = new CmpMap(new UnitMap(2), shift1(0.001), false);
+        CmpMap pair3 = new CmpMap(sla2, new UnitMap(1), false);
+        CmpMap full = new CmpMap(new CmpMap(pair1, pair2, true), pair3, true);
+        Mapping result = full.simplify();
+        ShiftMap shift = assertInstanceOf(ShiftMap.class, result);
+        assertArrayEquals(new double[] {0.0, 0.0, 0.001}, shift.getShifts(), 0.0);
+    }
 }

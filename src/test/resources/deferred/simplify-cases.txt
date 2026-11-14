@@ -3,7 +3,6 @@
 # Rewritten by SimplifyRegressionTest with -Dast.writeDeferred=true.
 brad | needs LutMap
 rigby | needs SpecMap
-cmpmap_parallel_series_components | needs simplification
 cmpmap_perm_parallel_swap | needs SpecMap
 sph_inverse_cancel | needs simplification
 sph_matrix_sandwich | needs simplification
@@ -78,7 +77,6 @@ sla_hpr_cancel | needs simplification
 selectormap_inverse_cancel | needs Box, PointSet, SelectorMap
 switchmap_inverse_cancel | needs SwitchMap
 pcd_perm_swap_cancel | needs PcdMap
-win_cmpmap_parallel_merge | needs simplification
 pcd_swap_zoom_simplifies | needs PcdMap
 pcd_inverted_zoom_swap | needs PcdMap
 spec_merge_no_cancel | needs SpecMap
@@ -124,7 +122,6 @@ neg_spline_different_coeffs | needs SplineMap
 cmpmap_parallel_in_series_merge | needs MathMap
 cmpmap_perm_swap_aconstants | needs MathMap
 cmpmap_perm_swap_bconstants | needs MathMap
-win_upper_cmpmap_parallel_merge | needs simplification
 wcsmap_perm_swap_simplify | needs simplification
 cmpmap_decompose_middle | needs MathMap
 cmpmap_series_in_parallel_inverted | needs MathMap
@@ -151,10 +148,7 @@ spec_cel_invert | needs simplification
 spec_run_inverted_mid | needs SpecMap
 spec_run4_identity | needs SpecMap
 time_run_identity | needs simplification
-fitschan_iwc_spectral | needs simplification
 fitschan_tab_spectral | needs LutMap
-fitschan_alt_diagonal_cdelt | needs simplification
-diag_unit_zoom_parallel_then_matrix | needs simplification
 offset_skyref_integrity | needs simplification
 switchmap_inverse_cancel_distinct_selectors | needs MathMap, SwitchMap
 cap_cmpmap_01 | needs MathMap, RateMap, SpecMap, TranMap
@@ -165,10 +159,8 @@ cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism, SpecFrame
 cap_lutmap_01 | needs LutMap, MathMap
 cap_mathmap_01 | needs MathMap
 cap_matrixmap_01 | needs simplification
-cap_matrixmap_03 | needs simplification
 cap_matrixmap_04 | needs ChebyMap
 cap_permmap_01 | needs NormMap, SpecFrame
-cap_permmap_02 | needs simplification
 cap_pointlist_01 | needs Box, PointList, PointSet, Prism, SpecFrame
 cap_pointlist_02 | needs Interval, PointList, PointSet, Prism, SpecFrame
 cap_slamap_01 | needs simplification
@@ -190,15 +182,12 @@ cap_specmap_11 | needs SpecMap
 cap_specmap_12 | needs SpecMap
 cap_specmap_13 | needs SpecMap
 cap_specmap_14 | needs MathMap, SpecMap
-cap_sphmap_01 | needs simplification
 cap_timemap_01 | needs simplification
 cap_timemap_02 | needs Box, Interval, PointSet, SpecFrame, StcResourceProfile
 cap_timemap_03 | needs simplification
 cap_timemap_05 | needs simplification
 cap_timemap_07 | needs simplification
-cap_unitmap_01 | needs simplification
 cap_unitnormmap_01 | needs UnitNormMap
-cap_wcsmap_01 | needs simplification
 cap_winmap_01 | needs SpecMap
 cap_winmap_02 | needs simplification
 cap_winmap_04 | needs simplification
@@ -315,7 +304,6 @@ parcomp_inverted_reemitted | needs MathMap
 parcomp_inverted_nested_reemitted | needs MathMap
 lut_exactly_linear | needs LutMap
 neg_lut_near_linear | needs LutMap
-parpair_aligned_reduces | needs simplification
 parpair_one_side_reduces | needs MathMap
 neg_parpair_aligned_irreducible | needs MathMap
 cmpmap_inverted_lone | needs SpecMap

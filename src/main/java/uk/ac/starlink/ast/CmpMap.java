@@ -263,6 +263,12 @@ public class CmpMap extends Mapping {
         return Simplifier.simplifyCmpMap(this);
     }
 
+    /** cmpmap.c {@code MapMerge}: {@link CmpMapMerge#mapMerge}. */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        return CmpMapMerge.mapMerge(this, list, where, series);
+    }
+
     /** C's {@code MapSplit} (cmpmap.c): {@link #mapSplit0} allowing the inverse search. */
     @Override
     MapSplit splitOff(int[] in) {

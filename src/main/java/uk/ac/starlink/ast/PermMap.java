@@ -720,8 +720,38 @@ public class PermMap extends Mapping {
         return getInvert() == forward ? ncoordOut : ncoordIn;
     }
 
+    /**
+     * C's {@code astGetInPerm}: a copy of the inverse permutation as stored, whichever way the
+     * PermMap is applied, of as many elements as the PermMap now has inputs; for a null permutation,
+     * each input's own number.
+     */
+    int[] storedInPerm() {
+        return storedPerm(inperm, getNin());
+    }
+
+    /**
+     * C's {@code astGetOutPerm}: a copy of the forward permutation as stored, whichever way the
+     * PermMap is applied, of as many elements as the PermMap now has outputs; for a null
+     * permutation, each output's own number.
+     */
+    int[] storedOutPerm() {
+        return storedPerm(outperm, getNout());
+    }
+
+    /** {@code n} elements of {@code perm}, or the numbers from zero if it is null. */
+    private static int[] storedPerm(int[] perm, int n) {
+        if (perm == null) {
+            int[] result = new int[n];
+            for (int i = 0; i < n; i++) {
+                result[i] = i;
+            }
+            return result;
+        }
+        return Arrays.copyOf(perm, n);
+    }
+
     /** Constant {@code -p}, or the bad value if there is no such constant. */
-    private double constantFor(int p) {
+    double constantFor(int p) {
         int i = -p - 1;
         return constant != null && i < constant.length ? constant[i] : AST__BAD;
     }

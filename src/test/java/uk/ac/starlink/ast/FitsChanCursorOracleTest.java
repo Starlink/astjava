@@ -60,7 +60,7 @@ class FitsChanCursorOracleTest {
      * The number of cases run here: those that write no Object, are not excluded, and whose reads
      * need only the NATIVE and FITS-WCS encodings.
      */
-    private static final int RUNNABLE = 144;
+    private static final int RUNNABLE = 147;
 
     /** The number of cases whose reads reach the read of an encoding other than NATIVE and FITS-WCS. */
     private static final int WAITING_FOR_ANOTHER_ENCODING = 5;
@@ -84,11 +84,9 @@ class FitsChanCursorOracleTest {
                 "iwc_on_spectral_cunit")) {
             m.put(name, "needs SpecFrame");
         }
-        // Their transcripts show the FrameSet read, whose pixel to world Mapping C simplifies
+        // Its transcript shows the FrameSet read, whose pixel to world Mapping C simplifies
         // (fitschan.c WcsMapFrm returns astSimplify of it).
-        for (String name : Arrays.asList("iwc_off", "iwc_on", "iwc_on_alt", "iwc_on_cunit")) {
-            m.put(name, "needs simplification");
-        }
+        m.put("iwc_on_alt", "needs simplification");
         return Collections.unmodifiableMap(m);
     }
 

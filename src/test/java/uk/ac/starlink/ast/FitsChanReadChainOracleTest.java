@@ -47,7 +47,8 @@ class FitsChanReadChainOracleTest {
     }
 
     /** The cases whose whole dump, the simplified Mapping included, matches C's. */
-    private static final Set<String> WHOLE = new HashSet<>(Arrays.asList("other_log_crval_zero"));
+    private static final Set<String> WHOLE =
+            new HashSet<>(Arrays.asList("other_log_crval_zero", "cdelt_near_unit", "cdelt_mixed"));
 
     /** The pixel positions at which the Mappings are compared, for {@code nin} pixel axes. */
     private static double[][] points(int nin) {
