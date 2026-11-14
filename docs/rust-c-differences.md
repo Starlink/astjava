@@ -96,6 +96,27 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: gives them AST__BAD.
 - Java: as C.
 
+### Simplifying a PermMap with no forward permutation and constants
+
+- **C quirk**: `MapMerge` reads each PermMap's forward permutation with the number of outputs as its limit (`maxperm = astGetNout( map )`, `permmap.c:1030` and `1222`), where `Transform` uses the number of inputs, so simplifying can change the transformation.
+  A series CmpMap of `PermMap(nin = 1, inperm = [-1], nout = 2, outperm = NULL, constant = [9])` and a PermMap swapping two axes maps 5 to (9, 5); simplified, it is a PermMap with `Out1 = 0` mapping 5 to (bad, 5).
+  Confirmed with the pinned library and with PR #104.
+- Rust: merges PermMaps pair by pair, not through C's `MapMerge`; not compared.
+- Java: as C.
+
+### Simplifying a PermMap whose stored permutation is null
+
+- **C quirk**: `MapMerge` compares the permutations it rebuilds with `permmap->inperm` and `permmap->outperm` without checking for a null array (`permmap.c:1389` and `1398`), so simplifying `PermMap(nin = 2, inperm = NULL, nout = 1, outperm = [-1], constant = [9])` dereferences a null pointer (SEGV in the pinned library and in PR #104).
+- Rust: merges PermMaps pair by pair, not through C's `MapMerge`; not compared.
+- Java: reads a null array as `MapMerge` reads one elsewhere (through `PERMVAL`), so the PermMap is found already simple and returned as it is.
+
+### Simplifying an inverted PermMap with more inputs than outputs
+
+- **C quirk**: `NullPerm` loops to `astGetNout( this )` and `astGetNin( this )` in the PermMap's current orientation over the stored arrays (`permmap.c:1772-1774` and `1794`), so for an inverted PermMap whose stored inputs outnumber its outputs it reads past the end of `outperm`.
+  Simplifying an inverted series CmpMap of an inverted `PermMap(inperm = [1, 2, 0], outperm = [1, 2])` and a 3-axis ZoomMap gives a heap-buffer-overflow in the pinned library and in PR #104.
+- Rust: merges PermMaps pair by pair, not through C's `MapMerge`; not compared.
+- Java: treats an element beyond the stored array as -1, as C's own `SAFE_PERMVAL` does, which gives a simplification that keeps the transformation.
+
 ### MatrixMap rotation and multiplication
 
 - C: `astMtrRot` and `astMtrMult` rotate the inverse matrix alongside the forward one and re-compress (`ExpandMatrix`, `SMtrMult`).
