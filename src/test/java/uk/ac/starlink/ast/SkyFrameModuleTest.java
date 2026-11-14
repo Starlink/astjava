@@ -351,7 +351,7 @@ class SkyFrameModuleTest {
         FrameSet fs = icrs.convert(fk5, "");
         assertNotNull(fs);
         Mapping map = baseToCurrent(fs).simplify();
-        assertTrue(MappingTestData.isUnitChain(map), "expected UnitMap within SkyTol, got " + map.astClass());
+        assertTrue(MappingTestData.isUnitMap(map), "expected UnitMap within SkyTol, got " + map.astClass());
 
         SkyFrame icrs2 = sky("ICRS");
         icrs2.setEpoch(2000.0);
@@ -360,7 +360,7 @@ class SkyFrameModuleTest {
         FrameSet fs2 = icrs2.convert(fk52, "");
         assertNotNull(fs2);
         Mapping map2 = baseToCurrent(fs2).simplify();
-        assertFalse(MappingTestData.isUnitChain(map2), "the 23 mas ICRS-FK5 bias exceeds the default 1 mas SkyTol");
+        assertFalse(MappingTestData.isUnitMap(map2), "the 23 mas ICRS-FK5 bias exceeds the default 1 mas SkyTol");
     }
 
     // Offset
@@ -453,7 +453,7 @@ class SkyFrameModuleTest {
         // Frame matches any Frame (ast_tester/testconvert.c).
         FrameSet fs = sky("FK5").convert(new Frame(2), "");
         assertNotNull(fs, "SkyFrame -> blank-domain Frame converts");
-        assertTrue(MappingTestData.isUnitChain(baseToCurrent(fs)), "SkyFrame -> blank-domain Frame is a UnitMap");
+        assertTrue(MappingTestData.isUnitMap(baseToCurrent(fs)), "SkyFrame -> blank-domain Frame is a UnitMap");
     }
 
     @Test
@@ -468,7 +468,7 @@ class SkyFrameModuleTest {
         SkyFrame prev = (SkyFrame) f.copy();
         FrameSet fs = prev.convert(f, "");
         assertNotNull(fs);
-        assertTrue(MappingTestData.isUnitChain(baseToCurrent(fs).simplify()));
+        assertTrue(MappingTestData.isUnitMap(baseToCurrent(fs).simplify()));
     }
 
     @Test

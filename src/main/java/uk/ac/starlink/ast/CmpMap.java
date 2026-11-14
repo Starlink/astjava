@@ -257,6 +257,12 @@ public class CmpMap extends Mapping {
         return invert || r1 || r2;
     }
 
+    /** cmpmap.c {@code Simplify}: {@link Simplifier#simplifyCmpMap}. */
+    @Override
+    Mapping simplifyStep() {
+        return Simplifier.simplifyCmpMap(this);
+    }
+
     /** C's {@code MapSplit} (cmpmap.c): {@link #mapSplit0} allowing the inverse search. */
     @Override
     MapSplit splitOff(int[] in) {

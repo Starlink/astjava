@@ -4,8 +4,6 @@
 brad | needs LutMap
 lsst1 | needs simplification
 rigby | needs SpecMap
-unit_series_elision | needs simplification
-unit_parallel_merge | needs simplification
 zoom_series_merge | needs simplification
 zoom_series_cancel | needs simplification
 zoom_parallel_to_matrix | needs simplification
@@ -61,14 +59,11 @@ win_win_series_merge | needs simplification
 win_zoom_series_merge_rev | needs simplification
 win_shift_series_merge_rev | needs simplification
 win_matrix_series_merge_rev | needs simplification
-win_unit_series_merge | needs simplification
 win_win_parallel_merge | needs simplification
 win_zoom_parallel_merge | needs simplification
 win_diagmatrix_parallel_merge | needs simplification
 win_unit_parallel_merge | needs simplification
-unit_invert_clear | needs simplification
 matrix_diagwin_series_merge | needs simplification
-matrix_unit_series_merge | needs simplification
 cmpmap_self_simplify | needs simplification
 tranmap_invert_normalize | needs TranMap
 tranmap_component_simplify | needs TranMap
@@ -180,14 +175,12 @@ cmpmap_perm_swap_aconstants | needs MathMap
 cmpmap_perm_swap_bconstants | needs MathMap
 win_upper_cmpmap_parallel_merge | needs simplification
 perm_constant_propagation | needs simplification
-perm_array_simplify | needs simplification
 perm_identity_array_null | needs simplification
 wcsmap_perm_swap_simplify | needs simplification
 cmpmap_decompose_middle | needs MathMap
 cmpmap_series_in_parallel_inverted | needs MathMap
 cmpmap_parallel_series_dim_mismatch | needs MathMap
 unit_parallel_invert_clear | needs MathMap
-perm_inperm_constant_fold | needs simplification
 perm_bad_propagation | needs simplification
 win_zoom_parallel_merge_rev | needs simplification
 win_shift_parallel_merge_rev | needs simplification
@@ -209,7 +202,6 @@ dssmap_inv_winmap_absorb | needs DssMap
 dssmap_winmap_absorb | needs DssMap
 dssmap_zoom_no_merge | needs DssMap
 neg_box_asymmetric_2d | needs Box, PointSet
-reconstruct_right_assoc | needs simplification
 series_parallel_absorb | needs simplification
 sla_run_identity | needs simplification
 sla_run_partial | needs simplification
@@ -217,7 +209,6 @@ spec_cel_invert | needs simplification
 spec_run_inverted_mid | needs SpecMap
 spec_run4_identity | needs SpecMap
 time_run_identity | needs simplification
-wcsconv_gappt_iwc_residue | needs simplification
 fitschan_iwc_spectral | needs simplification
 fitschan_tab_spectral | needs LutMap
 fitschan_tab_celestial_iwc | needs simplification
@@ -253,12 +244,9 @@ cap_pointlist_02 | needs Interval, PointList, PointSet, Prism, SpecFrame
 cap_slamap_01 | needs simplification
 cap_slamap_02 | needs Box, PointSet, Polygon, Prism, SpecFrame
 cap_slamap_03 | needs simplification
-cap_slamap_04 | needs simplification
 cap_slamap_05 | needs simplification
 cap_slamap_06 | needs simplification
 cap_slamap_07 | needs Box, Circle, CmpRegion, NullRegion, PointSet
-cap_slamap_08 | needs simplification
-cap_slamap_09 | needs simplification
 cap_specmap_01 | needs SpecMap
 cap_specmap_02 | needs LutMap, SpecMap
 cap_specmap_03 | needs SpecMap
@@ -279,9 +267,7 @@ cap_timemap_02 | needs Box, Interval, PointSet, SpecFrame, StcResourceProfile
 cap_timemap_03 | needs simplification
 cap_timemap_04 | needs simplification
 cap_timemap_05 | needs simplification
-cap_timemap_06 | needs simplification
 cap_timemap_07 | needs simplification
-cap_timemap_08 | needs simplification
 cap_unitmap_01 | needs simplification
 cap_unitnormmap_01 | needs UnitNormMap
 cap_wcsmap_01 | needs simplification
@@ -437,7 +423,6 @@ neg_unitnormmap_nonunit_scale | needs UnitNormMap
 neg_cmpmap_mode_mismatch | needs MathMap
 neg_win_cmpmap_split_no_simplify | needs MathMap
 poly_fitted_inverse_cancel | needs simplification
-cap_cmpmap_nested_tag | needs simplification
 cefit_circle_conformal | needs Circle, PointSet
 cefit_circle_nonconformal_keep | needs Circle, MathMap, PointSet
 cefit_circle_to_ellipse | needs Ellipse, PointSet

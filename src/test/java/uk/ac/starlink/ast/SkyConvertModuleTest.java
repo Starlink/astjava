@@ -250,7 +250,7 @@ class SkyConvertModuleTest {
     @Test
     void fk5ToFk5Same() {
         Mapping map = skyMapping(sky("FK5"), sky("FK5"), SkyFrame.AST__FK5);
-        assertTrue(MappingTestData.isUnitChain(map));
+        assertTrue(MappingTestData.isUnitMap(map));
         double[] p = fwd(map, 1.234, 0.567);
         assertClose(p[0], 1.234, 1.0e-14);
         assertClose(p[1], 0.567, 1.0e-14);
