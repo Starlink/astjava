@@ -39,6 +39,12 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  * <p>The simplified Mapping must also transform the inputs of the input file's sections of {@code
  * oracle/simplify_fixtures.oracle} to C's recorded outputs, within the file's tolerances, as the
  * transform oracle compares a bare Mapping, with the overrides the oracle's overrides file states.
+ * Where the reference is another file with a section of the same direction and inputs, the outputs
+ * are those C recorded for the reference: C's simplification can change what a Mapping gives
+ * outside the domain its parts assume (SphMaps cancelling on angles outside the ranges a SphMap
+ * gives or on vectors that are not of unit length, a WcsMap and its inverse cancelling on points
+ * the projection cannot transform), and the simplified Mapping is to transform as C's simplified
+ * Mapping does.
  *
  * <p>Every row matches C or is listed with its reason in {@code deferred/simplify-cases.txt}, and the
  * list is checked both ways. Run with {@code -Dast.writeDeferred=true} to rewrite it.
@@ -167,7 +173,7 @@ class SimplifyRegressionTest {
                 problem = "dump differs from C's: " + firstDifference(got, want);
             }
         }
-        String transform = transformFailure(r.input, simplified, oracle, overrides);
+        String transform = transformFailure(r, simplified, oracle, overrides);
         if (transform != null) {
             problem = problem == null ? transform : problem + "; " + transform;
         }
@@ -188,15 +194,32 @@ class SimplifyRegressionTest {
     }
 
     /**
+     * The section of the row's reference with the direction and inputs of the input file's section
+     * {@code s}, or {@code s} itself if the reference is the input file or has no such section.
+     */
+    private static OracleSection referenceSection(Row r, OracleSection s, Map<String, List<OracleSection>> oracle) {
+        if (!r.reference.equals(r.input)) {
+            for (OracleSection ref : oracle.getOrDefault(r.reference, new ArrayList<>())) {
+                if (ref.forward == s.forward && Arrays.deepEquals(ref.inputs(), s.inputs())) {
+                    return ref;
+                }
+            }
+        }
+        return s;
+    }
+
+    /**
      * Where {@code simplified} fails to reproduce C's recorded outputs for the input file's oracle
-     * sections, or null if it reproduces them all.
+     * sections, or those of the reference for the same inputs ({@link #referenceSection}), or null
+     * if it reproduces them all.
      */
     private static String transformFailure(
-            String input,
+            Row r,
             Mapping simplified,
             Map<String, List<OracleSection>> oracle,
             TransformOracleTest.Overrides overrides) {
-        for (OracleSection s : oracle.getOrDefault(input, new ArrayList<>())) {
+        for (OracleSection in : oracle.getOrDefault(r.input, new ArrayList<>())) {
+            OracleSection s = referenceSection(r, in, oracle);
             if (overrides.goldenOff(s.path, s.forward)) {
                 continue;
             }

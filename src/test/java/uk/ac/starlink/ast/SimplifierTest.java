@@ -1055,6 +1055,62 @@ class SimplifierTest {
         assertEquals(11.5, transformPoints(result, true, new double[] {0.1, 0.2, 4.0})[0][2], 1e-12);
     }
 
+    @Test
+    void simplifySphmapFwdInvCancels() {
+        SphMap fwd = new SphMap();
+        fwd.setUnitRadius(true);
+        SphMap inv = new SphMap();
+        inv.setUnitRadius(true);
+        inv.invert();
+        Mapping result = new CmpMap(fwd, inv, true).simplify();
+        assertInstanceOf(UnitMap.class, result);
+        assertEquals(3, result.getNin());
+    }
+
+    @Test
+    void simplifySphmapInvFwdCancels() {
+        SphMap inv = new SphMap();
+        inv.invert();
+        Mapping result = new CmpMap(inv, new SphMap(), true).simplify();
+        assertInstanceOf(UnitMap.class, result);
+        assertEquals(2, result.getNin());
+    }
+
+    @Test
+    void simplifySphmapFwdInvCancelsWithUnitRadiusOnFirst() {
+        SphMap fwd = new SphMap();
+        fwd.setUnitRadius(true);
+        SphMap inv = new SphMap();
+        inv.invert();
+        Mapping result = new CmpMap(fwd, inv, true).simplify();
+        assertInstanceOf(UnitMap.class, result);
+        assertEquals(3, result.getNin());
+    }
+
+    @Test
+    void simplifySphmapFwdInvNoCancelWithoutUnitRadius() {
+        SphMap inv = new SphMap();
+        inv.invert();
+        assertFalse(new CmpMap(new SphMap(), inv, true).simplify() instanceof UnitMap);
+    }
+
+    @Test
+    void simplifyWcsmapInverseCancels() {
+        WcsMap inv = new WcsMap(2, WcsMap.AST__TAN, 1, 2);
+        inv.invert();
+        Mapping result = new CmpMap(new WcsMap(2, WcsMap.AST__TAN, 1, 2), inv, true).simplify();
+        assertInstanceOf(UnitMap.class, result);
+        assertEquals(2, result.getNin());
+    }
+
+    @Test
+    void simplifyWcsmapDifferentProjNoMerge() {
+        WcsMap inv = new WcsMap(2, WcsMap.AST__SIN, 1, 2);
+        inv.invert();
+        Mapping result = new CmpMap(new WcsMap(2, WcsMap.AST__TAN, 1, 2), inv, true).simplify();
+        assertFalse(result instanceof UnitMap);
+    }
+
     /**
      * An FK5 conversion and its inverse in parallel CmpMaps, with a ShiftMap on the other axis in a
      * parallel CmpMap between them: C swaps the CmpMaps so that the SlaMaps cancel, and gives a

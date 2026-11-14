@@ -232,17 +232,8 @@ src/wcslib/prj.rs::csc_margin_covers_the_kernels_drift_and_a_zero_margin_does_no
 src/wcslib/prj.rs::quadcube_slice_builds_agree | hardware SIMD
 src/mappings/wcsmap.rs::inverse_longitudes_near_a_limit_are_decided_as_per_value | hardware SIMD
 src/mappings/sphmap.rs::counts_only_the_calls_c_makes | Rust-only API (call counts)
-tests/test_sphmap.rs::sphmap_inv_fwd_cancels_without_unit_radius | needs simplification
-tests/test_sphmap.rs::sphmap_fwd_inv_needs_unit_radius_on_first_only | needs simplification
-tests/test_sphmap.rs::sphmap_fwd_inv_fails_without_unit_radius | needs simplification
-tests/test_sphmap.rs::sphmap_cancellation_requires_matching_polar_long | needs simplification
 tests/test_wcsmap.rs::wcsmap_equal_different_params | astEqual (out-of-scope method)
 tests/test_wcsmap.rs::wcsmap_equal_same_params | astEqual (out-of-scope method)
-tests/test_wcsmap.rs::wcsmap_no_cancel_different_params | needs simplification
-tests/test_wcsmap.rs::wcsmap_cancel_same_params | needs simplification
-tests/test_wcsmap.rs::wcsmap_perm_swap_cancel_simplify | needs simplification
-tests/test_wcsmap.rs::wcsmap_perm_swap_simplify_constants | needs simplification
-tests/test_wcsmap.rs::wcsmap_absorbs_adjacent_permmap | needs simplification
 tests/test_polymap.rs::polymap_bad_powers_len_rejected | Rust-only API (PolyTerm power vectors; C's coefficient array has none)
 tests/test_polymap.rs::polymap_linear_decomposes_to_matrixmap | needs simplification
 tests/test_polymap.rs::polymap_affine_decomposes | needs simplification

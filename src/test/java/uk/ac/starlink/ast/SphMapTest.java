@@ -3,6 +3,7 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
 import static uk.ac.starlink.ast.MappingTestData.transformRows;
@@ -11,8 +12,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The tests of Rust {@code tests/test_sphmap.rs}: SphMap's transformations both ways, bad
- * values, attributes, inversion and native round trips. Its {@code try_merge} tests, of
- * SphMap's merging when simplified, are deferred ({@code needs simplification}).
+ * values, attributes, inversion, merging and native round trips. Rust's {@code try_merge} of two
+ * SphMaps is the simplification of their series CmpMap, which sphmap.c {@code MapMerge} merges.
  */
 class SphMapTest {
 
@@ -167,6 +168,56 @@ class SphMapTest {
         double[][] out = transformRows(m, false, new double[] {1, 0, 0});
         assertClose(point(out, 0)[0], 0.0);
         assertClose(point(out, 0)[1], 0.0);
+    }
+
+    // ------------------------------------------------------------------
+    // Merging (sphmap.c MapMerge)
+    // ------------------------------------------------------------------
+
+    /** The simplification of {@code first} followed by {@code second}. */
+    private static Mapping simplifiedSeries(SphMap first, SphMap second) {
+        return new CmpMap(first, second, true).simplify();
+    }
+
+    /**
+     * An inverted SphMap followed by a forward one cancels without UnitRadius, the inverse giving
+     * unit vectors (sphmap.c:757-764).
+     */
+    @Test
+    void sphmapInvFwdCancelsWithoutUnitRadius() {
+        SphMap s1 = new SphMap();
+        s1.invert();
+        Mapping m = simplifiedSeries(s1, new SphMap());
+        assertInstanceOf(UnitMap.class, m);
+        assertEquals(2, m.getNin());
+    }
+
+    /** A forward SphMap followed by an inverted one cancels if the first has UnitRadius (sphmap.c:765-774). */
+    @Test
+    void sphmapFwdInvNeedsUnitRadiusOnFirstOnly() {
+        SphMap s1 = new SphMap();
+        s1.setUnitRadius(true);
+        SphMap s2 = new SphMap();
+        s2.invert();
+        Mapping m = simplifiedSeries(s1, s2);
+        assertInstanceOf(UnitMap.class, m);
+        assertEquals(3, m.getNin());
+    }
+
+    @Test
+    void sphmapFwdInvFailsWithoutUnitRadius() {
+        SphMap s2 = new SphMap();
+        s2.invert();
+        assertFalse(simplifiedSeries(new SphMap(), s2) instanceof UnitMap);
+    }
+
+    @Test
+    void sphmapCancellationRequiresMatchingPolarLong() {
+        SphMap s1 = new SphMap();
+        s1.invert();
+        SphMap s2 = new SphMap();
+        s2.setPolarLong(1.0);
+        assertFalse(simplifiedSeries(s1, s2) instanceof UnitMap);
     }
 
     @Test

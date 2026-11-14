@@ -246,6 +246,114 @@ public class SphMap extends Mapping {
     }
 
     // ------------------------------------------------------------------
+    // Simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * sphmap.c {@code MapMerge}, in series only. The SphMap and a SphMap after it become a UnitMap
+     * if the first is applied inverted and the second forward with PolarLong equal to within
+     * {@code astEQUAL}, or the first forward with UnitRadius and the second inverted. Failing that,
+     * the SphMap applied inverted, followed by a ZoomMap or a diagonal MatrixMap whose three
+     * elements have equal magnitudes, then by a SphMap applied forward, becomes a WinMap that
+     * reflects or turns the longitude and latitude as the signs of the elements do, followed by a
+     * copy of the SphMap whose PolarLong has been through the WinMap, provided that equals the
+     * PolarLong of the last SphMap; the two SphMaps then cancel on a later pass.
+     */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        int result = -1;
+        boolean simpler = false;
+        if (series && where + 1 < list.size()) {
+            int imap1 = where;
+            int imap2 = where + 1;
+            int naxes = 0;
+            Mapping second = list.map(imap2);
+            if (second.getClass() == SphMap.class) {
+                SphMap first = (SphMap) list.map(imap1);
+                if (list.invert(imap1) && !list.invert(imap2)) {
+                    naxes = 2;
+                    simpler = MappingHelpers.astEqual(first.getPolarLong(), ((SphMap) second).getPolarLong());
+                } else if (!list.invert(imap1) && list.invert(imap2)) {
+                    naxes = 3;
+                    simpler = first.getUnitRadius();
+                }
+            }
+            if (simpler) {
+                list.replacePairWith(imap1, new UnitMap(naxes), false);
+                result = imap1;
+            }
+        }
+
+        if (series && !simpler && list.invert(where) && where + 2 < list.size()) {
+            double[] diag = diagonalBetweenSphMaps(list, where);
+            if (diag != null) {
+                double[] a = new double[2];
+                double[] b = new double[2];
+                if (diag[0] < 0.0) {
+                    a[0] = Math.PI;
+                    b[0] = diag[1] < 0.0 ? 1.0 : -1.0;
+                } else {
+                    a[0] = 0.0;
+                    b[0] = diag[1] < 0.0 ? -1.0 : 1.0;
+                }
+                a[1] = 0.0;
+                b[1] = diag[2] < 0.0 ? -1.0 : 1.0;
+                WinMap wm = new WinMap(a, b);
+                double polarlong = ((SphMap) list.map(where)).getPolarLong();
+                polarlong = a[0] + b[0] * polarlong;
+                if (MappingHelpers.astEqual(polarlong, ((SphMap) list.map(where + 2)).getPolarLong())) {
+                    SphMap sm = (SphMap) list.map(where).copy();
+                    sm.setPolarLong(polarlong);
+                    list.set(where + 1, sm, list.invert(where));
+                    list.set(where, wm, false);
+                    result = where;
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * The three diagonal elements of the Mapping after the SphMap at {@code where}, if it is a
+     * ZoomMap of non-zero factor or a diagonal MatrixMap whose first element is not zero and whose
+     * other two have its magnitude to within {@code astEQUAL}, and the Mapping after that is a
+     * SphMap applied forward; null otherwise. The elements are read as stored, whatever the
+     * orientation the list applies the Mapping in, which changes only their magnitudes.
+     */
+    private static double[] diagonalBetweenSphMaps(MergeList list, int where) {
+        if (list.map(where + 2).getClass() != SphMap.class || list.invert(where + 2)) {
+            return null;
+        }
+        Mapping middle = list.map(where + 1);
+        double[] diag = new double[3];
+        if (middle.getClass() == ZoomMap.class) {
+            diag[0] = ((ZoomMap) middle).getZoom();
+            if (diag[0] == 0.0) {
+                return null;
+            }
+            diag[1] = diag[0];
+            diag[2] = diag[0];
+        } else if (middle.getClass() == MatrixMap.class) {
+            MatrixMap mm = (MatrixMap) middle;
+            double[] f = mm.storedForward();
+            if (mm.storageForm() != MatrixMap.DIAGONAL || f == null || f[0] == 0.0) {
+                return null;
+            }
+            diag[0] = f[0];
+            diag[1] = f[1];
+            diag[2] = f[2];
+            double absval = Math.abs(diag[0]);
+            if (!MappingHelpers.astEqual(Math.abs(diag[1]), absval)
+                    || !MappingHelpers.astEqual(Math.abs(diag[2]), absval)) {
+                return null;
+            }
+        } else {
+            return null;
+        }
+        return diag;
+    }
+
+    // ------------------------------------------------------------------
     // Transformation
     // ------------------------------------------------------------------
 

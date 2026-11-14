@@ -3,6 +3,7 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -11,6 +12,8 @@ import static uk.ac.starlink.ast.MappingTestData.point;
 import static uk.ac.starlink.ast.MappingTestData.transformRows;
 
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.CValues;
+import uk.ac.starlink.ast.testsupport.Fixtures;
 import uk.ac.starlink.ast.testsupport.KernelInputs;
 
 /**
@@ -18,11 +21,10 @@ import uk.ac.starlink.ast.testsupport.KernelInputs;
  * LonCheck attribute, projection parameters, native round trips and errors for unusable
  * parameters.
  *
- * <p>Deferred: {@code wcsmap_equal_*} ({@code astEqual}, out of scope), and {@code
- * wcsmap_no_cancel_different_params}, {@code wcsmap_cancel_same_params}, {@code
- * wcsmap_perm_swap_*} and {@code wcsmap_absorbs_adjacent_permmap} ({@code needs simplification}).
- * {@code unknown_projection_is_identity} omits its check that the WcsMap simplifies to a UnitMap,
- * which needs simplification.
+ * <p>Deferred: {@code wcsmap_equal_*} ({@code astEqual}, out of scope). Rust's {@code try_merge}
+ * of two WcsMaps is the simplification of their series CmpMap, which wcsmap.c {@code MapMerge}
+ * merges, and the comparison with C's simplified fixture made with Rust's {@code equal} is made
+ * with the dumps.
  */
 class WcsMapTest {
 
@@ -223,6 +225,156 @@ class WcsMapTest {
         assertClose(back[1], 1.4, 1e-10, "simplified lat");
     }
 
+    // ------------------------------------------------------------------
+    // Merging (wcsmap.c MapMerge)
+    // ------------------------------------------------------------------
+
+    /** A ZPN WcsMap with parameter PV2_1 set to {@code pv21}. */
+    private static WcsMap zpn(double pv21) {
+        WcsMap w = wcs(2, WcsMap.AST__ZPN, 1, 2);
+        w.set("PV2_1=" + pv21);
+        return w;
+    }
+
+    @Test
+    void wcsmapNoCancelDifferentParams() {
+        WcsMap w2 = zpn(0.7);
+        w2.invert();
+        assertFalse(new CmpMap(zpn(0.5), w2, true).simplify() instanceof UnitMap);
+    }
+
+    @Test
+    void wcsmapCancelSameParams() {
+        WcsMap w1 = zpn(0.5);
+        w1.invert();
+        assertInstanceOf(UnitMap.class, new CmpMap(w1, zpn(0.5), true).simplify());
+    }
+
+    /** The simplification of the Mapping of a simplify fixture, and C's, as dumps. */
+    private static String[] simplifiedFixture(String name) {
+        Mapping map = (Mapping) ChannelText.read(Fixtures.read("simplify/" + name + ".map"));
+        String want = SerialisationCorpusTest.stripLeadingComments(Fixtures.read("simplify/" + name + ".simp"));
+        return new String[] {ChannelText.dump(map.simplify()), want};
+    }
+
+    /**
+     * A forward TAN WcsMap, a PermMap swapping the axes and the inverse of a TAN WcsMap with the
+     * axes swapped: the WcsMap is swapped past the PermMap (wcsmap.c {@code WcsPerm}) and cancels,
+     * leaving C's PermMap.
+     */
+    @Test
+    void wcsmapPermSwapCancelSimplify() {
+        String[] got = simplifiedFixture("wcsmap_perm_swap_cancel");
+        assertTrue(got[0].startsWith(" Begin PermMap"), got[0]);
+        assertTrue(CValues.nativeStringsEquivalent(got[0], got[1], 4), got[0]);
+    }
+
+    /**
+     * A forward TAN WcsMap of three axes followed by a PermMap that keeps only the third and gives
+     * its longitude and latitude constants: the swap gives a UnitMap and a PermMap whose constants
+     * have been through the inverse projection, C's PermMap.
+     */
+    @Test
+    void wcsmapPermSwapSimplifyConstants() {
+        String[] got = simplifiedFixture("wcsmap_perm_swap_simplify");
+        assertTrue(got[0].startsWith(" Begin PermMap"), got[0]);
+        assertTrue(CValues.nativeStringsEquivalent(got[0], got[1], 4), got[0]);
+    }
+
+    @Test
+    void wcsmapAbsorbsAdjacentPermmap() {
+        WcsMap wcsFwd = wcs(2, WcsMap.AST__TAN, 1, 2);
+        PermMap pm = new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
+        WcsMap wcsInv = wcs(2, WcsMap.AST__TAN, 2, 1);
+        wcsInv.invert();
+        CmpMap full = new CmpMap(wcsFwd, new CmpMap(pm, wcsInv, true), true);
+        Mapping simplified = full.simplify();
+        assertInstanceOf(PermMap.class, simplified);
+        double[] out = tran(simplified, true, 0.1, 1.2);
+        assertClose(out[0], 1.2, 1e-10, "swap axis 0");
+        assertClose(out[1], 0.1, 1e-10, "swap axis 1");
+    }
+
+    /** An AZP WcsMap, with PV2_1 set to 0.5 if {@code withParam}. */
+    private static WcsMap azp(boolean withParam) {
+        WcsMap w = wcs(2, WcsMap.AST__AZP, 1, 2);
+        if (withParam) {
+            w.set("PV2_1=0.5");
+        }
+        return w;
+    }
+
+    /**
+     * wcsmap.c {@code CanMerge} compares the parameters up to the number the first WcsMap holds
+     * (it compares that WcsMap's count with itself, wcsmap.c:914), so a WcsMap with none cancels
+     * with the inverse of one with PV2_1 = 0.5, changing what the Mapping computes, while the
+     * other order compares PV2_1 and does not cancel. C (pinned build, cfuzz wcsprobe 1 and 2): a
+     * UnitMap, with (0.1, 1.2) going to (0.1, 1.1914111091742374) before simplification; and an
+     * unsimplified CmpMap.
+     */
+    @Test
+    void aWcsMapCancelsWithAnInverseHavingParametersItLacks() {
+        WcsMap second = azp(true);
+        second.invert();
+        CmpMap c = new CmpMap(azp(false), second, true);
+        assertClose(tran(c, true, 0.1, 1.2)[1], 1.1914111091742374, 1e-12, "before");
+        assertInstanceOf(UnitMap.class, c.simplify());
+
+        WcsMap first = azp(false);
+        first.invert();
+        assertInstanceOf(CmpMap.class, new CmpMap(azp(true), first, true).simplify());
+    }
+
+    /**
+     * wcsmap.c {@code WcsPerm} keeps the PermMap it swaps past and gives it its own Invert
+     * attribute (wcsmap.c:4726, 4744), not the value the list applies it with. A PermMap of two
+     * inputs and three outputs before a WcsMap of three axes, in a CmpMap that is then inverted,
+     * is applied inverted in the list; the swap makes it forward, so the simplified Mapping has
+     * two inputs and three outputs where the CmpMap has three and two. C (pinned build, cfuzz
+     * wcsprobe 3) gives this dump.
+     */
+    @Test
+    void aPermMapSwappedPastAWcsMapTakesItsOwnInvert() {
+        PermMap p = new PermMap(2, new int[] {1, 2}, 3, new int[] {1, 2, -1}, new double[] {5.0});
+        CmpMap c = new CmpMap(p, wcs(3, WcsMap.AST__TAN, 1, 2), true);
+        c.invert();
+        Mapping s = c.simplify();
+        String want = String.join(
+                "\n",
+                " Begin CmpMap \t# Compound Mapping",
+                "    Nin = 2 \t# Number of input coordinates",
+                "    Nout = 3 \t# Number of output coordinates",
+                "    IsSimp = 1 \t# Mapping has been simplified",
+                " IsA Mapping \t# Mapping between coordinate systems",
+                "    InvA = 1 \t# First Mapping used in inverse direction",
+                "    MapA = \t# First component Mapping",
+                "       Begin WcsMap \t# FITS-WCS sky projection",
+                "          Nin = 2 \t# Number of input coordinates",
+                "          Invert = 1 \t# Mapping inverted",
+                "       IsA Mapping \t# Mapping between coordinate systems",
+                "          Type = \"TAN\" \t# Gnomonic projection",
+                "       End WcsMap",
+                "    MapB = \t# Second component Mapping",
+                "       Begin PermMap \t# Coordinate permutation",
+                "          Nin = 2 \t# Number of input coordinates",
+                "          Nout = 3 \t# Number of output coordinates",
+                "       IsA Mapping \t# Mapping between coordinate systems",
+                "          Out1 = 1 \t# Output coordinate 1 = input coordinate 1",
+                "          Out2 = 2 \t# Output coordinate 2 = input coordinate 2",
+                "          Out3 = -1 \t# Output coordinate 3 = constant no. 1",
+                "          In1 = 1 \t# Input coordinate 1 = output coordinate 1",
+                "          In2 = 2 \t# Input coordinate 2 = output coordinate 2",
+                "          Nconst = 1 \t# Number of constants",
+                "          Con1 = 5 \t# Constant number 1",
+                "       End PermMap",
+                " End CmpMap",
+                "");
+        String got = ChannelText.dump(s);
+        assertTrue(CValues.nativeStringsEquivalent(got, want, 4), got);
+        assertEquals(3, c.getNin());
+        assertEquals(2, s.getNin());
+    }
+
     @Test
     void rateNumeric() {
         double r = wcs(2, WcsMap.AST__TAN, 1, 2).rate(new double[] {0.0, 1.4}, 2, 2);
@@ -339,6 +491,8 @@ class WcsMapTest {
         }
         assertEquals(0.0, wm.natLon());
         assertEquals(0.0, wm.natLat());
+        // wcsmap.c:3140-3150: an AST__WCSBAD WcsMap is replaced by a UnitMap.
+        assertInstanceOf(UnitMap.class, wm.simplify());
     }
 
     /**
