@@ -96,6 +96,15 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: gives them AST__BAD.
 - Java: as C.
 
+### Swapping a parallel CmpMap with a PermMap whose blocks are constant
+
+- **C quirk**: when CmpMap's `MapMerge` swaps a parallel CmpMap with the PermMap before it and both of the PermMap's blocks give constants, three things go wrong (all confirmed with the pinned library):
+  - It writes past the end of the constants array (`cmpmap.c:2243`, allocated at `2176`): a series of `PermMap(3, inperm = [-1, -2, -3], 3, outperm = [-4, -5, -6], 6 constants)` and a parallel CmpMap of a TAN WcsMap and `ZoomMap(1, 3)` gives a heap-buffer-overflow.
+  - With fewer unit axes than the second block's outputs, the overlapping writes at `cmpmap.c:2183-2201` and `2224-2236` leave entries of the new input permutation uninitialised, which `astStore` then reads (the same PermMap before a parallel CmpMap of `ZoomMap(1, 3)` and a TAN WcsMap).
+  - Only the first component is replaced by a UnitMap (`cmpmap.c:2255-2259`), so the second component's inverse is applied to the PermMap's inverse constants: with `PermMap(4, [-1 .. -4], 4, [-5 .. -8], constants 0.1 .. 0.8)` before a parallel CmpMap of TAN and SIN WcsMaps, the inverse of (0.01, 0.02, 0.03, 0.04) is (0.1, 0.2, 0.3, 0.4) before simplification and (2.677945044588987, 1.3452829208967654, 0.3, 0.4) after.
+- Rust: swaps by its own pairwise code; not compared.
+- Java: as C for the changed inverse; makes room for every constant where C overflows, and leaves the uninitialised entries 0.
+
 ### Simplifying a PermMap with no forward permutation and constants
 
 - **C quirk**: `MapMerge` reads each PermMap's forward permutation with the number of outputs as its limit (`maxperm = astGetNout( map )`, `permmap.c:1030` and `1222`), where `Transform` uses the number of inputs, so simplifying can change the transformation.
