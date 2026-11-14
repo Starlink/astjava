@@ -102,6 +102,13 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: rebuilds the inverse, which can differ in the last bits of the inverse coefficients.
 - Java: as C.
 
+### Simplifying a full MatrixMap whose off-diagonal elements are zero
+
+- **C quirk**: `MapMerge` replaces a full MatrixMap whose off-diagonal elements are all zero with a diagonal MatrixMap built from the stored forward diagonal and applied forward, even when the list applies the MatrixMap inverted (`matrixmap.c:1896-1925`), so simplifying changes its transformation.
+  Only a full matrix that was never compressed reaches this, such as one read from a dump or one with a bad element: a MatrixMap read with `Invert = 1` and diagonal 2 and 4 maps (1, 1) to (0.5, 0.25) before simplification and to (2, 4) after.
+- Rust: as C.
+- Java: as C.
+
 ### Array arguments longer than needed
 
 - C and jniast: accept them and use the leading elements (WinMap corners, MatrixMap matrices, PermMap permutations).
