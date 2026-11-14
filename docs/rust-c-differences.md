@@ -160,6 +160,22 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: rebuilds the inverse, which can differ in the last bits of the inverse coefficients.
 - Java: as C.
 
+### A unit or non-square diagonal MatrixMap beside a WinMap
+
+- **C quirk**: `WinDiagMat` returns the WinMap itself for a unit MatrixMap, in series and in parallel alike (`winmap.c:2697-2699`), and treats a non-square diagonal MatrixMap as square, so simplifying changes the Mapping's numbers of axes or its transformation; confirmed with the pinned library:
+  - a parallel CmpMap of `ShiftMap([3])` and a 2-axis unit MatrixMap, with 3 inputs and outputs, simplifies to the 1-axis ShiftMap;
+  - the inverse of a series CmpMap of a 2-axis unit MatrixMap and a WinMap simplifies to the WinMap applied forward, so (1, 2) maps to (7, 7) instead of (-2, 0.333);
+  - a diagonal `MatrixMap(2, 3)` beside a WinMap of 3 axes gives a WinMap of 3 inputs for a Mapping of 2.
+  The Mappings left by these changes can make C's later merges read or write past their arrays (`winmap.c:1352`, `2721`, WinWin, WinPerm, `MatWin2`, `cmpmap.c:1895`, `permmap.c`).
+- Rust: not compared.
+- Java: as C for the changes themselves; where C's later merges would read or write past an array, because the Mappings of the list do not fit together as C's code assumes, Java does not make that merge, so the transformation is kept.
+
+### A non-square diagonal MatrixMap merged with a WinMap by the MatrixMap
+
+- **C quirk**: `MatWin2` builds a WinMap of the MatrixMap's number of rows or columns to replace the pair and, with the WinMap first, reads the scale terms past that number (found by reading).
+- Rust: not compared.
+- Java: does not merge a MatrixMap with a WinMap unless the MatrixMap is square and as wide as the WinMap.
+
 ### Simplifying a full MatrixMap whose off-diagonal elements are zero
 
 - **C quirk**: `MapMerge` replaces a full MatrixMap whose off-diagonal elements are all zero with a diagonal MatrixMap built from the stored forward diagonal and applied forward, even when the list applies the MatrixMap inverted (`matrixmap.c:1896-1925`), so simplifying changes its transformation.
