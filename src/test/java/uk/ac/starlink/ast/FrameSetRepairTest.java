@@ -18,13 +18,9 @@ import org.junit.jupiter.api.Test;
  * to its current Frame, simplification returning a FrameSet, and the definedness of the
  * base-to-current Mapping.
  *
- * <p>{@code frameset_simplified_returns_frameset} is translated as far as this version simplifies:
- * the result is a FrameSet with the same Frames; that the CmpMap of a ZoomMap and its inverse
- * becomes a UnitMap needs simplification.
- *
  * <p>{@code addFrameAllframesAppendsAxes} checks the FrameSet C's {@code AppendAxes} makes
- * (frameset.c {@code AddFrame} with {@code AST__ALLFRAMES}) by its Frames and transformation:
- * C simplifies each new CmpMap, which this version does not, so the Mappings are not compared.
+ * (frameset.c {@code AddFrame} with {@code AST__ALLFRAMES}) by its Frames, its Mapping and its
+ * transformation.
  */
 class FrameSetRepairTest {
 
@@ -159,7 +155,10 @@ class FrameSetRepairTest {
         FrameSet sfs =
                 assertInstanceOf(FrameSet.class, fs.simplify(), "astSimplify of a FrameSet must return a FrameSet");
         assertEquals(2, sfs.getNframe());
-        assertEquals(3.0, fwd(sfs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT), 3.0), 1e-12);
+        // C simplifies the CmpMap of a ZoomMap and its inverse to a UnitMap.
+        Mapping map = sfs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        assertInstanceOf(UnitMap.class, map, "the simplified Mapping is a " + map.astClass());
+        assertEquals(3.0, fwd(map, 3.0), 1e-12);
     }
 
     // Transform definedness follows the base-to-current path
@@ -215,8 +214,9 @@ class FrameSetRepairTest {
     /**
      * Adding with {@code AST__ALLFRAMES} appends the Frame's axes to every Frame of the set: each
      * Frame becomes a CmpFrame of itself and the Frame, and each Mapping a parallel CmpMap of
-     * itself and a UnitMap. The Mapping given is ignored. In C, a 2-axis GRID to FPLANE WinMap
-     * FrameSet widened by a 1-axis SPEC Frame maps (5, 5, 42) to (40, 40, 42).
+     * itself and a UnitMap, simplified. The Mapping given is ignored. In C, a 2-axis GRID to FPLANE
+     * WinMap FrameSet widened by a 1-axis SPEC Frame holds a 3-axis WinMap and maps (5, 5, 42) to
+     * (40, 40, 42).
      */
     @Test
     void addFrameAllframesAppendsAxes() {
@@ -239,6 +239,12 @@ class FrameSetRepairTest {
                 3,
                 assertInstanceOf(CmpFrame.class, fs.getFrame(FrameSet.AST__CURRENT))
                         .getNaxes());
+
+        Mapping map = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        assertEquals(
+                3,
+                assertInstanceOf(WinMap.class, map, "the Mapping is a " + map.astClass())
+                        .getNin());
 
         double[] out = point(transformRows(fs, true, new double[] {5.0, 5.0, 42.0}), 0);
         assertTrue(Math.abs(out[0] - 40.0) < 1e-9, "axis 1 " + out[0]);

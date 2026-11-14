@@ -21,7 +21,7 @@ class FrameSetCurrentTest {
 
     private static final JsonNode STEPS = ProbeData.load("frameset_current").get("STEPS");
 
-    /** The steps whose dump needs simplification: C joins the two UnitMaps into one. */
+    /** A one-axis Frame with Domain {@code F<i>}. */
     private static Frame frame(int i) {
         Frame f = new Frame(1);
         f.setDomain("F" + i);

@@ -6,7 +6,4 @@
 # listed row matches C or an entry names no section or a row beyond it. Written by hand.
 # A cause starting "runtime Math:" marks rows whose outcome hangs on the last bit of an elementary
 # function of java.lang.Math, which is not C's libm and differs between platforms: such a row is
-# not reported when it matches C, since on another runtime it may not. The forward CAR rows below
-# come from multiplications alone (IEEE arithmetic, the same on every runtime) and are not marked.
-programs/joye_car_headers/CHIPASS_Equ.head inverse 1 | runtime Math: needs simplification; which side of the seam it reaches follows the sign of a near-zero value the rotation computes with the sin and cos of Math: the input, C's forward output at RA 0, is on the CAR seam opposite CRVAL1 = 180, native longitude +-180; through the unsimplified Mapping it comes out at -180 (pixel 1.0000000000009), through C's simplified one at +180 (pixel 5401)
-wcsconv/inputs/car6.head inverse 1 | runtime Math: needs simplification; which side of the seam it reaches follows the sign of a near-zero value the rotation computes with the sin and cos of Math: the input, C's forward output at RA 0, is on the CAR seam opposite CRVAL1 = 180, native longitude +-180; through the unsimplified Mapping it comes out at -180 (pixel 1.0000000000009), through C's simplified one at +180 (pixel 5401)
+# not reported when it matches C, since on another runtime it may not.

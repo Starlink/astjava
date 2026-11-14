@@ -20,8 +20,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * Frames with ActiveUnit set, which differ only in Unit; frame.c {@code SubFrame} takes the
  * Mapping between them from {@code astUnitMapper}, and simplifying a lone UnitMap or ZoomMap
  * leaves its scale factor as it is. The cases are checked both on {@link Units#unitMapper} and
- * through {@code convert}, whose Mapping this version does not simplify: it is the units Mapping
- * between UnitMaps, which leave the values unchanged.
+ * through {@code convert}, whose Mapping is simplified as C's is (frame.c {@code ConvertX}).
  *
  * <p>C's {@code ZOOM_CASES} are chains of ZoomMaps, each perhaps inverted, nested as the probe
  * nests them, {@code ((z1 z2) z3)}, and simplified.

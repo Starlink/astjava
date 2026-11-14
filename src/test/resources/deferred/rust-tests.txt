@@ -378,7 +378,6 @@ tests/test_fitschan_wcs.rs::serpens_dut1_is_seconds | FITS-IRAF encoding (out-of
 tests/test_fitschan_wcs.rs::serpens_swapped_axis_transform | FITS-IRAF encoding (out-of-scope method FitsChan.read)
 tests/test_fitschan_wcs.rs::class_noproj_builds_sfl | FITS-CLASS encoding (out-of-scope method FitsChan.read)
 tests/test_fitschan_wcs.rs::crota_3d_forward_matches_oracle_inverse_undefined | SpecFrame (out of scope)
-tests/test_fitschan_wcs.rs::carlin_off_car_header_keeps_the_spherical_projection | needs simplification
 tests/test_fitschan_read.rs::log_suffix_is_stripped_from_the_domain_and_symbol | MathMap (out of scope)
 tests/test_fitschan_read.rs::unset_system_still_leaves_system_unset | Rust-only API (SkyFrame::unset_system)
 tests/test_fitschan_read.rs::dsb_centre_prefers_axref_over_crval | DSBSpecFrame (out of scope)

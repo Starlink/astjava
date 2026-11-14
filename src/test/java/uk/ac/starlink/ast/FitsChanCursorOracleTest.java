@@ -66,9 +66,16 @@ class FitsChanCursorOracleTest {
     private static final int WAITING_FOR_ANOTHER_ENCODING = 5;
 
     /**
+     * The start of the reason of a case whose transcript hangs on the last bit of an elementary
+     * function of java.lang.Math, which is not C's libm and differs between platforms: such a case
+     * is not reported when it matches C, since on another runtime it may not.
+     */
+    private static final String RUNTIME_MATH = "runtime Math:";
+
+    /**
      * Cases read differently from C, with the reason; {@link #excludedReadCasesStillDiffer} fails
-     * once one matches, or, for a {@code needs} reason, once the read no longer stops for want of
-     * that class.
+     * once one matches, unless its reason starts {@value #RUNTIME_MATH}, or, for a {@code needs}
+     * reason, once the read no longer stops for want of that class.
      */
     private static final Map<String, String> EXCLUDED = excludedCases();
 
@@ -84,9 +91,12 @@ class FitsChanCursorOracleTest {
                 "iwc_on_spectral_cunit")) {
             m.put(name, "needs SpecFrame");
         }
-        // Its transcript shows the FrameSet read, whose pixel to world Mapping C simplifies
-        // (fitschan.c WcsMapFrm returns astSimplify of it).
-        m.put("iwc_on_alt", "needs simplification");
+        // Its transcript shows the FrameSet read. The rotation of the alternate description
+        // (fitschan.c WcsNative, three astMtrRot calls) takes the sine of 2 deg - pi/2, for which
+        // java.lang.Math gives -0x1.ffb0278bf0566p-1 and C's libm -0x1.ffb0278bf0567p-1 (measured
+        // on aarch64, JDK 21 and macOS libm), so the forward matrix element M2 is
+        // 0.9992386149554825 here and 0.99923861495548261 in C.
+        m.put("iwc_on_alt", RUNTIME_MATH + " the sine of 2 deg - pi/2 differs from C's libm by 1 ULP");
         return Collections.unmodifiableMap(m);
     }
 
@@ -525,7 +535,7 @@ class FitsChanCursorOracleTest {
         List<String> problems = new ArrayList<>();
         for (Map.Entry<String, String> e : EXCLUDED.entrySet()) {
             JsonNode c = findCase(e.getKey());
-            boolean needs = e.getValue().startsWith("needs ") && !"needs simplification".equals(e.getValue());
+            boolean needs = e.getValue().startsWith("needs ");
             String got;
             try {
                 got = transcript(ops(c));
@@ -540,7 +550,8 @@ class FitsChanCursorOracleTest {
             if (needs) {
                 problems.add(e.getKey() + " is excluded as \"" + e.getValue() + "\" but its read no longer stops;"
                         + " compare it with C and remove it from EXCLUDED");
-            } else if (c.get(2).asText().equals(got)) {
+            } else if (!e.getValue().startsWith(RUNTIME_MATH)
+                    && c.get(2).asText().equals(got)) {
                 problems.add(e.getKey() + " now matches C; remove it from EXCLUDED (" + e.getValue() + ")");
             }
         }

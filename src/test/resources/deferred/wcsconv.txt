@@ -19,15 +19,15 @@ lsst_fits-wcs | out-of-scope method FitsChan.write
 lsst2_fits-wcs | out-of-scope method FitsChan.write
 longslit_fits-wcs | out-of-scope method FitsChan.write
 jan_fits-class_ast | encoding FITS-CLASS
-aitoff_native | needs simplification
-car1_native | needs simplification
-car2_native | needs simplification
-car3_native | needs simplification
-car4_native | needs simplification
-car5_native | needs simplification
-car6_native | needs simplification
+aitoff_native | out-of-scope method FitsChan.write
+car1_native | out-of-scope method FitsChan.write
+car2_native | out-of-scope method FitsChan.write
+car3_native | out-of-scope method FitsChan.write
+car4_native | out-of-scope method FitsChan.write
+car5_native | out-of-scope method FitsChan.write
+car6_native | out-of-scope method FitsChan.write
 cobe_native | encoding FITS-AIPS
-hpx_native | needs simplification
+hpx_native | out-of-scope method FitsChan.write
 origin_native | encoding FITS-PC
 polco_native | needs MathMap
 polco2_native | needs MathMap
@@ -36,92 +36,92 @@ serpens_native | encoding FITS-IRAF
 specflux_native | needs SpecFrame
 timeplot_native | out-of-scope method FitsChan.write
 tnx_native | encoding FITS-IRAF
-tsc_native | needs simplification
-zpn_native | needs simplification
+tsc_native | out-of-scope method FitsChan.write
+zpn_native | out-of-scope method FitsChan.write
 zpx_native | encoding FITS-IRAF
 freq-log_native | needs SpecFrame
 freq-f2w_native | needs SpecFrame
-tan-pv0_native | needs simplification
+tan-pv0_native | out-of-scope method FitsChan.write
 tnx-cheb_native | encoding FITS-IRAF
 grism_native | needs SpecFrame
 grism_fits-wcs | out-of-scope method FitsChan.write
 class-spec_native | encoding FITS-CLASS
 class-hel_native | encoding FITS-CLASS
-multi-wcs_native | needs simplification
+multi-wcs_native | out-of-scope method FitsChan.write
 multi-wcs_fits-wcs | out-of-scope method FitsChan.write
 degen-wcsaxes_native | needs SpecFrame
 wave-w2f_native | needs SpecFrame
 vrad-v2f_native | needs SpecFrame
-tan-polytan_native | needs simplification
-sao-tan_native | needs simplification
+tan-polytan_native | out-of-scope method FitsChan.write
+sao-tan_native | out-of-scope method FitsChan.write
 fits-pc-alt_native | encoding FITS-PC
 velo-aips_native | encoding FITS-AIPS
 awav-a2f_native | needs SpecFrame
-tan-zeropv_native | needs simplification
+tan-zeropv_native | out-of-scope method FitsChan.write
 cube-reorder_native | needs SpecFrame
-ncp_native | needs simplification
+ncp_native | out-of-scope method FitsChan.write
 velo-vel_native | needs SpecFrame
 vopt-wav_native | needs SpecFrame
 zopt-frq_native | needs SpecFrame
-cname_native | needs simplification
+cname_native | out-of-scope method FitsChan.write
 cname_fits-wcs | out-of-scope method FitsChan.write
-skyref_native | needs simplification
+skyref_native | out-of-scope method FitsChan.write
 fits-pc-unit_native | encoding FITS-PC
-gls_native | needs simplification
+gls_native | out-of-scope method FitsChan.write
 iraf-longpole_native | encoding FITS-IRAF
 multi-wcs-spec_native | needs SpecFrame
-multi-wcs-dup_native | needs simplification
+multi-wcs-dup_native | out-of-scope method FitsChan.write
 multi-wcs-dup_fits-wcs | out-of-scope method FitsChan.write
 freq-wav_native | needs SpecFrame
 wavn-frq_native | needs SpecFrame
-mercator_native | needs simplification
-gappt_native | needs simplification
+mercator_native | out-of-scope method FitsChan.write
+gappt_native | out-of-scope method FitsChan.write
 gappt_fits-wcs | out-of-scope method FitsChan.write
-atf_native | needs simplification
-equinox-bj_native | needs simplification
-timesys-tdb_native | needs simplification
+atf_native | out-of-scope method FitsChan.write
+equinox-bj_native | out-of-scope method FitsChan.write
+timesys-tdb_native | out-of-scope method FitsChan.write
 zero-cdelt_native | needs SpecFrame
 alt-spectral_native | needs SpecFrame
-helioecl_native | needs simplification
+helioecl_native | out-of-scope method FitsChan.write
 fits-pc-full_native | encoding FITS-PC
 fits-pc-gal_native | encoding FITS-PC
 fits-pc-gal_fits-pc | out-of-scope method FitsChan.write
 sfl-pc_fits-pc | out-of-scope method FitsChan.write
 zpn_fits-pc | out-of-scope method FitsChan.write
 projp_native | encoding FITS-IRAF
-fk5-noeq_native | needs simplification
-timesys-tt_native | needs simplification
-skyref-alt_native | needs simplification
-axref_native | needs simplification
-unknown-cel_native | needs simplification
+fk5-noeq_native | out-of-scope method FitsChan.write
+timesys-tt_native | out-of-scope method FitsChan.write
+skyref-alt_native | out-of-scope method FitsChan.write
+axref_native | out-of-scope method FitsChan.write
+unknown-cel_native | out-of-scope method FitsChan.write
 projp-pv_native | encoding FITS-IRAF
 cd-old_native | encoding FITS-IRAF
-fk4-noeq_native | needs simplification
-unknown-cel2_native | needs simplification
-tidy-offsets_native | needs simplification
-tidy-pole_native | needs simplification
-date-short_native | needs simplification
-date-frac_native | needs simplification
-equinox-zero_native | needs simplification
+fk4-noeq_native | out-of-scope method FitsChan.write
+unknown-cel2_native | out-of-scope method FitsChan.write
+tidy-offsets_native | out-of-scope method FitsChan.write
+tidy-pole_native | out-of-scope method FitsChan.write
+date-short_native | out-of-scope method FitsChan.write
+date-frac_native | out-of-scope method FitsChan.write
+equinox-zero_native | out-of-scope method FitsChan.write
 ssysobs_native | needs SpecFrame
 ener-vel_native | needs SpecFrame
 beta-frq_native | needs SpecFrame
-sip-alt_native | needs simplification
-ukirt-dtai_native | needs simplification
+sip-alt_native | out-of-scope method FitsChan.write
+ukirt-dtai_native | out-of-scope method FitsChan.write
 ukirt-dtai_fits-wcs | out-of-scope method FitsChan.write
-rfval_native | needs simplification
+rfval_native | out-of-scope method FitsChan.write
 vrad-wav_native | needs SpecFrame
 projp-nopv0_native | encoding FITS-IRAF
 projp-pv0only_native | encoding FITS-IRAF
 restfreq-ghz_native | encoding FITS-AIPS
 pc-sparse_native | encoding FITS-PC
 restfreq-mhz_native | encoding FITS-AIPS
-unknown-spec_native | needs simplification
+unknown-spec_native | out-of-scope method FitsChan.write
 crota-3d_native | encoding FITS-AIPS
 axes-swap_native | needs SpecFrame
 cd-cross_native | needs SpecFrame
 class-noproj_native | encoding FITS-CLASS
-ait-highlatpole_native | needs simplification
+ait-highlatpole_native | out-of-scope method FitsChan.write
 timj_fits-aips++ | out-of-scope method FitsChan.write
 a20070718_fits-aips | out-of-scope method FitsChan.write
 a20070718_fits-aips++ | out-of-scope method FitsChan.write
@@ -176,11 +176,11 @@ wave-1d_fits-iraf | out-of-scope method FitsChan.write
 skyspec3d_fits-pc | out-of-scope method FitsChan.write
 skyspec3d-class_native | needs SpecFrame
 skyspec3d-class_fits-class | out-of-scope method FitsChan.write
-offset-sky_native | needs simplification
+offset-sky_native | out-of-scope method FitsChan.write
 offset-sky_fits-wcs | out-of-scope method FitsChan.write
-offset-sky-pole_native | needs simplification
+offset-sky-pole_native | out-of-scope method FitsChan.write
 offset-sky-pole_fits-wcs | out-of-scope method FitsChan.write
-azel_native | needs simplification
+azel_native | out-of-scope method FitsChan.write
 azel_fits-wcs | out-of-scope method FitsChan.write
 vopt-f2w_native | needs SpecFrame
 vopt-f2w_fits-wcs | out-of-scope method FitsChan.write
@@ -194,4 +194,4 @@ tan-pv0_fits-wcs | out-of-scope method FitsChan.write
 date-z_fits-wcs | out-of-scope method FitsChan.write
 fits-pc-altgal_native | encoding FITS-PC
 fits-pc-altgal_fits-wcs | out-of-scope method FitsChan.write
-offset-sref_native | needs simplification
+offset-sref_native | out-of-scope method FitsChan.write

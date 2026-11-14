@@ -40,8 +40,8 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  * whole turn is accepted. An inverse section of a FITS header or a FrameSet dump is also checked to
  * recover the inputs of the forward section before it, and the forward section of a {@code .simp}
  * fixture (C's simplification of the {@code .map} of the same stem) is checked to agree with the
- * {@code .map}'s where C's recorded values agree; simplification leaves transform values alone, so
- * this holds although {@link Mapping#simplify} here returns the Mapping unchanged.
+ * {@code .map}'s where C's recorded values agree, since simplification leaves transform values
+ * alone.
  *
  * <p>The three gates, {@code head_sections_match_oracle}, {@code slamap_sections_match_oracle}
  * and {@code simplify_sections_match_oracle}, divide the sections as Rust's do. Every section

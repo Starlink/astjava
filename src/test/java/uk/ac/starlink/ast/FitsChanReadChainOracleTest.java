@@ -5,14 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
 /**
@@ -24,11 +22,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  *
  * <p>The cases of {@code oracle/fitschan_read_chain.json} (from {@code
  * tools/oracle_fixtures/fitschan_read_chain_probe.c}) hold C's native dump of the FrameSet, whose
- * Mapping C simplified ({@code WcsMapFrm} returns {@code astSimplify} of it). The cases in {@link
- * #WHOLE} are compared with C's whole dump. For the others, whose Mappings still differ from C's
- * (needs simplification), the dumps are compared without the FrameSet's Mappings, and each Mapping
- * is compared with C's, read back from C's dump, by the positions they give; such a case whose
- * whole dump comes to match C's must be moved to {@link #WHOLE}.
+ * Mapping C simplified ({@code WcsMapFrm} returns {@code astSimplify} of it). Each case is compared
+ * with C's whole dump.
  *
  * <p>The cases in {@link #EXCLUDED} have a spectral axis (SpecFrame) or a {@code -LOG} axis (which
  * C maps with a MathMap); each must still stop there.
@@ -46,23 +41,8 @@ class FitsChanReadChainOracleTest {
         return m;
     }
 
-    /** The cases whose whole dump, the simplified Mapping included, matches C's. */
-    private static final Set<String> WHOLE =
-            new HashSet<>(Arrays.asList("other_log_crval_zero", "cdelt_near_unit", "cdelt_mixed"));
-
-    /** The pixel positions at which the Mappings are compared, for {@code nin} pixel axes. */
-    private static double[][] points(int nin) {
-        double[][] pts = new double[4][nin];
-        for (int p = 0; p < pts.length; p++) {
-            for (int i = 0; i < nin; i++) {
-                pts[p][i] = 1.0 + p * 7.5 + i;
-            }
-        }
-        return pts;
-    }
-
     /** The first mismatch between the port's read of {@code header} and C's dump {@code want}, or null. */
-    private static String compare(String name, String[] header, String want) {
+    private static String compare(String[] header, String want) {
         AstObject obj;
         try {
             obj = FitsHeaders.chan(header).read();
@@ -74,28 +54,7 @@ class FitsChanReadChainOracleTest {
             return "= none\n".equals(want) ? null : "the read gave no Object";
         }
         String got = ChannelText.dump(obj);
-        if (WHOLE.contains(name)) {
-            return got.equals(want) ? null : "the dump differs from C's:\n--- Java\n" + got + "--- C\n" + want;
-        }
-        if (got.equals(want)) {
-            return "the dump matches C's: the Mapping no longer needs simplification, so add the case to WHOLE";
-        }
-        String gotFrames = FitsHeaders.withoutMappings(got);
-        String wantFrames = FitsHeaders.withoutMappings(want);
-        if (!gotFrames.equals(wantFrames)) {
-            return "the dumps without Mappings differ:\n--- Java\n" + gotFrames + "--- C\n" + wantFrames;
-        }
-        Mapping cmap = ((FrameSet) ChannelText.read(want)).getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
-        Mapping map = ((FrameSet) obj).getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
-        for (double[] pix : points(map.getNin())) {
-            double[] g = FitsHeaders.tran(map, pix, true);
-            double[] w = FitsHeaders.tran(cmap, pix, true);
-            if (!CValues.cValuesEq(g, w)) {
-                return "pixel " + Arrays.toString(pix) + " gives " + Arrays.toString(g) + ", C's Mapping "
-                        + Arrays.toString(w);
-            }
-        }
-        return null;
+        return got.equals(want) ? null : "the dump differs from C's:\n--- Java\n" + got + "--- C\n" + want;
     }
 
     @Test
@@ -115,7 +74,7 @@ class FitsChanReadChainOracleTest {
                     continue;
                 }
                 run++;
-                String problem = compare(name, header, c.get(2).asText());
+                String problem = compare(header, c.get(2).asText());
                 if (problem != null) {
                     failed.add(name + ": " + problem);
                 }
