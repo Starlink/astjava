@@ -36,6 +36,10 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  *       Frame does not write the record, frame.c:5590).
  * </ul>
  *
+ * <p>Simplifying must leave the input as C leaves it: its dump, apart from the records of
+ * simplification C also writes on it ({@code IsSimp}, {@code ReSimp}), and what it computes for the
+ * inputs of its oracle sections, are unchanged.
+ *
  * <p>The simplified Mapping must also transform the inputs of the input file's sections of {@code
  * oracle/simplify_fixtures.oracle} to C's recorded outputs, within the file's tolerances, as the
  * transform oracle compares a bare Mapping, with the overrides the oracle's overrides file states.
@@ -141,7 +145,18 @@ class SimplifyRegressionTest {
             } else {
                 return "input is a " + inObj.getClass().getSimpleName() + ", not a Mapping";
             }
+            String inputBefore = withoutRecords(ChannelText.dump(input));
+            List<double[][]> transformsBefore = inputTransforms(input, oracle.get(r.input));
             simplified = input.simplify();
+            if (!inputBefore.equals(withoutRecords(ChannelText.dump(input)))) {
+                return "simplify() changed the input's dump";
+            }
+            List<double[][]> transformsAfter = inputTransforms(input, oracle.get(r.input));
+            for (int i = 0; i < transformsBefore.size(); i++) {
+                if (!Arrays.deepEquals(transformsBefore.get(i), transformsAfter.get(i))) {
+                    return "simplify() changed what the input computes";
+                }
+            }
         } catch (AstException | UnsupportedOperationException e) {
             return "read or simplify: " + e.getMessage();
         }
@@ -179,6 +194,40 @@ class SimplifyRegressionTest {
             problem = problem == null ? transform : problem + "; " + transform;
         }
         return problem;
+    }
+
+    /**
+     * A dump without its records of simplification, {@code IsSimp} and {@code ReSimp}, which C's
+     * {@code astSimplify} also writes on the Mapping it is given and on its shared components.
+     */
+    private static String withoutRecords(String dump) {
+        StringBuilder sb = new StringBuilder();
+        for (String line : CValues.lines(dump)) {
+            String t = line.trim();
+            if (!t.startsWith("IsSimp =") && !t.startsWith("ReSimp =")) {
+                sb.append(line).append('\n');
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * The outputs {@code map} gives for the inputs of each of {@code sections}, null for a section
+     * it cannot transform.
+     */
+    private static List<double[][]> inputTransforms(Mapping map, List<OracleSection> sections) {
+        List<double[][]> out = new ArrayList<>();
+        if (sections == null) {
+            return out;
+        }
+        for (OracleSection s : sections) {
+            try {
+                out.add(TransformOracleTest.transformSection(map, s, s.inputs()));
+            } catch (TransformOracleTest.TransformFailure e) {
+                out.add(null);
+            }
+        }
+        return out;
     }
 
     /** The first line where two dumps differ. */
