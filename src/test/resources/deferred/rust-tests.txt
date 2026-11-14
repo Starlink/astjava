@@ -235,17 +235,8 @@ src/mappings/sphmap.rs::counts_only_the_calls_c_makes | Rust-only API (call coun
 tests/test_wcsmap.rs::wcsmap_equal_different_params | astEqual (out-of-scope method)
 tests/test_wcsmap.rs::wcsmap_equal_same_params | astEqual (out-of-scope method)
 tests/test_polymap.rs::polymap_bad_powers_len_rejected | Rust-only API (PolyTerm power vectors; C's coefficient array has none)
-tests/test_polymap.rs::polymap_linear_decomposes_to_matrixmap | needs simplification
-tests/test_polymap.rs::polymap_affine_decomposes | needs simplification
-tests/test_polymap.rs::polymap_affine_diagonal_decomposes_to_winmap | needs simplification
-tests/test_polymap.rs::polymap_whose_terms_all_cancel_becomes_a_matrixmap | needs simplification
-tests/test_polymap.rs::polymap_does_not_cancel_against_a_different_inverse | needs simplification
 tests/test_polymap.rs::polymap_equal_compares_the_inverse_coefficients | astEqual (out-of-scope method)
-tests/test_polymap.rs::polymap_fitted_inverse_cancels_soundly | needs simplification
 tests/test_polymap.rs::polymap_with_more_outputs_than_inputs_equals_its_copy | astEqual (out-of-scope method)
-tests/test_polymap.rs::ident_set_polymap_nominated_in_a_list_is_left_alone | needs simplification
-tests/test_polymap.rs::c_simplify | needs simplification
-tests/test_polymap.rs::polymap_affine_general_merges_with_a_neighbour | needs simplification
 tests/test_polymap_simd.rs::simd_falls_back_below_threshold | hardware SIMD
 tests/test_polymap_simd.rs::simd_inverse_falls_back_below_threshold | hardware SIMD
 tests/test_slamap.rs::cvt_from_int | Rust-only API (SlaCvtType integer codes)
@@ -310,7 +301,6 @@ src/frames/cmpframe.rs::overlay_template_clean_partition_copies_skyframe_system 
 src/frames/cmpframe.rs::overlay_template_fallback_non_cmpframe_result | SpecFrame (out of scope)
 src/frames/cmpframe.rs::overlay_template_falls_through_when_partition_unclean | SpecFrame (out of scope)
 tests/test_frameset_integrity.rs::unit_change_leaves_mappings_alone | DSBSpecFrame, LutMap and SpecMap (out of scope)
-tests/test_lsst_oracle.rs::lsst_simplified_inverse_matches_c | needs simplification
 tests/test_show_tostring_oracle.rs::a_concrete_class_writes_what_its_anyobject_writes | Rust-only API (AnyObject)
 tests/test_show_tostring_oracle.rs::try_from_returns_the_class_and_rejects_another | Rust-only API (AnyObject)
 tests/test_show_tostring_oracle.rs::try_from_unboxes_boxed_variants | Rust-only API (AnyObject)

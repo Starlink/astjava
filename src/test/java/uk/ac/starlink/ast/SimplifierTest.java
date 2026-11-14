@@ -1055,6 +1055,18 @@ class SimplifierTest {
         assertEquals(11.5, transformPoints(result, true, new double[] {0.1, 0.2, 4.0})[0][2], 1e-12);
     }
 
+    /** A non-linear PolyMap (y = x^2 + 3x) and its inverse in series cancel to a UnitMap. */
+    @Test
+    void simplifyPolymapInverseCancels() {
+        double[] terms = PolyTerms.flat(PolyTerms.term(1.0, 1, 2), PolyTerms.term(3.0, 1, 1));
+        PolyMap fwd = new PolyMap(1, 1, 2, terms, 0, null);
+        PolyMap inv = new PolyMap(1, 1, 2, terms, 0, null);
+        inv.invert();
+        Mapping result = new CmpMap(fwd, inv, true).simplify();
+        assertInstanceOf(UnitMap.class, result);
+        assertEquals(1, result.getNin());
+    }
+
     @Test
     void simplifySphmapFwdInvCancels() {
         SphMap fwd = new SphMap();

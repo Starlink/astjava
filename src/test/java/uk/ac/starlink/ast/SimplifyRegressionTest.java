@@ -39,12 +39,13 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  * <p>The simplified Mapping must also transform the inputs of the input file's sections of {@code
  * oracle/simplify_fixtures.oracle} to C's recorded outputs, within the file's tolerances, as the
  * transform oracle compares a bare Mapping, with the overrides the oracle's overrides file states.
- * Where the reference is another file with a section of the same direction and inputs, the outputs
- * are those C recorded for the reference: C's simplification can change what a Mapping gives
- * outside the domain its parts assume (SphMaps cancelling on angles outside the ranges a SphMap
- * gives or on vectors that are not of unit length, a WcsMap and its inverse cancelling on points
- * the projection cannot transform), and the simplified Mapping is to transform as C's simplified
- * Mapping does.
+ * Where the reference is another file with a section of the same direction, the inputs and outputs
+ * are those C recorded for the reference, from its section with the same inputs if it has one: C's
+ * simplification can change what a Mapping gives outside the domain its parts assume (SphMaps
+ * cancelling on angles outside the ranges a SphMap gives or on vectors that are not of unit length,
+ * a WcsMap and its inverse cancelling on points the projection cannot transform, a PolyMap and its
+ * inverse cancelling on points where the iterative inverse does not converge), and the simplified
+ * Mapping is to transform as C's simplified Mapping does.
  *
  * <p>Every row matches C or is listed with its reason in {@code deferred/simplify-cases.txt}, and the
  * list is checked both ways. Run with {@code -Dast.writeDeferred=true} to rewrite it.
@@ -195,17 +196,25 @@ class SimplifyRegressionTest {
 
     /**
      * The section of the row's reference with the direction and inputs of the input file's section
-     * {@code s}, or {@code s} itself if the reference is the input file or has no such section.
+     * {@code s}, failing that the reference's first section of that direction, or {@code s} itself
+     * if the reference is the input file or has no section of that direction.
      */
     private static OracleSection referenceSection(Row r, OracleSection s, Map<String, List<OracleSection>> oracle) {
-        if (!r.reference.equals(r.input)) {
-            for (OracleSection ref : oracle.getOrDefault(r.reference, new ArrayList<>())) {
-                if (ref.forward == s.forward && Arrays.deepEquals(ref.inputs(), s.inputs())) {
+        if (r.reference.equals(r.input)) {
+            return s;
+        }
+        OracleSection sameDirection = null;
+        for (OracleSection ref : oracle.getOrDefault(r.reference, new ArrayList<>())) {
+            if (ref.forward == s.forward) {
+                if (Arrays.deepEquals(ref.inputs(), s.inputs())) {
                     return ref;
+                }
+                if (sameDirection == null) {
+                    sameDirection = ref;
                 }
             }
         }
-        return s;
+        return sameDirection == null ? s : sameDirection;
     }
 
     /**

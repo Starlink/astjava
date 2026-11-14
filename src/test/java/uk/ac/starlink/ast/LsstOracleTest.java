@@ -22,10 +22,9 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * TolInv (1e-7 pixel), so a last-bit difference in a sine, cosine or arctangent moves where it
  * stops. The Rust test allows the inverse to differ from C by up to 4.5e-10 pixel off the platform
  * the C values were captured on; Java's {@link Math} is not that platform's libm, so the inverse is
- * compared within that bound. Everything else is compared within libm rounding.
- *
- * <p>{@code lsst_simplified_inverse_matches_c} compares with the inverse through C's simplified
- * FrameSet, whose iterative inverse stops elsewhere, and is deferred as needing simplification.
+ * compared within that bound. Everything else is compared within libm rounding. The inverse through
+ * the simplified FrameSet is compared with the inverse through C's simplified FrameSet, whose
+ * iterative inverse stops elsewhere.
  */
 class LsstOracleTest {
 
@@ -91,6 +90,12 @@ class LsstOracleTest {
     void lsstOriginalInverseMatchesC() {
         double[][] inv = loadLsst().transform(pairs("C_FORWARD"), NPTS, false);
         assertMatchesC(inv, pairs("C_INVERSE_OF_FORWARD"), INVERSE_ATOL, "original inverse");
+    }
+
+    @Test
+    void lsstSimplifiedInverseMatchesC() {
+        double[][] inv = loadLsst().simplify().transform(pairs("C_FORWARD"), NPTS, false);
+        assertMatchesC(inv, pairs("C_SIMPLIFIED_INVERSE_OF_FORWARD"), INVERSE_ATOL, "simplified inverse");
     }
 
     @Test

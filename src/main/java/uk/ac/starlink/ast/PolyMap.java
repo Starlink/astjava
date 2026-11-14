@@ -702,6 +702,296 @@ public class PolyMap extends Mapping {
     }
 
     // ------------------------------------------------------------------
+    // Equality
+    // ------------------------------------------------------------------
+
+    /**
+     * Whether {@code that} is a PolyMap equivalent to this one, as C's {@code Equal} (polymap.c)
+     * decides it: the same numbers of inputs and outputs, the same Invert attribute, and, for each
+     * original transformation, either no coefficients in both or the same coefficient counts,
+     * maximum powers and powers, and coefficients equal to within {@code astEQUAL}.
+     */
+    boolean equalTo(Mapping that) {
+        if (!(that instanceof PolyMap)) {
+            return false;
+        }
+        PolyMap other = (PolyMap) that;
+        if (other.getNin() != getNin() || other.getNout() != getNout() || getInvert() != other.getInvert()) {
+            return false;
+        }
+        int nin = createdNin();
+        int nout = createdNout();
+        return sameTerms(ncoeffF, other.ncoeffF, mxpowF, other.mxpowF, nout, nin)
+                && sameCoeffs(coeffF, other.coeffF, powerF, other.powerF, ncoeffF, nout, nin)
+                && sameTerms(ncoeffI, other.ncoeffI, mxpowI, other.mxpowI, nin, nout)
+                && sameCoeffs(coeffI, other.coeffI, powerI, other.powerI, ncoeffI, nin, nout);
+    }
+
+    /**
+     * Whether two transformations' coefficient counts ({@code npoly} of them) and maximum powers
+     * ({@code nvar} of them) are both absent or equal, as C's {@code Equal} compares them.
+     */
+    private static boolean sameTerms(int[] nc1, int[] nc2, int[] mx1, int[] mx2, int npoly, int nvar) {
+        if ((nc1 == null) != (nc2 == null) || (mx1 == null) != (mx2 == null)) {
+            return false;
+        }
+        if (nc1 != null) {
+            for (int i = 0; i < npoly; i++) {
+                if (nc1[i] != nc2[i]) {
+                    return false;
+                }
+            }
+        }
+        if (mx1 != null) {
+            for (int i = 0; i < nvar; i++) {
+                if (mx1[i] != mx2[i]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Whether two transformations with the same coefficient counts {@code ncoeff} have both no
+     * coefficients or the same powers and coefficients equal to within {@code astEQUAL}, as C's
+     * {@code Equal} compares them.
+     */
+    private static boolean sameCoeffs(
+            double[][] c1, double[][] c2, int[][][] p1, int[][][] p2, int[] ncoeff, int npoly, int nvar) {
+        if ((c1 == null) != (c2 == null) || (p1 == null) != (p2 == null)) {
+            return false;
+        }
+        if (c1 != null) {
+            for (int i = 0; i < npoly; i++) {
+                for (int j = 0; j < ncoeff[i]; j++) {
+                    if (!MappingHelpers.astEqual(c1[i][j], c2[i][j])) {
+                        return false;
+                    }
+                }
+            }
+        }
+        if (p1 != null) {
+            for (int i = 0; i < npoly; i++) {
+                for (int j = 0; j < ncoeff[i]; j++) {
+                    for (int k = 0; k < nvar; k++) {
+                        if (p1[i][j][k] != p2[i][j][k]) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    // ------------------------------------------------------------------
+    // Simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * polymap.c {@code MapMerge}. First, a copy of the PolyMap whose coefficients over the same
+     * powers have been added together and whose zero coefficients have been removed, in both
+     * original transformations, replaces it in the list if that changed anything. Then, if the
+     * original forward transformation has coefficients, as many inputs as outputs, and no term of
+     * degree above one, the PolyMap is replaced by the simplified series CmpMap of the MatrixMap of
+     * its linear terms and the ShiftMap of its constant terms, applied with the PolyMap's Invert
+     * value from the list. Finally, in series, a neighbouring PolyMap applied in the other
+     * direction that is equal to the nominated Mapping once both are applied in the nominated
+     * Mapping's direction turns the pair into two UnitMaps.
+     */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        int result = -1;
+        Mapping pmap0 = list.map(where);
+        int nin = createdNin();
+        int nout = createdNout();
+
+        PolyMap consolidated = (PolyMap) pmap0.copy();
+        boolean mod = false;
+        if (consolidated.ncoeffI != null) {
+            mod = consolidate(consolidated.ncoeffI, consolidated.coeffI, consolidated.powerI, nin);
+        }
+        if (consolidated.ncoeffF != null) {
+            mod |= consolidate(consolidated.ncoeffF, consolidated.coeffF, consolidated.powerF, nout);
+        }
+        if (mod) {
+            list.set(where, consolidated, list.invert(where));
+            result = where;
+            pmap0 = consolidated;
+        }
+
+        // The ChebyMap branch of polymap.c MapMerge, which folds a ChebyMap's input normalisation
+        // into the matrix and offsets, is absent.
+        PolyMap poly0 = (PolyMap) pmap0;
+        if (poly0.ncoeffF != null && nout == nin) {
+            double[] offsets = new double[nout];
+            double[] matrix = new double[nout * nout];
+            if (linearTerms(poly0, nin, nout, offsets, matrix)) {
+                ShiftMap sm = new ShiftMap(offsets);
+                MatrixMap mm = new MatrixMap(nin, nout, MatrixMap.FULL, matrix);
+                Mapping simplified = new CmpMap(mm, sm, true).simplify();
+                list.set(where, simplified, list.invert(where));
+                pmap0 = simplified;
+                result = where;
+            }
+        }
+
+        if (series) {
+            result = cancelWithNeighbour(list, where, pmap0, result);
+        }
+        return result;
+    }
+
+    /**
+     * The consolidation of polymap.c {@code MapMerge} for one original transformation, of {@code
+     * npoly} polynomials: each non-zero coefficient takes in the value of
+     * every later non-zero coefficient over the same powers, which becomes zero; then the non-zero
+     * coefficients are moved, in order, to the start of each polynomial's arrays, which are cut
+     * short after them. The maximum powers are left as they are.
+     *
+     * @return whether any polynomial lost a coefficient
+     */
+    private static boolean consolidate(int[] ncoeff, double[][] coeff, int[][][] power, int npoly) {
+        boolean mod = false;
+        for (int iout = 0; iout < npoly; iout++) {
+            int nc = ncoeff[iout];
+            double[] outcof = coeff[iout];
+            int[][] outpow = power[iout];
+            for (int ic = 0; ic < nc - 1; ic++) {
+                if (outcof[ic] != 0.0) {
+                    for (int jc = ic + 1; jc < nc; jc++) {
+                        if (outcof[jc] != 0.0 && Arrays.equals(outpow[ic], outpow[jc])) {
+                            outcof[ic] += outcof[jc];
+                            outcof[jc] = 0.0;
+                        }
+                    }
+                }
+            }
+            int jc = 0;
+            for (int ic = 0; ic < nc; ic++) {
+                if (outcof[ic] != 0.0) {
+                    if (ic > jc) {
+                        outcof[jc] = outcof[ic];
+                        outcof[ic] = 0.0;
+                        outpow[jc] = outpow[ic];
+                        outpow[ic] = null;
+                    }
+                    jc++;
+                } else {
+                    outpow[ic] = null;
+                }
+            }
+            if (jc < nc) {
+                ncoeff[iout] = jc;
+                coeff[iout] = Arrays.copyOf(outcof, jc);
+                power[iout] = Arrays.copyOf(outpow, jc);
+                mod = true;
+            }
+        }
+        return mod;
+    }
+
+    /**
+     * The linearity test of polymap.c {@code MapMerge}: adds each non-zero constant term of the
+     * original forward transformation of {@code poly} into {@code offsets}, and each non-zero term
+     * of degree one into {@code matrix} (row-major, {@code nout} rows of {@code nin}), stopping at
+     * the first term of higher degree.
+     *
+     * @return whether every term is of degree one or less
+     */
+    private static boolean linearTerms(PolyMap poly, int nin, int nout, double[] offsets, double[] matrix) {
+        for (int iout = 0; iout < nout; iout++) {
+            int nc = poly.ncoeffF[iout];
+            double[] outcof = poly.coeffF[iout];
+            int[][] outpow = poly.powerF[iout];
+            for (int ic = 0; ic < nc; ic++) {
+                if (outcof[ic] != 0.0) {
+                    boolean constTerm = true;
+                    boolean linearTerm = true;
+                    int jin = -1;
+                    for (int iin = 0; iin < nin; iin++) {
+                        int pow = outpow[ic][iin];
+                        if (pow > 0) {
+                            constTerm = false;
+                        }
+                        if (pow > 1) {
+                            linearTerm = false;
+                        } else if (linearTerm && pow == 1) {
+                            if (jin == -1) {
+                                jin = iin;
+                            } else {
+                                linearTerm = false;
+                            }
+                        }
+                    }
+                    if (constTerm) {
+                        offsets[iout] += outcof[ic];
+                    } else if (linearTerm) {
+                        matrix[jin + iout * nin] += outcof[ic];
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * The neighbour half of polymap.c {@code MapMerge}: with {@code pmap0}, the Mapping now at
+     * {@code where}, applied as the list applies it, each neighbour in turn (the one before, then
+     * the one after) that is a PolyMap applied in the other direction is applied in {@code
+     * pmap0}'s direction and compared with it; the first equal one and {@code pmap0} are replaced
+     * by UnitMaps applied forward, of {@code pmap0}'s output count if the neighbour comes first and
+     * its input count otherwise. The Invert attributes set for the comparison are restored.
+     *
+     * @return the index of the first entry changed: the lower of the pair if they cancel, and
+     *     {@code result} otherwise
+     */
+    private static int cancelWithNeighbour(MergeList list, int where, Mapping pmap0, int result) {
+        boolean inv0 = list.invert(where);
+        int saved0 = pmap0.swapInvert(inv0);
+        try {
+            int nin = pmap0.getNin();
+            int nout = pmap0.getNout();
+            for (int i = where - 1; i <= where + 1; i += 2) {
+                if (i < 0 || i >= list.size() || !(list.map(i) instanceof PolyMap) || list.invert(i) == inv0) {
+                    continue;
+                }
+                PolyMap pmap1 = (PolyMap) list.map(i);
+                int saved1 = pmap1.swapInvert(inv0);
+                boolean ok;
+                try {
+                    ok = astEqual(pmap0, pmap1);
+                } finally {
+                    pmap1.restoreInvert(saved1);
+                }
+                if (ok) {
+                    int n = i < where ? nout : nin;
+                    list.set(where, new UnitMap(n), false);
+                    list.set(i, new UnitMap(n), false);
+                    return Math.min(i, where);
+                }
+            }
+        } finally {
+            pmap0.restoreInvert(saved0);
+        }
+        return result;
+    }
+
+    /**
+     * C's {@code astEqual(pmap0, pmap1)} for a PolyMap {@code pmap1}: the same object, or, through
+     * the {@code Equal} of {@code pmap0}'s class, an equal PolyMap. The {@code Equal} of every other
+     * class {@code pmap0} can be here (those the linear replacement makes) finds no PolyMap equal.
+     */
+    // C compares the pointers first (object.c astEqual_): the same object is equal.
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
+    private static boolean astEqual(Mapping pmap0, PolyMap pmap1) {
+        return pmap0 == pmap1 || (pmap0 instanceof PolyMap && ((PolyMap) pmap0).equalTo(pmap1));
+    }
+
+    // ------------------------------------------------------------------
     // Attribute strings (polymap.c GetAttrib, SetAttrib, TestAttrib, ClearAttrib)
     // ------------------------------------------------------------------
 

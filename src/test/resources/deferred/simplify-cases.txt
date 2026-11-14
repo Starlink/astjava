@@ -13,8 +13,6 @@ pcd_zero_to_unit | needs PcdMap
 pcd_inverse_cancel | needs PcdMap
 grism_inverse_cancel | needs GrismMap
 grism_zoom_merge | needs GrismMap
-poly_duplicate_terms | needs simplification
-poly_inverse_cancel | needs simplification
 spline_inverse_cancel | needs SplineMap
 math_inverse_cancel | needs MathMap
 ratemap_inverse_cancel | needs RateMap
@@ -179,7 +177,6 @@ cap_timemap_05 | needs simplification
 cap_timemap_07 | needs simplification
 cap_unitnormmap_01 | needs UnitNormMap
 cap_winmap_01 | needs SpecMap
-cap_winmap_04 | needs simplification
 cap_xphmap_01 | needs XphMap
 cap_xphmap_02 | needs XphMap
 cap_zoommap_04 | needs Box, MathMap, PointList, PointSet, SpecFrame
@@ -314,7 +311,6 @@ cap_poly_bend_allowed | needs Box, MathMap, PointSet, Polygon
 neg_unitnormmap_nonunit_scale | needs UnitNormMap
 neg_cmpmap_mode_mismatch | needs MathMap
 neg_win_cmpmap_split_no_simplify | needs MathMap
-poly_fitted_inverse_cancel | needs simplification
 cefit_circle_conformal | needs Circle, PointSet
 cefit_circle_nonconformal_keep | needs Circle, MathMap, PointSet
 cefit_circle_to_ellipse | needs Ellipse, PointSet
