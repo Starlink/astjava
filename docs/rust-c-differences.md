@@ -96,6 +96,13 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: gives them AST__BAD.
 - Java: as C.
 
+### Cancelling a PolyMap with its inverse
+
+- **C quirk**: when `MapMerge` cancels a nominated PolyMap with its inverse it annuls the PolyMap before restoring its Invert attribute (`polymap.c:4004-4006`), so the PolyMap is left with the value the list applied it with: simplifying the inverse of a series CmpMap of a PolyMap and an inverted copy of it gives a UnitMap and leaves the copy with Invert unset.
+  Confirmed with the pinned library.
+- Rust: not compared.
+- Java: restores the PolyMap's Invert attribute.
+
 ### Cancelling WcsMaps whose projection parameters differ
 
 - **C quirk**: `CanMerge` compares the first WcsMap's number of parameters with itself (`wcsmap.c:914`), so only the parameters the first WcsMap holds are compared: an AZP WcsMap with no parameters followed by the inverse of an AZP WcsMap with `PV2_1 = 0.5` simplifies to a UnitMap, although the pair maps (0.1, 1.2) to (0.1, 1.1914111091742374); the other order does not merge.
