@@ -98,3 +98,8 @@ The phase report is [`2026-11-13-phase2-report.md`](2026-11-13-phase2-report.md)
 ## Task 11
 
 - Ruling: no commit for Task 11 — the plan's commit step has nothing to commit since every list was already current — cost if wrong: none.
+
+## Final review and fix pass
+
+- Ruling: where C's MapMerge would read or write past an array because the list's Mappings do not fit as its code assumes (left by a C defect elsewhere, or a non-square diagonal MatrixMap), Java declines that merge step, keeping the transform — C has no defined result there; declining keeps what the Mapping computes — cost if wrong: Java returns a less simplified Mapping where some C run might crash or return garbage.
+- Ruling: C's WinDiagMat defect (unit MatrixMap returns the WinMap in series and parallel; non-square diagonal treated as square; winmap.c:2697-2699), which changes Nin/Nout or the transform, is followed as the spec requires and documented in docs/rust-c-differences.md and the report; whether to depart from C is left to the author — cost if wrong: users meet a shape-changing simplification with trivial triggers until C is fixed upstream or the policy changes.

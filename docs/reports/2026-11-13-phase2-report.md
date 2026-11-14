@@ -6,9 +6,10 @@ Phase 2 ported AST's Mapping simplifier on 13 November 2026, following the plan 
 All 229 rows of C's own simplify regression table (`ast_tester/fixtures/simplify/cases.txt`) that use only those classes now give C's simplified dump, byte for byte with numbers to 4 units in the last place, `IsSimp` records included; the other 288 rows need classes outside this phase.
 The FrameSet growth that phase 1 flagged as its largest risk is gone: 200 settings of `Label(1)` on the FrameSet read from `galactic-tan.head` leave its dump at 8,367 to 8,373 characters and 2 nodes, where phase 1 grew it to 6.6 MB.
 The deferrals phase 1 made for want of simplification are all cleared, among them the 168 SkyFrame conversions excused within 5e-8 rad (now within 4.4e-15 rad of C) and the 4 CAR-seam oracle rows.
-Porting each class's `MapMerge` from C, rather than from the Rust port, found 12 defects in C's simplifier, 10 of them confirmed by running the pinned C library, and recorded in [`docs/rust-c-differences.md`](../rust-c-differences.md).
+Porting each class's `MapMerge` from C, rather than from the Rust port, found 13 defects in C's simplifier, 11 of them confirmed by running the pinned C library, and recorded in [`docs/rust-c-differences.md`](../rust-c-differences.md).
 FrameSets read from FITS headers transform 1.2 to 3.1 times as fast for one point, and up to 4.2 times as fast for a million points; the Mappings phase 1 benchmarked, which C had already simplified, are unchanged.
-The work added 4,974 lines of main code and 3,404 lines of tests; `mvn verify` passes with 2,456 tests on JDK 21, and the tests pass on the JDK 27 runtime.
+The work added 4,974 lines of main code and 3,404 lines of tests; `mvn verify` passes with 2,467 tests on JDK 21, and the tests pass on the JDK 27 runtime.
+The final review found no Critical problems; its fix pass makes simplification decline a merge where C would read or write past an array, so that no exception other than an `AstException` escapes it, and makes the gate check that simplifying leaves its input as C does (see Final review).
 
 ## What was ported
 
@@ -44,7 +45,7 @@ Two design decisions differ from the plan; the [rulings](2026-11-13-phase2-rulin
   The plan ported the Rust merges, whose structure follows from its copies (it clones pairs to try a swap, and tests whether a class changed where C tests whether `astSimplify` returned the same pointer).
   With C's data model, each class's `MapMerge` was ported from its C source, and Rust's pairwise `try_merge` layer was not ported; the Rust port remained the source of tests, of the audit checklists that map C's steps, and of its notes on C's quirks.
 
-The gate's transform check was also amended twice (Tasks 7 and 8): where C's simplification itself changes outputs outside the domain the Mappings assume (SphMaps cancelling on vectors that are not of unit length, WcsMaps on points the projection cannot transform, a PolyMap and its inverse where the iterative inverse does not converge), the simplified Mapping is compared with C's recorded outputs for C's simplified Mapping rather than for the original.
+The gate's transform check was also amended twice (Tasks 7 and 8), and applies to 23 rows (`sph_*`, `sla_*`, `wcs*`, `poly_*`): where C's simplification itself changes outputs outside the domain the Mappings assume (SphMaps cancelling on vectors that are not of unit length, WcsMaps on points the projection cannot transform, a PolyMap and its inverse where the iterative inverse does not converge), the simplified Mapping is compared with C's recorded outputs for C's simplified Mapping rather than for the original.
 
 ## Gates
 
@@ -56,7 +57,7 @@ The gate's transform check was also amended twice (Tasks 7 and 8): where C's sim
 | `wcsconv/cases.txt` rows deferred as needing simplification | 47 | 0 (all are `native` rows, whose output needs `FitsChan.write`) |
 | Oracle rows deferred (CAR seam) | 4 | 0 |
 | SkyFrame conversions excused | 168, within 5e-8 rad | 0; largest difference 4.4e-15 rad |
-| Tests | 2,284 | 2,456 |
+| Tests | 2,284 | 2,467 |
 
 Phase 1 exclusions removed because they now match C: two FrameSet `Current` steps, the `cmpmap_simplified` ObjectId case, the inverted permuted MatrixMap `MapSplit` case, four FitsChan cursor cases, partial dump comparisons in the FitsChan read-chain test (all cases now compare whole dumps), FrameSetRepair's and FrameSetVariants' comparisons with C, and a structure check that accepted a chain of UnitMaps where C gives one UnitMap.
 
@@ -69,7 +70,7 @@ Added or changed:
 | --- | --- | --- |
 | `FrameSetVariantsTest` | Two Java routes through one FrameSet compared within 1e-12 instead of exactly | 4.4e-16: the simplified route merges a shift into a WinMap; no C value is involved |
 | `FitsChanCursorOracleTest` | `iwc_on_alt` deferred as `runtime Math:` (not reported if it matches) instead of needing simplification | One unit in the last place of a MatrixMap element: `Math.sin(2° − π/2)` and macOS libm differ in the last bit, confirmed by a C replica of `MtrRot`; a build without contraction rules out fused multiply-add |
-| `SimplifyRegressionTest` | Transforms of 8 rows compared with C's outputs for the `.simp` | C's own simplification changes outputs outside the domain of the Mappings (see Departures) |
+| `SimplifyRegressionTest` | Transforms of 23 rows compared with C's outputs for the `.simp` | C's own simplification changes outputs outside the domain of the Mappings (see Departures) |
 
 ## Defects found in the C library
 
@@ -79,6 +80,7 @@ Each is recorded in [`docs/rust-c-differences.md`](../rust-c-differences.md) wit
 | Where | Defect | Confirmed |
 | --- | --- | --- |
 | `matrixmap.c:1896-1925` | A full MatrixMap with zero off-diagonal elements simplifies to a forward diagonal MatrixMap even when applied inverted, changing its transformation | Yes |
+| `winmap.c:2697-2699` | `WinDiagMat` returns the WinMap itself for a unit MatrixMap, in series and in parallel, and treats a non-square diagonal MatrixMap as square, changing the Mapping's numbers of axes or its transformation; the Mappings left can make later merges read or write past their arrays | Yes |
 | `matrixmap.c` `MatWin2` | Reads past the end of an array for a non-square diagonal MatrixMap beside a WinMap | By reading |
 | `permmap.c:1030`, `1222` | `maxperm = astGetNout` where `Transform` uses the inputs, so simplifying changes the transformation | Yes, and in PR #104 |
 | `permmap.c:1389`, `1398` | Null-pointer dereference for a PermMap with a null permutation | Yes (SEGV), and in PR #104 |
@@ -91,7 +93,21 @@ Each is recorded in [`docs/rust-c-differences.md`](../rust-c-differences.md) wit
 | `polymap.c:4004-4006` | A cancelled PolyMap is left with the list's Invert value | Yes |
 | `timemap.c:2327-2335` | TDBTOTCB and TCBTOTDB compare an uninitialised third argument | By reading; C cancels in every case tried |
 
-Java follows C where C's result is defined, including the four that change a transformation, and gives a defined result where C crashes or reads memory it does not own; it restores the PolyMap's Invert.
+Java follows C where C's result is defined, including the five that change a transformation or the numbers of axes, and gives a defined result where C crashes or reads memory it does not own; it restores the PolyMap's Invert.
+
+## Final review
+
+A fresh reviewer read the whole branch and checked it against the pinned C library with its own probes and a differential fuzzer of random compositions of this phase's Mappings.
+It found the results and the inputs left behind byte-identical to C's on all 229 rows, and shape, transform and error status agreeing with C on every fuzzed input where C does not crash; it found no Critical problem.
+The fix pass dealt with its Important findings:
+
+- **Unchecked exceptions.**
+  About one random composition in 150 (mostly with a non-square MatrixMap) made `simplify()` throw `ArrayIndexOutOfBoundsException` or `IndexOutOfBoundsException`, at the places where C reads or writes past an array: the WinMap direct merges, distribution and swaps, MatrixMap's `MatWin2`, PermMap's run of permutations and CmpMap's merge of parallel CmpMaps in series.
+  Each now checks the assumption C makes without checking (a square neighbour, Mappings whose numbers of axes chain) and declines the merge when it fails, which keeps the transformation; `SimplifyRobustnessTest` holds a reproducer of each, and 80,000 fuzzed compositions afterwards gave none.
+- **A silently wrong transformation.**
+  Distributing a WinMap into a parallel CmpMap wider than its terms padded the missing terms with zeros where C reads past them; the distribution is now declined.
+- **C's shape-changing defect** (`winmap.c:2697-2699`, in the table above) is followed, as the spec requires, and recorded in [`docs/rust-c-differences.md`](../rust-c-differences.md); the decision whether this library should depart from C here is left to its author.
+- **The gate** now also checks, for every row, that simplifying leaves the input's dump (apart from the records `IsSimp` and `ReSimp` that C also writes) and what it computes unchanged; a deliberately broken Invert restore fails it on 22 rows.
 
 ## Benchmarks
 
@@ -118,8 +134,8 @@ The machine was an Apple M1 Ultra with 64 GB under macOS 27.2.1, but not idle: a
 - **Native FITS reads are not compared with C in the tests.**
   The `native` rows of `wcsconv/cases.txt` compare FITS cards, which need `FitsChan.write`.
   A scratch comparison of the dumps of the 48 such inputs the port reads found 44 byte-identical to C's; `skyref`, `skyref-alt` and `tidy-pole` differ in the last bits of MatrixMap elements and `azel` in `ObsLat` and `ObsAlt`, and the cause was not found.
-- **The recursion guard** compares the native text of two Mappings where C uses `astEqual`, which is not ported; Mappings C finds equal within `astEQUAL` but whose texts differ would not be caught.
-  No test reaches it.
+- **The recursion guard** compares the native text of two Mappings where C uses `astEqual`, which is not ported; Mappings C finds equal within `astEQUAL` but whose texts differ would not be caught, and texts are rendered for every nested CmpMap, which makes a chain of 2,000 nested CmpMaps take about a second.
+  No test reaches a match.
 - **Transform-changing C quirks are copied.**
   Four of the defects above change what a Mapping computes when it is simplified; Java does what C does, so a user of either library meets them; they are worth fixing upstream.
 - **`Naxes = 2147483647`** in a native dump still exhausts memory, as phase 1 reported; it is unrelated to simplification and still needs a decision.
