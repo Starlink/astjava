@@ -447,6 +447,15 @@ public class PermMap extends Mapping {
             while (imap2 + 1 < nmap && isPermOrUnit(list.map(imap2 + 1))) {
                 imap2++;
             }
+            // C assumes each Mapping of the run has as many inputs as the one before has outputs; a
+            // list a C defect elsewhere has left with Mappings that do not fit would make it read
+            // past their permutations, so such a run is not merged.
+            for (int imap = imap1; imap < imap2; imap++) {
+                if (appliedNout(list.map(imap), list.invert(imap))
+                        != appliedNin(list.map(imap + 1), list.invert(imap + 1))) {
+                    return -1;
+                }
+            }
             nin = appliedNin(list.map(imap1), list.invert(imap1));
             nout = appliedNout(list.map(imap2), list.invert(imap2));
             inperm = new int[nin];
@@ -596,26 +605,6 @@ public class PermMap extends Mapping {
     /** Whether {@code map} is of class PermMap or UnitMap, as permmap.c {@code MapMerge} compares class names. */
     private static boolean isPermOrUnit(Mapping map) {
         return map.getClass() == PermMap.class || map.getClass() == UnitMap.class;
-    }
-
-    /**
-     * The number of inputs of {@code map} applied with the Invert value {@code invert}, as
-     * permmap.c {@code MapMerge} finds it from {@code astGetInvert}, {@code astGetNin} and {@code
-     * astGetNout}.
-     */
-    private static int appliedNin(Mapping map, boolean invert) {
-        if (map.getInvert()) {
-            return invert ? map.getNin() : map.getNout();
-        }
-        return invert ? map.getNout() : map.getNin();
-    }
-
-    /** The number of outputs of {@code map} applied with the Invert value {@code invert}, as {@link #appliedNin}. */
-    private static int appliedNout(Mapping map, boolean invert) {
-        if (map.getInvert()) {
-            return invert ? map.getNout() : map.getNin();
-        }
-        return invert ? map.getNin() : map.getNout();
     }
 
     /**

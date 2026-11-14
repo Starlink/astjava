@@ -162,6 +162,16 @@ final class WinMapMerge {
      * @return {@code i1}
      */
     private static int mergeDirectly(MergeList list, int where, int i1, int i2, boolean series) {
+        // C's WinWin, WinZoom, WinShift and WinDiagMat assume a neighbour with as many outputs as
+        // inputs and, in series, as wide as the WinMap. A diagonal MatrixMap that is not square, or a
+        // list a C defect elsewhere has left with Mappings that do not fit (a unit MatrixMap beside a
+        // WinMap), would make them read past their arrays, so such a pair is not merged.
+        int other = i1 == where ? i2 : i1;
+        int otherNin = Mapping.appliedNin(list.map(other), list.invert(other));
+        int otherNout = Mapping.appliedNout(list.map(other), list.invert(other));
+        if (otherNin != otherNout || (series && otherNin != list.map(where).createdNin())) {
+            return -1;
+        }
         Mapping first = list.map(i1);
         Mapping second = list.map(i2);
         boolean inv1 = list.invert(i1);
@@ -245,9 +255,15 @@ final class WinMapMerge {
                 int inc3 = mc[1].swapInvert(flags[2]);
                 try {
                     int n1 = cmlow ? mc[0].getNout() : mc[0].getNin();
+                    int n2 = cmlow ? mc[1].getNout() : mc[1].getNin();
+                    // C assumes the WinMap has as many axes as the CmpMap's components together; a
+                    // list a C defect elsewhere has left with Mappings that do not fit would make it
+                    // read past the WinMap's terms, so the WinMap is not distributed.
+                    if (n1 + n2 != a.length) {
+                        return -1;
+                    }
                     nin[0] = n1;
                     WinMap w1 = new WinMap(Arrays.copyOfRange(a, 0, n1), Arrays.copyOfRange(b, 0, n1));
-                    int n2 = cmlow ? mc[1].getNout() : mc[1].getNin();
                     WinMap w2 = new WinMap(Arrays.copyOfRange(a, n1, n1 + n2), Arrays.copyOfRange(b, n1, n1 + n2));
                     CmpMap nc0;
                     CmpMap nc1;
@@ -300,6 +316,14 @@ final class WinMapMerge {
      */
     private static int swap(MergeList list, int where, Mapping lower, Mapping upper, boolean series) {
         int nmap = list.size();
+        // C's swaps (WinMat, WinPerm, WinWcs) assume the WinMap's neighbours have as many outputs
+        // and inputs as the WinMap has axes; a list a C defect elsewhere has left with Mappings that
+        // do not fit would make them read past their arrays, so the WinMap is not swapped.
+        int width = list.map(where).createdNin();
+        if ((where > 0 && Mapping.appliedNout(list.map(where - 1), list.invert(where - 1)) != width)
+                || (where + 1 < nmap && Mapping.appliedNin(list.map(where + 1), list.invert(where + 1)) != width)) {
+            return -1;
+        }
         boolean[] do2 = new boolean[1];
         boolean swaphi = false;
         if (where + 1 < nmap) {

@@ -503,6 +503,16 @@ public abstract class Mapping extends AstObject {
         return testAttrib("ident");
     }
 
+    /** The number of inputs of {@code map} applied with the Invert value {@code invert}, as a {@link MergeList} applies it. */
+    static int appliedNin(Mapping map, boolean invert) {
+        return invert ? map.createdNout() : map.createdNin();
+    }
+
+    /** The number of outputs of {@code map} applied with the Invert value {@code invert}, as a {@link MergeList} applies it. */
+    static int appliedNout(Mapping map, boolean invert) {
+        return invert ? map.createdNin() : map.createdNout();
+    }
+
     /** Whether the Mapping is frozen, so that a simplification may not nominate it (C's {@code astFrozen}). */
     final boolean getFrozen() {
         return frozen;

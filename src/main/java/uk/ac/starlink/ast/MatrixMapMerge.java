@@ -196,6 +196,16 @@ final class MatrixMapMerge {
                     ? matPerm((MatrixMap) first, (PermMap) second, inv1, inv2, true)
                     : matPerm((MatrixMap) second, (PermMap) first, inv2, inv1, false);
         } else if (isClass(nclass, WinMap.class)) {
+            // C's MatWin2 assumes a square MatrixMap as wide as the WinMap; a diagonal MatrixMap that
+            // is not square, or a list a C defect elsewhere has left with Mappings that do not fit,
+            // would make it read past its arrays, so such a pair is not merged.
+            int mat = matFirst ? i1 : i2;
+            int win = matFirst ? i2 : i1;
+            int matNin = Mapping.appliedNin(list.map(mat), list.invert(mat));
+            if (matNin != Mapping.appliedNout(list.map(mat), list.invert(mat))
+                    || matNin != list.map(win).createdNin()) {
+                return -1;
+            }
             newmap = matFirst
                     ? matWin2((MatrixMap) first, (WinMap) second, inv1, inv2, true)
                     : matWin2((MatrixMap) second, (WinMap) first, inv2, inv1, false);

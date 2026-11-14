@@ -157,6 +157,20 @@ final class CmpMapMerge {
         MergeList list2 = parallelList(cmpmap2, invert2);
         int nmap1 = list1.size();
         int nmap2 = list2.size();
+        // C assumes the first CmpMap has as many outputs as the second has inputs; a list a C defect
+        // elsewhere has left with Mappings that do not fit would make it read past the end of a
+        // list, so the two are not merged.
+        int nout1 = 0;
+        for (int i = 0; i < nmap1; i++) {
+            nout1 += Mapping.appliedNout(list1.map(i), list1.invert(i));
+        }
+        int nin2 = 0;
+        for (int i = 0; i < nmap2; i++) {
+            nin2 += Mapping.appliedNin(list2.map(i), list2.invert(i));
+        }
+        if (nout1 != nin2) {
+            return null;
+        }
 
         boolean simpler = false;
         int jmap1 = 0;
