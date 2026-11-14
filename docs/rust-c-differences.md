@@ -96,6 +96,13 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: gives them AST__BAD.
 - Java: as C.
 
+### Cancelling TDBTOTCB with TCBTOTDB in a TimeMap
+
+- **C quirk** (found by reading, not observed): `MapMerge` compares three arguments for TDBTOTCB and TCBTOTDB (`timemap.c:2327-2335`), which store two (`timemap.c:1202-1219`) and have only two copied into rows from `astMalloc` (`timemap.c:2180-2182`), so the third comparison reads uninitialised memory or a value another conversion left in the row.
+  The pinned library still cancels the pair in the cases tried, adjacent or made adjacent by earlier removals, since `astSimplify` calls `MapMerge` again with fresh arrays.
+- Rust: not compared.
+- Java: compares the two stored arguments.
+
 ### Cancelling a PolyMap with its inverse
 
 - **C quirk**: when `MapMerge` cancels a nominated PolyMap with its inverse it annuls the PolyMap before restoring its Invert attribute (`polymap.c:4004-4006`), so the PolyMap is left with the value the list applied it with: simplifying the inverse of a series CmpMap of a PolyMap and an inverted copy of it gives a UnitMap and leaves the copy with Invert unset.
