@@ -96,6 +96,20 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: gives them AST__BAD.
 - Java: as C.
 
+### Cancelling WcsMaps whose projection parameters differ
+
+- **C quirk**: `CanMerge` compares the first WcsMap's number of parameters with itself (`wcsmap.c:914`), so only the parameters the first WcsMap holds are compared: an AZP WcsMap with no parameters followed by the inverse of an AZP WcsMap with `PV2_1 = 0.5` simplifies to a UnitMap, although the pair maps (0.1, 1.2) to (0.1, 1.1914111091742374); the other order does not merge.
+  Confirmed with the pinned library.
+- Rust: not compared.
+- Java: as C.
+
+### Swapping a PermMap past a WcsMap
+
+- **C quirk**: `WcsPerm` keeps the PermMap through `astClone` but stores its own Invert attribute rather than the value the list applies it with (`wcsmap.c:4726` and `4744`): the inverse of a series CmpMap of a PermMap from 2 to 3 axes (with a constant 5) and `WcsMap(3, TAN, 1, 2)`, which has 3 inputs and 2 outputs, simplifies to a series CmpMap of the inverted WcsMap and the PermMap from 2 to 3 axes, which has 2 inputs and 3 outputs.
+  Confirmed with the pinned library.
+- Rust: not compared.
+- Java: as C.
+
 ### Swapping a parallel CmpMap with a PermMap whose blocks are constant
 
 - **C quirk**: when CmpMap's `MapMerge` swaps a parallel CmpMap with the PermMap before it and both of the PermMap's blocks give constants, three things go wrong (all confirmed with the pinned library):
