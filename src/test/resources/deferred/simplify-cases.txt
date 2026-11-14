@@ -3,8 +3,6 @@
 # Rewritten by SimplifyRegressionTest with -Dast.writeDeferred=true.
 brad | needs LutMap
 rigby | needs SpecMap
-perm_series_merge | needs simplification
-perm_parallel_merge | needs simplification
 cmpmap_parallel_series_components | needs simplification
 cmpmap_perm_parallel_swap | needs SpecMap
 sph_inverse_cancel | needs simplification
@@ -54,8 +52,6 @@ time_2arg_swapped_cancel | needs simplification
 time_2arg_same_cancel | needs simplification
 time_3arg_cancel | needs simplification
 time_5arg_cancel | needs simplification
-perm_cancel_to_unit | needs simplification
-perm_invert_normalize | needs simplification
 normmap_basic_frame_to_unit | needs NormMap
 normmap_inverse_cancel | needs NormMap
 normmap_duplicate_elim | needs NormMap
@@ -83,7 +79,6 @@ selectormap_inverse_cancel | needs Box, PointSet, SelectorMap
 switchmap_inverse_cancel | needs SwitchMap
 pcd_perm_swap_cancel | needs PcdMap
 win_cmpmap_parallel_merge | needs simplification
-win_swap_outer_merge | needs simplification
 pcd_swap_zoom_simplifies | needs PcdMap
 pcd_inverted_zoom_swap | needs PcdMap
 spec_merge_no_cancel | needs SpecMap
@@ -130,17 +125,13 @@ cmpmap_parallel_in_series_merge | needs MathMap
 cmpmap_perm_swap_aconstants | needs MathMap
 cmpmap_perm_swap_bconstants | needs MathMap
 win_upper_cmpmap_parallel_merge | needs simplification
-perm_constant_propagation | needs simplification
-perm_identity_array_null | needs simplification
 wcsmap_perm_swap_simplify | needs simplification
 cmpmap_decompose_middle | needs MathMap
 cmpmap_series_in_parallel_inverted | needs MathMap
 cmpmap_parallel_series_dim_mismatch | needs MathMap
 unit_parallel_invert_clear | needs MathMap
-perm_bad_propagation | needs simplification
 normmap_inverse_cancel_upper | needs NormMap
 unitnormmap_inv_fwd_cancel | needs UnitNormMap
-perm_outperm_constant_fold | needs simplification
 box_parallel_merge | needs Box, PointSet
 interval_parallel_merge | needs Box, Interval, PointSet
 box_self_simplify | needs Box, PointSet
@@ -182,7 +173,6 @@ cap_pointlist_01 | needs Box, PointList, PointSet, Prism, SpecFrame
 cap_pointlist_02 | needs Interval, PointList, PointSet, Prism, SpecFrame
 cap_slamap_01 | needs simplification
 cap_slamap_02 | needs Box, PointSet, Polygon, Prism, SpecFrame
-cap_slamap_03 | needs simplification
 cap_slamap_05 | needs simplification
 cap_slamap_06 | needs simplification
 cap_slamap_07 | needs Box, Circle, CmpRegion, NullRegion, PointSet
@@ -297,7 +287,6 @@ box_unc_fillfactor_merge | needs Box, PointSet
 neg_box_unc_mismatch | needs Box, PointSet
 nullregion_unc_fillfactor_merge | needs Box, NullRegion, PointSet
 pointlist_unc_fillfactor_merge | needs Box, PointList, PointSet
-winmap_perm_swap_to_zoom | needs simplification
 neg_pcd_diff_disco | needs PcdMap
 neg_pcd_diff_centre | needs PcdMap
 neg_pcd_same_invert | needs PcdMap

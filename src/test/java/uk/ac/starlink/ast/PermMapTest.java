@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
@@ -19,9 +20,10 @@ import org.junit.jupiter.api.Test;
  * a null permutation array.
  *
  * <p>Rust's {@code map_split} is jniast's {@code mapSplit}, with the outputs returned in an array. The
- * {@code perm_equal_*} tests test {@code astEqual}, which is outside the first phase; {@code
- * perm_parallel_merge} and {@code perm_simplified_checks_both_perms} test simplification, and are
- * deferred. {@code perm_map_identity_simplifies}, {@code perm_map_non_identity_not_simplified},
+ * {@code perm_equal_*} tests test {@code astEqual}, which is outside the first phase. Rust's
+ * {@code try_merge} of two PermMaps in parallel ({@code perm_parallel_merge}) is the simplification
+ * of their parallel CmpMap, which C's {@code MapMerge} (permmap.c) merges. {@code
+ * perm_map_identity_simplifies}, {@code perm_map_non_identity_not_simplified},
  * {@code perm_dimension_changing_merge_preserves_invertibility} and {@code
  * perm_map_keeping_leading_axes_simplifies_once} hold of a Mapping that is not restructured.
  *
@@ -90,6 +92,62 @@ class PermMapTest {
     void permMapNonIdentityNotSimplified() {
         Mapping simplified = perm(new int[] {2, 1}, new int[] {2, 1}).simplify();
         assertArrayEquals(new double[] {2.0, 1.0}, point(transformRows(simplified, true, new double[] {1.0, 2.0}), 0));
+    }
+
+    @Test
+    void permParallelMerge() {
+        PermMap p1 = perm(new int[] {2, 1}, new int[] {2, 1});
+        PermMap p2 = perm(new int[] {1}, new int[] {1});
+        Mapping m = new CmpMap(p1, p2, false).simplify();
+        assertInstanceOf(PermMap.class, m);
+        assertEquals(3, m.getNin());
+        assertEquals(3, m.getNout());
+        assertArrayEquals(new double[] {2.0, 1.0, 3.0}, point(transformRows(m, true, new double[] {1.0, 2.0, 3.0}), 0));
+    }
+
+    /**
+     * A PermMap is a UnitMap only if both its permutations are null; one whose forward permutation
+     * is given as the null one but whose inverse swaps the axes is left as it is (permmap.c {@code
+     * MapMerge}: {@code NullPerm} finds the given forward permutation already null).
+     */
+    @Test
+    void permSimplifiedChecksBothPerms() {
+        PermMap pm = perm(new int[] {2, 1}, new int[] {1, 2});
+        assertFalse(pm.simplify() instanceof UnitMap);
+
+        PermMap pm2 = perm(new int[] {1, 2}, new int[] {1, 2});
+        assertInstanceOf(UnitMap.class, pm2.simplify());
+    }
+
+    /**
+     * A null inverse permutation whose surplus input takes the first constant composes, in
+     * permmap.c {@code MapMerge}, to the array it means; C then compares that with the held array
+     * through a null pointer (permmap.c:1389), and the port reads the null array as {@code PERMVAL}
+     * does, so the PermMap is found already simple and returned as it is.
+     */
+    @Test
+    void aNullInversePermutationTakingAConstantIsLeftAsItIs() {
+        PermMap pm = new PermMap(2, null, 1, new int[] {-1}, new double[] {9.0});
+        assertSame(pm, pm.simplify());
+    }
+
+    /**
+     * An inverted PermMap of three inputs and two outputs, applied forward within an inverted
+     * CmpMap, has its forward permutation checked by {@code NullPerm} (permmap.c:1772-1774) over
+     * more elements than it holds; the element beyond is taken as bad, as C's {@code SAFE_PERMVAL}
+     * takes it, and simplifying does not change what the Mapping computes.
+     */
+    @Test
+    void nullPermCheckOfAnInvertedPermMapStaysWithinItsArray() {
+        PermMap pm = perm(new int[] {1, 2, 0}, new int[] {1, 2});
+        pm.invert();
+        CmpMap cmp = new CmpMap(pm, new ZoomMap(3, 2.0), true);
+        cmp.invert();
+        Mapping simp = cmp.simplify();
+        double[] in = {1.0, 2.0, 3.0};
+        assertArrayEquals(point(transformRows(cmp, true, in), 0), point(transformRows(simp, true, in), 0));
+        double[] back = {4.0, 6.0};
+        assertArrayEquals(point(transformRows(cmp, false, back), 0), point(transformRows(simp, false, back), 0));
     }
 
     // ------------------------------------------------------------------

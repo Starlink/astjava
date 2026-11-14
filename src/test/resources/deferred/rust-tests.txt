@@ -54,8 +54,6 @@ tests/pointset.rs::a_point_set_of_no_points_has_empty_axes | Rust-only API (Poin
 tests/pointset.rs::axis_iter_returns_column | Rust-only API (PointSet)
 tests/pointset.rs::view_and_into_ndarray | Rust-only API (PointSet)
 tests/test_matrixmap.rs::an_inverted_non_square_matrixmap_equals_its_copy | astEqual (out-of-scope method)
-tests/test_permmap.rs::perm_parallel_merge | needs simplification
-tests/test_permmap.rs::perm_simplified_checks_both_perms | needs simplification
 tests/test_permmap.rs::perm_equal_same_constant_index_differing_values | astEqual (out-of-scope method)
 tests/test_permmap.rs::perm_equal_same_constant_index_same_value | astEqual (out-of-scope method)
 tests/test_permmap.rs::perm_equal_different_index_same_referenced_value | astEqual (out-of-scope method)

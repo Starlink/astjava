@@ -804,4 +804,33 @@ class SimplifierTest {
         AstException e = assertThrows(AstException.class, () -> new CmpMap(z, s, true));
         assertEquals(AstException.AST__INNCO, e.getStatus());
     }
+
+    // ------------------------------------------------------------------
+    // PermMap merges (permmap.c MapMerge)
+    // ------------------------------------------------------------------
+
+    /** A swap of two axes followed by its own inverse composes to the null permutation, a UnitMap. */
+    @Test
+    void simplifyPermmapInverseCancels() {
+        PermMap fwd = new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
+        PermMap inv = new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
+        inv.invert();
+        Mapping result = new CmpMap(fwd, inv, true).simplify();
+        assertInstanceOf(UnitMap.class, result);
+        assertEquals(2, result.getNin());
+    }
+
+    /**
+     * A swap of two axes followed by the inverse of the null permutation composes to the swap, a
+     * PermMap that replaces the two (permmap.c {@code MapMerge}: {@code ngone} is 1).
+     */
+    @Test
+    void simplifyPermmapDifferentPermsNoMerge() {
+        PermMap fwd = new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
+        PermMap inv = new PermMap(2, new int[] {1, 2}, 2, new int[] {1, 2}, null);
+        inv.invert();
+        Mapping result = new CmpMap(fwd, inv, true).simplify();
+        PermMap pm = assertInstanceOf(PermMap.class, result);
+        assertArrayEquals(new double[] {2.0, 1.0}, transformPoints(pm, true, new double[] {1.0, 2.0})[0]);
+    }
 }

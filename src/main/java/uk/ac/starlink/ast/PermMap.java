@@ -410,6 +410,284 @@ public class PermMap extends Mapping {
     }
 
     // ------------------------------------------------------------------
+    // Simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * permmap.c {@code MapMerge}. The run of PermMaps and UnitMaps around this PermMap is replaced
+     * by one Mapping applied forward, whose two permutations are those of the run composed, each
+     * constant the run selects held once: a UnitMap if both permutations are null and there are as
+     * many outputs as inputs, and otherwise a PermMap holding only the permutations that are not
+     * null. That is done if it removes a Mapping, gives a UnitMap or turns this PermMap, applied
+     * inverted, forward; and, for this PermMap alone, if a permutation it holds and {@link
+     * #nullPerm} does not find null becomes null, or a permutation it still needs differs from the
+     * one it holds.
+     *
+     * <p>As in C, a null permutation of a Mapping in the run is read with {@link #permVal} bounded
+     * by the Mapping's number of outputs in its own orientation (permmap.c:1030, 1222), whichever
+     * permutation is read; for a null forward permutation of a PermMap with more outputs than
+     * inputs and some constants, that gives the surplus outputs the bad value where {@link
+     * #transformInto} gives them the first constant.
+     */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        int nmap = list.size();
+        int imap1 = where;
+        int imap2 = where;
+        int nin;
+        int nout;
+        int[] inperm;
+        int[] outperm;
+        ConstantList con;
+        PermMap permmap = null;
+        if (series) {
+            while (imap1 - 1 >= 0 && isPermOrUnit(list.map(imap1 - 1))) {
+                imap1--;
+            }
+            while (imap2 + 1 < nmap && isPermOrUnit(list.map(imap2 + 1))) {
+                imap2++;
+            }
+            nin = appliedNin(list.map(imap1), list.invert(imap1));
+            nout = appliedNout(list.map(imap2), list.invert(imap2));
+            inperm = new int[nin];
+            outperm = new int[nout];
+            con = new ConstantList(nin + nout);
+            for (int back = 0; back <= 1; back++) {
+                int[] newperm = back != 0 ? outperm : inperm;
+                int nperm = back != 0 ? nout : nin;
+                for (int coord = 0; coord < nperm; coord++) {
+                    newperm[coord] = coord;
+                }
+                int istart = back != 0 ? imap2 : imap1;
+                int iend = back != 0 ? imap1 - 1 : imap2 + 1;
+                int inc = back != 0 ? -1 : 1;
+                for (int imap = istart; imap != iend; imap += inc) {
+                    Mapping map = list.map(imap);
+                    boolean invert = list.invert(imap) ^ (back != 0);
+                    int[] perm = null;
+                    int maxperm = map.getNout();
+                    if (map.getClass() == PermMap.class) {
+                        permmap = (PermMap) map;
+                        perm = invert ? permmap.outperm : permmap.inperm;
+                    }
+                    int ncoordOut = appliedNout(map, invert);
+                    for (int coord = 0; coord < nperm; coord++) {
+                        int p = newperm[coord];
+                        if (p >= 0) {
+                            p = permVal(perm, p, maxperm);
+                            if (p >= 0 && p < ncoordOut) {
+                                newperm[coord] = p;
+                            } else {
+                                newperm[coord] = con.reference(permmap, p);
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            Mapping nominated = list.map(where);
+            nin = appliedNin(nominated, list.invert(where));
+            nout = appliedNout(nominated, list.invert(where));
+            while (imap1 - 1 >= 0 && isPermOrUnit(list.map(imap1 - 1))) {
+                Mapping map = list.map(imap1 - 1);
+                nin += appliedNin(map, list.invert(imap1 - 1));
+                nout += appliedNout(map, list.invert(imap1 - 1));
+                imap1--;
+            }
+            while (imap2 + 1 < nmap && isPermOrUnit(list.map(imap2 + 1))) {
+                Mapping map = list.map(imap2 + 1);
+                nin += appliedNin(map, list.invert(imap2 + 1));
+                nout += appliedNout(map, list.invert(imap2 + 1));
+                imap2++;
+            }
+            inperm = new int[nin];
+            outperm = new int[nout];
+            con = new ConstantList(nin + nout);
+            for (int back = 0; back <= 1; back++) {
+                int[] newperm = back != 0 ? outperm : inperm;
+                int ninsum = 0;
+                int noutsum = 0;
+                for (int imap = imap1; imap <= imap2; imap++) {
+                    Mapping map = list.map(imap);
+                    boolean invert = list.invert(imap) ^ (back != 0);
+                    int[] perm = null;
+                    int maxperm = map.getNout();
+                    if (map.getClass() == PermMap.class) {
+                        permmap = (PermMap) map;
+                        perm = invert ? permmap.outperm : permmap.inperm;
+                    }
+                    int ncoordIn = appliedNin(map, invert);
+                    int ncoordOut = appliedNout(map, invert);
+                    for (int coord = 0; coord < ncoordIn; coord++) {
+                        int p = permVal(perm, coord, maxperm);
+                        if (p >= 0 && p < ncoordOut) {
+                            newperm[coord + ninsum] = p + noutsum;
+                        } else {
+                            newperm[coord + ninsum] = con.reference(permmap, p);
+                        }
+                    }
+                    ninsum += ncoordIn;
+                    noutsum += ncoordOut;
+                }
+            }
+        }
+
+        boolean storeIn = false;
+        for (int coord = 0; coord < nin; coord++) {
+            if (coord < nout) {
+                storeIn = storeIn || inperm[coord] != coord;
+            } else {
+                storeIn = storeIn || inperm[coord] != -1;
+            }
+            if (inperm[coord] < 0 && ++inperm[coord] == 0) {
+                inperm[coord] = nout;
+            }
+        }
+        boolean storeOut = false;
+        for (int coord = 0; coord < nout; coord++) {
+            if (coord < nin) {
+                storeOut = storeOut || outperm[coord] != coord;
+            } else {
+                storeOut = storeOut || outperm[coord] != -1;
+            }
+            if (outperm[coord] < 0 && ++outperm[coord] == 0) {
+                outperm[coord] = nin;
+            }
+        }
+
+        int ngone = imap2 - imap1;
+        boolean unit = !storeIn && !storeOut && nin == nout;
+        boolean simpler = ngone != 0 || unit || list.invert(where);
+        permmap = (PermMap) list.map(where);
+        if (!simpler) {
+            simpler = (!storeIn && !permmap.nullPerm(false)) || (!storeOut && !permmap.nullPerm(true));
+        }
+        // C indexes the held arrays directly, and dereferences a null one when a constant fills a
+        // coordinate the null permutation leaves without a partner (PERMVAL gives -1, read as the
+        // first constant); a held array is read here through permVal with the maxperm MapMerge
+        // uses for the PermMap, which gives C's values wherever C has an array.
+        int heldMax = permmap.getNout();
+        if (!simpler && storeIn) {
+            for (int coord = 0; coord < nin; coord++) {
+                simpler = inperm[coord] != permVal(permmap.inperm, coord, heldMax);
+                if (simpler) {
+                    break;
+                }
+            }
+        }
+        if (!simpler && storeOut) {
+            for (int coord = 0; coord < nout; coord++) {
+                simpler = outperm[coord] != permVal(permmap.outperm, coord, heldMax);
+                if (simpler) {
+                    break;
+                }
+            }
+        }
+        if (!simpler) {
+            return -1;
+        }
+        Mapping replacement = unit
+                ? new UnitMap(nin)
+                : fromInternal(nin, storeIn ? inperm : null, nout, storeOut ? outperm : null, con.values());
+        list.replaceRangeWith(imap1, imap2, replacement);
+        return imap1;
+    }
+
+    /** Whether {@code map} is of class PermMap or UnitMap, as permmap.c {@code MapMerge} compares class names. */
+    private static boolean isPermOrUnit(Mapping map) {
+        return map.getClass() == PermMap.class || map.getClass() == UnitMap.class;
+    }
+
+    /**
+     * The number of inputs of {@code map} applied with the Invert value {@code invert}, as
+     * permmap.c {@code MapMerge} finds it from {@code astGetInvert}, {@code astGetNin} and {@code
+     * astGetNout}.
+     */
+    private static int appliedNin(Mapping map, boolean invert) {
+        if (map.getInvert()) {
+            return invert ? map.getNin() : map.getNout();
+        }
+        return invert ? map.getNout() : map.getNin();
+    }
+
+    /** The number of outputs of {@code map} applied with the Invert value {@code invert}, as {@link #appliedNin}. */
+    private static int appliedNout(Mapping map, boolean invert) {
+        if (map.getInvert()) {
+            return invert ? map.getNout() : map.getNin();
+        }
+        return invert ? map.getNin() : map.getNout();
+    }
+
+    /**
+     * The constants a permutation composed by permmap.c {@code MapMerge} selects, each held once,
+     * in the order first met; C's {@code con} and {@code ncon}.
+     */
+    private static final class ConstantList {
+        private final double[] con;
+        private int ncon;
+
+        ConstantList(int size) {
+            con = new double[size];
+        }
+
+        /**
+         * The entry C's {@code MapMerge} puts in a composed permutation for index {@code p} of
+         * {@code permmap} that is not a coordinate: -1 for the bad value, which is what {@code p}
+         * gives if it is not negative or {@code permmap} has no constants, and otherwise {@code
+         * -icon - 2} for the constant it selects, held at {@code icon}.
+         */
+        int reference(PermMap permmap, int p) {
+            double constant;
+            if (p < 0 && permmap.constant != null) {
+                constant = permmap.constantFor(p);
+            } else {
+                constant = AST__BAD;
+            }
+            if (constant == AST__BAD) {
+                return -1;
+            }
+            int icon;
+            for (icon = 0; icon < ncon; icon++) {
+                if (con[icon] == constant) {
+                    break;
+                }
+            }
+            if (icon == ncon) {
+                con[ncon++] = constant;
+            }
+            return -icon - 2;
+        }
+
+        /** The constants held, or null if there are none. */
+        double[] values() {
+            return ncon != 0 ? con : null;
+        }
+    }
+
+    /**
+     * permmap.c {@code NullPerm}: whether the forward permutation, if {@code forward}, or the
+     * inverse one otherwise, is null: not held, or taking each coordinate from the one with the
+     * same number. As in C, the permutation held is checked over as many elements as the PermMap
+     * has outputs, or inputs, in its current orientation; an element beyond those held, which C
+     * would read past the end of its array when the PermMap is inverted, is taken as C's {@code
+     * SAFE_PERMVAL} (permmap.c) takes it, as -1, the bad value, which is not null.
+     */
+    boolean nullPerm(boolean forward) {
+        int[] perm = forward ? outperm : inperm;
+        if (perm == null) {
+            return true;
+        }
+        int n = forward ? getNout() : getNin();
+        for (int i = 0; i < n; i++) {
+            int value = i < perm.length ? perm[i] : -1;
+            if (value != i) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // ------------------------------------------------------------------
     // Transformation
     // ------------------------------------------------------------------
 
