@@ -1,6 +1,7 @@
 package uk.ac.starlink.ast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import uk.ac.starlink.ast.internal.pal.Pal;
 
@@ -370,14 +371,24 @@ public class SlaMap extends Mapping {
                     AstException.AST__SLAIN,
                     "astSlaAdd(" + astClass() + "): Invalid SLALIB sky coordinate conversion type \"" + cvt + "\".");
         }
-        int narg = args == null ? 0 : args.length;
+        addSlaCvt(type, args == null ? 0 : args.length, args);
+    }
+
+    /**
+     * C's {@code AddSlaCvt}: appends conversion {@code type} with a copy of its {@code narg}
+     * arguments.
+     *
+     * @throws AstException with status {@code AST__TIMIN} if {@code narg} is not the conversion's
+     *     number of arguments
+     */
+    private void addSlaCvt(Cvt type, int narg, double[] args) {
         if (narg != type.nargs()) {
             throw Ast.err(
                     AstException.AST__TIMIN,
                     "AddSlaCvt(" + astClass() + "): Invalid no. of arguments for SLALIB coordinate conversion type "
                             + type.cCode + " - " + narg + " supplied, " + type.nargs() + " required.");
         }
-        steps.add(new Step(type, narg == 0 ? new double[0] : args.clone()));
+        steps.add(new Step(type, narg == 0 ? new double[0] : Arrays.copyOf(args, narg)));
     }
 
     /** The number of conversions. */
@@ -398,6 +409,232 @@ public class SlaMap extends Mapping {
     /** Whether the SlaMap has no conversions, so that it is a unit Mapping (C's {@code astSlaIsEmpty}). */
     boolean isEmpty() {
         return steps.isEmpty();
+    }
+
+    // ------------------------------------------------------------------
+    // Simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * slamap.c {@code MapMerge}. In series, or alone in the list, the SlaMap and the SlaMaps
+     * adjacent to it are condensed into one Mapping: their conversions are gathered in the order
+     * they are applied, each SlaMap's in reverse and each conversion inverted where the list applies
+     * the SlaMap inverted, and the gathered list is then simplified, pass after pass until a pass
+     * removes nothing, by removing precessions between equal epochs, combining adjacent precessions
+     * that share an epoch, and removing adjacent pairs of mutually inverse conversions whose
+     * arguments match. If that removed a Mapping or a conversion, or the nominated SlaMap is
+     * applied inverted, the run is replaced by a UnitMap, when no conversion is left, or else by a
+     * new SlaMap of the conversions left, applied forward.
+     */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        if (!series && list.size() != 1) {
+            return -1;
+        }
+        int nstep0 = ((SlaMap) list.map(where)).steps.size();
+        int imap1 = where;
+        while (imap1 - 1 >= 0 && list.map(imap1 - 1).getClass() == SlaMap.class) {
+            nstep0 += ((SlaMap) list.map(imap1 - 1)).steps.size();
+            imap1--;
+        }
+        int imap2 = where;
+        while (imap2 + 1 < list.size() && list.map(imap2 + 1).getClass() == SlaMap.class) {
+            nstep0 += ((SlaMap) list.map(imap2 + 1)).steps.size();
+            imap2++;
+        }
+
+        List<Step> gathered = new ArrayList<>(nstep0);
+        for (int imap = imap1; imap <= imap2; imap++) {
+            SlaMap slamap = (SlaMap) list.map(imap);
+            boolean invert = list.invert(imap);
+            int ncvt = slamap.steps.size();
+            for (int k = 0; k < ncvt; k++) {
+                Step step = slamap.steps.get(invert ? ncvt - 1 - k : k);
+                // C frees the palMappa parameters of each conversion gathered; they are worked out
+                // again when next needed.
+                step.extra = null;
+                double[] args = step.args.clone();
+                gathered.add(new Step(invert ? invertStep(step.cvt, args) : step.cvt, args));
+            }
+        }
+
+        boolean done = false;
+        while (!done) {
+            int nstep1 = gathered.size();
+            List<Step> kept = new ArrayList<>(nstep1);
+            int istep = 0;
+            while (istep < nstep1) {
+                boolean keep = true;
+                Cvt c1 = gathered.get(istep).cvt;
+                double[] a1 = gathered.get(istep).args;
+                if ((c1 == Cvt.PREBN || c1 == Cvt.PREC) && MappingHelpers.astEqual(a1[0], a1[1])) {
+                    keep = false;
+                } else if (istep < nstep1 - 1) {
+                    Cvt c2 = gathered.get(istep + 1).cvt;
+                    double[] a2 = gathered.get(istep + 1).args;
+                    if (((c1 == Cvt.PREBN && c2 == Cvt.PREBN) || (c1 == Cvt.PREC && c2 == Cvt.PREC))
+                            && MappingHelpers.astEqual(a1[1], a2[0])) {
+                        // The second precession is kept, starting where the first did.
+                        gathered.set(istep + 1, new Step(c2, new double[] {a1[0], a2[1]}));
+                        istep++;
+                    } else if (cancels(c1, c2, a1, a2)) {
+                        istep++;
+                        keep = false;
+                    }
+                }
+                if (keep) {
+                    kept.add(gathered.get(istep));
+                }
+                istep++;
+            }
+            done = kept.size() >= nstep1;
+            gathered = kept;
+        }
+
+        int nstep = gathered.size();
+        int ngone = imap2 - imap1;
+        boolean unit = nstep == 0;
+        boolean simpler = ngone != 0 || nstep < nstep0 || unit || list.invert(where);
+        if (!simpler) {
+            return -1;
+        }
+        Mapping replacement;
+        if (unit) {
+            replacement = new UnitMap(list.map(where).getNin());
+        } else {
+            SlaMap sla = new SlaMap();
+            for (Step step : gathered) {
+                sla.addSlaCvt(step.cvt, step.cvt.nargs(), step.args);
+            }
+            replacement = sla;
+        }
+        list.replaceRangeWith(imap1, imap2, replacement);
+        return imap1;
+    }
+
+    /**
+     * The conversion that applies the inverse of {@code cvt}, as slamap.c {@code MapMerge} gathers
+     * the conversions of an SlaMap applied inverted: each conversion is exchanged for its inverse,
+     * and the arguments {@code args} of a precession, or of an apparent to mean place conversion
+     * or its inverse, are swapped in place.
+     */
+    private static Cvt invertStep(Cvt cvt, double[] args) {
+        // MODERN-JAVA(14): switch expression
+        switch (cvt) {
+            case ADDET:
+                return Cvt.SUBET;
+            case SUBET:
+                return Cvt.ADDET;
+            case PREBN:
+            case PREC:
+                swapFirstTwo(args);
+                return cvt;
+            case FK45Z:
+                return Cvt.FK54Z;
+            case FK54Z:
+                return Cvt.FK45Z;
+            case AMP:
+                swapFirstTwo(args);
+                return Cvt.MAP;
+            case MAP:
+                swapFirstTwo(args);
+                return Cvt.AMP;
+            case ECLEQ:
+                return Cvt.EQECL;
+            case EQECL:
+                return Cvt.ECLEQ;
+            case DH2E:
+                return Cvt.DE2H;
+            case DE2H:
+                return Cvt.DH2E;
+            case GALEQ:
+                return Cvt.EQGAL;
+            case EQGAL:
+                return Cvt.GALEQ;
+            case HFK5Z:
+                return Cvt.FK5HZ;
+            case FK5HZ:
+                return Cvt.HFK5Z;
+            case GALSUP:
+                return Cvt.SUPGAL;
+            case SUPGAL:
+                return Cvt.GALSUP;
+            case EQHPC:
+                return Cvt.HPCEQ;
+            case HPCEQ:
+                return Cvt.EQHPC;
+            case EQHPR:
+                return Cvt.HPREQ;
+            case HPREQ:
+                return Cvt.EQHPR;
+            case EQHE:
+                return Cvt.HEEQ;
+            case HEEQ:
+                return Cvt.EQHE;
+            case J2000H:
+                return Cvt.HJ2000;
+            case HJ2000:
+                return Cvt.J2000H;
+            case H2R:
+                return Cvt.R2H;
+            case R2H:
+                return Cvt.H2R;
+            default:
+                throw Ast.err(
+                        AstException.AST__INTER,
+                        "MapMerge(SlaMap): unexpected conversion " + cvt + " (internal AST programming error).");
+        }
+    }
+
+    /** Exchanges the first two values of {@code args}. */
+    private static void swapFirstTwo(double[] args) {
+        double tmp = args[0];
+        args[0] = args[1];
+        args[1] = tmp;
+    }
+
+    /**
+     * Whether conversion {@code c1} with arguments {@code a1}, followed by {@code c2} with {@code
+     * a2}, is one of the pairs of mutually inverse conversions slamap.c {@code MapMerge} removes:
+     * the two in either order, with the arguments that must agree equal to within {@code
+     * astEQUAL} (an AMP and a MAP take them in opposite orders).
+     */
+    private static boolean cancels(Cvt c1, Cvt c2, double[] a1, double[] a2) {
+        if (pair(c1, c2, Cvt.SUBET, Cvt.ADDET)
+                || pair(c1, c2, Cvt.FK45Z, Cvt.FK54Z)
+                || pair(c1, c2, Cvt.HFK5Z, Cvt.FK5HZ)
+                || pair(c1, c2, Cvt.ECLEQ, Cvt.EQECL)
+                || pair(c1, c2, Cvt.EQHE, Cvt.HEEQ)
+                || pair(c1, c2, Cvt.R2H, Cvt.H2R)) {
+            return MappingHelpers.astEqual(a1[0], a2[0]);
+        } else if (pair(c1, c2, Cvt.AMP, Cvt.MAP)) {
+            return MappingHelpers.astEqual(a1[0], a2[1]) && MappingHelpers.astEqual(a1[1], a2[0]);
+        } else if (pair(c1, c2, Cvt.DH2E, Cvt.DE2H)) {
+            return equalArgs(a1, a2, 2);
+        } else if (pair(c1, c2, Cvt.GALEQ, Cvt.EQGAL)
+                || pair(c1, c2, Cvt.GALSUP, Cvt.SUPGAL)
+                || pair(c1, c2, Cvt.J2000H, Cvt.HJ2000)) {
+            return true;
+        } else if (pair(c1, c2, Cvt.HPCEQ, Cvt.EQHPC) || pair(c1, c2, Cvt.HPREQ, Cvt.EQHPR)) {
+            return equalArgs(a1, a2, 4);
+        } else {
+            return false;
+        }
+    }
+
+    /** Whether {@code c1} then {@code c2} is {@code x} then {@code y}, or {@code y} then {@code x}. */
+    private static boolean pair(Cvt c1, Cvt c2, Cvt x, Cvt y) {
+        return (c1 == x && c2 == y) || (c1 == y && c2 == x);
+    }
+
+    /** Whether the first {@code n} values of {@code a1} and {@code a2} are equal to within {@code astEQUAL}. */
+    private static boolean equalArgs(double[] a1, double[] a2, int n) {
+        for (int i = 0; i < n; i++) {
+            if (!MappingHelpers.astEqual(a1[i], a2[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // ------------------------------------------------------------------

@@ -4,9 +4,7 @@
 brad | needs LutMap
 rigby | needs SpecMap
 cmpmap_perm_parallel_swap | needs SpecMap
-sla_inverse_cancel | needs simplification
 spec_inverse_cancel | needs SpecMap
-time_inverse_cancel | needs simplification
 lut_linear_to_win | needs LutMap
 lut_inverse_cancel | needs LutMap
 pcd_zero_to_unit | needs PcdMap
@@ -21,31 +19,12 @@ intramap_inverse_cancel | needs IntraMap
 tranmap_invert_normalize | needs TranMap
 tranmap_component_simplify | needs TranMap
 ratemap_simplify_interior | needs RateMap
-sla_invert_normalize | needs simplification
-sla_partial_cancel | needs simplification
-sla_merge_no_cancel | needs simplification
-sla_supergalactic_cancel | needs simplification
-sla_j2000_cancel | needs simplification
-sla_eterms_cancel | needs simplification
-sla_fk45_cancel | needs simplification
-sla_icrs_cancel | needs simplification
-sla_ecliptic_cancel | needs simplification
-sla_geocentric_cancel | needs simplification
-sla_prec_redundant | needs simplification
-sla_prec_merge | needs simplification
 spec_invert_normalize | needs SpecMap
 spec_partial_cancel | needs SpecMap
 spec_unit_cancel | needs SpecMap
 spec_lsr_cancel | needs SpecMap
 spec_geocentric_cancel | needs SpecMap
 spec_topocentric_cancel | needs SpecMap
-time_invert_normalize | needs simplification
-time_partial_cancel | needs simplification
-time_noop_eliminate | needs simplification
-time_2arg_swapped_cancel | needs simplification
-time_2arg_same_cancel | needs simplification
-time_3arg_cancel | needs simplification
-time_5arg_cancel | needs simplification
 normmap_basic_frame_to_unit | needs NormMap
 normmap_inverse_cancel | needs NormMap
 normmap_duplicate_elim | needs NormMap
@@ -61,18 +40,12 @@ tranmap_adjacent_merge_inverse_order | needs TranMap
 tranmap_adjacent_merge_nonsquare | needs TranMap
 tranmap_invert_in_list | needs TranMap
 tranmap_equal_components_in_list | needs TranMap
-sla_helioecl_cancel | needs simplification
-sla_ha_cancel | needs simplification
-sla_azel_cancel | needs simplification
-sla_hpc_cancel | needs simplification
-sla_hpr_cancel | needs simplification
 selectormap_inverse_cancel | needs Box, PointSet, SelectorMap
 switchmap_inverse_cancel | needs SwitchMap
 pcd_perm_swap_cancel | needs PcdMap
 pcd_swap_zoom_simplifies | needs PcdMap
 pcd_inverted_zoom_swap | needs PcdMap
 spec_merge_no_cancel | needs SpecMap
-time_merge_no_cancel | needs simplification
 neg_win_nonmergeable_series | needs MathMap
 neg_math_no_simpfi | needs MathMap
 neg_spec_arg_mismatch | needs SpecMap
@@ -133,16 +106,12 @@ dssmap_inv_winmap_absorb | needs DssMap
 dssmap_winmap_absorb | needs DssMap
 dssmap_zoom_no_merge | needs DssMap
 neg_box_asymmetric_2d | needs Box, PointSet
-sla_run_identity | needs simplification
-sla_run_partial | needs simplification
 spec_run_inverted_mid | needs SpecMap
 spec_run4_identity | needs SpecMap
-time_run_identity | needs simplification
 fitschan_tab_spectral | needs LutMap
 switchmap_inverse_cancel_distinct_selectors | needs MathMap, SwitchMap
 cap_cmpmap_01 | needs MathMap, RateMap, SpecMap, TranMap
 cap_cmpmap_02 | needs MathMap
-cap_cmpmap_03 | needs simplification
 cap_cmpmap_04 | needs MathMap, RateMap, SpecMap, TranMap
 cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism, SpecFrame
 cap_lutmap_01 | needs LutMap, MathMap
@@ -151,10 +120,7 @@ cap_matrixmap_04 | needs ChebyMap
 cap_permmap_01 | needs NormMap, SpecFrame
 cap_pointlist_01 | needs Box, PointList, PointSet, Prism, SpecFrame
 cap_pointlist_02 | needs Interval, PointList, PointSet, Prism, SpecFrame
-cap_slamap_01 | needs simplification
 cap_slamap_02 | needs Box, PointSet, Polygon, Prism, SpecFrame
-cap_slamap_05 | needs simplification
-cap_slamap_06 | needs simplification
 cap_slamap_07 | needs Box, Circle, CmpRegion, NullRegion, PointSet
 cap_specmap_01 | needs SpecMap
 cap_specmap_02 | needs LutMap, SpecMap
@@ -170,11 +136,7 @@ cap_specmap_11 | needs SpecMap
 cap_specmap_12 | needs SpecMap
 cap_specmap_13 | needs SpecMap
 cap_specmap_14 | needs MathMap, SpecMap
-cap_timemap_01 | needs simplification
 cap_timemap_02 | needs Box, Interval, PointSet, SpecFrame, StcResourceProfile
-cap_timemap_03 | needs simplification
-cap_timemap_05 | needs simplification
-cap_timemap_07 | needs simplification
 cap_unitnormmap_01 | needs UnitNormMap
 cap_winmap_01 | needs SpecMap
 cap_xphmap_01 | needs XphMap
@@ -266,11 +228,7 @@ neg_pcd_diff_centre | needs PcdMap
 neg_pcd_same_invert | needs PcdMap
 neg_pcd_perm_nonswap | needs PcdMap
 specmap_invert_normalize | needs SpecMap
-slamap_invert_normalize | needs simplification
-timemap_invert_normalize | needs simplification
 specmap_pair_cancel | needs SpecMap
-slamap_pair_cancel | needs simplification
-timemap_pair_cancel | needs simplification
 pcd_inverse_cancel_tail | needs PcdMap
 nullregion_merge_tail | needs NullRegion
 grism_inverse_cancel_tail | needs GrismMap
@@ -278,8 +236,6 @@ intra_invfwd_cancel_tail | needs IntraMap
 tranmap_merge_tail | needs TranMap
 interval_remapped_simplify | needs Interval, PointSet
 interval_halfinf_simplify | needs Interval, PointSet
-time_mjdtojd_noop | needs simplification
-time_jdtomjd_noop | needs simplification
 unit_parallel_invert_pcd | needs PcdMap
 neg_unit_parallel_forward | needs PcdMap
 pcd_zero_disc_series | needs PcdMap

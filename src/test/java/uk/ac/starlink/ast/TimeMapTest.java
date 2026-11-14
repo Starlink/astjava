@@ -2,6 +2,7 @@ package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -14,9 +15,8 @@ import org.junit.jupiter.api.Test;
  *
  * <p>{@code cvt_type_from_code} is translated as the codes {@code astTimeAdd} accepts. Deferred:
  * {@code equality} ({@code astEqual}, an out-of-scope method); {@code cvt_type_codes_match_c},
- * {@code cvt_type_from_int} and {@code cvt_type_inverse} (Rust-only API); {@code
- * try_merge_cancellation}, the {@code timemap_merge_*} tests and {@code timemap_simplified_chain}
- * ({@code needs simplification}).
+ * {@code cvt_type_from_int} and {@code cvt_type_inverse} (Rust-only API). The {@code try_merge} tests become simplifications of the two TimeMaps in a series
+ * CmpMap, and the classes and dumps they expect are those the pinned C library gives.
  */
 class TimeMapTest {
 
@@ -305,5 +305,95 @@ class TimeMapTest {
     void aGmstRateIsFoundNumerically() {
         double rate = time("UTTOGMST", 0.0).rate(new double[] {51544.5}, 1, 1);
         assertClose(rate, 1.00273790935, 1e-7, "GMST rate");
+    }
+
+    // ------------------------------------------------------------------
+    // Merging when simplified (timemap.c MapMerge)
+    // ------------------------------------------------------------------
+
+    private static TimeMap inverted(TimeMap m) {
+        m.invert();
+        return m;
+    }
+
+    /** A TimeMap and the same TimeMap inverted, in series, cancel to the 1-axis UnitMap C gives. */
+    @Test
+    void tryMergeCancellation() {
+        Mapping s = new CmpMap(time("MJDTOJEP", 0.0, 0.0), inverted(time("MJDTOJEP", 0.0, 0.0)), true).simplify();
+        assertInstanceOf(UnitMap.class, s);
+        assertEquals(1, s.getNin());
+        assertEquals(1, s.getNout());
+    }
+
+    /** Adjacent TimeMaps whose conversions do not cancel merge into the one TimeMap C gives. */
+    @Test
+    void timemapMergeConcatenates() {
+        Mapping s = new CmpMap(time("MJDTOMJD", 0.0, 51544.5), time("TAITOUTC", 0.0, 37.0), true).simplify();
+        assertInstanceOf(TimeMap.class, s);
+        String want = ChannelText.text(
+                " Begin TimeMap \t# Conversion between time coordinate systems",
+                "    Nin = 1 \t# Number of input coordinates",
+                "    IsSimp = 1 \t# Mapping has been simplified",
+                " IsA Mapping \t# Mapping between coordinate systems",
+                "    Ntime = 2 \t# Number of conversion steps",
+                "    Time1 = \"MJDTOMJD\" \t# Convert MJD between offsets",
+                "    Time1a = 0 \t# Input MJD offset",
+                "    Time1b = 51544.5 \t# Output MJD offset",
+                "    Time1c = -51544.5 \t# Combined offset",
+                "    Time2 = \"TAITOUTC\" \t# Convert TAI to UTC",
+                "    Time2a = 0 \t# MJD offset",
+                "    Time2b = 37 \t# DTAI",
+                " End TimeMap");
+        assertEquals(want, ChannelText.dump(s));
+    }
+
+    /** TAITOUTC followed by its inverse cancels to a UnitMap, as in C. */
+    @Test
+    void timemapMergeCancelsInverse() {
+        Mapping s = new CmpMap(time("TAITOUTC", 0.0, 37.0), inverted(time("TAITOUTC", 0.0, 37.0)), true).simplify();
+        assertInstanceOf(UnitMap.class, s);
+    }
+
+    /** MJDTOMJD between equal offsets (zero) has no effect, so C simplifies it to a UnitMap. */
+    @Test
+    void timemapMergeEliminatesNoEffect() {
+        assertInstanceOf(UnitMap.class, time("MJDTOMJD", 0.0, 0.0).simplify());
+    }
+
+    /** MJDTOJD(a, b) followed by JDTOMJD(b, a) cancels to a UnitMap, as in C. */
+    @Test
+    void timemapMergeMjdToJdCancels() {
+        Mapping s = new CmpMap(time("MJDTOJD", 100.0, 200.0), time("JDTOMJD", 200.0, 100.0), true).simplify();
+        assertInstanceOf(UnitMap.class, s);
+    }
+
+    /** MJDTOMJD between equal non-zero offsets is the identity too, a UnitMap in C. */
+    @Test
+    void timemapMergeMjdToMjdEqualOffsets() {
+        assertInstanceOf(UnitMap.class, time("MJDTOMJD", 51544.5, 51544.5).simplify());
+    }
+
+    /** TAITOUTC then UTCTOTAI in one TimeMap, both with DTAI bad, cancel to a UnitMap, as in C. */
+    @Test
+    void timemapSimplifiedChain() {
+        TimeMap tm = time("TAITOUTC", 51544.0, BAD);
+        tm.timeAdd("UTCTOTAI", new double[] {51544.0, BAD});
+        assertInstanceOf(UnitMap.class, tm.simplify());
+    }
+
+    /**
+     * A TDBTOTCB and TCBTOTDB pair made adjacent only once the steps between them have gone
+     * cancels, as the two values those conversions store agree: C gives a UnitMap
+     * (timemap.c MapMerge, checked with the pinned library).
+     */
+    @Test
+    void aTdbTcbPairMadeAdjacentByEarlierRemovalsCancels() {
+        TimeMap tm = time("MJDTOMJD", 1.0, 1.0);
+        tm.timeAdd("TDBTOTCB", new double[] {2000.0});
+        tm.timeAdd("GMSTTOLMST", new double[] {0.0, 0.0, 8.0});
+        tm.timeAdd("MJDTOMJD", new double[] {1.0, 1.0});
+        tm.timeAdd("LMSTTOGMST", new double[] {0.0, 0.0, 8.0});
+        tm.timeAdd("TCBTOTDB", new double[] {2000.0});
+        assertInstanceOf(UnitMap.class, tm.simplify());
     }
 }

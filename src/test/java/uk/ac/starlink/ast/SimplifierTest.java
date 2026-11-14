@@ -1055,6 +1055,37 @@ class SimplifierTest {
         assertEquals(11.5, transformPoints(result, true, new double[] {0.1, 0.2, 4.0})[0][2], 1e-12);
     }
 
+    /** An EQGAL SlaMap and the same SlaMap inverted, in series, cancel to the 2-axis UnitMap C gives. */
+    @Test
+    void simplifySlamapInverseCancels() {
+        SlaMap fwd = new SlaMap();
+        fwd.add("EQGAL", null);
+        SlaMap inv = new SlaMap();
+        inv.add("EQGAL", null);
+        inv.invert();
+        Mapping result = new CmpMap(fwd, inv, true).simplify();
+        assertInstanceOf(UnitMap.class, result);
+        assertEquals(2, result.getNin());
+    }
+
+    /**
+     * EQGAL followed by GALEQ inverted, which is EQGAL again, does not cancel: C merges the two into
+     * one SlaMap of two EQGAL conversions.
+     */
+    @Test
+    void simplifySlamapDifferentStepsNoMerge() {
+        SlaMap fwd = new SlaMap();
+        fwd.add("EQGAL", null);
+        SlaMap inv = new SlaMap();
+        inv.add("GALEQ", null);
+        inv.invert();
+        Mapping result = new CmpMap(fwd, inv, true).simplify();
+        SlaMap sla = assertInstanceOf(SlaMap.class, result);
+        assertEquals(2, sla.ncvt());
+        assertEquals("EQGAL", sla.cvtCode(0));
+        assertEquals("EQGAL", sla.cvtCode(1));
+    }
+
     /** A non-linear PolyMap (y = x^2 + 3x) and its inverse in series cancel to a UnitMap. */
     @Test
     void simplifyPolymapInverseCancels() {
@@ -1129,7 +1160,6 @@ class SimplifierTest {
      * ShiftMap of 0.001 on the third axis. (Rust only logs the result.)
      */
     @Test
-    @org.junit.jupiter.api.Disabled("needs SlaMap's MapMerge")
     void parallelInSeriesWithBlockingDelta() {
         SlaMap sla1 = new SlaMap();
         sla1.add("HFK5Z", new double[] {2000.0});
