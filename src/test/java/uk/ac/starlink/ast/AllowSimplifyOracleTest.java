@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.ProbeData;
@@ -66,7 +65,6 @@ class AllowSimplifyOracleTest {
      * expected dump is what the C library writes for the same sequence.
      */
     @Test
-    @Disabled("needs MatrixMap merge (a unit MatrixMap becoming a UnitMap): Task 4")
     void testresimpRestrictedCancellationKeepsTheShiftmaps() {
         CmpMap cm1 = shiftThenAllowedZoom();
         CmpMap m1 = (CmpMap) cm1.copy();
@@ -128,7 +126,6 @@ class AllowSimplifyOracleTest {
      * a single ZoomMap of 2.
      */
     @Test
-    @Disabled("needs MatrixMap merge (a uniform diagonal MatrixMap becoming a ZoomMap): Task 4")
     void testresimpUnrestrictedShiftZoomShiftIsAZoommap() {
         CmpMap cm1 = new CmpMap(new ShiftMap(new double[] {1.0}), new ZoomMap(1, 2.0), true);
         CmpMap cm2 = new CmpMap(cm1, new ShiftMap(new double[] {-2.0}), true);

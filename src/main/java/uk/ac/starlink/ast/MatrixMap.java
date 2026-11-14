@@ -303,6 +303,46 @@ public class MatrixMap extends Mapping {
         return true;
     }
 
+    /** {@link MatrixMapMerge#matrixMapMerge}, matrixmap.c {@code MapMerge}. */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        return MatrixMapMerge.matrixMapMerge(list, where, series);
+    }
+
+    /**
+     * The simpler Mapping this MatrixMap, applied with the Invert value {@code invert}, can be
+     * replaced by without reference to its neighbours, as the first step of matrixmap.c {@code
+     * MapMerge} finds it, or null if there is none. The replacement is applied forward.
+     *
+     * @see MatrixMapMerge#replaceWithSimpler
+     */
+    Mapping replaceWithSimpler(boolean invert) {
+        int nin = invert ? createdNout() : createdNin();
+        int nout = invert ? createdNin() : createdNout();
+        return MatrixMapMerge.replaceWithSimpler(this, invert, nin, nout);
+    }
+
+    /** The storage form (C's {@code this->form}): {@link #FULL}, {@link #DIAGONAL} or {@link #UNIT}. */
+    int storageForm() {
+        return form;
+    }
+
+    /**
+     * A copy of the forward matrix as stored, for the MatrixMap as created (C's {@code
+     * this->f_matrix}), or null if there is none.
+     */
+    double[] storedForward() {
+        return fMatrix == null ? null : fMatrix.clone();
+    }
+
+    /**
+     * A copy of the inverse matrix as stored, for the MatrixMap as created (C's {@code
+     * this->i_matrix}), or null if there is none.
+     */
+    double[] storedInverse() {
+        return iMatrix == null ? null : iMatrix.clone();
+    }
+
     /**
      * The rate of change: the element of the matrix the forward transformation applies, in the
      * current orientation ({@code Rate}, matrixmap.c). An inverted MatrixMap with no inverse
@@ -480,7 +520,7 @@ public class MatrixMap extends Mapping {
      * zero, or a diagonal one if the others are all zero, and otherwise stays full, its inverse
      * found again if an element was set to zero.
      */
-    private void compressMatrix() {
+    void compressMatrix() {
         compressMatrix(createdNin(), createdNout());
     }
 
@@ -572,7 +612,7 @@ public class MatrixMap extends Mapping {
      * Stores the matrix in full form, with every element, as C's {@code ExpandMatrix}
      * (matrixmap.c) does.
      */
-    private void expandMatrix() {
+    void expandMatrix() {
         if (form == FULL) {
             return;
         }

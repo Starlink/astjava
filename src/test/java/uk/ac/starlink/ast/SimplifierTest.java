@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -13,7 +14,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.Fixtures;
@@ -489,7 +489,6 @@ class SimplifierTest {
     }
 
     @Test
-    @Disabled("needs MatrixMap merge (a unit MatrixMap becoming a UnitMap): Task 4")
     void simplifyShiftSeriesCancelsToUnit() {
         Mapping result = new CmpMap(
                         new ShiftMap(new double[] {1.0, 2.0}), new ShiftMap(new double[] {-1.0, -2.0}), true)
@@ -536,7 +535,6 @@ class SimplifierTest {
     }
 
     @Test
-    @Disabled("needs MatrixMap merge (a unit MatrixMap becoming a UnitMap): Task 4")
     void simplifyWinmapInverseCancelsToUnit() {
         WinMap b = new WinMap(new double[] {3.0}, new double[] {2.0});
         b.invert();
@@ -644,7 +642,6 @@ class SimplifierTest {
     }
 
     @Test
-    @Disabled("needs MatrixMap merge (a unit MatrixMap becoming a UnitMap): Task 4")
     void simplifyZoommapInverseViaWinmap() {
         CmpMap cmp = new CmpMap(new ZoomMap(1, 3.0), new WinMap(new double[] {0.0}, new double[] {1.0 / 3.0}), true);
         assertInstanceOf(UnitMap.class, cmp.simplify());
@@ -658,5 +655,153 @@ class SimplifierTest {
         Mapping result = outer.simplify();
         assertEquals(28.0, tran1(result, 5.0, true), 1e-12);
         assertFalse(result instanceof CmpMap);
+    }
+
+    // ------------------------------------------------------------------
+    // MatrixMap merges (matrixmap.c MapMerge)
+    // ------------------------------------------------------------------
+
+    /** A MatrixMap of the full matrix given as rows. */
+    private static MatrixMap matrix(double[]... rows) {
+        return new MatrixMap(rows[0].length, rows.length, rows);
+    }
+
+    @Test
+    void simplifyMatrixRot90InverseCancels() {
+        CmpMap cmp = new CmpMap(
+                matrix(new double[] {0.0, -1.0}, new double[] {1.0, 0.0}),
+                matrix(new double[] {0.0, 1.0}, new double[] {-1.0, 0.0}),
+                true);
+        Mapping result = cmp.simplify();
+        assertInstanceOf(UnitMap.class, result);
+        assertEquals(2, result.getNin());
+    }
+
+    @Test
+    void simplifyMatrixSeriesMultiplies() {
+        CmpMap cmp = new CmpMap(
+                matrix(new double[] {1.0, 1.0}, new double[] {0.0, 1.0}),
+                matrix(new double[] {2.0, 0.0}, new double[] {0.0, 1.0}),
+                true);
+        Mapping simplified = cmp.simplify();
+        assertInstanceOf(MatrixMap.class, simplified);
+        assertArrayEquals(
+                new double[] {6.0, 2.0}, transformPoints(simplified, true, new double[] {1.0, 2.0})[0], 1e-12);
+    }
+
+    @Test
+    void simplifyMatrixPreservesTransform() {
+        CmpMap cmp = new CmpMap(
+                matrix(new double[] {1.0, 2.0}, new double[] {3.0, 4.0}),
+                matrix(new double[] {5.0, 6.0}, new double[] {7.0, 8.0}),
+                true);
+        Mapping simplified = cmp.simplify();
+        assertSameTransform(cmp, simplified, true, 1e-10, new double[] {1.0, -1.0}, new double[] {3.0, 7.0});
+    }
+
+    @Test
+    void simplifyMatrixWithInversionFlag() {
+        MatrixMap b = matrix(new double[] {1.0, 2.0}, new double[] {3.0, 4.0});
+        b.invert();
+        CmpMap cmp = new CmpMap(matrix(new double[] {1.0, 2.0}, new double[] {3.0, 4.0}), b, true);
+        Mapping result = cmp.simplify();
+        assertInstanceOf(UnitMap.class, result);
+        assertEquals(2, result.getNin());
+    }
+
+    @Test
+    void simplifyMatrixIdentityReducesToUnitmap() {
+        Mapping result =
+                matrix(new double[] {1.0, 0.0}, new double[] {0.0, 1.0}).simplify();
+        assertInstanceOf(UnitMap.class, result);
+        assertEquals(2, result.getNin());
+    }
+
+    @Test
+    void simplifyMatrixUniformDiagonalReducesToZoommap() {
+        Mapping result =
+                matrix(new double[] {3.0, 0.0}, new double[] {0.0, 3.0}).simplify();
+        assertInstanceOf(ZoomMap.class, result);
+        assertEquals(2, result.getNin());
+        assertArrayEquals(new double[] {6.0, 15.0}, transformPoints(result, true, new double[] {2.0, 5.0})[0], 1e-12);
+    }
+
+    @Test
+    void simplifyMatrixNonuniformDiagonalStaysMatrix() {
+        assertInstanceOf(
+                MatrixMap.class,
+                matrix(new double[] {2.0, 0.0}, new double[] {0.0, 5.0}).simplify());
+    }
+
+    @Test
+    void simplifyMatrixNonSquareStaysMatrix() {
+        assertInstanceOf(
+                MatrixMap.class,
+                matrix(new double[] {1.0, 0.0, 0.0}, new double[] {0.0, 1.0, 0.0})
+                        .simplify());
+    }
+
+    /**
+     * An inverted uniform diagonal MatrixMap becomes a forward ZoomMap whose factor is read from the
+     * inverse matrix (matrixmap.c:1885-1892, the replacement applied forward at 1925).
+     */
+    @Test
+    void simplifyMatrixInvertedDiagonalReducesToZoommap() {
+        MatrixMap mm = matrix(new double[] {4.0, 0.0}, new double[] {0.0, 4.0});
+        mm.invert();
+        ZoomMap result = assertInstanceOf(ZoomMap.class, mm.simplify());
+        assertFalse(result.getInvert());
+        assertEquals(0.25, result.getZoom(), 1e-12);
+        assertArrayEquals(new double[] {2.0, 3.0}, transformPoints(result, true, new double[] {8.0, 12.0})[0], 1e-12);
+    }
+
+    @Test
+    void simplifyZoommapThenMatrixmap() {
+        CmpMap cmp = new CmpMap(new ZoomMap(2, 3.0), matrix(new double[] {1.0, 2.0}, new double[] {3.0, 4.0}), true);
+        Mapping simplified = cmp.simplify();
+        assertInstanceOf(MatrixMap.class, simplified);
+        assertSameTransform(cmp, simplified, true, 1e-12, new double[] {1.0, 2.0});
+    }
+
+    @Test
+    void simplifyMatrixmapThenZoommap() {
+        CmpMap cmp = new CmpMap(matrix(new double[] {1.0, 2.0}, new double[] {3.0, 4.0}), new ZoomMap(2, 3.0), true);
+        Mapping simplified = cmp.simplify();
+        assertInstanceOf(MatrixMap.class, simplified);
+        assertSameTransform(cmp, simplified, true, 1e-12, new double[] {1.0, 2.0});
+    }
+
+    @Test
+    void simplifyMatrixmapThenInvZoommap() {
+        ZoomMap z = new ZoomMap(2, 3.0);
+        z.invert();
+        CmpMap cmp = new CmpMap(matrix(new double[] {3.0, 0.0}, new double[] {0.0, 3.0}), z, true);
+        Mapping result = cmp.simplify();
+        assertInstanceOf(UnitMap.class, result);
+        assertEquals(2, result.getNin());
+    }
+
+    @Test
+    void simplifyDiagonalMatrixSeriesReduces() {
+        CmpMap cmp = new CmpMap(
+                matrix(new double[] {2.0, 0.0}, new double[] {0.0, 2.0}),
+                matrix(new double[] {3.0, 0.0}, new double[] {0.0, 3.0}),
+                true);
+        Mapping simplified = cmp.simplify();
+        assertInstanceOf(ZoomMap.class, simplified);
+        assertArrayEquals(
+                new double[] {6.0, 12.0}, transformPoints(simplified, true, new double[] {1.0, 2.0})[0], 1e-12);
+    }
+
+    /**
+     * A ZoomMap of two axes and a ShiftMap of three cannot be joined in series (cmpmap.c {@code
+     * astInitCmpMap}), so no merge list can hold them side by side and no merge is offered.
+     */
+    @Test
+    void simplifyCrossTypeDimensionMismatchNoMerge() {
+        ZoomMap z = new ZoomMap(2, 3.0);
+        ShiftMap s = new ShiftMap(new double[] {1.0, 2.0, 3.0});
+        AstException e = assertThrows(AstException.class, () -> new CmpMap(z, s, true));
+        assertEquals(AstException.AST__INNCO, e.getStatus());
     }
 }

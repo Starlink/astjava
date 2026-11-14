@@ -2,17 +2,10 @@
 # <row name> | <reason>
 # Rewritten by SimplifyRegressionTest with -Dast.writeDeferred=true.
 brad | needs LutMap
-lsst1 | needs simplification
 rigby | needs SpecMap
-matrix_unit_to_unit | needs simplification
-matrix_diagonal_to_zoom | needs simplification
-matrix_full_to_diagonal | needs simplification
-matrix_matrix_series_merge | needs simplification
-matrix_perm_series_merge | needs simplification
 perm_series_merge | needs simplification
 perm_parallel_merge | needs simplification
 cmpmap_parallel_series_components | needs simplification
-cmpmap_nested_inverse_cancel | needs simplification
 cmpmap_perm_parallel_swap | needs SpecMap
 sph_inverse_cancel | needs simplification
 sph_matrix_sandwich | needs simplification
@@ -81,18 +74,15 @@ tranmap_adjacent_merge_inverse_order | needs TranMap
 tranmap_adjacent_merge_nonsquare | needs TranMap
 tranmap_invert_in_list | needs TranMap
 tranmap_equal_components_in_list | needs TranMap
-matrix_swap_past_perm | needs simplification
 sla_helioecl_cancel | needs simplification
 sla_ha_cancel | needs simplification
 sla_azel_cancel | needs simplification
 sla_hpc_cancel | needs simplification
 sla_hpr_cancel | needs simplification
-win_swap_past_wcsmap | needs simplification
 selectormap_inverse_cancel | needs Box, PointSet, SelectorMap
 switchmap_inverse_cancel | needs SwitchMap
 pcd_perm_swap_cancel | needs PcdMap
 win_cmpmap_parallel_merge | needs simplification
-win_swap_simplifies | needs simplification
 win_swap_outer_merge | needs simplification
 pcd_swap_zoom_simplifies | needs PcdMap
 pcd_inverted_zoom_swap | needs PcdMap
@@ -164,7 +154,6 @@ dssmap_inv_winmap_absorb | needs DssMap
 dssmap_winmap_absorb | needs DssMap
 dssmap_zoom_no_merge | needs DssMap
 neg_box_asymmetric_2d | needs Box, PointSet
-series_parallel_absorb | needs simplification
 sla_run_identity | needs simplification
 sla_run_partial | needs simplification
 spec_cel_invert | needs simplification
@@ -174,10 +163,6 @@ time_run_identity | needs simplification
 fitschan_iwc_spectral | needs simplification
 fitschan_tab_spectral | needs LutMap
 fitschan_alt_diagonal_cdelt | needs simplification
-diag_unit_zoom_parallel | needs simplification
-diag_unit_win_zero_shift | needs simplification
-diag_unit_full_matrix | needs simplification
-diag_unit_matrix_then_zoom | needs simplification
 diag_unit_zoom_parallel_then_matrix | needs simplification
 offset_skyref_integrity | needs simplification
 switchmap_inverse_cancel_distinct_selectors | needs MathMap, SwitchMap
@@ -230,7 +215,6 @@ cap_winmap_04 | needs simplification
 cap_xphmap_01 | needs XphMap
 cap_xphmap_02 | needs XphMap
 cap_zoommap_02 | needs simplification
-cap_zoommap_03 | needs simplification
 cap_zoommap_04 | needs Box, MathMap, PointList, PointSet, SpecFrame
 neg_tranmap_adjacent_no_merge | needs MathMap, TranMap
 neg_lut_constant | needs LutMap

@@ -13,7 +13,6 @@ import static uk.ac.starlink.ast.MappingTestData.transformRows;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -284,14 +283,12 @@ class WinMapTest {
     }
 
     @Test
-    @Disabled("needs MatrixMap merge (a uniform diagonal MatrixMap becoming a ZoomMap): Task 4")
     void winmapSimplifiesToZoommap() {
         Mapping s = new WinMap(new double[] {0.0, 0.0}, new double[] {4.0, 4.0}).simplify();
         assertInstanceOf(ZoomMap.class, s);
     }
 
     @Test
-    @Disabled("needs MatrixMap merge (a unit MatrixMap becoming a UnitMap): Task 4")
     void winmapSimplifiesToUnitmap() {
         Mapping s = new WinMap(new double[] {0.0, 0.0}, new double[] {1.0, 1.0}).simplify();
         assertInstanceOf(UnitMap.class, s);
@@ -304,7 +301,6 @@ class WinMapTest {
      * representable.
      */
     @Test
-    @Disabled("needs MatrixMap merge (a unit MatrixMap becoming a UnitMap): Task 4")
     void winmapCancelsWithOwnInverseExactly() {
         WinMap w = new WinMap(new double[] {3.5, -2.0}, new double[] {0.999_999_999_977_888, 1.000_000_3});
         WinMap winv = (WinMap) w.copy();
@@ -336,7 +332,6 @@ class WinMapTest {
      * matrix values are the C oracle's.
      */
     @Test
-    @Disabled("needs MatrixMap merge: Task 4")
     void offdiagonalCdChainFusesDeg2radIntoTheMatrixmap() {
         double[] crpix = {75.910_204, 60.359_184};
         WinMap win = new WinMap(new double[] {-crpix[0], -crpix[1]}, new double[] {1.0, 1.0});
@@ -375,7 +370,6 @@ class WinMapTest {
      * oracle's.
      */
     @Test
-    @Disabled("needs MatrixMap merge: Task 4")
     void nonuniformCdeltChainKeepsDeg2radInTheWinmap() {
         double[] crpix = {-319.077_517_318_151, 3_035.649_826_355_72};
         WinMap win = new WinMap(new double[] {-crpix[0], -crpix[1]}, new double[] {1.0, 1.0});
