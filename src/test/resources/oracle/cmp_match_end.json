@@ -1,0 +1,8 @@
+{
+  "source": "crates/starlink-ast/tests/cmp_match_end_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/cmp_match_end_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "CASES": [["MaxAxes=4","MaxAxes=2",null],["MaxAxes=4","MaxAxes=2,MatchEnd=1",null],["MaxAxes=4","MaxAxes=3",[["A",1.0],["D",4.0]]],["MaxAxes=4","MaxAxes=3,MatchEnd=0",[["A",1.0],["D",4.0]]],["MaxAxes=4","MaxAxes=3,MatchEnd=1",[["C",3.0],["D",4.0]]],["MaxAxes=4","MaxAxes=3,PreserveAxes=1",[["A",1.0],["B",2.0]]],["MaxAxes=4","MaxAxes=3,PreserveAxes=1,MatchEnd=0",[["A",1.0],["B",2.0]]],["MaxAxes=4","MaxAxes=3,PreserveAxes=1,MatchEnd=1",[["A",1.0],["B",2.0]]],["MaxAxes=4","MinAxes=2,MaxAxes=2,PreserveAxes=1",null],["MaxAxes=4","MinAxes=2,MaxAxes=2,PreserveAxes=1,MatchEnd=0",null],["MaxAxes=4","MinAxes=2,MaxAxes=2,PreserveAxes=1,MatchEnd=1",null],["MaxAxes=4,MatchEnd=1","MaxAxes=2",null],["MaxAxes=4,MatchEnd=1","MaxAxes=2,MatchEnd=1",null],["MaxAxes=4,MatchEnd=1","MaxAxes=3",[["C",3.0],["D",4.0]]],["MaxAxes=4,MatchEnd=1","MaxAxes=3,MatchEnd=0",[["A",1.0],["D",4.0]]],["MaxAxes=4,MatchEnd=1","MaxAxes=3,MatchEnd=1",[["C",3.0],["D",4.0]]],["MaxAxes=4,MatchEnd=1","MaxAxes=3,PreserveAxes=1",[["C",3.0],["D",4.0]]],["MaxAxes=4,MatchEnd=1","MaxAxes=3,PreserveAxes=1,MatchEnd=0",[["C",3.0],["D",4.0]]],["MaxAxes=4,MatchEnd=1","MaxAxes=3,PreserveAxes=1,MatchEnd=1",[["C",3.0],["D",4.0]]],["MaxAxes=4,MatchEnd=1","MinAxes=2,MaxAxes=2,PreserveAxes=1",null],["MaxAxes=4,MatchEnd=1","MinAxes=2,MaxAxes=2,PreserveAxes=1,MatchEnd=0",null],["MaxAxes=4,MatchEnd=1","MinAxes=2,MaxAxes=2,PreserveAxes=1,MatchEnd=1",null]]
+  }
+}

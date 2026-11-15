@@ -1,0 +1,207 @@
+package uk.ac.starlink.ast.testsupport;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+class RustLiteralTest {
+
+    private static Object one(String source, String name) {
+        return RustLiteral.parse(source).get(name);
+    }
+
+    @Test
+    void integerConstant() {
+        assertEquals(10L, one("pub const NPTS: usize = 10;", "NPTS"));
+    }
+
+    @Test
+    void arrayOfTuples() {
+        Object v = one("pub const P: [(f64, f64); 2] = [(0.5, -1e-3), (f64::NAN, 2.0)];", "P");
+        List<?> rows = (List<?>) v;
+        assertEquals(Arrays.asList(0.5, -0.001), rows.get(0));
+        List<?> second = (List<?>) rows.get(1);
+        assertTrue(Double.isNaN((Double) second.get(0)));
+        assertEquals(2.0, second.get(1));
+    }
+
+    @Test
+    void concatOfStringLiterals() {
+        assertEquals("a\tb\nc\n", one("pub const C: &str = concat!(\n    \"a\\tb\\n\",\n    \"c\\n\",\n);", "C"));
+        assertThrows(IllegalArgumentException.class, () -> RustLiteral.parse("const C: &str = concat!(\"a\", 1);"));
+    }
+
+    @Test
+    void sliceOfStrings() {
+        assertEquals(Arrays.asList("a", "b\"c"), one("pub const S: &[&str] = &[\"a\", \"b\\\"c\"];", "S"));
+    }
+
+    @Test
+    void optionsAndBooleans() {
+        Map<String, Object> m = RustLiteral.parse("pub const A: Option<f64> = Some(1.5);\n"
+                + "pub const B: Option<f64> = None;\n"
+                + "pub const C: bool = true;\n");
+        assertEquals(1.5, m.get("A"));
+        assertTrue(m.containsKey("B"));
+        assertNull(m.get("B"));
+        assertEquals(true, m.get("C"));
+    }
+
+    @Test
+    void enumVariantsOfADeclaredEnum() {
+        Map<String, Object> m = RustLiteral.parse("#[derive(Debug)]\npub enum Outcome {\n"
+                + "    /// An error.\n    Err(&'static str),\n    None,\n    Split(&'static [usize], &'static str),\n}\n"
+                + "pub const C: &[Outcome] = &[Outcome::Err(\"AST__AXIIN\"), Outcome::None,"
+                + " Outcome::Split(&[2, 1], \"x\")];\n");
+        List<?> c = (List<?>) m.get("C");
+        Map<String, Object> err = new java.util.LinkedHashMap<>();
+        err.put("variant", "Err");
+        err.put("value", "AST__AXIIN");
+        assertEquals(err, c.get(0));
+        Map<String, Object> none = new java.util.LinkedHashMap<>();
+        none.put("variant", "None");
+        assertEquals(none, c.get(1));
+        Map<String, Object> split = new java.util.LinkedHashMap<>();
+        split.put("variant", "Split");
+        split.put("value", Arrays.asList(Arrays.asList(2L, 1L), "x"));
+        assertEquals(split, c.get(2));
+        assertEquals(
+                "[{\"variant\":\"Err\",\"value\":\"AST__AXIIN\"},{\"variant\":\"None\"},"
+                        + "{\"variant\":\"Split\",\"value\":[[2,1],\"x\"]}]",
+                CasesToJson.toJson(c));
+    }
+
+    @Test
+    void resultOkAndErrAreVariants() {
+        Map<String, Object> m = RustLiteral.parse(
+                "pub const C: &[Result<Option<[f64; 2]>, &str>] = &[Err(\"Noval\"), Ok(Some([1.5, 2.0])), Ok(None)];\n");
+        assertEquals(
+                "[{\"variant\":\"Err\",\"value\":\"Noval\"},{\"variant\":\"Ok\",\"value\":[1.5,2.0]},"
+                        + "{\"variant\":\"Ok\",\"value\":null}]",
+                CasesToJson.toJson(m.get("C")));
+    }
+
+    @Test
+    void structLiteralsAndImportedVariantsInARestrictedConstant() {
+        Map<String, Object> m = RustLiteral.parse("use super::Row;\nuse x::ErrorCode;\n"
+                + "pub(super) const C: &[Row] = &[Row { name: \"a\", code: Some(ErrorCode::Rderr), n: None },"
+                + " Row { name: \"b\", code: None, n: Some(2), }];\n");
+        assertEquals(
+                "[{\"name\":\"a\",\"code\":{\"variant\":\"Rderr\"},\"n\":null},"
+                        + "{\"name\":\"b\",\"code\":null,\"n\":2}]",
+                CasesToJson.toJson(m.get("C")));
+    }
+
+    @Test
+    void aTypeItemWithAnArrayTypeIsSkipped() {
+        Map<String, Object> m =
+                RustLiteral.parse("pub type Quad = (&'static str, [f64; 2], usize);\npub const N: i32 = 3;\n");
+        assertEquals(3L, m.get("N"));
+    }
+
+    @Test
+    void anUnsignedIntegerBeyondALongIsABigInteger() {
+        Map<String, Object> m = RustLiteral.parse("pub const H: u64 = 13782637416320349453;\npub const L: u64 = 7;\n");
+        assertEquals(new java.math.BigInteger("13782637416320349453"), m.get("H"));
+        assertEquals(7L, m.get("L"));
+        assertEquals("13782637416320349453", CasesToJson.toJson(m.get("H")));
+    }
+
+    @Test
+    void hexadecimalIntegersAreReadAsUnsigned() {
+        Map<String, Object> m = RustLiteral.parse(
+                "pub const C: &[(&str, u64)] = &[(\"a\", 0x3930ee3d0ff6ff8a), (\"b\", 0xaecea120c074adde)];\n");
+        assertEquals(
+                Arrays.asList(
+                        Arrays.asList("a", 0x3930ee3d0ff6ff8aL),
+                        Arrays.asList("b", new java.math.BigInteger("aecea120c074adde", 16))),
+                m.get("C"));
+    }
+
+    @Test
+    void unknownConstructThrowsWithLineNumber() {
+        IllegalArgumentException e = assertThrows(
+                IllegalArgumentException.class, () -> RustLiteral.parse("// x\n\npub const X: u8 = foo!();\n"));
+        assertTrue(e.getMessage().contains("line 3"), e.getMessage());
+    }
+
+    @Test
+    void typeItemsAndCommentsAreSkipped() {
+        Map<String, Object> m = RustLiteral.parse("// Generated by x.c. Do not edit.\n"
+                + "/// `(a, b)`.\n"
+                + "pub type Case = (&'static str, f64);\n"
+                + "/* block */ pub const N: i32 = -3; // trailing\n");
+        assertEquals(1, m.size());
+        assertEquals(-3L, m.get("N"));
+    }
+
+    @Test
+    void attributesAndUseItemsAreSkipped() {
+        Map<String, Object> m = RustLiteral.parse("#![allow(clippy::excessive_precision)]\n"
+                + "#[allow(unused_imports)]\n"
+                + "use starlink_ast::constants::BAD_VALUE;\n"
+                + "pub const N: f64 = 1.0;\n");
+        assertEquals(1, m.size());
+    }
+
+    @Test
+    void aUseItemCanNameTheBadValue() {
+        Map<String, Object> m = RustLiteral.parse(
+                "use starlink_ast::constants::BAD_VALUE as BAD;\n" + "pub const V: &[f64] = &[1.0, BAD];\n");
+        assertEquals(Arrays.asList(1.0, -Double.MAX_VALUE), m.get("V"));
+    }
+
+    @Test
+    void specialValuesMapToTheValuesTheyDenote() {
+        Map<String, Object> m = RustLiteral.parse("pub const V: [f64; 6] = [f64::INFINITY, f64::NEG_INFINITY, f64::MAX,"
+                + " -f64::MAX, starlink_ast::constants::BAD_VALUE, BAD_VALUE];\n");
+        assertEquals(
+                Arrays.asList(
+                        Double.POSITIVE_INFINITY,
+                        Double.NEGATIVE_INFINITY,
+                        Double.MAX_VALUE,
+                        -Double.MAX_VALUE,
+                        -Double.MAX_VALUE,
+                        -Double.MAX_VALUE),
+                m.get("V"));
+    }
+
+    @Test
+    void earlierConstantsCanBeReferenced() {
+        Map<String, Object> m =
+                RustLiteral.parse("const BAD: f64 = -f64::MAX;\npub const V: [f64; 2] = [BAD, -BAD];\n");
+        assertEquals(Arrays.asList(-Double.MAX_VALUE, Double.MAX_VALUE), m.get("V"));
+    }
+
+    @Test
+    void stringEscapesAndRawStrings() {
+        Map<String, Object> m = RustLiteral.parse("pub const S: [&str; 3] = [\"a\\tb\\n\\\\\\u{e9}\\x41\\0\","
+                + " r\"raw \\n\", r#\"has \"quotes\"\"#];\n");
+        assertEquals(Arrays.asList("a\tb\n\\\u00e9A\0", "raw \\n", "has \"quotes\""), m.get("S"));
+    }
+
+    @Test
+    void stringLineContinuationSkipsLeadingWhiteSpace() {
+        assertEquals("ab", one("pub const S: &str = \"a\\\n      b\";", "S"));
+    }
+
+    @Test
+    void oneElementTupleAndParenthesisedValue() {
+        Map<String, Object> m = RustLiteral.parse("pub const T: (i32,) = (1,);\npub const U: i32 = (2);\n");
+        assertEquals(Arrays.asList(1L), m.get("T"));
+        assertEquals(2L, m.get("U"));
+    }
+
+    @Test
+    void numbersWithExponentAreDoubles() {
+        Map<String, Object> m = RustLiteral.parse("pub const A: f64 = 1e3;\npub const B: f64 = 2.;\n");
+        assertEquals(1000.0, m.get("A"));
+        assertEquals(2.0, m.get("B"));
+    }
+}

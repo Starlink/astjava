@@ -1,0 +1,479 @@
+# Native fixtures whose Full = 1 dump differs from C's:
+# <path relative to ast_tester/fixtures> | <reason>
+# Rewritten by FixtureFullDumpOracleTest with -Dast.writeDeferred=true.
+programs/testcmpmap/splittest1.ast | needs LutMap
+programs/testfitschan/sparse.ast | needs DSBSpecFrame, LutMap, SpecMap
+programs/testplot3d/plot3d-test1.ast | needs DSBSpecFrame, SpecMap
+programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, PointList, PointSet, Prism, SpecFrame
+serialisation/c_dssmap.ast | needs DssMap
+serialisation/cmpframe.ast | needs SpecFrame
+serialisation/frameset_skyspec.ast | needs SpecFrame
+serialisation/jan-dsb.ast | needs DSBSpecFrame
+serialisation/region_in_cmpframe.ast | needs Box, PointSet
+serialisation/specframe.ast | needs SpecFrame
+simplify/box_nullregion_merge.map | needs Box, NullRegion, PointSet
+simplify/box_nullregion_merge.simp | needs Interval, PointSet
+simplify/box_parallel_merge.map | needs Box, PointSet
+simplify/box_parallel_merge.simp | needs Box, PointSet
+simplify/box_pointlist_merge.map | needs Box, PointList, PointSet
+simplify/box_pointlist_merge.simp | needs Box, PointList, PointSet
+simplify/box_self_simplify.map | needs Box, PointSet
+simplify/box_self_simplify.simp | needs Box, PointSet
+simplify/box_unc_fillfactor_merge.map | needs Box, PointSet
+simplify/box_unc_fillfactor_merge.simp | needs Box, PointSet
+simplify/brad.map | needs LutMap
+simplify/brad.simp | needs LutMap
+simplify/cap_box_permmap_const.map | needs Box, PointSet
+simplify/cap_box_permmap_const.simp | needs Box, PointSet
+simplify/cap_box_permmap_nonbidi.map | needs Box, PointSet
+simplify/cap_box_permmap_null_first.map | needs Box, PointSet
+simplify/cap_box_permmap_null_first.simp | needs NullRegion
+simplify/cap_box_permmap_null.map | needs Box, PointSet
+simplify/cap_box_permmap_null.simp | needs NullRegion
+simplify/cap_cheby_consolidate.map | needs ChebyMap
+simplify/cap_cheby_consolidate.simp | needs ChebyMap
+simplify/cap_cmpmap_01.map | needs MathMap, RateMap, SpecMap, TranMap
+simplify/cap_cmpmap_01.simp | needs MathMap, RateMap, SpecMap, TranMap
+simplify/cap_cmpmap_02.map | needs MathMap
+simplify/cap_cmpmap_02.simp | needs MathMap
+simplify/cap_cmpmap_04.map | needs MathMap, RateMap, SpecMap, TranMap
+simplify/cap_cmpmap_04.simp | needs MathMap, RateMap, SpecMap, TranMap
+simplify/cap_cmpperm_resume_inv.map | needs MathMap
+simplify/cap_cmpperm_resume_inv.simp | needs MathMap
+simplify/cap_cmpperm_resume.map | needs MathMap
+simplify/cap_cmpperm_resume.simp | needs MathMap
+simplify/cap_interval_01.map | needs Box, Interval, NullRegion, PointSet, Prism, SpecFrame
+simplify/cap_interval_01.simp | needs Box, Interval, PointSet, SpecFrame
+simplify/cap_lutmap_01.map | needs LutMap, MathMap
+simplify/cap_lutmap_01.simp | needs MathMap
+simplify/cap_mathmap_01.map | needs MathMap
+simplify/cap_matrixmap_04.map | needs ChebyMap
+simplify/cap_normmap_cmpframe.map | needs NormMap
+simplify/cap_normmap_cmpframe.simp | needs NormMap
+simplify/cap_permmap_01.map | needs NormMap, SpecFrame
+simplify/cap_permmap_01.simp | needs NormMap, SpecFrame
+simplify/cap_pointlist_01.map | needs Box, PointList, PointSet, Prism, SpecFrame
+simplify/cap_pointlist_01.simp | needs Box, PointList, PointSet, Prism, SpecFrame
+simplify/cap_pointlist_02.map | needs Interval, PointList, PointSet, Prism, SpecFrame
+simplify/cap_pointlist_02.simp | needs PointList, PointSet, SpecFrame
+simplify/cap_poly_bend_allowed.map | needs Box, MathMap, PointSet, Polygon
+simplify/cap_poly_bend_allowed.simp | needs Box, MathMap, PointSet, Polygon
+simplify/cap_poly_bent_edges.map | needs Box, MathMap, PointSet, Polygon
+simplify/cap_poly_bent_edges.simp | needs Box, MathMap, PointSet, Polygon
+simplify/cap_poly_unc_frame.map | needs Box, PointSet, Polygon
+simplify/cap_poly_unc_frame.simp | needs Box, PointSet, Polygon
+simplify/cap_restricted_component_flags.map | needs MathMap
+simplify/cap_restricted_component_flags.simp | needs MathMap
+simplify/cap_slamap_02.map | needs Box, PointSet, SpecFrame
+simplify/cap_slamap_02.simp | needs Box, PointSet, Polygon, Prism, SpecFrame
+simplify/cap_slamap_07.map | needs Box, Circle, CmpRegion, PointSet
+simplify/cap_slamap_07.simp | needs NullRegion
+simplify/cap_specmap_01.map | needs SpecMap
+simplify/cap_specmap_01.simp | needs SpecMap
+simplify/cap_specmap_02.map | needs LutMap, SpecMap
+simplify/cap_specmap_02.simp | needs LutMap, SpecMap
+simplify/cap_specmap_03.map | needs SpecMap
+simplify/cap_specmap_03.simp | needs SpecMap
+simplify/cap_specmap_04.map | needs SpecMap
+simplify/cap_specmap_05.map | needs SpecMap
+simplify/cap_specmap_05.simp | needs SpecMap
+simplify/cap_specmap_06.map | needs SpecMap
+simplify/cap_specmap_06.simp | needs SpecMap
+simplify/cap_specmap_07.map | needs SpecMap
+simplify/cap_specmap_07.simp | needs SpecMap
+simplify/cap_specmap_08.map | needs SpecMap
+simplify/cap_specmap_08.simp | needs SpecMap
+simplify/cap_specmap_09.map | needs LutMap, SpecMap
+simplify/cap_specmap_10.map | needs SpecMap
+simplify/cap_specmap_10.simp | needs SpecMap
+simplify/cap_specmap_11.map | needs SpecMap
+simplify/cap_specmap_12.map | needs SpecMap
+simplify/cap_specmap_12.simp | needs SpecMap
+simplify/cap_specmap_13.map | needs SpecMap
+simplify/cap_specmap_13.simp | needs SpecMap
+simplify/cap_specmap_14.map | needs MathMap, SpecMap
+simplify/cap_specmap_14.simp | needs MathMap
+simplify/cap_timemap_02.map | needs Box, Interval, PointSet, SpecFrame, StcResourceProfile
+simplify/cap_timemap_02.simp | needs Box, Interval, PointSet, SpecFrame, StcResourceProfile
+simplify/cap_unitnormmap_01.map | needs UnitNormMap
+simplify/cap_unitnormmap_01.simp | needs UnitNormMap
+simplify/cap_winmap_01.map | needs SpecMap
+simplify/cap_winmap_01.simp | needs SpecMap
+simplify/cap_xphmap_01.map | needs XphMap
+simplify/cap_xphmap_02.map | needs XphMap
+simplify/cap_xphmap_02.simp | needs XphMap
+simplify/cap_zoommap_04.map | needs Box, MathMap, PointList, PointSet, SpecFrame
+simplify/cap_zoommap_04.simp | needs Box, PointList, PointSet
+simplify/cefit_circle_conformal.map | needs Circle, PointSet
+simplify/cefit_circle_conformal.simp | needs Circle, PointSet
+simplify/cefit_circle_nonconformal_keep.map | needs Circle, MathMap, PointSet
+simplify/cefit_circle_nonconformal_keep.simp | needs Circle, MathMap, PointSet
+simplify/cefit_circle_to_ellipse.map | needs Ellipse, PointSet
+simplify/cefit_circle_to_ellipse.simp | needs Ellipse, PointSet
+simplify/cefit_ellipse_to_circle.map | needs Circle, PointSet
+simplify/cefit_ellipse_to_circle.simp | needs Circle, PointSet
+simplify/cheby_linear_lone_reduce.map | needs ChebyMap
+simplify/chebymap_inverse_cancel.map | needs ChebyMap
+simplify/cmpmap_decompose_middle.map | needs MathMap
+simplify/cmpmap_decompose_middle.simp | needs MathMap
+simplify/cmpmap_inverted_lone.map | needs SpecMap
+simplify/cmpmap_inverted_lone.simp | needs SpecMap
+simplify/cmpmap_inverted_nested.map | needs MathMap, SpecMap
+simplify/cmpmap_inverted_nested.simp | needs MathMap, SpecMap
+simplify/cmpmap_parallel_in_series_merge.map | needs MathMap
+simplify/cmpmap_parallel_series_dim_mismatch.map | needs MathMap
+simplify/cmpmap_parallel_series_dim_mismatch.simp | needs MathMap
+simplify/cmpmap_perm_parallel_swap.map | needs SpecMap
+simplify/cmpmap_perm_parallel_swap.simp | needs SpecMap
+simplify/cmpmap_perm_swap_aconstants.map | needs MathMap
+simplify/cmpmap_perm_swap_aconstants.simp | needs MathMap
+simplify/cmpmap_perm_swap_bconstants.map | needs MathMap
+simplify/cmpmap_perm_swap_bconstants.simp | needs MathMap
+simplify/cmpmap_series_in_parallel_inverted.map | needs MathMap
+simplify/cmpmap_series_in_parallel_inverted.simp | needs MathMap
+simplify/cmpmap_solo_after_unit.map | needs MathMap
+simplify/cmpmap_solo_after_unit.simp | needs MathMap
+simplify/defunc_cmpregion_component_unc.map | needs Box, PointSet
+simplify/defunc_cmpregion_component_unc.simp | needs Box, PointSet
+simplify/defunc_interval_point_at_origin.map | needs Box, PointSet
+simplify/defunc_interval_point_at_origin.simp | needs Box, PointSet
+simplify/defunc_interval_unbounded.map | needs Box, PointSet
+simplify/defunc_interval_unbounded.simp | needs Box, PointSet
+simplify/defunc_nullregion_2d.map | needs Circle, PointSet
+simplify/defunc_nullregion_2d.simp | needs Circle, PointSet
+simplify/defunc_pointlist_origin_axis.map | needs Box, PointSet
+simplify/defunc_pointlist_origin_axis.simp | needs Box, PointSet
+simplify/defunc_prism_box_interval.map | needs Box, PointSet, Prism
+simplify/defunc_prism_box_interval.simp | needs Box, PointSet
+simplify/dssmap_inv_winmap_absorb.map | needs DssMap
+simplify/dssmap_inv_winmap_absorb.simp | needs DssMap
+simplify/dssmap_winmap_absorb.map | needs DssMap
+simplify/dssmap_winmap_absorb.simp | needs DssMap
+simplify/dssmap_zoom_no_merge.map | needs DssMap
+simplify/dssmap_zoom_no_merge.simp | needs DssMap
+simplify/grism_inverse_cancel_tail.map | needs GrismMap
+simplify/grism_inverse_cancel.map | needs GrismMap
+simplify/grism_zoom_inv_merge.map | needs GrismMap
+simplify/grism_zoom_inv_merge.simp | needs GrismMap
+simplify/grism_zoom_merge.map | needs GrismMap
+simplify/grism_zoom_merge.simp | needs GrismMap
+simplify/interval_halfinf_simplify.map | needs Interval, PointSet
+simplify/interval_nullregion_merge.map | needs Interval, NullRegion, PointSet
+simplify/interval_nullregion_merge.simp | needs Interval, PointSet
+simplify/interval_parallel_merge.map | needs Interval, PointSet
+simplify/interval_parallel_merge.simp | needs Box, PointSet
+simplify/interval_pointlist_merge.map | needs Interval, PointList, PointSet
+simplify/interval_pointlist_merge.simp | needs PointList, PointSet
+simplify/interval_remapped_simplify.map | needs Interval, PointSet
+simplify/interval_self_simplify_cmp.map | needs Interval, PointSet
+simplify/interval_self_simplify_cmp.simp | needs Box, PointSet
+simplify/interval_self_simplify.map | needs Interval, PointSet
+simplify/interval_self_simplify.simp | needs Box, PointSet
+simplify/interval_unc_fillfactor_merge.map | needs Box, Interval, PointSet
+simplify/interval_unc_fillfactor_merge.simp | needs Box, Interval, PointSet
+simplify/lut_exactly_linear.map | needs LutMap
+simplify/lut_inverse_cancel.map | needs LutMap
+simplify/lut_linear_to_win.map | needs LutMap
+simplify/math_inverse_cancel.map | needs MathMap
+simplify/merge_box_fillfactor_product.map | needs Box, PointSet
+simplify/merge_box_fillfactor_product.simp | needs Box, PointSet
+simplify/merge_box_meshsize_scaled.map | needs Box, PointSet
+simplify/merge_box_meshsize_scaled.simp | needs Box, PointSet
+simplify/merge_interval_meshsize_scaled.map | needs Interval, PointSet
+simplify/merge_interval_meshsize_scaled.simp | needs Interval, PointSet
+simplify/neg_box_asymmetric_2d.map | needs Box, PointSet
+simplify/neg_box_parallel_nonregion.map | needs Box, PointSet
+simplify/neg_box_series.map | needs Box, PointSet
+simplify/neg_box_unc_mismatch.map | needs Box, PointSet
+simplify/neg_cheby_quadratic_no_reduce.map | needs ChebyMap
+simplify/neg_chebymap_standalone.map | needs ChebyMap
+simplify/neg_circle_cmpframe_sky_second.map | needs Circle, PointSet
+simplify/neg_cmpmap_mode_mismatch.map | needs MathMap
+simplify/neg_cmpmap_neighbour_nonexcmpmap.map | needs MathMap
+simplify/neg_grism_different_attrs.map | needs GrismMap
+simplify/neg_grism_fwd_then_nonzoom.map | needs GrismMap
+simplify/neg_grism_inv_then_zoom.map | needs GrismMap
+simplify/neg_grism_nonzoom_before_inv.map | needs GrismMap
+simplify/neg_grism_parallel.map | needs GrismMap
+simplify/neg_grism_same_direction.map | needs GrismMap
+simplify/neg_grism_zoom_before_fwd.map | needs GrismMap
+simplify/neg_interval_parallel_nonregion.map | needs Interval, PointSet
+simplify/neg_interval_series.map | needs Interval, PointSet
+simplify/neg_interval_unbounded_pointlist.map | needs Interval, PointList, PointSet
+simplify/neg_lut_constant.map | needs LutMap
+simplify/neg_lut_different_tables.map | needs LutMap
+simplify/neg_lut_near_linear.map | needs LutMap
+simplify/neg_lut_nonlinear.map | needs LutMap
+simplify/neg_lut_nonlut_neighbour.map | needs LutMap
+simplify/neg_lut_parallel.map | needs LutMap
+simplify/neg_math_inv_text_mismatch.map | needs MathMap
+simplify/neg_math_lone.map | needs MathMap
+simplify/neg_math_no_simpfi.map | needs MathMap
+simplify/neg_math_nonmath_neighbour.map | needs MathMap
+simplify/neg_normmap_diff_frame.map | needs NormMap
+simplify/neg_normmap_different_frames.map | needs NormMap
+simplify/neg_normmap_inv_diff_frame.map | needs NormMap
+simplify/neg_normmap_nonnorm_neighbour.map | needs NormMap
+simplify/neg_normmap_parallel_sky.map | needs NormMap
+simplify/neg_normmap_parallel.map | needs NormMap
+simplify/neg_nullregion_parallel_nonregion.map | needs NullRegion
+simplify/neg_nullregion_series.map | needs NullRegion
+simplify/neg_parpair_aligned_irreducible.map | needs MathMap
+simplify/neg_pcd_diff_centre.map | needs PcdMap
+simplify/neg_pcd_diff_disco.map | needs PcdMap
+simplify/neg_pcd_nonpcd_neighbour.map | needs PcdMap
+simplify/neg_pcd_nonswappable_between.map | needs PcdMap
+simplify/neg_pcd_parallel.map | needs PcdMap
+simplify/neg_pcd_perm_nonswap.map | needs PcdMap
+simplify/neg_pcd_same_invert.map | needs PcdMap
+simplify/neg_pcd_zoom_no_target.map | needs PcdMap
+simplify/neg_perm_no_merge.map | needs MathMap
+simplify/neg_pointlist_parallel_nonregion.map | needs PointList, PointSet
+simplify/neg_pointlist_series.map | needs PointList, PointSet
+simplify/neg_ratemap_diff_indices.map | needs RateMap
+simplify/neg_ratemap_diff_inner.map | needs RateMap
+simplify/neg_ratemap_different_inner.map | needs RateMap
+simplify/neg_ratemap_lower_nonrate.map | needs RateMap
+simplify/neg_ratemap_nonratemap_neighbour.map | needs RateMap
+simplify/neg_ratemap_parallel.map | needs RateMap
+simplify/neg_ratemap_same_invert.map | needs RateMap
+simplify/neg_selectormap_not_equal.map | needs Box, PointSet, SelectorMap
+simplify/neg_selectormap_parallel.map | needs Box, PointSet, SelectorMap
+simplify/neg_selectormap_series_lower.map | needs Box, PointSet, SelectorMap
+simplify/neg_selectormap_series_upper.map | needs Box, PointSet, SelectorMap
+simplify/neg_spec_2arg_mismatch.map | needs SpecMap
+simplify/neg_spec_3arg_mismatch.map | needs SpecMap
+simplify/neg_spec_6arg_mismatch.map | needs SpecMap
+simplify/neg_spec_arg_mismatch.map | needs SpecMap
+simplify/neg_spec_lone_forward.map | needs SpecMap
+simplify/neg_spec_parallel.map | needs SpecMap
+simplify/neg_spline_different_coeffs.map | needs SplineMap
+simplify/neg_spline_nonspline_neighbour.map | needs SplineMap
+simplify/neg_spline_parallel.map | needs SplineMap
+simplify/neg_spline_same_direction.map | needs SplineMap
+simplify/neg_switchmap_not_equal.map | needs SwitchMap
+simplify/neg_switchmap_parallel.map | needs SwitchMap
+simplify/neg_switchmap_series_lower.map | needs SwitchMap
+simplify/neg_switchmap_series.map | needs SwitchMap
+simplify/neg_tranmap_adjacent_no_merge.map | needs MathMap, TranMap
+simplify/neg_tranmap_nontranmap_neighbour.map | needs TranMap
+simplify/neg_tranmap_oneway.map | needs MathMap, TranMap
+simplify/neg_tranmap_parallel.map | needs TranMap
+simplify/neg_tranmap_unequal_components.map | needs TranMap
+simplify/neg_unit_parallel_forward.map | needs PcdMap
+simplify/neg_unitnormmap_flanked.map | needs UnitNormMap
+simplify/neg_unitnormmap_fwd_shift.map | needs UnitNormMap
+simplify/neg_unitnormmap_inv_fwd_diffcentre.map | needs UnitNormMap
+simplify/neg_unitnormmap_nonmergeable.map | needs UnitNormMap
+simplify/neg_unitnormmap_nonunit_scale.map | needs UnitNormMap
+simplify/neg_unitnormmap_parallel.map | needs UnitNormMap
+simplify/neg_unitnormmap_same_dir.map | needs UnitNormMap
+simplify/neg_unitnormmap_shift_inv.map | needs UnitNormMap
+simplify/neg_wcs_nonperm_between.map | needs MathMap
+simplify/neg_win_cmpmap_split_no_simplify.map | needs MathMap
+simplify/neg_win_nonmergeable_series.map | needs MathMap
+simplify/neg_xph_nonxph_neighbour.map | needs XphMap
+simplify/neg_xph_not_opposite.map | needs XphMap
+simplify/neg_xph_parallel.map | needs XphMap
+simplify/neg_zoom_parallel_lone.map | needs MathMap
+simplify/normmap_basic_frame_to_unit.map | needs NormMap
+simplify/normmap_duplicate_elim.map | needs NormMap
+simplify/normmap_duplicate_elim.simp | needs NormMap
+simplify/normmap_inverse_cancel_upper.map | needs NormMap
+simplify/normmap_inverse_cancel.map | needs NormMap
+simplify/nullregion_merge_tail.map | needs NullRegion
+simplify/nullregion_merge_tail.simp | needs NullRegion
+simplify/nullregion_parallel_merge_pair.map | needs NullRegion
+simplify/nullregion_parallel_merge_pair.simp | needs NullRegion
+simplify/nullregion_parallel_merge.map | needs Box, NullRegion, PointSet
+simplify/nullregion_parallel_merge.simp | needs Box, NullRegion, PointSet
+simplify/nullregion_self_simplify.map | needs NullRegion
+simplify/nullregion_self_simplify.simp | needs NullRegion
+simplify/nullregion_unc_fillfactor_merge.map | needs Box, NullRegion, PointSet
+simplify/nullregion_unc_fillfactor_merge.simp | needs Box, NullRegion, PointSet
+simplify/parcomp_inverted_nested_reemitted.map | needs MathMap
+simplify/parcomp_inverted_nested_reemitted.simp | needs MathMap
+simplify/parcomp_inverted_reemitted.map | needs MathMap
+simplify/parcomp_inverted_reemitted.simp | needs MathMap
+simplify/parpair_one_side_reduces.map | needs MathMap
+simplify/parpair_one_side_reduces.simp | needs MathMap
+simplify/pcd_inverse_cancel_tail.map | needs PcdMap
+simplify/pcd_inverse_cancel.map | needs PcdMap
+simplify/pcd_inverted_zoom_swap.map | needs PcdMap
+simplify/pcd_inverted_zoom_swap.simp | needs PcdMap
+simplify/pcd_perm_swap_cancel.map | needs PcdMap
+simplify/pcd_search_blocked.map | needs PcdMap
+simplify/pcd_search_blocked.simp | needs PcdMap
+simplify/pcd_swap_zoom_simplifies.map | needs PcdMap
+simplify/pcd_swap_zoom_simplifies.simp | needs PcdMap
+simplify/pcd_unit_series_merge.map | needs PcdMap
+simplify/pcd_unit_series_merge.simp | needs PcdMap
+simplify/pcd_zero_disc_lone.map | needs PcdMap
+simplify/pcd_zero_disc_series.map | needs PcdMap
+simplify/pcd_zero_to_unit.map | needs PcdMap
+simplify/pcd_zoom_swap_cancel.map | needs PcdMap
+simplify/pointlist_parallel_merge_pair.map | needs PointList, PointSet
+simplify/pointlist_parallel_merge_pair.simp | needs PointList, PointSet
+simplify/pointlist_self_simplify.map | needs PointList, PointSet
+simplify/pointlist_self_simplify.simp | needs PointList, PointSet
+simplify/pointlist_unc_fillfactor_merge.map | needs Box, PointList, PointSet
+simplify/pointlist_unc_fillfactor_merge.simp | needs Box, PointList, PointSet
+simplify/rate_inner_reduce_lone.map | needs RateMap
+simplify/rate_inner_reduce_lone.simp | needs RateMap
+simplify/rate_inner_reduce_series.map | needs RateMap
+simplify/rate_inner_reduce_series.simp | needs RateMap
+simplify/ratemap_inverse_cancel.map | needs RateMap
+simplify/ratemap_simplify_interior.map | needs RateMap
+simplify/ratemap_simplify_interior.simp | needs RateMap
+simplify/regbasepick_circle_permaxes.map | needs Circle, PointSet
+simplify/regbasepick_circle_permaxes.simp | needs Circle, PointSet
+simplify/regbasepick_cmpregion_subset.map | needs CmpRegion, Interval, PointSet
+simplify/regbasepick_cmpregion_subset.simp | needs CmpRegion, Interval, PointSet
+simplify/regbasepick_prism_subset.map | needs Box, PointSet
+simplify/regbasepick_prism_subset.simp | needs Box, PointSet
+simplify/rigby.map | needs SpecMap
+simplify/rigby.simp | needs SpecMap
+simplify/selectormap_inverse_cancel_tail.map | needs Box, PointSet, SelectorMap
+simplify/selectormap_inverse_cancel.map | needs Box, PointSet, SelectorMap
+simplify/selectormap_region_simplify_real.map | needs Box, Interval, PointSet, SelectorMap
+simplify/selectormap_region_simplify_real.simp | needs Box, PointSet, SelectorMap
+simplify/selectormap_region_simplify.map | needs Box, PointSet, SelectorMap
+simplify/selectormap_region_simplify.simp | needs Box, PointSet, SelectorMap
+simplify/setunc_box_remapped_unc.map | needs Box, PointSet
+simplify/setunc_box_remapped_unc.simp | needs Box, PointSet
+simplify/setunc_unbounded_negated.map | needs Box, PointSet
+simplify/setunc_unbounded_negated.simp | needs Box, PointSet
+simplify/setunc_unitmap_regionfs_omitted.map | needs Box, PointSet
+simplify/setunc_unitmap_regionfs_omitted.simp | needs Box, PointSet
+simplify/simpstab_box_linear_unc.map | needs Box, PointSet
+simplify/simpstab_box_linear_unc.simp | needs Box, PointSet
+simplify/simpstab_box_nonlinear_unc.map | needs Box, MathMap, PointSet
+simplify/simpstab_box_nonlinear_unc.simp | needs Box, MathMap, PointSet
+simplify/simpstab_permmap_slice_unc.map | needs Box, PointSet
+simplify/simpstab_permmap_slice_unc.simp | needs Box, PointSet
+simplify/spec_geocentric_cancel.map | needs SpecMap
+simplify/spec_inverse_cancel.map | needs SpecMap
+simplify/spec_invert_normalize.map | needs SpecMap
+simplify/spec_invert_normalize.simp | needs SpecMap
+simplify/spec_lsr_cancel.map | needs SpecMap
+simplify/spec_merge_no_cancel.map | needs SpecMap
+simplify/spec_merge_no_cancel.simp | needs SpecMap
+simplify/spec_partial_cancel.map | needs SpecMap
+simplify/spec_partial_cancel.simp | needs SpecMap
+simplify/spec_run_inverted_mid.map | needs SpecMap
+simplify/spec_run_inverted_mid.simp | needs SpecMap
+simplify/spec_run4_identity.map | needs SpecMap
+simplify/spec_topocentric_cancel.map | needs SpecMap
+simplify/spec_unit_cancel.map | needs SpecMap
+simplify/specmap_invert_normalize.map | needs SpecMap
+simplify/specmap_invert_normalize.simp | needs SpecMap
+simplify/specmap_pair_cancel.map | needs SpecMap
+simplify/spline_inverse_cancel.map | needs SplineMap
+simplify/switchmap_fwdonly_simplify.map | needs SwitchMap
+simplify/switchmap_fwdonly_simplify.simp | needs SwitchMap
+simplify/switchmap_internal_simplify.map | needs SwitchMap
+simplify/switchmap_internal_simplify.simp | needs SwitchMap
+simplify/switchmap_inv_fwdonly.map | needs SwitchMap
+simplify/switchmap_inv_fwdonly.simp | needs SwitchMap
+simplify/switchmap_inv_invonly.map | needs SwitchMap
+simplify/switchmap_inv_invonly.simp | needs SwitchMap
+simplify/switchmap_inverse_cancel_tail.map | needs SwitchMap
+simplify/switchmap_inverse_cancel.map | needs SwitchMap
+simplify/switchmap_invert_normalize.map | needs SwitchMap
+simplify/switchmap_invert_normalize.simp | needs SwitchMap
+simplify/switchmap_invonly_simplify.map | needs SwitchMap
+simplify/switchmap_invonly_simplify.simp | needs SwitchMap
+simplify/tranmap_adjacent_merge.map | needs TranMap
+simplify/tranmap_adjacent_merge.simp | needs TranMap
+simplify/tranmap_component_simplify.map | needs TranMap
+simplify/tranmap_component_simplify.simp | needs TranMap
+simplify/tranmap_equal_components_in_list.map | needs TranMap
+simplify/tranmap_equal_components.map | needs TranMap
+simplify/tranmap_invert_in_list.map | needs TranMap
+simplify/tranmap_invert_in_list.simp | needs TranMap
+simplify/tranmap_invert_normalize.map | needs TranMap
+simplify/tranmap_invert_normalize.simp | needs TranMap
+simplify/tranmap_merge_tail.map | needs TranMap
+simplify/tranmap_merge_tail.simp | needs TranMap
+simplify/unit_parallel_invert_clear.map | needs MathMap
+simplify/unit_parallel_invert_clear.simp | needs MathMap
+simplify/unit_parallel_invert_pcd.map | needs PcdMap
+simplify/unit_parallel_invert_pcd.simp | needs PcdMap
+simplify/unitnormmap_diff_centre_to_shift.map | needs UnitNormMap
+simplify/unitnormmap_fwd_winmap_refused.map | needs UnitNormMap
+simplify/unitnormmap_fwd_winmap_refused.simp | needs UnitNormMap
+simplify/unitnormmap_inv_fwd_cancel.map | needs UnitNormMap
+simplify/unitnormmap_inv_shift_merge.map | needs UnitNormMap
+simplify/unitnormmap_inv_shift_merge.simp | needs UnitNormMap
+simplify/unitnormmap_inv_winmap_merge.map | needs UnitNormMap
+simplify/unitnormmap_inv_winmap_merge.simp | needs UnitNormMap
+simplify/unitnormmap_inverse_cancel.map | needs UnitNormMap
+simplify/unitnormmap_shift_fwd_merge.map | needs UnitNormMap
+simplify/unitnormmap_shift_fwd_merge.simp | needs UnitNormMap
+simplify/unitnormmap_shift_merge_tail.map | needs UnitNormMap
+simplify/unitnormmap_shift_merge_tail.simp | needs UnitNormMap
+simplify/unitnormmap_winmap_fwd_merge.map | needs UnitNormMap
+simplify/unitnormmap_winmap_fwd_merge.simp | needs UnitNormMap
+simplify/unitnormmap_winmap_inv_refused.map | needs UnitNormMap
+simplify/unitnormmap_winmap_inv_refused.simp | needs UnitNormMap
+simplify/xph_inverse_cancel.map | needs XphMap
+specfluxframe_swapped.native | needs FluxFrame, SpecFluxFrame, SpecFrame
+wcsconv/expected/jan.ast | needs DSBSpecFrame
+wcsconv/framesets/a20070718_00010_02_cube-ast.ast | needs DSBSpecFrame, SpecMap
+wcsconv/framesets/alt-spectral-head.ast | needs SpecFrame
+wcsconv/framesets/awav-a2f-head.ast | needs SpecFrame
+wcsconv/framesets/axes-swap-head.ast | needs SpecFrame
+wcsconv/framesets/beta-frq-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/cd-cross-head.ast | needs SpecFrame
+wcsconv/framesets/class-ait-head.ast | needs SpecFrame
+wcsconv/framesets/class-arc-head.ast | needs SpecFrame
+wcsconv/framesets/class-gal-head.ast | needs SpecFrame
+wcsconv/framesets/class-noproj-head.ast | needs DSBSpecFrame
+wcsconv/framesets/class-olddate-head.ast | needs SpecFrame
+wcsconv/framesets/class-sfl-head.ast | needs SpecFrame
+wcsconv/framesets/class-sin-head.ast | needs SpecFrame
+wcsconv/framesets/class-spec-head.ast | needs DSBSpecFrame
+wcsconv/framesets/class-spec-hel-head.ast | needs DSBSpecFrame
+wcsconv/framesets/class-write-head.ast | needs DSBSpecFrame
+wcsconv/framesets/crota-3d-head.ast | needs SpecFrame
+wcsconv/framesets/cube-reorder-head.ast | needs SpecFrame
+wcsconv/framesets/degen-wcsaxes-head.ast | needs SpecFrame
+wcsconv/framesets/ener-vel-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/fits-pc-alt-head.ast | needs SpecFrame
+wcsconv/framesets/fits-pc-unit-head.ast | needs SpecFrame
+wcsconv/framesets/freq-f2w-head.ast | needs SpecFrame
+wcsconv/framesets/freq-ghz-bary-head.ast | needs SpecFrame
+wcsconv/framesets/freq-log-head.ast | needs MathMap, SpecFrame
+wcsconv/framesets/freq-pixel3d-head.ast | needs SpecFrame
+wcsconv/framesets/freq-wav-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/grism-head.ast | needs GrismMap, SpecFrame
+wcsconv/framesets/jan-fits-class.ast | needs DSBSpecFrame
+wcsconv/framesets/longslit-fits-pc.ast | needs SpecFrame
+wcsconv/framesets/multi-wcs-spec-head.ast | needs SpecFrame
+wcsconv/framesets/polco-head.ast | needs MathMap
+wcsconv/framesets/polco2-head.ast | needs MathMap
+wcsconv/framesets/restfreq-ghz-head.ast | needs SpecFrame
+wcsconv/framesets/restfreq-mhz-head.ast | needs SpecFrame
+wcsconv/framesets/sip-3d-head.ast | needs SpecFrame
+wcsconv/framesets/sip-3d-swap-head.ast | needs SpecFrame
+wcsconv/framesets/skyspec3d-class-head.ast | needs SpecFrame
+wcsconv/framesets/skyspec3d-head.ast | needs SpecFrame
+wcsconv/framesets/specflux-head.ast | needs SpecFrame
+wcsconv/framesets/ssysobs-head.ast | needs SpecFrame
+wcsconv/framesets/velo-aips-head.ast | needs SpecFrame
+wcsconv/framesets/velo-vel-head.ast | needs SpecFrame
+wcsconv/framesets/vopt-f2w-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/vopt-geo-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/vopt-wav-head.ast | needs SpecFrame
+wcsconv/framesets/vrad-lsrd-head.ast | needs SpecFrame
+wcsconv/framesets/vrad-v2f-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/vrad-wav-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/wave-1d-head.ast | needs SpecFrame
+wcsconv/framesets/wave-f2w-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/wave-w2f-head.ast | needs SpecFrame
+wcsconv/framesets/wavn-frq-head.ast | needs SpecFrame
+wcsconv/framesets/zero-cdelt-head.ast | needs SpecFrame
+wcsconv/framesets/zopt-frq-head.ast | needs SpecFrame, SpecMap
+wcsconv/inputs/a20070718_00010_02_cube.ast | needs DSBSpecFrame, SpecMap
+wcsconv/inputs/lsst2.ast | needs SplineMap
+wcsconv/inputs/specflux.ast | needs SpecFrame

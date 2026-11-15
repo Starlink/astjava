@@ -1,0 +1,1109 @@
+AstException|constructor|public||<init>(String)
+AstException|constructor|public||<init>(String,int)
+AstException|field|public static final|int|AST__3DFSET
+AstException|field|public static final|int|AST__ATGER
+AstException|field|public static final|int|AST__ATSER
+AstException|field|public static final|int|AST__ATTIN
+AstException|field|public static final|int|AST__AXIIN
+AstException|field|public static final|int|AST__BADAT
+AstException|field|public static final|int|AST__BADBX
+AstException|field|public static final|int|AST__BADCI
+AstException|field|public static final|int|AST__BADCOL
+AstException|field|public static final|int|AST__BADFLG
+AstException|field|public static final|int|AST__BADIN
+AstException|field|public static final|int|AST__BADKEY
+AstException|field|public static final|int|AST__BADNI
+AstException|field|public static final|int|AST__BADNO
+AstException|field|public static final|int|AST__BADNULL
+AstException|field|public static final|int|AST__BADOC
+AstException|field|public static final|int|AST__BADPW
+AstException|field|public static final|int|AST__BADSIZ
+AstException|field|public static final|int|AST__BADSM
+AstException|field|public static final|int|AST__BADSUB
+AstException|field|public static final|int|AST__BADTAB
+AstException|field|public static final|int|AST__BADTYP
+AstException|field|public static final|int|AST__BADUN
+AstException|field|public static final|int|AST__BADWM
+AstException|field|public static final|int|AST__BDBRK
+AstException|field|public static final|int|AST__BDFMT
+AstException|field|public static final|int|AST__BDFTS
+AstException|field|public static final|int|AST__BDOBJ
+AstException|field|public static final|int|AST__BDPAR
+AstException|field|public static final|int|AST__BIGKEY
+AstException|field|public static final|int|AST__BIGTAB
+AstException|field|public static final|int|AST__CLPAX
+AstException|field|public static final|int|AST__CNFLX
+AstException|field|public static final|int|AST__COMIN
+AstException|field|public static final|int|AST__CONIN
+AstException|field|public static final|int|AST__CORNG
+AstException|field|public static final|int|AST__CVBRK
+AstException|field|public static final|int|AST__DIMIN
+AstException|field|public static final|int|AST__DTERR
+AstException|field|public static final|int|AST__DUVAR
+AstException|field|public static final|int|AST__ENDIN
+AstException|field|public static final|int|AST__EOCHN
+AstException|field|public static final|int|AST__EXPIN
+AstException|field|public static final|int|AST__FCRPT
+AstException|field|public static final|int|AST__FMTER
+AstException|field|public static final|int|AST__FRMIN
+AstException|field|public static final|int|AST__FRSIN
+AstException|field|public static final|int|AST__FTCNV
+AstException|field|public static final|int|AST__FUNDEF
+AstException|field|public static final|int|AST__GBDIN
+AstException|field|public static final|int|AST__GRFER
+AstException|field|public static final|int|AST__ILOST
+AstException|field|public static final|int|AST__INCTS
+AstException|field|public static final|int|AST__INHAN
+AstException|field|public static final|int|AST__INNCO
+AstException|field|public static final|int|AST__INNTF
+AstException|field|public static final|int|AST__INTER
+AstException|field|public static final|int|AST__INTRD
+AstException|field|public static final|int|AST__ISNAN
+AstException|field|public static final|int|AST__ITFER
+AstException|field|public static final|int|AST__ITFNI
+AstException|field|public static final|int|AST__KYCIR
+AstException|field|public static final|int|AST__LCKERR
+AstException|field|public static final|int|AST__LDERR
+AstException|field|public static final|int|AST__LEVMAR
+AstException|field|public static final|int|AST__LUTII
+AstException|field|public static final|int|AST__LUTIN
+AstException|field|public static final|int|AST__MBBNF
+AstException|field|public static final|int|AST__MEMIN
+AstException|field|public static final|int|AST__MIOPA
+AstException|field|public static final|int|AST__MIOPR
+AstException|field|public static final|int|AST__MISVN
+AstException|field|public static final|int|AST__MLPAR
+AstException|field|public static final|int|AST__MPGER
+AstException|field|public static final|int|AST__MPIND
+AstException|field|public static final|int|AST__MPKER
+AstException|field|public static final|int|AST__MPPER
+AstException|field|public static final|int|AST__MPVIN
+AstException|field|public static final|int|AST__MRITF
+AstException|field|public static final|int|AST__MRPAR
+AstException|field|public static final|int|AST__MTR23
+AstException|field|public static final|int|AST__MTRAX
+AstException|field|public static final|int|AST__MTRML
+AstException|field|public static final|int|AST__MTRMT
+AstException|field|public static final|int|AST__NAXIN
+AstException|field|public static final|int|AST__NCHIN
+AstException|field|public static final|int|AST__NCOIN
+AstException|field|public static final|int|AST__NCPIN
+AstException|field|public static final|int|AST__NELIN
+AstException|field|public static final|int|AST__NGDIN
+AstException|field|public static final|int|AST__NOCTS
+AstException|field|public static final|int|AST__NODEF
+AstException|field|public static final|int|AST__NOFIT
+AstException|field|public static final|int|AST__NOFTS
+AstException|field|public static final|int|AST__NOMEM
+AstException|field|public static final|int|AST__NONIN
+AstException|field|public static final|int|AST__NOPTS
+AstException|field|public static final|int|AST__NORHS
+AstException|field|public static final|int|AST__NORSF
+AstException|field|public static final|int|AST__NOSOR
+AstException|field|public static final|int|AST__NOTAB
+AstException|field|public static final|int|AST__NOVAL
+AstException|field|public static final|int|AST__NOWRT
+AstException|field|public static final|int|AST__NPTIN
+AstException|field|public static final|int|AST__OBJIN
+AstException|field|public static final|int|AST__OCLUK
+AstException|field|public static final|int|AST__OLDCOL
+AstException|field|public static final|int|AST__OPRIN
+AstException|field|public static final|int|AST__OPT
+AstException|field|public static final|int|AST__PATIN
+AstException|field|public static final|int|AST__PDSIN
+AstException|field|public static final|int|AST__PLFMT
+AstException|field|public static final|int|AST__PRMIN
+AstException|field|public static final|int|AST__PTRIN
+AstException|field|public static final|int|AST__PTRNG
+AstException|field|public static final|int|AST__PXFRRM
+AstException|field|public static final|int|AST__RDERR
+AstException|field|public static final|int|AST__REGCN
+AstException|field|public static final|int|AST__REGIN
+AstException|field|public static final|int|AST__REMIN
+AstException|field|public static final|int|AST__SCSIN
+AstException|field|public static final|int|AST__SELIN
+AstException|field|public static final|int|AST__SISIN
+AstException|field|public static final|int|AST__SLAIN
+AstException|field|public static final|int|AST__SPCIN
+AstException|field|public static final|int|AST__SSPIN
+AstException|field|public static final|int|AST__STCIND
+AstException|field|public static final|int|AST__STCKEY
+AstException|field|public static final|int|AST__TIMIN
+AstException|field|public static final|int|AST__TRNND
+AstException|field|public static final|int|AST__TUNAM
+AstException|field|public static final|int|AST__UDVOF
+AstException|field|public static final|int|AST__UINER
+AstException|field|public static final|int|AST__UK1ER
+AstException|field|public static final|int|AST__UNFER
+AstException|field|public static final|int|AST__UNMQT
+AstException|field|public static final|int|AST__URITF
+AstException|field|public static final|int|AST__VARIN
+AstException|field|public static final|int|AST__VSMAL
+AstException|field|public static final|int|AST__WCSAX
+AstException|field|public static final|int|AST__WCSNC
+AstException|field|public static final|int|AST__WCSPA
+AstException|field|public static final|int|AST__WCSTY
+AstException|field|public static final|int|AST__WRERR
+AstException|field|public static final|int|AST__WRNFA
+AstException|field|public static final|int|AST__XMLCM
+AstException|field|public static final|int|AST__XMLIT
+AstException|field|public static final|int|AST__XMLNM
+AstException|field|public static final|int|AST__XMLPT
+AstException|field|public static final|int|AST__XMLWF
+AstException|field|public static final|int|AST__XSOBJ
+AstException|field|public static final|int|AST__ZERAX
+AstException|field|public static final|int|AST__ZOOMI
+AstException|field|public static final|int|SAI__ERROR
+AstException|field|public static final|int|SAI__OK
+AstException|method|public|String|getStatusName()
+AstException|method|public|int|getStatus()
+AstException|type|public|class|AstException
+AstObject|constructor|protected||<init>()
+AstObject|field|protected|long|pointer
+AstObject|field|public static final|double|AST__BAD
+AstObject|field|public static final|int|AST__TUNULL
+AstObject|method|protected|void|finalize()
+AstObject|method|public static|String|reportVersions()
+AstObject|method|public static|boolean|isThreaded()
+AstObject|method|public static|int|getAstConstantI(String)
+AstObject|method|public static|int|tune(String,int)
+AstObject|method|public|AstObject|copy()
+AstObject|method|public|String|getC(String)
+AstObject|method|public|String|getID()
+AstObject|method|public|String|getIdent()
+AstObject|method|public|boolean|equals(Object)
+AstObject|method|public|boolean|getB(String)
+AstObject|method|public|boolean|sameObject(Object)
+AstObject|method|public|boolean|test(String)
+AstObject|method|public|double|getD(String)
+AstObject|method|public|float|getF(String)
+AstObject|method|public|int|getI(String)
+AstObject|method|public|int|getNobject()
+AstObject|method|public|int|getObjSize()
+AstObject|method|public|int|getRefCount()
+AstObject|method|public|int|hashCode()
+AstObject|method|public|long|getL(String)
+AstObject|method|public|void|annul()
+AstObject|method|public|void|clear(String)
+AstObject|method|public|void|delete()
+AstObject|method|public|void|set(String)
+AstObject|method|public|void|setB(String,boolean)
+AstObject|method|public|void|setC(String,String)
+AstObject|method|public|void|setD(String,double)
+AstObject|method|public|void|setF(String,float)
+AstObject|method|public|void|setI(String,int)
+AstObject|method|public|void|setID(String)
+AstObject|method|public|void|setIdent(String)
+AstObject|method|public|void|setL(String,long)
+AstObject|method|public|void|show()
+AstObject|type|public|class|AstObject
+AstPackage|method|public static|boolean|isAvailable()
+AstPackage|type|public|class|AstPackage
+AstroCoords|constructor|public||<init>()
+AstroCoords|constructor|public||<init>(String[])
+AstroCoords|method|public|Region|getError()
+AstroCoords|method|public|Region|getPixSize()
+AstroCoords|method|public|Region|getResolution()
+AstroCoords|method|public|Region|getSize()
+AstroCoords|method|public|Region|getValue()
+AstroCoords|method|public|String[]|getName()
+AstroCoords|method|public|void|setError(Region)
+AstroCoords|method|public|void|setName(String[])
+AstroCoords|method|public|void|setPixSize(Region)
+AstroCoords|method|public|void|setResolution(Region)
+AstroCoords|method|public|void|setSize(Region)
+AstroCoords|method|public|void|setValue(Region)
+AstroCoords|type|public|class|AstroCoords
+Axis|constructor|protected||<init>()
+Axis|type|public|class|Axis
+Box|constructor|public||<init>(Frame,int,double[],double[],Region)
+Box|type|public|class|Box
+Channel|constructor|protected||<init>()
+Channel|constructor|protected||<init>(Channel)
+Channel|constructor|public||<init>(InputStream,OutputStream)
+Channel|method|protected|String|source()
+Channel|method|protected|void|finalize()
+Channel|method|protected|void|sink(String)
+Channel|method|public|AstObject|copy()
+Channel|method|public|AstObject|read()
+Channel|method|public|KeyMap|warnings()
+Channel|method|public|boolean|getComment()
+Channel|method|public|boolean|getSkip()
+Channel|method|public|boolean|getStrict()
+Channel|method|public|int|getFull()
+Channel|method|public|int|getReportLevel()
+Channel|method|public|int|write(AstObject)
+Channel|method|public|void|setComment(boolean)
+Channel|method|public|void|setFull(int)
+Channel|method|public|void|setReportLevel(int)
+Channel|method|public|void|setSkip(boolean)
+Channel|method|public|void|setStrict(boolean)
+Channel|type|public|class|Channel
+Circle|constructor|public||<init>(Frame,double[],double,Region)
+Circle|constructor|public||<init>(Frame,double[],double[],Region)
+Circle|constructor|public||<init>(Frame,int,double[],double[],Region)
+Circle|type|public|class|Circle
+CmpFrame|constructor|public||<init>(Frame,Frame)
+CmpFrame|method|public|Frame[]|decompose()
+CmpFrame|type|public|class|CmpFrame
+CmpMap|constructor|public||<init>(Mapping,Mapping,boolean)
+CmpMap|type|public|class|CmpMap
+CmpRegion|constructor|public||<init>(Region,Region,int)
+CmpRegion|field|public static final|int|AST__AND
+CmpRegion|field|public static final|int|AST__OR
+CmpRegion|type|public|class|CmpRegion
+DSBSpecFrame|constructor|public||<init>()
+DSBSpecFrame|method|public|String|getSideBand()
+DSBSpecFrame|method|public|boolean|getAlignSideBand()
+DSBSpecFrame|method|public|double|getDsbCentre()
+DSBSpecFrame|method|public|double|getIf()
+DSBSpecFrame|method|public|void|setAlignSideBand(boolean)
+DSBSpecFrame|method|public|void|setDsbCentre(double)
+DSBSpecFrame|method|public|void|setIf(double)
+DSBSpecFrame|method|public|void|setSideBand(String)
+DSBSpecFrame|type|public|class|DSBSpecFrame
+DssMap|constructor|public||<init>()
+DssMap|type|public|class|DssMap
+Ellipse|constructor|public||<init>(Frame,int,double[],double[],double[],Region)
+Ellipse|type|public|class|Ellipse
+FitsChan|constructor|public||<init>()
+FitsChan|constructor|public||<init>(Iterator)
+FitsChan|method|protected final|String|source()
+FitsChan|method|protected|void|finalize()
+FitsChan|method|protected|void|sink(String)
+FitsChan|method|public|AstObject|read()
+FitsChan|method|public|Iterator|iterator()
+FitsChan|method|public|String|findFits(String,boolean)
+FitsChan|method|public|String|getAllWarnings()
+FitsChan|method|public|String|getEncoding()
+FitsChan|method|public|String|getWarnings()
+FitsChan|method|public|boolean|getCDMatrix()
+FitsChan|method|public|boolean|getCarLin()
+FitsChan|method|public|boolean|getDefB1950()
+FitsChan|method|public|boolean|getIwc()
+FitsChan|method|public|boolean|testFits(String)
+FitsChan|method|public|int|getCard()
+FitsChan|method|public|int|getFitsDigits()
+FitsChan|method|public|int|getNcard()
+FitsChan|method|public|int|write(AstObject)
+FitsChan|method|public|void|close()
+FitsChan|method|public|void|delFits()
+FitsChan|method|public|void|purgeWCS()
+FitsChan|method|public|void|putCards(String)
+FitsChan|method|public|void|putFits(String,boolean)
+FitsChan|method|public|void|retainFits()
+FitsChan|method|public|void|setCDMatrix(boolean)
+FitsChan|method|public|void|setCarLin(boolean)
+FitsChan|method|public|void|setCard(int)
+FitsChan|method|public|void|setDefB1950(boolean)
+FitsChan|method|public|void|setEncoding(String)
+FitsChan|method|public|void|setFits(String,String,String,boolean)
+FitsChan|method|public|void|setFits(String,boolean,String,boolean)
+FitsChan|method|public|void|setFits(String,double,String,boolean)
+FitsChan|method|public|void|setFits(String,double,double,String,boolean)
+FitsChan|method|public|void|setFits(String,int,String,boolean)
+FitsChan|method|public|void|setFits(String,int,int,String,boolean)
+FitsChan|method|public|void|setFitsContinue(String,String,String,boolean)
+FitsChan|method|public|void|setFitsDigits(int)
+FitsChan|method|public|void|setIwc(boolean)
+FitsChan|method|public|void|setWarnings(String)
+FitsChan|type|public|class|FitsChan
+FluxFrame|constructor|public||<init>()
+FluxFrame|constructor|public||<init>(double,SpecFrame)
+FluxFrame|method|public|double|getSpecVal()
+FluxFrame|method|public|void|setSpecVal(double)
+FluxFrame|type|public|class|FluxFrame
+FrameSet|constructor|protected||<init>()
+FrameSet|constructor|public||<init>(Frame)
+FrameSet|field|public static final|int|AST__BASE
+FrameSet|field|public static final|int|AST__CURRENT
+FrameSet|field|public static final|int|AST__NOFRAME
+FrameSet|method|public|Frame|getFrame(int)
+FrameSet|method|public|Mapping|getMapping(int,int)
+FrameSet|method|public|int|getBase()
+FrameSet|method|public|int|getCurrent()
+FrameSet|method|public|int|getNframe()
+FrameSet|method|public|void|addFrame(int,Mapping,Frame)
+FrameSet|method|public|void|remapFrame(int,Mapping)
+FrameSet|method|public|void|removeFrame(int)
+FrameSet|method|public|void|setBase(int)
+FrameSet|method|public|void|setCurrent(int)
+FrameSet|type|public|class|FrameSet
+Frame|constructor|protected||<init>()
+Frame|constructor|public||<init>(int)
+Frame|method|public|FrameSet|convert(Frame,String)
+Frame|method|public|FrameSet|findFrame(Frame,String)
+Frame|method|public|Frame|pickAxes(int,int[],Mapping[])
+Frame|method|public|String|format(int,double)
+Frame|method|public|String|getAlignSystem()
+Frame|method|public|String|getDomain()
+Frame|method|public|String|getFormat(int)
+Frame|method|public|String|getLabel(int)
+Frame|method|public|String|getNormUnit(int)
+Frame|method|public|String|getObsLat()
+Frame|method|public|String|getObsLon()
+Frame|method|public|String|getSymbol(int)
+Frame|method|public|String|getSystem()
+Frame|method|public|String|getTitle()
+Frame|method|public|String|getUnit(int)
+Frame|method|public|boolean|getActiveUnit()
+Frame|method|public|boolean|getDirection(int)
+Frame|method|public|boolean|getMatchEnd()
+Frame|method|public|boolean|getPermute()
+Frame|method|public|boolean|getPreserveAxes()
+Frame|method|public|double[]|intersect(double[],double[],double[],double[])
+Frame|method|public|double[]|offset(double[],double[],double)
+Frame|method|public|double[]|resolve(double[],double[],double[],double[])
+Frame|method|public|double|angle(double[],double[],double[])
+Frame|method|public|double|axAngle(double[],double[],int)
+Frame|method|public|double|axDistance(int,double,double)
+Frame|method|public|double|axOffset(int,double,double)
+Frame|method|public|double|distance(double[],double[])
+Frame|method|public|double|getBottom(int)
+Frame|method|public|double|getDut1()
+Frame|method|public|double|getEpoch()
+Frame|method|public|double|getTop(int)
+Frame|method|public|double|offset2(double[],double,double,double[])
+Frame|method|public|double|unformat(int,String)
+Frame|method|public|int|getDigits()
+Frame|method|public|int|getDigits(int)
+Frame|method|public|int|getMaxAxes()
+Frame|method|public|int|getMinAxes()
+Frame|method|public|int|getNaxes()
+Frame|method|public|void|norm(double[])
+Frame|method|public|void|permAxes(int[])
+Frame|method|public|void|setActiveUnit(boolean)
+Frame|method|public|void|setAlignSystem(String)
+Frame|method|public|void|setBottom(int,double)
+Frame|method|public|void|setDigits(int)
+Frame|method|public|void|setDigits(int,int)
+Frame|method|public|void|setDirection(int,boolean)
+Frame|method|public|void|setDomain(String)
+Frame|method|public|void|setDut1(double)
+Frame|method|public|void|setEpoch(String)
+Frame|method|public|void|setEpoch(double)
+Frame|method|public|void|setFormat(int,String)
+Frame|method|public|void|setLabel(int,String)
+Frame|method|public|void|setMatchEnd(boolean)
+Frame|method|public|void|setMaxAxes(int)
+Frame|method|public|void|setMinAxes(int)
+Frame|method|public|void|setObsLat(String)
+Frame|method|public|void|setObsLon(String)
+Frame|method|public|void|setPermute(boolean)
+Frame|method|public|void|setPreserveAxes(boolean)
+Frame|method|public|void|setSymbol(int,String)
+Frame|method|public|void|setSystem(String)
+Frame|method|public|void|setTitle(String)
+Frame|method|public|void|setTop(int,double)
+Frame|method|public|void|setUnit(int,String)
+Frame|type|public|class|Frame
+Grf|field|public static final|int|GRF__COLOUR
+Grf|field|public static final|int|GRF__ESC
+Grf|field|public static final|int|GRF__FONT
+Grf|field|public static final|int|GRF__LINE
+Grf|field|public static final|int|GRF__MARK
+Grf|field|public static final|int|GRF__MJUST
+Grf|field|public static final|int|GRF__SCALES
+Grf|field|public static final|int|GRF__SIZE
+Grf|field|public static final|int|GRF__STYLE
+Grf|field|public static final|int|GRF__TEXT
+Grf|field|public static final|int|GRF__WIDTH
+Grf|method|public abstract|double|attr(int,double,int)
+Grf|method|public abstract|float[][]|txExt(String,float,float,String,float,float)
+Grf|method|public abstract|float[]|qch()
+Grf|method|public abstract|float[]|scales()
+Grf|method|public abstract|int|cap(int,int)
+Grf|method|public abstract|void|clear()
+Grf|method|public abstract|void|flush()
+Grf|method|public abstract|void|line(int,float[],float[])
+Grf|method|public abstract|void|mark(int,float[],float[],int)
+Grf|method|public abstract|void|paint(Graphics)
+Grf|method|public abstract|void|text(String,float,float,String,float,float)
+Grf|type|public abstract|interface|Grf
+GrismMap|constructor|public||<init>()
+GrismMap|method|public|double|getGrismAlpha()
+GrismMap|method|public|double|getGrismEps()
+GrismMap|method|public|double|getGrismG()
+GrismMap|method|public|double|getGrismNR()
+GrismMap|method|public|double|getGrismNRP()
+GrismMap|method|public|double|getGrismTheta()
+GrismMap|method|public|double|getGrismWaveR()
+GrismMap|method|public|int|getGrismM()
+GrismMap|method|public|void|setGrismAlpha(double)
+GrismMap|method|public|void|setGrismEps(double)
+GrismMap|method|public|void|setGrismG(double)
+GrismMap|method|public|void|setGrismM(int)
+GrismMap|method|public|void|setGrismNR(double)
+GrismMap|method|public|void|setGrismNRP(double)
+GrismMap|method|public|void|setGrismTheta(double)
+GrismMap|method|public|void|setGrismWaveR(double)
+GrismMap|type|public|class|GrismMap
+Interval|constructor|public||<init>(Frame,double[],double[],Region)
+Interval|type|public|class|Interval
+IntraMap|constructor|public||<init>(Transformer,int,int)
+IntraMap|constructor|public||<init>(Transformer1)
+IntraMap|constructor|public||<init>(Transformer2)
+IntraMap|method|public|AstObject|copy()
+IntraMap|method|public|void|channelize()
+IntraMap|method|public|void|finalize()
+IntraMap|method|public|void|unChannelize()
+IntraMap|type|public|class|IntraMap
+KeyMap|constructor|public||<init>()
+KeyMap|field|public static final|int|AST__BADTYPE
+KeyMap|field|public static final|int|AST__DOUBLETYPE
+KeyMap|field|public static final|int|AST__INTTYPE
+KeyMap|field|public static final|int|AST__OBJECTTYPE
+KeyMap|field|public static final|int|AST__STRINGTYPE
+KeyMap|method|public|AstObject[]|mapGet1A(String)
+KeyMap|method|public|AstObject|mapGet0A(String)
+KeyMap|method|public|Double|mapGet0D(String)
+KeyMap|method|public|Integer|mapGet0I(String)
+KeyMap|method|public|String[]|mapGet1C(String,int)
+KeyMap|method|public|String|mapGet0C(String)
+KeyMap|method|public|String|mapKey(int)
+KeyMap|method|public|boolean|mapHasKey(String)
+KeyMap|method|public|double[]|mapGet1D(String)
+KeyMap|method|public|int[]|mapGet1I(String)
+KeyMap|method|public|int|mapLength(String)
+KeyMap|method|public|int|mapSize()
+KeyMap|method|public|int|mapType(String)
+KeyMap|method|public|void|mapPut0A(String,AstObject,String)
+KeyMap|method|public|void|mapPut0C(String,String,String)
+KeyMap|method|public|void|mapPut0D(String,double,String)
+KeyMap|method|public|void|mapPut0I(String,int,String)
+KeyMap|method|public|void|mapPut1A(String,AstObject[],String)
+KeyMap|method|public|void|mapPut1C(String,String[],String)
+KeyMap|method|public|void|mapPut1D(String,double[],String)
+KeyMap|method|public|void|mapPut1I(String,int[],String)
+KeyMap|method|public|void|mapRemove(String)
+KeyMap|type|public|class|KeyMap
+LutMap|constructor|public||<init>(double[],double,double)
+LutMap|type|public|class|LutMap
+Mapping.Interpolator|method|public static|Mapping.Interpolator|blockAve(int)
+Mapping.Interpolator|method|public static|Mapping.Interpolator|linear()
+Mapping.Interpolator|method|public static|Mapping.Interpolator|nearest()
+Mapping.Interpolator|method|public static|Mapping.Interpolator|sinc(int)
+Mapping.Interpolator|method|public static|Mapping.Interpolator|sincCos(int,double)
+Mapping.Interpolator|method|public static|Mapping.Interpolator|sincGauss(int,double)
+Mapping.Interpolator|method|public static|Mapping.Interpolator|sincSinc(int,double)
+Mapping.Interpolator|method|public static|Mapping.Interpolator|somb(int)
+Mapping.Interpolator|method|public static|Mapping.Interpolator|sombCos(int,double)
+Mapping.Interpolator|method|public static|Mapping.Interpolator|uinterp(UinterpCalculator)
+Mapping.Interpolator|method|public static|Mapping.Interpolator|ukern1(Ukern1Calculator,int)
+Mapping.Interpolator|type|public static|class|Mapping.Interpolator
+Mapping.Spreader|method|public static|Mapping.Spreader|gauss(int,double)
+Mapping.Spreader|method|public static|Mapping.Spreader|linear()
+Mapping.Spreader|method|public static|Mapping.Spreader|nearest()
+Mapping.Spreader|method|public static|Mapping.Spreader|sinc(int)
+Mapping.Spreader|method|public static|Mapping.Spreader|sincCos(int,double)
+Mapping.Spreader|method|public static|Mapping.Spreader|sincGauss(int,double)
+Mapping.Spreader|method|public static|Mapping.Spreader|sincSinc(int,double)
+Mapping.Spreader|type|public static|class|Mapping.Spreader
+Mapping|constructor|protected||<init>()
+Mapping|field|public static final|Mapping.Interpolator|LINEAR_INTERPOLATOR
+Mapping|field|public static final|Mapping.Interpolator|NEAREST_INTERPOLATOR
+Mapping|field|public static final|Mapping.Spreader|LINEAR_SPREADER
+Mapping|field|public static final|Mapping.Spreader|NEAREST_SPREADER
+Mapping|method|public|Mapping[]|decompose(boolean[],boolean[])
+Mapping|method|public|Mapping|mapSplit(int[],int[])
+Mapping|method|public|Mapping|simplify()
+Mapping|method|public|boolean|getInvert()
+Mapping|method|public|boolean|getReport()
+Mapping|method|public|boolean|getTranForward()
+Mapping|method|public|boolean|getTranInverse()
+Mapping|method|public|double[][]|tran2(int,double[],double[],boolean)
+Mapping|method|public|double[][]|tranGrid(int,int[],int[],double,int,boolean,int)
+Mapping|method|public|double[][]|tranP(int,int,double[][],boolean,int)
+Mapping|method|public|double[]|linearApprox(double[],double[],double)
+Mapping|method|public|double[]|mapBox(double[],double[],boolean,int,double[],double[])
+Mapping|method|public|double[]|tran1(int,double[],boolean)
+Mapping|method|public|double[]|tranN(int,int,double[],boolean,int)
+Mapping|method|public|double|rate(double[],int,int)
+Mapping|method|public|int|getNin()
+Mapping|method|public|int|getNout()
+Mapping|method|public|int|resample(int,int[],int[],Object,Object,Mapping.Interpolator,ResampleFlags,double,int,Number,int,int[],int[],int[],int[],Object,Object)
+Mapping|method|public|int|resampleB(int,int[],int[],byte[],byte[],Mapping.Interpolator,ResampleFlags,double,int,byte,int,int[],int[],int[],int[],byte[],byte[])
+Mapping|method|public|int|resampleD(int,int[],int[],double[],double[],Mapping.Interpolator,ResampleFlags,double,int,double,int,int[],int[],int[],int[],double[],double[])
+Mapping|method|public|int|resampleF(int,int[],int[],float[],float[],Mapping.Interpolator,ResampleFlags,double,int,float,int,int[],int[],int[],int[],float[],float[])
+Mapping|method|public|int|resampleI(int,int[],int[],int[],int[],Mapping.Interpolator,ResampleFlags,double,int,int,int,int[],int[],int[],int[],int[],int[])
+Mapping|method|public|int|resampleL(int,int[],int[],long[],long[],Mapping.Interpolator,ResampleFlags,double,int,long,int,int[],int[],int[],int[],long[],long[])
+Mapping|method|public|int|resampleS(int,int[],int[],short[],short[],Mapping.Interpolator,ResampleFlags,double,int,short,int,int[],int[],int[],int[],short[],short[])
+Mapping|method|public|void|invert()
+Mapping|method|public|void|rebin(double,int,int[],int[],Object,Object,Mapping.Spreader,boolean,double,int,Number,int,int[],int[],int[],int[],Object,Object)
+Mapping|method|public|void|rebinD(double,int,int[],int[],double[],double[],Mapping.Spreader,boolean,double,int,double,int,int[],int[],int[],int[],double[],double[])
+Mapping|method|public|void|rebinF(double,int,int[],int[],float[],float[],Mapping.Spreader,boolean,double,int,float,int,int[],int[],int[],int[],float[],float[])
+Mapping|method|public|void|rebinI(double,int,int[],int[],int[],int[],Mapping.Spreader,boolean,double,int,int,int,int[],int[],int[],int[],int[],int[])
+Mapping|method|public|void|setInvert(boolean)
+Mapping|method|public|void|setReport(boolean)
+Mapping|type|public|class|Mapping
+MathMap|constructor|public||<init>(int,int,String[],String[])
+MathMap|method|public|boolean|getSimpFI()
+MathMap|method|public|boolean|getSimpIF()
+MathMap|method|public|int|getSeed()
+MathMap|method|public|void|setSeed(int)
+MathMap|method|public|void|setSimpFI(boolean)
+MathMap|method|public|void|setSimpIF(boolean)
+MathMap|type|public|class|MathMap
+MatrixMap|constructor|public||<init>(int,int)
+MatrixMap|constructor|public||<init>(int,int,double[])
+MatrixMap|constructor|public||<init>(int,int,double[][])
+MatrixMap|type|public|class|MatrixMap
+NeedsChannelizing|method|public abstract|void|channelize()
+NeedsChannelizing|method|public abstract|void|unChannelize()
+NeedsChannelizing|type|public abstract|interface|NeedsChannelizing
+NullRegion|constructor|public||<init>(Frame,Region)
+NullRegion|type|public|class|NullRegion
+PcdMap|constructor|public||<init>(double,double[])
+PcdMap|method|public|double|getDisco()
+PcdMap|method|public|double|getPcdCen(int)
+PcdMap|method|public|void|setDisco(double)
+PcdMap|method|public|void|setPcdCen(int,double)
+PcdMap|type|public|class|PcdMap
+PermMap|constructor|public||<init>(int,int[],int,int[],double[])
+PermMap|type|public|class|PermMap
+Plot|constructor|public||<init>(Frame,Rectangle2D,double[])
+Plot|constructor|public||<init>(Frame,Rectangle2D,double[],int,int,int,int)
+Plot|method|public|AstObject|copy()
+Plot|method|public|Grf|getGrf()
+Plot|method|public|Rectangle2D|boundingBox()
+Plot|method|public|String|getC(String)
+Plot|method|public|String|getEdge(int)
+Plot|method|public|String|getLabelling()
+Plot|method|public|boolean|getBorder()
+Plot|method|public|boolean|getClipOp()
+Plot|method|public|boolean|getDrawAxes()
+Plot|method|public|boolean|getDrawAxes(int)
+Plot|method|public|boolean|getDrawTitle()
+Plot|method|public|boolean|getEscape()
+Plot|method|public|boolean|getGrid()
+Plot|method|public|boolean|getInvisible()
+Plot|method|public|boolean|getLabelUnits(int)
+Plot|method|public|boolean|getLabelUp(int)
+Plot|method|public|boolean|getLogLabel(int)
+Plot|method|public|boolean|getLogPlot(int)
+Plot|method|public|boolean|getLogTicks(int)
+Plot|method|public|boolean|getNumLab(int)
+Plot|method|public|boolean|getTextLab(int)
+Plot|method|public|boolean|getTickAll()
+Plot|method|public|boolean|test(String)
+Plot|method|public|double|getD(String)
+Plot|method|public|double|getGap(int)
+Plot|method|public|double|getLabelAt(int)
+Plot|method|public|double|getLogGap(int)
+Plot|method|public|double|getMajTickLen(int)
+Plot|method|public|double|getMinTickLen(int)
+Plot|method|public|double|getNumLabGap(int)
+Plot|method|public|double|getSize()
+Plot|method|public|double|getSize(String)
+Plot|method|public|double|getTextLabGap(int)
+Plot|method|public|double|getTitleGap()
+Plot|method|public|double|getTol()
+Plot|method|public|double|getWidth(String)
+Plot|method|public|float|getF(String)
+Plot|method|public|int|getClip()
+Plot|method|public|int|getColour(String)
+Plot|method|public|int|getFont()
+Plot|method|public|int|getFont(String)
+Plot|method|public|int|getI(String)
+Plot|method|public|int|getMinTick(int)
+Plot|method|public|int|getStyle(String)
+Plot|method|public|long|getL(String)
+Plot|method|public|void|border()
+Plot|method|public|void|clear()
+Plot|method|public|void|clip(int,double[],double[])
+Plot|method|public|void|curve(double[],double[])
+Plot|method|public|void|genCurve(Mapping)
+Plot|method|public|void|grid()
+Plot|method|public|void|gridLine(int,double[],double)
+Plot|method|public|void|mark(int,int,double[][],int)
+Plot|method|public|void|paint(Graphics)
+Plot|method|public|void|polyCurve(int,int,double[][])
+Plot|method|public|void|set(String)
+Plot|method|public|void|setBorder(boolean)
+Plot|method|public|void|setC(String,String)
+Plot|method|public|void|setClip(int)
+Plot|method|public|void|setClipOp(boolean)
+Plot|method|public|void|setColour(String,int)
+Plot|method|public|void|setColour(int)
+Plot|method|public|void|setD(String,double)
+Plot|method|public|void|setDrawAxes(boolean)
+Plot|method|public|void|setDrawAxes(int,boolean)
+Plot|method|public|void|setDrawTitle(boolean)
+Plot|method|public|void|setEdge(int,String)
+Plot|method|public|void|setEscape(boolean)
+Plot|method|public|void|setF(String,float)
+Plot|method|public|void|setFont(String,int)
+Plot|method|public|void|setFont(int)
+Plot|method|public|void|setGap(double)
+Plot|method|public|void|setGap(int,double)
+Plot|method|public|void|setGrf(Grf)
+Plot|method|public|void|setGrid(boolean)
+Plot|method|public|void|setI(String,int)
+Plot|method|public|void|setInvisible(boolean)
+Plot|method|public|void|setL(String,long)
+Plot|method|public|void|setLabelAt(int,double)
+Plot|method|public|void|setLabelUnits(boolean)
+Plot|method|public|void|setLabelUnits(int,boolean)
+Plot|method|public|void|setLabelUp(boolean)
+Plot|method|public|void|setLabelUp(int,boolean)
+Plot|method|public|void|setLabelling(String)
+Plot|method|public|void|setLogGap(double)
+Plot|method|public|void|setLogGap(int,double)
+Plot|method|public|void|setLogLabel(boolean)
+Plot|method|public|void|setLogLabel(int,boolean)
+Plot|method|public|void|setLogPlot(boolean)
+Plot|method|public|void|setLogPlot(int,boolean)
+Plot|method|public|void|setLogTicks(boolean)
+Plot|method|public|void|setLogTicks(int,boolean)
+Plot|method|public|void|setMajTickLen(double)
+Plot|method|public|void|setMajTickLen(int,double)
+Plot|method|public|void|setMinTick(int)
+Plot|method|public|void|setMinTick(int,int)
+Plot|method|public|void|setMinTickLen(double)
+Plot|method|public|void|setMinTickLen(int,double)
+Plot|method|public|void|setNumLab(boolean)
+Plot|method|public|void|setNumLab(int,boolean)
+Plot|method|public|void|setNumLabGap(double)
+Plot|method|public|void|setNumLabGap(int,double)
+Plot|method|public|void|setSize(String,double)
+Plot|method|public|void|setSize(double)
+Plot|method|public|void|setStyle(String,int)
+Plot|method|public|void|setStyle(int)
+Plot|method|public|void|setTextLab(boolean)
+Plot|method|public|void|setTextLab(int,boolean)
+Plot|method|public|void|setTextLabGap(double)
+Plot|method|public|void|setTextLabGap(int,double)
+Plot|method|public|void|setTickAll(boolean)
+Plot|method|public|void|setTitleGap(double)
+Plot|method|public|void|setTol(double)
+Plot|method|public|void|setWidth(String,double)
+Plot|method|public|void|setWidth(double)
+Plot|method|public|void|text(String,double[],float[],String)
+Plot|type|public|class|Plot
+PointList|constructor|public||<init>(Frame,int,double[][],Region)
+PointList|method|public|int|getListSize()
+PointList|type|public|class|PointList
+PolyMap|constructor|public||<init>(int,int,int,double[],int,double[])
+PolyMap|type|public|class|PolyMap
+Polygon|constructor|public||<init>(Frame,int,double[],double[],Region)
+Polygon|type|public|class|Polygon
+Prism|constructor|public||<init>(Region,Region)
+Prism|type|public|class|Prism
+RateMap|constructor|public||<init>(Mapping,int,int)
+RateMap|type|public|class|RateMap
+Region|field|public static final|int|OVERLAP_INSIDE
+Region|field|public static final|int|OVERLAP_NEGATE
+Region|field|public static final|int|OVERLAP_NONE
+Region|field|public static final|int|OVERLAP_OUTSIDE
+Region|field|public static final|int|OVERLAP_PARTIAL
+Region|field|public static final|int|OVERLAP_SAME
+Region|field|public static final|int|OVERLAP_UNKNOWN
+Region|method|public|Frame|getRegionFrame()
+Region|method|public|Region|getUnc(boolean)
+Region|method|public|Region|mapRegion(Mapping,Frame)
+Region|method|public|boolean|getAdaptive()
+Region|method|public|boolean|getBounded()
+Region|method|public|boolean|getClosed()
+Region|method|public|boolean|getNegated()
+Region|method|public|double[][]|getRegionBounds()
+Region|method|public|double[][]|getRegionPoints()
+Region|method|public|double|getFillFactor()
+Region|method|public|int|getMeshSize()
+Region|method|public|int|mask(Mapping,boolean,int,int[],int[],Object,Number)
+Region|method|public|int|maskB(Mapping,boolean,int,int[],int[],byte[],byte)
+Region|method|public|int|maskD(Mapping,boolean,int,int[],int[],double[],double)
+Region|method|public|int|maskF(Mapping,boolean,int,int[],int[],float[],float)
+Region|method|public|int|maskI(Mapping,boolean,int,int[],int[],int[],int)
+Region|method|public|int|maskL(Mapping,boolean,int,int[],int[],long[],long)
+Region|method|public|int|maskS(Mapping,boolean,int,int[],int[],short[],short)
+Region|method|public|int|overlap(Region)
+Region|method|public|void|negate()
+Region|method|public|void|setAdaptive(boolean)
+Region|method|public|void|setClosed(boolean)
+Region|method|public|void|setFillFactor(double)
+Region|method|public|void|setMeshSize(int)
+Region|method|public|void|setNegated(boolean)
+Region|method|public|void|setUnc(Region)
+Region|method|public|void|showMesh(boolean,String)
+Region|type|public abstract|class|Region
+ResampleFlags|method|public|boolean|getConserveFlux()
+ResampleFlags|method|public|boolean|getNoBad()
+ResampleFlags|method|public|boolean|getUseBad()
+ResampleFlags|method|public|int|getFlagsInt()
+ResampleFlags|method|public|void|setConserveFlux(boolean)
+ResampleFlags|method|public|void|setNoBad(boolean)
+ResampleFlags|method|public|void|setUseBad(boolean)
+ResampleFlags|type|public|class|ResampleFlags
+SelectorMap|constructor|public||<init>(Region[],double)
+SelectorMap|type|public|class|SelectorMap
+ShiftMap|constructor|public||<init>(double[])
+ShiftMap|type|public|class|ShiftMap
+SkyAxis|constructor|protected||<init>()
+SkyAxis|type|public|class|SkyAxis
+SkyFrame|constructor|public||<init>()
+SkyFrame|method|public|String|getProjection()
+SkyFrame|method|public|String|getSkyRef()
+SkyFrame|method|public|String|getSkyRefIs()
+SkyFrame|method|public|String|getSkyRefP()
+SkyFrame|method|public|boolean|getAlignOffset()
+SkyFrame|method|public|boolean|getAsTime(int)
+SkyFrame|method|public|boolean|getNegLon()
+SkyFrame|method|public|double|getEquinox()
+SkyFrame|method|public|double|getSkyRef(int)
+SkyFrame|method|public|double|getSkyRefP(int)
+SkyFrame|method|public|int|getLatAxis()
+SkyFrame|method|public|int|getLonAxis()
+SkyFrame|method|public|void|setAlignOffset(boolean)
+SkyFrame|method|public|void|setAsTime(int,boolean)
+SkyFrame|method|public|void|setEquinox(double)
+SkyFrame|method|public|void|setNegLon(boolean)
+SkyFrame|method|public|void|setProjection(String)
+SkyFrame|method|public|void|setSkyRef(String)
+SkyFrame|method|public|void|setSkyRef(int,double)
+SkyFrame|method|public|void|setSkyRefIs(String)
+SkyFrame|method|public|void|setSkyRefP(String)
+SkyFrame|method|public|void|setSkyRefP(int,double)
+SkyFrame|type|public|class|SkyFrame
+SlaMap|constructor|public||<init>()
+SlaMap|constructor|public||<init>(int)
+SlaMap|method|public|void|add(String,double[])
+SlaMap|type|public|class|SlaMap
+SpecFluxFrame|constructor|public||<init>(SpecFrame,FluxFrame)
+SpecFluxFrame|type|public|class|SpecFluxFrame
+SpecFrame|constructor|public||<init>()
+SpecFrame|method|public|String|getAlignStdOfRest()
+SpecFrame|method|public|String|getGeoLat()
+SpecFrame|method|public|String|getGeoLon()
+SpecFrame|method|public|String|getRefDec()
+SpecFrame|method|public|String|getRefRA()
+SpecFrame|method|public|String|getSourceSys()
+SpecFrame|method|public|String|getStdOfRest()
+SpecFrame|method|public|double[]|getRefPos(SkyFrame)
+SpecFrame|method|public|double|getRestFreq()
+SpecFrame|method|public|double|getSourceVRF()
+SpecFrame|method|public|double|getSourceVel()
+SpecFrame|method|public|void|setAlignStdOfRest(String)
+SpecFrame|method|public|void|setGeoLat(String)
+SpecFrame|method|public|void|setGeoLon(String)
+SpecFrame|method|public|void|setRefDec(String)
+SpecFrame|method|public|void|setRefPos(SkyFrame,double,double)
+SpecFrame|method|public|void|setRefRA(String)
+SpecFrame|method|public|void|setRestFreq(String)
+SpecFrame|method|public|void|setRestFreq(double)
+SpecFrame|method|public|void|setSourceSys(String)
+SpecFrame|method|public|void|setSourceVRF(double)
+SpecFrame|method|public|void|setSourceVel(double)
+SpecFrame|method|public|void|setStdOfRest(String)
+SpecFrame|type|public|class|SpecFrame
+SpecMap|constructor|public||<init>(int,int)
+SpecMap|method|public|void|specAdd(String,double[])
+SpecMap|type|public|class|SpecMap
+SphMap|constructor|public||<init>()
+SphMap|method|public|boolean|getUnitRadius()
+SphMap|method|public|double|getPolarLong()
+SphMap|method|public|void|setPolarLong(double)
+SphMap|method|public|void|setUnitRadius(boolean)
+SphMap|type|public|class|SphMap
+StcCatalogEntryLocation|constructor|public||<init>(Region,AstroCoords[])
+StcCatalogEntryLocation|type|public|class|StcCatalogEntryLocation
+StcObsDataLocation|constructor|public||<init>(Region,AstroCoords[])
+StcObsDataLocation|type|public|class|StcObsDataLocation
+StcResourceProfile|constructor|public||<init>(Region,AstroCoords[])
+StcResourceProfile|type|public|class|StcResourceProfile
+StcSearchLocation|constructor|public||<init>(Region,AstroCoords[])
+StcSearchLocation|type|public|class|StcSearchLocation
+Stc|method|public|AstroCoords|getStcCoord(int)
+Stc|method|public|Region|getStcRegion()
+Stc|method|public|int|getStcNCoord()
+Stc|type|public abstract|class|Stc
+SwitchMap|constructor|public||<init>(Mapping,Mapping,Mapping[])
+SwitchMap|type|public|class|SwitchMap
+TimeFrame|constructor|public||<init>()
+TimeFrame|method|public|String|getAlignTimeScale()
+TimeFrame|method|public|String|getClockLat()
+TimeFrame|method|public|String|getClockLon()
+TimeFrame|method|public|String|getTimeScale()
+TimeFrame|method|public|double|currentTime()
+TimeFrame|method|public|double|getLtOffset()
+TimeFrame|method|public|double|getTimeOrigin()
+TimeFrame|method|public|void|setAlignTimeScale(String)
+TimeFrame|method|public|void|setClockLat(String)
+TimeFrame|method|public|void|setClockLon(String)
+TimeFrame|method|public|void|setLtOffset(double)
+TimeFrame|method|public|void|setTimeOrigin(String)
+TimeFrame|method|public|void|setTimeOrigin(double)
+TimeFrame|method|public|void|setTimeScale(String)
+TimeFrame|type|public|class|TimeFrame
+TimeMap|constructor|public||<init>()
+TimeMap|constructor|public||<init>(int)
+TimeMap|method|public|void|timeAdd(String,double[])
+TimeMap|type|public|class|TimeMap
+TranMap|constructor|public||<init>(Mapping,Mapping)
+TranMap|type|public|class|TranMap
+Transformer1|constructor|public||<init>()
+Transformer1|method|public abstract|double[]|tran1(int,double[],boolean)
+Transformer1|method|public final|boolean|canTransformCoords(int,int)
+Transformer1|method|public final|double[][]|tranP(int,int,double[][],boolean,int)
+Transformer1|type|public abstract|class|Transformer1
+Transformer2|constructor|public||<init>()
+Transformer2|method|public abstract|double[][]|tran2(int,double[],double[],boolean)
+Transformer2|method|public final|boolean|canTransformCoords(int,int)
+Transformer2|method|public final|double[][]|tranP(int,int,double[][],boolean,int)
+Transformer2|type|public abstract|class|Transformer2
+Transformer|constructor|public||<init>()
+Transformer|method|public abstract|String|getAuthor()
+Transformer|method|public abstract|String|getContact()
+Transformer|method|public abstract|String|getPurpose()
+Transformer|method|public abstract|boolean|canTransformCoords(int,int)
+Transformer|method|public abstract|double[][]|tranP(int,int,double[][],boolean,int)
+Transformer|method|public|boolean|hasForward()
+Transformer|method|public|boolean|hasInverse()
+Transformer|method|public|boolean|simpFI()
+Transformer|method|public|boolean|simpIF()
+Transformer|type|public abstract|class|Transformer
+UinterpCalculator|constructor|public||<init>()
+UinterpCalculator|method|public|int|uinterpB(int,int[],int[],byte[],byte[],int,int[],double[][],ResampleFlags,byte,byte[],byte[])
+UinterpCalculator|method|public|int|uinterpD(int,int[],int[],double[],double[],int,int[],double[][],ResampleFlags,double,double[],double[])
+UinterpCalculator|method|public|int|uinterpF(int,int[],int[],float[],float[],int,int[],double[][],ResampleFlags,float,float[],float[])
+UinterpCalculator|method|public|int|uinterpI(int,int[],int[],int[],int[],int,int[],double[][],ResampleFlags,int,int[],int[])
+UinterpCalculator|method|public|int|uinterpL(int,int[],int[],long[],long[],int,int[],double[][],ResampleFlags,long,long[],long[])
+UinterpCalculator|method|public|int|uinterpS(int,int[],int[],short[],short[],int,int[],double[][],ResampleFlags,short,short[],short[])
+UinterpCalculator|type|public abstract|class|UinterpCalculator
+Ukern1Calculator|method|public abstract|double|ukern1(double)
+Ukern1Calculator|type|public abstract|interface|Ukern1Calculator
+UnitMap|constructor|public||<init>(int)
+UnitMap|type|public|class|UnitMap
+WcsMap|constructor|public||<init>(int,int,int,int)
+WcsMap|field|public static final|int|AST__AIR
+WcsMap|field|public static final|int|AST__AIT
+WcsMap|field|public static final|int|AST__ARC
+WcsMap|field|public static final|int|AST__AZP
+WcsMap|field|public static final|int|AST__BON
+WcsMap|field|public static final|int|AST__CAR
+WcsMap|field|public static final|int|AST__CEA
+WcsMap|field|public static final|int|AST__COD
+WcsMap|field|public static final|int|AST__COE
+WcsMap|field|public static final|int|AST__COO
+WcsMap|field|public static final|int|AST__COP
+WcsMap|field|public static final|int|AST__CSC
+WcsMap|field|public static final|int|AST__CYP
+WcsMap|field|public static final|int|AST__GLS
+WcsMap|field|public static final|int|AST__MER
+WcsMap|field|public static final|int|AST__MOL
+WcsMap|field|public static final|int|AST__NCP
+WcsMap|field|public static final|int|AST__PAR
+WcsMap|field|public static final|int|AST__PCO
+WcsMap|field|public static final|int|AST__QSC
+WcsMap|field|public static final|int|AST__SFL
+WcsMap|field|public static final|int|AST__SIN
+WcsMap|field|public static final|int|AST__STG
+WcsMap|field|public static final|int|AST__SZP
+WcsMap|field|public static final|int|AST__TAN
+WcsMap|field|public static final|int|AST__TPN
+WcsMap|field|public static final|int|AST__TSC
+WcsMap|field|public static final|int|AST__WCSBAD
+WcsMap|field|public static final|int|AST__ZEA
+WcsMap|field|public static final|int|AST__ZPN
+WcsMap|method|public|float|getNatLat()
+WcsMap|method|public|float|getNatLon()
+WcsMap|method|public|float|getPVi_m()
+WcsMap|method|public|int|getWcsAxis(int)
+WcsMap|method|public|int|getWcsType()
+WcsMap|method|public|void|setPVi_m(float)
+WcsMap|type|public|class|WcsMap
+WinMap|constructor|public||<init>(int,double[],double[],double[],double[])
+WinMap|type|public|class|WinMap
+XmlChan|constructor|protected||<init>()
+XmlChan|constructor|public||<init>(InputStream,OutputStream)
+XmlChan|field|public static final|String|AST__XMLNS
+XmlChan|method|public|String|getXmlFormat()
+XmlChan|method|public|String|getXmlPrefix()
+XmlChan|method|public|boolean|getXmlIndent()
+XmlChan|method|public|int|getXmlLength()
+XmlChan|method|public|void|setXmlFormat(String)
+XmlChan|method|public|void|setXmlIndent(boolean)
+XmlChan|method|public|void|setXmlLength(int)
+XmlChan|method|public|void|setXmlPrefix(String)
+XmlChan|type|public|class|XmlChan
+ZoomMap|constructor|public||<init>(int,double)
+ZoomMap|method|public|double|getZoom()
+ZoomMap|method|public|void|setZoom(double)
+ZoomMap|type|public|class|ZoomMap
+grf.DefaultGrfContainer|constructor|public||<init>()
+grf.DefaultGrfContainer|constructor|public||<init>(int,String,double,double,double,double[],DefaultGrfState)
+grf.DefaultGrfContainer|constructor|public||<init>(int,double[],double[],DefaultGrfState)
+grf.DefaultGrfContainer|constructor|public||<init>(int,double[],double[],int,DefaultGrfState)
+grf.DefaultGrfContainer|field|protected|DefaultGrfState|state
+grf.DefaultGrfContainer|field|protected|String|text
+grf.DefaultGrfContainer|field|protected|double[]|bbox
+grf.DefaultGrfContainer|field|protected|double[]|xPositions
+grf.DefaultGrfContainer|field|protected|double[]|yPositions
+grf.DefaultGrfContainer|field|protected|double|angle
+grf.DefaultGrfContainer|field|protected|double|xPos
+grf.DefaultGrfContainer|field|protected|double|yPos
+grf.DefaultGrfContainer|field|protected|int|grfType
+grf.DefaultGrfContainer|field|protected|int|value
+grf.DefaultGrfContainer|field|public static final|int|LINE
+grf.DefaultGrfContainer|field|public static final|int|MARK
+grf.DefaultGrfContainer|field|public static final|int|TEXT
+grf.DefaultGrfContainer|method|public|DefaultGrfState|getGrfState()
+grf.DefaultGrfContainer|method|public|String|getText()
+grf.DefaultGrfContainer|method|public|double[]|getBBox()
+grf.DefaultGrfContainer|method|public|double[]|getXPositions()
+grf.DefaultGrfContainer|method|public|double[]|getYPositions()
+grf.DefaultGrfContainer|method|public|double|getAngle()
+grf.DefaultGrfContainer|method|public|double|getX()
+grf.DefaultGrfContainer|method|public|double|getY()
+grf.DefaultGrfContainer|method|public|int|getInt()
+grf.DefaultGrfContainer|method|public|int|getType()
+grf.DefaultGrfContainer|method|public|void|setAngle(double)
+grf.DefaultGrfContainer|method|public|void|setBBox(double[])
+grf.DefaultGrfContainer|method|public|void|setGrfState(DefaultGrfState)
+grf.DefaultGrfContainer|method|public|void|setInt(int)
+grf.DefaultGrfContainer|method|public|void|setText(String)
+grf.DefaultGrfContainer|method|public|void|setType(int)
+grf.DefaultGrfContainer|method|public|void|setX(double)
+grf.DefaultGrfContainer|method|public|void|setXPositions(double[])
+grf.DefaultGrfContainer|method|public|void|setY(double)
+grf.DefaultGrfContainer|method|public|void|setYPositions(double[])
+grf.DefaultGrfContainer|type|public|class|grf.DefaultGrfContainer
+grf.DefaultGrfFontManager|field|protected|ArrayList|fonts
+grf.DefaultGrfFontManager|field|protected|Font|defaultFont
+grf.DefaultGrfFontManager|method|public static|DefaultGrfFontManager|getReference()
+grf.DefaultGrfFontManager|method|public|Font|getFont(int)
+grf.DefaultGrfFontManager|method|public|int|add(Font)
+grf.DefaultGrfFontManager|method|public|int|count()
+grf.DefaultGrfFontManager|method|public|int|getIndex(Font)
+grf.DefaultGrfFontManager|method|public|int|remove(Font)
+grf.DefaultGrfFontManager|method|public|void|remove(int)
+grf.DefaultGrfFontManager|type|public|class|grf.DefaultGrfFontManager
+grf.DefaultGrfMarker|constructor|public||<init>()
+grf.DefaultGrfMarker|field|public static final|int|CIRCLE
+grf.DefaultGrfMarker|field|public static final|int|CROSS
+grf.DefaultGrfMarker|field|public static final|int|DIAMOND
+grf.DefaultGrfMarker|field|public static final|int|DOT
+grf.DefaultGrfMarker|field|public static final|int|DOWNTRIANGLE
+grf.DefaultGrfMarker|field|public static final|int|FILLEDCIRCLE
+grf.DefaultGrfMarker|field|public static final|int|FILLEDDIAMOND
+grf.DefaultGrfMarker|field|public static final|int|FILLEDDOWNTRIANGLE
+grf.DefaultGrfMarker|field|public static final|int|FILLEDSQUARE
+grf.DefaultGrfMarker|field|public static final|int|FILLEDUPTRIANGLE
+grf.DefaultGrfMarker|field|public static final|int|PLUS
+grf.DefaultGrfMarker|field|public static final|int|SQUARE
+grf.DefaultGrfMarker|field|public static final|int|STAR
+grf.DefaultGrfMarker|field|public static final|int|UPTRIANGLE
+grf.DefaultGrfMarker|method|protected static|void|drawCircle(Graphics2D,double,double,double,boolean)
+grf.DefaultGrfMarker|method|protected static|void|drawCross(Graphics2D,double,double,double)
+grf.DefaultGrfMarker|method|protected static|void|drawDiamond(Graphics2D,double,double,double,boolean)
+grf.DefaultGrfMarker|method|protected static|void|drawDot(Graphics2D,double,double,double)
+grf.DefaultGrfMarker|method|protected static|void|drawPlus(Graphics2D,double,double,double)
+grf.DefaultGrfMarker|method|protected static|void|drawSquare(Graphics2D,double,double,double,boolean)
+grf.DefaultGrfMarker|method|protected static|void|drawStar(Graphics2D,double,double,double)
+grf.DefaultGrfMarker|method|protected static|void|drawTriangle(Graphics2D,double,double,double,boolean,boolean)
+grf.DefaultGrfMarker|method|public static|String|getDescription(int)
+grf.DefaultGrfMarker|method|public static|int|getNumMarkers()
+grf.DefaultGrfMarker|method|public static|void|draw(Graphics2D,int,double,double,double)
+grf.DefaultGrfMarker|type|public|class|grf.DefaultGrfMarker
+grf.DefaultGrfState|constructor|public||<init>()
+grf.DefaultGrfState|constructor|public||<init>(double,double,double,double,double)
+grf.DefaultGrfState|constructor|public||<init>(double,double,double,double,double,Rectangle,double)
+grf.DefaultGrfState|method|public|Object|clone()
+grf.DefaultGrfState|method|public|Rectangle|getClip()
+grf.DefaultGrfState|method|public|String|toString()
+grf.DefaultGrfState|method|public|double|getAlpha()
+grf.DefaultGrfState|method|public|double|getColour()
+grf.DefaultGrfState|method|public|double|getFont()
+grf.DefaultGrfState|method|public|double|getSize()
+grf.DefaultGrfState|method|public|double|getStyle()
+grf.DefaultGrfState|method|public|double|getWidth()
+grf.DefaultGrfState|method|public|void|setAlpha(double)
+grf.DefaultGrfState|method|public|void|setClip(Rectangle)
+grf.DefaultGrfState|method|public|void|setColour(double)
+grf.DefaultGrfState|method|public|void|setFont(double)
+grf.DefaultGrfState|method|public|void|setSize(double)
+grf.DefaultGrfState|method|public|void|setStyle(double)
+grf.DefaultGrfState|method|public|void|setWidth(double)
+grf.DefaultGrfState|type|public|class|grf.DefaultGrfState
+grf.DefaultGrf|constructor|public||<init>(FontRenderContext)
+grf.DefaultGrf|constructor|public||<init>(JComponent)
+grf.DefaultGrf|field|public static final|String|DEFAULT
+grf.DefaultGrf|field|public static final|double|BAD
+grf.DefaultGrf|field|public static final|int|DASH
+grf.DefaultGrf|field|public static final|int|DOT
+grf.DefaultGrf|field|public static final|int|DOTDASH
+grf.DefaultGrf|field|public static final|int|GRF__ALPHA
+grf.DefaultGrf|field|public static final|int|LONGDASH
+grf.DefaultGrf|field|public static final|int|PLAIN
+grf.DefaultGrf|field|public static final|int|SHORTDASH
+grf.DefaultGrf|method|protected|DefaultGrfContainer|textProperties(String,double,double,String,double,double)
+grf.DefaultGrf|method|protected|double[]|getAnchor(String,double,double,double,double[])
+grf.DefaultGrf|method|protected|void|drawMark(Graphics2D,DefaultGrfContainer)
+grf.DefaultGrf|method|protected|void|drawText(Graphics2D,DefaultGrfContainer)
+grf.DefaultGrf|method|protected|void|update(Graphics2D)
+grf.DefaultGrf|method|public static|Color|decodeColor(int)
+grf.DefaultGrf|method|public static|Stroke|lineStroke(int,float)
+grf.DefaultGrf|method|public static|int[]|bound(double,double[])
+grf.DefaultGrf|method|public static|int|encodeColor(Color)
+grf.DefaultGrf|method|public static|void|drawLine(Graphics2D,DefaultGrfContainer)
+grf.DefaultGrf|method|public|FontRenderContext|getFontRenderContext()
+grf.DefaultGrf|method|public|Font|getFont(int)
+grf.DefaultGrf|method|public|Object|remove(String)
+grf.DefaultGrf|method|public|double[]|axisScale()
+grf.DefaultGrf|method|public|double[]|charHeight()
+grf.DefaultGrf|method|public|double[]|textExtent(String,double,double,String,double,double)
+grf.DefaultGrf|method|public|double|attr(int,double,int)
+grf.DefaultGrf|method|public|double|attribute(int,double,int)
+grf.DefaultGrf|method|public|float[][]|txExt(String,float,float,String,float,float)
+grf.DefaultGrf|method|public|float[]|qch()
+grf.DefaultGrf|method|public|float[]|scales()
+grf.DefaultGrf|method|public|int|addFont(Font)
+grf.DefaultGrf|method|public|int|cap(int,int)
+grf.DefaultGrf|method|public|int|deleteFont(Font)
+grf.DefaultGrf|method|public|int|getFontIndex(Font)
+grf.DefaultGrf|method|public|void|clear()
+grf.DefaultGrf|method|public|void|establishContext(String)
+grf.DefaultGrf|method|public|void|flush()
+grf.DefaultGrf|method|public|void|line(int,float[],float[])
+grf.DefaultGrf|method|public|void|mark(int,float[],float[],int)
+grf.DefaultGrf|method|public|void|marker(double[],double[],int)
+grf.DefaultGrf|method|public|void|paint(Graphics)
+grf.DefaultGrf|method|public|void|paint(Graphics2D)
+grf.DefaultGrf|method|public|void|polyline(double[],double[])
+grf.DefaultGrf|method|public|void|reAdd(String,Object)
+grf.DefaultGrf|method|public|void|reset()
+grf.DefaultGrf|method|public|void|setClipRegion(Rectangle)
+grf.DefaultGrf|method|public|void|text(String,double,double,String,double,double)
+grf.DefaultGrf|method|public|void|text(String,float,float,String,float,float)
+grf.DefaultGrf|type|public|class|grf.DefaultGrf
+grf.GrfEscape|constructor|public||<init>(int,int)
+grf.GrfEscape|field|public static final|int|GRF__ESBAC
+grf.GrfEscape|field|public static final|int|GRF__ESCOL
+grf.GrfEscape|field|public static final|int|GRF__ESFON
+grf.GrfEscape|field|public static final|int|GRF__ESGAP
+grf.GrfEscape|field|public static final|int|GRF__ESPER
+grf.GrfEscape|field|public static final|int|GRF__ESPOP
+grf.GrfEscape|field|public static final|int|GRF__ESPSH
+grf.GrfEscape|field|public static final|int|GRF__ESSIZ
+grf.GrfEscape|field|public static final|int|GRF__ESSTY
+grf.GrfEscape|field|public static final|int|GRF__ESSUB
+grf.GrfEscape|field|public static final|int|GRF__ESSUP
+grf.GrfEscape|field|public static final|int|GRF__ESWID
+grf.GrfEscape|method|public static|Object[]|findEscapes(String)
+grf.GrfEscape|method|public static|boolean|getEscapes()
+grf.GrfEscape|method|public static|void|setEscapes(boolean)
+grf.GrfEscape|method|public|String|getText()
+grf.GrfEscape|method|public|String|toString()
+grf.GrfEscape|method|public|boolean|equals(Object)
+grf.GrfEscape|method|public|int|getCode()
+grf.GrfEscape|method|public|int|getValue()
+grf.GrfEscape|method|public|int|hashCode()
+grf.GrfEscape|type|public|class|grf.GrfEscape
+xml.XAstReader|constructor|public||<init>()
+xml.XAstReader|method|public|AstObject|makeAst(Element)
+xml.XAstReader|method|public|AstObject|makeAst(Source)
+xml.XAstReader|type|public|class|xml.XAstReader
+xml.XAstWriter|constructor|public||<init>()
+xml.XAstWriter|method|public|Element|makeElement(AstObject)
+xml.XAstWriter|method|public|Source|makeSource(AstObject)
+xml.XAstWriter|method|public|XmlChan|getXmlChan()
+xml.XAstWriter|type|public|class|xml.XAstWriter

@@ -1,0 +1,66 @@
+name: Build and test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Compiles with Error Prone, runs Checkstyle, PMD and the tests, and checks
+  # formatting, on the JDK the build needs (21 to 26, see CLAUDE.md).
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # The tests read the C library's fixtures; the other submodules are
+      # only needed to regenerate committed files.
+      - name: Check out the C library submodule
+        run: git submodule update --init reference/starlink-ast
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build and test
+        run: mvn -B verify
+
+  # Builds with JDK 21 and runs the tests on another runtime: Java 8, the
+  # oldest the library supports, and Java 25. Elementary functions (Math.sin
+  # and friends) can differ in the last bit between runtimes.
+  runtime:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: ["8", "25"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check out the C library submodule
+        run: git submodule update --init reference/starlink-ast
+
+      - name: Set up the Java ${{ matrix.runtime }} runtime
+        id: runtime
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.runtime }}
+
+      # Set up last, so JAVA_HOME (which runs Maven) is JDK 21.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Test on Java ${{ matrix.runtime }}
+        run: mvn -B test -Djvm="${{ steps.runtime.outputs.path }}/bin/java"

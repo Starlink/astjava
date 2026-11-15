@@ -1,0 +1,72 @@
+# Fixtures of fixtures/oracle/framesets.oracle whose sections do not all match C:
+# <path relative to ast_tester/fixtures> | <reason>
+# Rewritten by TransformOracleTest with -Dast.writeDeferred=true.
+programs/testcmpmap/splittest1.ast | needs LutMap
+programs/testfitschan/sparse.ast | needs DSBSpecFrame, LutMap, SpecMap
+programs/testplot3d/plot3d-test1.ast | needs DSBSpecFrame, SpecMap
+programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, PointList, PointSet, Prism, SpecFrame
+serialisation/c_dssmap.ast | needs DssMap
+serialisation/cmpframe.ast | needs SpecFrame
+serialisation/frameset_skyspec.ast | needs SpecFrame
+serialisation/jan-dsb.ast | needs DSBSpecFrame
+serialisation/region_in_cmpframe.ast | needs Box, PointSet
+serialisation/specframe.ast | needs SpecFrame
+wcsconv/expected/jan.ast | needs DSBSpecFrame
+wcsconv/framesets/a20070718_00010_02_cube-ast.ast | needs DSBSpecFrame, SpecMap
+wcsconv/framesets/alt-spectral-head.ast | needs SpecFrame
+wcsconv/framesets/awav-a2f-head.ast | needs SpecFrame
+wcsconv/framesets/axes-swap-head.ast | needs SpecFrame
+wcsconv/framesets/beta-frq-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/cd-cross-head.ast | needs SpecFrame
+wcsconv/framesets/class-ait-head.ast | needs SpecFrame
+wcsconv/framesets/class-arc-head.ast | needs SpecFrame
+wcsconv/framesets/class-gal-head.ast | needs SpecFrame
+wcsconv/framesets/class-noproj-head.ast | needs DSBSpecFrame
+wcsconv/framesets/class-olddate-head.ast | needs SpecFrame
+wcsconv/framesets/class-sfl-head.ast | needs SpecFrame
+wcsconv/framesets/class-sin-head.ast | needs SpecFrame
+wcsconv/framesets/class-spec-head.ast | needs DSBSpecFrame
+wcsconv/framesets/class-spec-hel-head.ast | needs DSBSpecFrame
+wcsconv/framesets/class-write-head.ast | needs DSBSpecFrame
+wcsconv/framesets/crota-3d-head.ast | needs SpecFrame
+wcsconv/framesets/cube-reorder-head.ast | needs SpecFrame
+wcsconv/framesets/degen-wcsaxes-head.ast | needs SpecFrame
+wcsconv/framesets/ener-vel-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/fits-pc-alt-head.ast | needs SpecFrame
+wcsconv/framesets/fits-pc-unit-head.ast | needs SpecFrame
+wcsconv/framesets/freq-f2w-head.ast | needs SpecFrame
+wcsconv/framesets/freq-ghz-bary-head.ast | needs SpecFrame
+wcsconv/framesets/freq-log-head.ast | needs MathMap, SpecFrame
+wcsconv/framesets/freq-pixel3d-head.ast | needs SpecFrame
+wcsconv/framesets/freq-wav-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/grism-head.ast | needs GrismMap, SpecFrame
+wcsconv/framesets/jan-fits-class.ast | needs DSBSpecFrame
+wcsconv/framesets/longslit-fits-pc.ast | needs SpecFrame
+wcsconv/framesets/multi-wcs-spec-head.ast | needs SpecFrame
+wcsconv/framesets/polco-head.ast | needs MathMap
+wcsconv/framesets/polco2-head.ast | needs MathMap
+wcsconv/framesets/restfreq-ghz-head.ast | needs SpecFrame
+wcsconv/framesets/restfreq-mhz-head.ast | needs SpecFrame
+wcsconv/framesets/sip-3d-head.ast | needs SpecFrame
+wcsconv/framesets/sip-3d-swap-head.ast | needs SpecFrame
+wcsconv/framesets/skyspec3d-class-head.ast | needs SpecFrame
+wcsconv/framesets/skyspec3d-head.ast | needs SpecFrame
+wcsconv/framesets/specflux-head.ast | needs SpecFrame
+wcsconv/framesets/ssysobs-head.ast | needs SpecFrame
+wcsconv/framesets/velo-aips-head.ast | needs SpecFrame
+wcsconv/framesets/velo-vel-head.ast | needs SpecFrame
+wcsconv/framesets/vopt-f2w-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/vopt-geo-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/vopt-wav-head.ast | needs SpecFrame
+wcsconv/framesets/vrad-lsrd-head.ast | needs SpecFrame
+wcsconv/framesets/vrad-v2f-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/vrad-wav-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/wave-1d-head.ast | needs SpecFrame
+wcsconv/framesets/wave-f2w-head.ast | needs SpecFrame, SpecMap
+wcsconv/framesets/wave-w2f-head.ast | needs SpecFrame
+wcsconv/framesets/wavn-frq-head.ast | needs SpecFrame
+wcsconv/framesets/zero-cdelt-head.ast | needs SpecFrame
+wcsconv/framesets/zopt-frq-head.ast | needs SpecFrame, SpecMap
+wcsconv/inputs/a20070718_00010_02_cube.ast | needs DSBSpecFrame, SpecMap
+wcsconv/inputs/lsst2.ast | needs SplineMap
+wcsconv/inputs/specflux.ast | needs SpecFrame
