@@ -389,6 +389,38 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: has no string attribute layer for a DSBSpecFrame; its `lo_freq` message gives the DSBCentre held, `verify_attrs` names `astMatch`, the sideband Mappings check the attributes first, and `from_node` reads the SideBand in any case and ignores one it does not know.
 - Java: as C.
 
+### FluxFrame System names
+
+- C: at the pin, `SystemCode` (fluxframe.c) reads both `SFCBRW` and `SRCBR` as `AST__SBRIGHTW`, and `FluxSystemString` writes `SFCBRW`, so a FluxFrame in that System reads its own dump back.
+  The Rust repository's `c-library-quirks.md` lists this as resolved upstream in b4457da9, after the pin, but the pinned C already holds the fix (3b1f3f5a, "fluxframe: read the System name it writes for per-wavelength surface brightness").
+- Rust: `FluxSystem::parse` reads both names and writes `SFCBRW`, as C at the pin does.
+- Java: as C.
+
+### The SpecVal comparison of `MakeFluxMapping`
+
+- C: the two SpecVals, each converted to the result's density system, must satisfy `astEQUALS( specval_in, specval_out, 1.0E8 )`: a difference of no more than the larger of 1e8 times DBL_EPSILON times the sum of their magnitudes, and 1e-12.
+- Rust: allows 1e8 times DBL_EPSILON times the larger of their magnitudes and 1, which is about half C's width for large values and wider than C's for values below 1.
+- Java: as C.
+
+### FluxFrame Overlay onto a Frame of another class
+
+- **C quirk**: when the template has its System set, `Overlay` (fluxframe.c) clears the System and AlignSystem of the template itself, overlays the Frame attributes, and sets the System and AlignSystem again with the values they had.
+  The template's AlignSystem is left set, to its default if it was not set, and when clearing the System changes it, FluxFrame's `ClearSystem` and `SetSystem` clear the template's Label, Symbol and Title and reset its Unit to the one last used with each System, or clear it (probed through `astOverlay`).
+- Rust: `fluxframe_overlay` leaves the template unchanged; `frame_overlay` transfers the System only to a result of the template's class.
+- Java: as C.
+
+### The Unit a FluxFrame records for its System
+
+- C: `SetUnit` (fluxframe.c) records the Unit as given, trailing spaces included, as the one used with the System, while the Frame class stores the Unit without them (probed: `Unit(1)=Jy  ` dumps `UFlxdn = "Jy  "`).
+- Rust: records the Unit without trailing spaces.
+- Java: as C.
+
+### A FluxFrame dump whose `SpcFr` is not a SpecFrame
+
+- C: `astLoadFluxFrame` keeps whatever Object `SpcFr` holds.
+- Rust: keeps it only if it is a SpecFrame, and ignores any other.
+- Java: refuses it with AST__LDERR, since a FluxFrame here holds only a SpecFrame.
+
 ## FitsChan
 
 ### An equals sign in a keyword name is reported as an `astPutFits` error from every method

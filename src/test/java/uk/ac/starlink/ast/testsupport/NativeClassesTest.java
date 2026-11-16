@@ -12,33 +12,33 @@ class NativeClassesTest {
     private static final String DUMP = " Begin FrameSet \t# Set of inter-related coordinate systems\n"
             + " IsA Object\n"
             + "    Frm1 = \t# Frame number 1\n"
-            + "       Begin FluxFrame \t# Description of flux values\n"
+            + "       Begin GrismMap \t# Grism Mapping\n"
             + "          Ax1 = \n"
             + "             Begin LutMap\n"
             + "             End LutMap\n"
-            + "       End FluxFrame\n"
+            + "       End GrismMap\n"
             + "    Map2 = \n"
             + "       Begin CmpMap\n"
             + "          MapA = \n"
             + "             Begin ZoomMap\n"
             + "             End ZoomMap\n"
             + "          MapB = \n"
-            + "             Begin FluxFrame\n"
-            + "             End FluxFrame\n"
+            + "             Begin GrismMap\n"
+            + "             End GrismMap\n"
             + "       End CmpMap\n"
             + " End FrameSet\n";
 
     @Test
     void listsTheBegunClassesInOrder() {
         assertEquals(
-                Arrays.asList("FrameSet", "FluxFrame", "LutMap", "CmpMap", "ZoomMap", "FluxFrame"),
+                Arrays.asList("FrameSet", "GrismMap", "LutMap", "CmpMap", "ZoomMap", "GrismMap"),
                 NativeClasses.begun(DUMP));
     }
 
     @Test
     void missingClassesAreSortedWithoutRepeats() {
-        assertEquals(Arrays.asList("FluxFrame", "LutMap"), NativeClasses.missing(DUMP));
-        assertEquals("needs FluxFrame, LutMap", NativeClasses.needs(DUMP));
+        assertEquals(Arrays.asList("GrismMap", "LutMap"), NativeClasses.missing(DUMP));
+        assertEquals("needs GrismMap, LutMap", NativeClasses.needs(DUMP));
     }
 
     @Test

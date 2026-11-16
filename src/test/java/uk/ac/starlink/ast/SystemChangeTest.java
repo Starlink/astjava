@@ -15,9 +15,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * from {@code tools/oracle_fixtures/system_change_probe.c}). When the System changes, the Label,
  * Symbol and Title, whose defaults depend on it, are cleared, and the Unit last used with the new
  * System is restored, or cleared (timeframe.c and specframe.c {@code SetSystem} and {@code
- * ClearSystem}). {@link #run} makes each Frame as the probe does.
- *
- * <p>The FluxFrame case ({@code flux_set_sfcbr}) is skipped (out of scope).
+ * ClearSystem}, and those of fluxframe.c). {@link #run} makes each Frame as the probe does.
  */
 class SystemChangeTest {
 
@@ -76,8 +74,13 @@ class SystemChangeTest {
                 f.clear("System");
                 return f;
             }
-            case "flux_set_sfcbr":
-                return null;
+            case "flux_set_sfcbr": {
+                FluxFrame f = new FluxFrame(AstObject.AST__BAD, null);
+                f.set("System=FLXDN,Unit=Jy");
+                f.set(MINE);
+                f.set("System=SFCBR");
+                return f;
+            }
             default:
                 throw new IllegalArgumentException("no Java set-up for case " + name);
         }
@@ -103,7 +106,7 @@ class SystemChangeTest {
                 failures.add(name + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(7, run, "the in-scope cases the C probe recorded");
+        assertEquals(8, run, "the cases the C probe recorded");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 }

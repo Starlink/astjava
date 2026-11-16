@@ -38,6 +38,8 @@ final class ObjectRegistry {
                 return DSBSpecFrame::new;
             case "FitsChan":
                 return FitsChan::new;
+            case "FluxFrame":
+                return FluxFrame::new;
             case "Frame":
                 return Frame::new;
             case "FrameSet":

@@ -18,14 +18,14 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * astGetC}, {@code astGetI} or {@code astGetD} and its {@code astTest} result; for a FrameSet it
  * also reads the current Frame ("inner"). {@link #make} and {@link #mismatch} do the same.
  *
- * <p>The probe's FluxFrame and SpecFluxFrame cases are skipped (out of scope), as
- * are its Circle cases (Region, out of scope).
+ * <p>The probe's SpecFluxFrame cases are skipped (that class is not yet ported), as are its
+ * Circle cases (Region, out of scope).
  */
 class FrameClassAttrsTest {
 
     /** The probe's classes this library provides. */
-    private static final List<String> IN_SCOPE =
-            Arrays.asList("Frame", "SkyFrame", "SpecFrame", "DSBSpecFrame", "TimeFrame", "CmpFrame", "FrameSet");
+    private static final List<String> IN_SCOPE = Arrays.asList(
+            "Frame", "SkyFrame", "SpecFrame", "DSBSpecFrame", "TimeFrame", "FluxFrame", "CmpFrame", "FrameSet");
 
     /** The object the probe builds for {@code cls}. */
     private static Frame make(String cls) {
@@ -40,6 +40,8 @@ class FrameClassAttrsTest {
                 return new DSBSpecFrame();
             case "TimeFrame":
                 return new TimeFrame();
+            case "FluxFrame":
+                return new FluxFrame(AstObject.AST__BAD, null);
             case "CmpFrame":
                 return new CmpFrame(new SkyFrame(), new SpecFrame());
             case "FrameSet":
@@ -141,7 +143,7 @@ class FrameClassAttrsTest {
                 failures.add(what + ": " + e.getMessage());
             }
         }
-        assertEquals(5 * 256 + 2 * 512, run, "the in-scope cases the C probe recorded");
+        assertEquals(6 * 256 + 2 * 512, run, "the in-scope cases the C probe recorded");
         assertTrue(
                 failures.isEmpty(), failures.size() + " of " + run + " cases differ:\n" + String.join("\n", failures));
     }

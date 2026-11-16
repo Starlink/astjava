@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -26,21 +25,13 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * axis attributes C reads from it (through {@code astGetC}, {@code astGetI}, {@code astGetD} and
  * {@code astTest}) or the error it reports.
  *
- * <p>FluxFrame is out of scope, so {@code frame_keys_survive_a_round_trip} checks its TimeFrame and
- * SpecFrame parts only, and the cases of {@link #OUT_OF_SCOPE} are left out of {@code
+ * <p>The cases of {@link #OUT_OF_SCOPE}, if any, are left out of {@code
  * hand_written_descriptions_load_as_the_c_library_does}.
  */
 class FrameLoadTest {
 
     /** Cases holding a class that is out of scope, with that class. */
-    private static final Map<String, String> OUT_OF_SCOPE = outOfScope();
-
-    private static Map<String, String> outOfScope() {
-        Map<String, String> m = new LinkedHashMap<>();
-        m.put("flux_bad_system", "FluxFrame");
-        m.put("flux_axis_keys", "FluxFrame");
-        return Collections.unmodifiableMap(m);
-    }
+    private static final Map<String, String> OUT_OF_SCOPE = Collections.emptyMap();
 
     /**
      * Hand-written descriptions loaded differently from C, each with what it would take to load it
@@ -222,7 +213,7 @@ class FrameLoadTest {
                 failures.add(name + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(15, run, "cases run");
+        assertEquals(17, run, "cases run");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

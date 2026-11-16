@@ -23,8 +23,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * RestoreIntegrity}): it converts the recorded state of the current Frame to its new state with
  * {@code astConvert}, and reports {@code AST__ILOST} when no conversion exists.
  *
- * <p>The probe's FluxFrame and SpecFluxFrame cases need classes this version does not have and are
- * skipped.
+ * <p>The probe's SpecFluxFrame cases need a class this version does not have yet and are skipped.
  * Every value is compared within libm rounding, which is no wider than the Rust test's comparison.
  * {@code unit_change_leaves_mappings_alone} reads a FrameSet holding a LutMap and is deferred.
  */
@@ -39,7 +38,7 @@ class FrameSetIntegrityTest {
     private static final double REF_DEC = 0.5235987755982988;
 
     /** The prefixes of the cases that need a class this version does not have. */
-    private static final List<String> SKIPPED_PREFIXES = Arrays.asList("flux_", "specflux_");
+    private static final List<String> SKIPPED_PREFIXES = Arrays.asList("specflux_");
 
     private static boolean skipped(String name) {
         for (String p : SKIPPED_PREFIXES) {
@@ -110,6 +109,12 @@ class FrameSetIntegrityTest {
                 DSBSpecFrame d = new DSBSpecFrame();
                 d.set("System=FREQ,Unit=GHz,DSBCentre=230.0,IF=4.0,SideBand=LSB");
                 return d;
+            case "flux_unit_jy":
+            case "flux_system_sfcbr": {
+                FluxFrame ff = new FluxFrame(1.4e9, null);
+                ff.set("System=FLXDN");
+                return ff;
+            }
             case "time_jd":
             case "time_utc":
             case "time_origin":
@@ -158,6 +163,10 @@ class FrameSetIntegrityTest {
                 return new String[][] {{"TimeOrigin", "55000.0"}};
             case "dsb_usb":
                 return new String[][] {{"SideBand", "USB"}};
+            case "flux_unit_jy":
+                return new String[][] {{"Unit(1)", "Jy"}};
+            case "flux_system_sfcbr":
+                return new String[][] {{"System", "SFCBR"}};
             default:
                 throw new IllegalArgumentException("no case " + name);
         }
@@ -167,6 +176,9 @@ class FrameSetIntegrityTest {
     private static double[][] points(String name) {
         if ("frame_activeunit_km".equals(name)) {
             return new double[][] {{1000.0, 5.0}};
+        }
+        if (name.startsWith("flux_")) {
+            return new double[][] {{1.0e-26, 3.0e-26}};
         }
         if (name.startsWith("time_")) {
             return new double[][] {{0.25, 1.75}};
@@ -244,7 +256,7 @@ class FrameSetIntegrityTest {
                 failures.add(failure);
             }
         }
-        assertEquals(19, checked, "the cases with classes this version has");
+        assertEquals(21, checked, "the cases with classes this version has");
         assertTrue(
                 failures.isEmpty(),
                 failures.size() + " of " + checked + " cases differ from C:\n" + String.join("\n", failures));

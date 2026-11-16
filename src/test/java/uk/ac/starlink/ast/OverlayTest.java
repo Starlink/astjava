@@ -18,9 +18,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * target and then by the template, each through its own class's Overlay (frame.c {@code
  * SubFrame}).
  *
- * <p>The cases of {@code overlay_results_match_the_c_library} whose Frames this version builds run
- * here: all but those with a FluxFrame ({@code flux_target_frame_template}, {@code
- * flux_pick_padded}).
+ * <p>Every case of {@code overlay_results_match_the_c_library} runs here.
  */
 class OverlayTest {
 
@@ -42,6 +40,13 @@ class OverlayTest {
     private static TimeFrame time(String system) {
         TimeFrame f = new TimeFrame();
         f.setSystem(system);
+        return f;
+    }
+
+    /** The probe's {@code astFluxFrame( 1.4e9, NULL, "System=FLXDN" )}. */
+    private static FluxFrame flux() {
+        FluxFrame f = new FluxFrame(1.4e9, null);
+        f.setSystem("FLXDN");
         return f;
     }
 
@@ -123,6 +128,13 @@ class OverlayTest {
                 return spec("System=FREQ,Unit=GHz").pickAxes(2, new int[] {1, 0}, null);
             case "spec_wave_pick_padded":
                 return spec("System=WAVE").pickAxes(2, new int[] {1, 0}, null);
+            case "flux_target_frame_template": {
+                Frame t = new Frame(1);
+                t.set("Domain=FLUX,Title=TT,Label(1)=LL,Epoch=2010.0,Digits=9");
+                return found(flux(), t);
+            }
+            case "flux_pick_padded":
+                return flux().pickAxes(2, new int[] {1, 0}, null);
             default:
                 return null;
         }
@@ -156,7 +168,7 @@ class OverlayTest {
                 failures.add(name + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(11, ran, "the cases with Frames this version builds");
+        assertEquals(13, ran, "the cases with Frames this version builds");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 
