@@ -9,7 +9,7 @@ import java.util.List;
  * SplitMap} and {@code SplitMap2} (fitschan.c).
  *
  * <p>Ported from Rust {@code fitschan/fset_to_store/celestial_axes.rs}, following fitschan.c.
- * Describing celestial axes with the {@code -TAB} algorithm needs a LutMap, which this library
+ * Describing celestial axes with the {@code -TAB} algorithm needs a FitsTable, which this library
  * does not have.
  */
 final class FitsCelestialAxes {
@@ -81,7 +81,8 @@ final class FitsCelestialAxes {
      * @return the Mapping from the current Frame to intermediate world coordinates for the
      *     celestial axes, or a UnitMap if they cannot be described
      * @throws UnsupportedOperationException if C would describe the celestial axes with the {@code
-     *     -TAB} algorithm (TabOK positive, and no projection or ForceTab set), which needs LutMap
+     *     -TAB} algorithm (TabOK positive, no projection or ForceTab set, and axes {@link
+     *     FitsMapTab#isMapTab2D} can tabulate), which needs FitsTable
      */
     static Mapping celestialAxes(
             FitsChan fc,
@@ -265,9 +266,40 @@ final class FitsCelestialAxes {
                 }
 
             } else if (extver > 0) {
-                // C's IsMapTab2D describes the axes with look-up tables.
-                throw new UnsupportedOperationException(
-                        method + "(" + cls + "): describing celestial axes with the -TAB algorithm needs LutMap");
+                // The -TAB algorithm, if the axes can be tabulated. C takes any FitsTable already in
+                // the store, which a write of this library's Mappings never holds (only a -TAB axis
+                // makes one).
+                int[] icolmainlon = new int[1];
+                int[] icolmainlat = new int[1];
+                int[] icolindexlon = new int[1];
+                int[] icolindexlat = new int[1];
+                int[] mlon = new int[1];
+                int[] mlat = new int[1];
+                int[] interplon = new int[1];
+                int[] interplat = new int[1];
+                Mapping tmap0 = FitsMapTab.isMapTab2D(
+                        map,
+                        AST__DR2D,
+                        "deg",
+                        wcsfrm,
+                        dim,
+                        ilon,
+                        ilat,
+                        fitsIlon,
+                        fitsIlat,
+                        icolmainlon,
+                        icolmainlat,
+                        icolindexlon,
+                        icolindexlat,
+                        mlon,
+                        mlat,
+                        interplon,
+                        interplat);
+                if (tmap0 != null) {
+                    // C goes on to store the table's details, and the table, in its FitsTable.
+                    throw new UnsupportedOperationException(method + "(" + cls
+                            + "): describing celestial axes with the -TAB algorithm needs FitsTable");
+                }
             }
         }
 

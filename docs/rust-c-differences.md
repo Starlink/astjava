@@ -622,6 +622,12 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `build_wcs_to_iwc` in `fitschan/fset_to_store/celestial_axes.rs` builds its own rotation, and the exchange swaps CTYPE and CNAME whether or not they are set.
 - Java: as C.
 
+### A WCS axis fed by several grid axes in `IsMapTab1D`
+
+- C: when the split of a WCS output from the inverse Mapping gives more than one grid axis, `IsMapTab1D` skips the table and returns the split Mapping, with no table columns, so `IsMapTab2D` and `CelestialAxes` go on to use a FitsTable that was never made (`fitschan.c` `IsMapTab1D`). **C quirk.**
+- Rust: `is_map_tab_1d` in `fitschan/fset_to_store/map_tab.rs` returns `None` for such an output.
+- Java: as C as far as `IsMapTab2D`; the use of the missing table that follows throws `UnsupportedOperationException` (this library has no FitsTable).
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails

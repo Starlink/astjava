@@ -209,11 +209,14 @@ class FitsCelestialAxesTest {
     // Branches read from C's code
     // ------------------------------------------------------------------
 
-    /** A non-linear Mapping with no projection and celestial outputs that vary. */
+    /**
+     * A non-linear Mapping with no projection and celestial outputs that vary, each fed by one
+     * grid axis: a 1-D PolyMap (x + 0.001 x^2) beside a 1-D ZoomMap, then a ZoomMap to radians. (A
+     * 2-D PolyMap would not do: C's PolyMap has no MapSplit, so its outputs cannot be split off.)
+     */
     private static FrameSet noProjectionFrameSet() {
-        // x' = x + 0.001 x^2, y' = y.
-        PolyMap poly = new PolyMap(2, 2, 3, new double[] {1, 1, 1, 0, 1, 2, 0, 1, 0.001, 1, 2, 0}, 0, new double[0]);
-        Mapping map = new CmpMap(poly, new ZoomMap(2, 0.001), true);
+        PolyMap poly = new PolyMap(1, 1, 2, new double[] {1, 1, 1, 0.001, 1, 2}, 0, new double[0]);
+        Mapping map = new CmpMap(new CmpMap(poly, new ZoomMap(1, 1.0), false), new ZoomMap(2, 0.001), true);
         return frameSet(map, fk5());
     }
 
@@ -227,18 +230,61 @@ class FitsCelestialAxesTest {
         assertNull(r.store.ctype[0]);
     }
 
-    /** With TabOK positive, C describes the axes with -TAB look-up tables, which need LutMap. */
+    /**
+     * With TabOK positive and no projection, C tabulates separable celestial axes whose grid
+     * dimensions are known (IsMapTab1D samples each and creates a FitsTable), which needs
+     * FitsTable.
+     */
     @Test
-    void noProjectionWithTabOkNeedsLutMap() {
+    void separableAxesWithTabOkNeedFitsTable() {
         FitsChan fc = new FitsChan();
         fc.set("TabOK=1");
         UnsupportedOperationException e = assertThrows(
                 UnsupportedOperationException.class,
                 () -> celestialAxes(fc, noProjectionFrameSet(), new double[] {100, 100}));
-        assertTrue(e.getMessage().endsWith("needs LutMap"), e.getMessage());
+        assertTrue(e.getMessage().endsWith("needs FitsTable"), e.getMessage());
     }
 
-    /** ForceTab asks for -TAB even with a projection; without TabOK nothing is described. */
+    /**
+     * With unknown grid dimensions IsMapTab1D cannot sample the axes and returns NULL, so C
+     * describes nothing: a UnitMap, with no exception.
+     */
+    @Test
+    void separableAxesWithUnknownDimensionsAreNotTabulated() {
+        FitsChan fc = new FitsChan();
+        fc.set("TabOK=1");
+        Result r = celestialAxes(fc, noProjectionFrameSet(), new double[] {AstObject.AST__BAD, AstObject.AST__BAD});
+        assertInstanceOf(UnitMap.class, r.map);
+        assertTrue(r.axisDone[0]);
+        assertNull(r.store.ctype[0]);
+        assertNull(r.store.crval[0]);
+    }
+
+    /**
+     * Celestial axes through a projection that is not a FITS projection (FITSProj cleared): each
+     * depends on both grid axes, so neither can be split off, IsMapTab1D returns NULL, and C
+     * describes nothing even with TabOK set.
+     */
+    @Test
+    void nonSeparableAxesWithTabOkAreNotTabulated() {
+        WcsMap wm = new WcsMap(2, WcsMap.AST__TAN, 1, 2);
+        wm.setFITSProj(false);
+        wm.invert();
+        FitsChan fc = new FitsChan();
+        fc.set("TabOK=1");
+        Result r = celestialAxes(
+                fc, frameSet(new CmpMap(new ZoomMap(2, 0.001), wm, true), fk5()), new double[] {100, 100});
+        assertInstanceOf(UnitMap.class, r.map);
+        assertTrue(r.axisDone[0]);
+        assertTrue(r.axisDone[1]);
+        assertNull(r.store.ctype[0]);
+        assertNull(r.store.crval[0]);
+    }
+
+    /**
+     * ForceTab asks for -TAB even with a projection. Without TabOK nothing is described; with it,
+     * the TAN axes are not separable, so nothing is described either.
+     */
     @Test
     void forceTab() {
         FitsChan fc = new FitsChan();
@@ -249,8 +295,10 @@ class FitsCelestialAxesTest {
 
         FitsChan tab = new FitsChan();
         tab.set("ForceTab=1, TabOK=1");
-        assertThrows(
-                UnsupportedOperationException.class, () -> celestialAxes(tab, tanFrameSet(), new double[] {100, 100}));
+        r = celestialAxes(tab, tanFrameSet(), new double[] {100, 100});
+        assertInstanceOf(UnitMap.class, r.map);
+        assertNull(r.store.crval[0]);
+        assertNull(r.store.ctype[0]);
     }
 
     /** A SkyFrame whose Domain is not SKY is not celestial (C's {@code IsASkyFrame}). */
