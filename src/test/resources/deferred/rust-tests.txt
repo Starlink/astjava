@@ -276,7 +276,6 @@ tests/test_skyframe.rs::skyframe_is_send | Rust-only API (Send)
 tests/test_skyframe.rs::debug_formatting | Rust-only API (Debug formatting)
 tests/test_skyframe.rs::serialise_skyframe_not_a_mapping | Rust-only API (AnyObject::as_mapping; in AST every Frame is a Mapping)
 tests/test_sky_convert.rs::fk_licences_name_existing_cases | hardware SIMD
-tests/test_sky_pole_oracle.rs::sky_pole_matches_the_c_library | out-of-scope method FitsChan.write
 tests/test_timeframe.rs::test_equal | astEqual (out-of-scope method)
 tests/test_timeframe.rs::test_map_from_timescale_change | Rust-only API (Frame::map_from)
 tests/test_spec_use_defs.rs::titles_match_the_c_library | SpecFrame (out of scope)
