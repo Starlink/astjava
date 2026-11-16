@@ -22,8 +22,8 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * <p>Listed in {@code deferred/rust-tests.txt}: {@code
  * badpv_warning_names_each_unusable_parameter_in_ascending_order} (its header, with {@code
  * RADECSYS} and {@code PROJPi} but no {@code PVi_m}, is read with the FITS-IRAF encoding), {@code
- * badctype_warning_names_the_legal_ctype_and_precedes_naxis1} (a spectral axis, SpecFrame) and
- * {@code strict_write_warning_is_an_error} (a write); {@code strict_read_warning_is_an_error} and
+ * badctype_warning_names_the_legal_ctype_and_precedes_naxis1} (a spectral axis, SpecFrame); {@code
+ * strict_read_warning_is_an_error} and
  * {@code strict_sweep_warning_is_an_error}, whose header has {@code RADECSYS} and no {@code
  * RADESYS}, so that C reads it with the FITS-PC encoding (fitschan.c {@code GetEncoding}).
  */
@@ -174,5 +174,49 @@ class FitsChanAstwarnTest {
         clean.set("Clean=1");
         clean.putFits(card, false);
         assertEquals(1, clean.getNcard());
+    }
+
+    /** The cards of Rust's {@code NO_EQUINOX} before its {@code RADECSYS}. */
+    private static final String[] TAN_CARDS = {
+        "NAXIS   =                    2",
+        "NAXIS1  =                  100",
+        "NAXIS2  =                  100",
+        "CTYPE1  = 'RA---TAN'",
+        "CTYPE2  = 'DEC--TAN'",
+        "CRPIX1  =                   50",
+        "CRPIX2  =                   50",
+        "CRVAL1  =                   10",
+        "CRVAL2  =                   20",
+        "CDELT1  =               -0.001",
+        "CDELT2  =                0.001",
+    };
+
+    @Test
+    void strictWriteWarningIsAnError() {
+        // A C probe: a FrameSet with an MJD-OBS written to a FitsChan holding TIMESYS = 'ET', with
+        // Warnings badval and Strict set, fails naming the method "FitsChan", since C's Write
+        // passes FsetToStore its method and class names in the wrong order.
+        FitsChan fc = new FitsChan();
+        for (String card : TAN_CARDS) {
+            fc.putFits(card, false);
+        }
+        fc.putFits("EQUINOX =                 2000", false);
+        fc.putFits("MJD-OBS =                55000", false);
+        fc.setCard(1);
+        AstObject obj = fc.read();
+        assertNotNull(obj);
+
+        FitsChan out = strictChan("badval");
+        out.setEncoding("FITS-WCS");
+        out.putFits("TIMESYS = 'ET'", false);
+        out.setCard(1);
+        String before = out.toHeader();
+        AstException e = assertThrows(AstException.class, () -> out.write(obj));
+        assertEquals(AstException.AST__BADIN, e.getStatus());
+        assertMessage(
+                "FitsChan(FitsChan): The original FITS header contained a value of ET for keyword TIMESYS. TT will be"
+                        + " used instead.",
+                e);
+        assertEquals(before, out.toHeader());
     }
 }

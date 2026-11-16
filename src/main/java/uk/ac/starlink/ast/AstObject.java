@@ -360,8 +360,16 @@ public class AstObject implements Cloneable {
      * space.
      */
     static boolean chrMatch(String a, String b) {
-        int n = Math.max(a.length(), b.length());
-        for (int i = 0; i < n; i++) {
+        return chrMatchN(a, b, Integer.MAX_VALUE);
+    }
+
+    /**
+     * C's {@code astChrMatchN}: whether the first {@code n} characters of two strings are equal
+     * ignoring case and trailing white space.
+     */
+    static boolean chrMatchN(String a, String b, int n) {
+        int len = Math.min(Math.max(a.length(), b.length()), n);
+        for (int i = 0; i < len; i++) {
             boolean ea = i >= a.length();
             boolean eb = i >= b.length();
             boolean match = (ea && CScan.isCSpace(b.charAt(i)))

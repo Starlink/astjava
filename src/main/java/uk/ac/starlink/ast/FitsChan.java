@@ -921,10 +921,28 @@ public class FitsChan extends Channel {
     /**
      * Writes {@code fs} with {@code enc}, an encoding other than NATIVE, from the current card, as
      * fitschan.c {@code Write} does from reading the image dimensions on: false, C's failure, if
-     * the encoding cannot describe the FrameSet. {@link #write} undoes whatever a write that gives
-     * false did to the cards, and leaves end-of-file current after one that gives true.
+     * the encoding cannot describe the FrameSet. The axis descriptions are made from the FrameSet
+     * ({@link FitsFsetToStore#fsetToStore}), raising their warnings, but no encoding writes them
+     * as cards, so the result is false. {@link #write} undoes whatever a write that gives false
+     * did to the cards, and leaves end-of-file current after one that gives true.
+     *
+     * @throws UnsupportedOperationException where describing the FrameSet needs a class this
+     *     library lacks
      */
     boolean writeForeign(FrameSet fs, Encoding enc) {
+        // The image dimensions, where known.
+        int naxis = fs.getNin();
+        double[] dim = new double[naxis];
+        for (int i = 0; i < naxis; i++) {
+            Double d = getFitsF("NAXIS" + (i + 1));
+            dim[i] = d != null ? d : AST__BAD;
+        }
+
+        // C's Write passes FsetToStore its method and class names in the wrong order, so the
+        // method its warnings name is the class (C-library quirk, kept).
+        FitsFsetToStore.fsetToStore(this, fs, naxis, dim, enc, astClass(), "astWrite");
+
+        // No encoding other than NATIVE writes cards from the store.
         return false;
     }
 

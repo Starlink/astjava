@@ -628,6 +628,48 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `is_map_tab_1d` in `fitschan/fset_to_store/map_tab.rs` returns `None` for such an output.
 - Java: as C as far as `IsMapTab2D`; the use of the missing table that follows throws `UnsupportedOperationException` (this library has no FitsTable).
 
+### A Mapping without a table in `OtherAxes`
+
+- C: when `IsMapTab1D` returns a Mapping for an axis, `OtherAxes` stores the table version in the header of the FitsTable it expects to have been made, so for a Mapping returned with no table columns it dereferences a null FitsTable (`fitschan.c` `OtherAxes`). **C quirk.**
+- Rust: `other_axes` in `fitschan/fset_to_store/other_axes.rs` gets `None` from `is_map_tab_1d` for such an axis.
+- Java: throws `UnsupportedOperationException` for any Mapping `IsMapTab1D` returns there (this library has no FitsTable).
+
+### Two SkyFrames in `MakeFitsFrameSet`
+
+- C: `MakeFitsFrameSet` marks a world Frame with axes of two SkyFrames (of Domain `SKY`) unusable and makes no FrameSet, but then passes the null FrameSet to `AddEncodingFrame`, which dereferences it (a C-oracle probe writing a CmpFrame of two SkyFrames crashes in `astGetFrame_`) (`fitschan.c` `MakeFitsFrameSet`, `AddEncodingFrame`). **C quirk.**
+- Rust: `make_fits_frameset` in `fitschan/fset_to_store/mod.rs` does not look for a second SkyFrame.
+- Java: makes no FrameSet, so that the description cannot be made, which is what `AddVersion` does with the null FrameSet C means to return.
+
+### Units in `MakeFitsFrameSet`
+
+- C: `MakeFitsFrameSet` always builds a new FrameSet from copies of the pixel Frame, the world Frame and the Mapping; for an axis whose internal units cannot be converted to its Unit it sets the Unit to the internal units (degrees for radians, converted with a ZoomMap); and it appends the parallel CmpMap of conversions, not its simplification, to the Mapping (`fitschan.c` `MakeFitsFrameSet`).
+- Rust: `apply_unit_remap` in `fitschan/fset_to_store/mod.rs` returns a clone of the FrameSet when nothing converts, leaves the Unit unchanged, and appends the simplified conversion.
+- Java: as C.
+
+### The FrameSet an absolute description is made from
+
+- C: `AddVersion` clears SkyRefIs of an offset SkyFrame on the caller's FrameSet, through its integrity, and sets it back afterwards, so the caller's FrameSet is remapped twice and its Mapping can change in the last bits (a C-oracle probe writing the same FrameSet twice gives CRVAL1 1.0357383636595399, then 1.0357383636595427) (`fitschan.c` `AddVersion`). **C quirk.**
+- Rust: `fset_to_store_absolute` in `fitschan/fset_to_store/mod.rs` clears SkyRefIs on a clone, leaving the caller's FrameSet unchanged.
+- Java: as C.
+
+### Version letters of absolute descriptions
+
+- C: `FsetToStore` gives the description of absolute coordinates of an offset SkyFrame the letter after the last one it handed out, without checking it against the letters Frames took from their Ident, so the two descriptions can share a letter and are then stored together, the second replacing the values both store (a C-oracle probe writes version `A` with the CRVAL, CTYPE and CDELT of the Frame whose Ident is `A`, and the SkyRef, RADESYS and EQUINOX of the absolute sky description) (`fitschan.c` `FsetToStore`). **C quirk.**
+- Rust: `collect_plane_stores` in `fitschan/wcs_write/plane_stores.rs` makes the two planes separately, with the same letter.
+- Java: as C.
+
+### The order of the versions written
+
+- C: the store holds each value under the letter of its description, and `WcsFromStore` writes the descriptions in letter order, so the description of a Frame whose Ident is `Z` follows that of a later Frame given `A` (`fitschan.c` `WcsFromStore`).
+- Rust: `encode_wcs` in `fitschan/wcs_write/mod.rs` writes the planes in the order `collect_plane_stores` made them, primary first and then by Frame.
+- Java: the store is indexed by letter, as C's (`FitsPlaneStores`).
+
+### WCSNAME and the pixel axis count in `AddVersion` and `FsetToStore`
+
+- C: `AddVersion` stores the Domain of a world Frame whose Domain is set as WCSNAME, replacing a value `SkySys` stored; the store's `naxis` is the number of pixel axes `FsetToStore` is given (`fitschan.c` `AddVersion`, `FsetToStore`).
+- Rust: `fset_to_store` in `fitschan/fset_to_store/mod.rs` stores a Domain that is not empty only when there is no WCSNAME yet, and its store's `naxis` is the larger of the numbers of pixel and world axes.
+- Java: as C; the pixel axis count is `FitsPlaneStores.naxis`.
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails

@@ -209,6 +209,46 @@ final class FitsStore {
         axref = new Double[naxis];
     }
 
+    /**
+     * Lengthens the axis-indexed arrays to hold at least {@code n} axes, keeping their values, as
+     * C's {@code SetItem} lengthens an item to hold the index it is given; {@link #naxis} becomes
+     * the new length. Nothing changes if the store already holds {@code n} axes.
+     */
+    void ensureAxes(int n) {
+        if (n <= naxis) {
+            return;
+        }
+        crpix = Arrays.copyOf(crpix, n);
+        crval = Arrays.copyOf(crval, n);
+        cdelt = Arrays.copyOf(cdelt, n);
+        dims = Arrays.copyOf(dims, n);
+        pc = grow(pc, n, n);
+        cd = grow(cd, n, n);
+        ctype = Arrays.copyOf(ctype, n);
+        ctypeCom = Arrays.copyOf(ctypeCom, n);
+        cunit = Arrays.copyOf(cunit, n);
+        cname = Arrays.copyOf(cname, n);
+        pv = grow(pv, n, MAX_PV_PARAMS);
+        String[][] newPs = new String[n][];
+        for (int i = 0; i < n; i++) {
+            newPs[i] = i < ps.length ? ps[i] : new String[MAX_PV_PARAMS];
+        }
+        ps = newPs;
+        skyref = Arrays.copyOf(skyref, n);
+        skyrefp = Arrays.copyOf(skyrefp, n);
+        axref = Arrays.copyOf(axref, n);
+        naxis = n;
+    }
+
+    /** {@code a} with {@code rows} rows of at least {@code cols} elements, keeping its values. */
+    private static Double[][] grow(Double[][] a, int rows, int cols) {
+        Double[][] g = new Double[rows][];
+        for (int i = 0; i < rows; i++) {
+            g[i] = i < a.length ? Arrays.copyOf(a[i], Math.max(cols, a[i].length)) : new Double[cols];
+        }
+        return g;
+    }
+
     /** A copy of this store, sharing no arrays with it. */
     FitsStore copy() {
         FitsStore c = new FitsStore(naxis);

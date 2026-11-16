@@ -377,7 +377,6 @@ tests/test_fitschan_read.rs::unset_system_still_leaves_system_unset | Rust-only 
 tests/test_fitschan_read.rs::dsb_centre_prefers_axref_over_crval | DSBSpecFrame (out of scope)
 tests/test_fitschan_astwarn.rs::badpv_warning_names_each_unusable_parameter_in_ascending_order | FITS-IRAF encoding (out-of-scope method FitsChan.read)
 tests/test_fitschan_astwarn.rs::badctype_warning_names_the_legal_ctype_and_precedes_naxis1 | SpecFrame (out of scope)
-tests/test_fitschan_astwarn.rs::strict_write_warning_is_an_error | out-of-scope method FitsChan.write
 tests/test_fitschan_astwarn.rs::strict_read_warning_is_an_error | FITS-PC encoding (out-of-scope method FitsChan.read)
 tests/test_fitschan_astwarn.rs::strict_sweep_warning_is_an_error | FITS-PC encoding (out-of-scope method FitsChan.read)
 tests/test_fitschan_time.rs::dtai_set_on_world_frame_for_jcmt | SpecFrame (out of scope)
