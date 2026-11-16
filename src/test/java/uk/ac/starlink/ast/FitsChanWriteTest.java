@@ -104,6 +104,38 @@ class FitsChanWriteTest {
     }
 
     @Test
+    void aFailedWriteLosesACardItReplaced() {
+        // C probe ovr.c: FITS-PC stores CRVAL1, replacing the card of that keyword, before it
+        // refuses the TPN projection; the write returns 0 and removes the cards it wrote, so the
+        // card it replaced is gone, and the current card is as it was.
+        FrameSet fs = FitsHeaders.readFrameSet(FitsHeaders.chan(
+                "NAXIS   = 2",
+                "NAXIS1  = 100",
+                "NAXIS2  = 100",
+                "CRPIX1  = 50",
+                "CRPIX2  = 50",
+                "CRVAL1  = 10",
+                "CRVAL2  = 20",
+                "CDELT1  = -0.001",
+                "CDELT2  = 0.001",
+                "CTYPE1  = 'RA---TPN'",
+                "CTYPE2  = 'DEC--TPN'",
+                "RADESYS = 'ICRS'",
+                "PV1_1 = 1.0",
+                "PV2_1 = 1.0",
+                "PV1_4 = 0.001"));
+        FitsChan fc = FitsHeaders.chan("AAA     = 1", "CTYPE1  = 'XXX' / mine", "CRVAL1  = 5 / mine", "ZZZ     = 1");
+        fc.setEncoding("FITS-PC");
+        fc.setCard(2);
+        assertEquals(0, fc.write(fs));
+        assertEquals(
+                "card 2\n" + card("AAA", "1") + "\n"
+                        + "CTYPE1  = 'XXX     '           / mine                                           \n"
+                        + card("ZZZ", "1"),
+                state(fc));
+    }
+
+    @Test
     void aSlightlyNonLinearAxisIsWrittenAsLinear() {
         // The logarithm of 10 + p + 1e-6 p^2 is not linear, so C's LogAxis returns NULL, and the
         // axis described as linear is within FitsTol of the FrameSet (C probe loglin.c).
@@ -143,7 +175,7 @@ class FitsChanWriteTest {
      * leaves the FitsChan at end-of-file (C probe).
      */
     @Test
-    void cardsAreWrittenBeforeTheCurrentCard() {
+    void cardsGoAfterTheLastWcsCard() {
         String a = card("EPOCH", "2000.0");
         String b = card("BBB", "2");
         String c = card("CCC", "3");

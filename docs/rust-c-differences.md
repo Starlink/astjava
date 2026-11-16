@@ -685,6 +685,12 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `put_or_append` in `fitschan/card_list.rs` keeps the comment only when the two values have the same type and are similar, comparing floating values with a `DBL_MIN` floor and strings ignoring case and trailing blanks only.
 - Java: the writers of the foreign encodings follow C (`FitsCardList.setValueAsWriter`); the read's keyword translations keep the comparison they had.
 
+### A failed write loses a card it replaced
+
+- C: a writer that stores a keyword a card already has replaces that card with a new one (`SetValue`), and when the write then fails `FixNew` removes the new cards, so the card replaced is lost: a FITS-PC write of a TPN FrameSet into a FitsChan holding `CRVAL1 = 5 / mine` stores CRVAL1 before refusing TPN, returns 0, and leaves the FitsChan without a CRVAL1 card (C probe) (`fitschan.c` `SetValue`, `FixNew`, `PCFromStore`). **C quirk.**
+- Rust: the same (`put_or_append` in `fitschan/card_list.rs` replaces the card with one flagged new, which `fix_new` removes).
+- Java: as C (`FitsChanWriteTest.aFailedWriteLosesACardItReplaced`).
+
 ### `Similar` does not compare the last character
 
 - C: `Similar` compares two strings ignoring case and blanks up to, but not including, the last character that is not blank in either, so `ABCD` and `ABCX` are alike; `WcsFromStore` then keeps the old comment of a card it replaces with a value differing only there, and leaves out the WCSNAME of a one-axis description whose CTYPE1 differs from it only there (C probe) (`fitschan.c` `Similar`). **C quirk.**

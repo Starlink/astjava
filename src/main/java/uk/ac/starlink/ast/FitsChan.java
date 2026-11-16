@@ -870,20 +870,23 @@ public class FitsChan extends Channel {
     }
 
     /**
-     * Writes an Object to this FitsChan, using the encoding the Encoding attribute gives, in front
-     * of the current card. The warnings of the previous read or write are discarded.
+     * Writes an Object to this FitsChan, using the encoding the Encoding attribute gives. The
+     * warnings of the previous read or write are discarded.
      *
-     * <p>With the NATIVE encoding any Object can be written, as header cards whose keywords are
-     * made unique with a two-character suffix ({@code BEGAST_A}, {@code NIN_A}, ...), passing over
-     * any keyword a card already has. Unless the Comment attribute is clear the cards are framed by
-     * comment cards, and the Full attribute selects the default values and markers written, as for
-     * a Channel. The current card stays current.
+     * <p>With the NATIVE encoding any Object can be written, as header cards in front of the
+     * current card, whose keywords are made unique with a two-character suffix ({@code BEGAST_A},
+     * {@code NIN_A}, ...), passing over any keyword a card already has. Unless the Comment
+     * attribute is clear the cards are framed by comment cards, and the Full attribute selects the
+     * default values and markers written, as for a Channel. The current card stays current.
      *
      * <p>Any other encoding describes only a FrameSet, and only one the encoding can describe; for
-     * anything else nothing is written and 0 is returned. When a FrameSet is written, the FitsChan
-     * is left at end-of-file.
+     * anything else nothing is written and 0 is returned. The cards go after the last card that
+     * describes WCS in any of the encodings, or at the end if there is none, whichever card is
+     * current; a card already present with the keyword of a card written is replaced where it is.
+     * When a FrameSet is written, the FitsChan is left at end-of-file.
      *
-     * <p>A write that writes nothing, or fails, leaves the cards and the current card as they were.
+     * <p>A write that writes nothing, or fails, leaves the cards and the current card as they were,
+     * except that a card the write replaced before it failed is lost, as in C.
      *
      * @param obj the Object to write
      * @return the number of Objects written: 1, or 0 if the Object could not be written
@@ -907,7 +910,8 @@ public class FitsChan extends Channel {
             }
         } finally {
             // C's FixNew: the cards a write that wrote nothing added are removed, and the card that
-            // was current is current again. A write that throws is undone in the same way.
+            // was current is current again. A write that throws has its new cards removed in the
+            // same way.
             boolean remove = ret == 0;
             cardList.fixNew(FitsCardList.NewScope.WRITE, remove);
             cardList.fixNew(FitsCardList.NewScope.VERSION, remove);
@@ -924,8 +928,9 @@ public class FitsChan extends Channel {
      * Write} does from reading the image dimensions on: false, C's failure, if the encoding cannot
      * describe the FrameSet. The axis descriptions are made from the FrameSet ({@link
      * FitsFsetToStore#fsetToStore}), raising their warnings, and written as cards by the encoding's
-     * writer ({@link #fitsFromStore}). {@link #write} undoes whatever a write that gives false did
-     * to the cards, and leaves end-of-file current after one that gives true.
+     * writer ({@link #fitsFromStore}). {@link #write} removes the cards a write that gives false
+     * wrote, as C's {@code FixNew} does, which does not bring back a card one of them replaced,
+     * and leaves end-of-file current after one that gives true.
      *
      * @throws UnsupportedOperationException where describing the FrameSet needs a class this
      *     library lacks
