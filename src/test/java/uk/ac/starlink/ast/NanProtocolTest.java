@@ -171,6 +171,19 @@ class NanProtocolTest {
         assertNanProtocolMatchesTransform(map, fromRows(rows), 32, true, 1e-14);
     }
 
+    @Test
+    void nanProtocolSpecmap() {
+        SpecMap map = new SpecMap(1, 0);
+        map.specAdd("WNTOFR", new double[0]);
+        double[][] rows = new double[32][];
+        for (int i = 0; i < 32; i++) {
+            rows[i] = new double[] {i + 1.0};
+        }
+        rows[7][0] = BAD;
+        rows[11][0] = Double.NaN;
+        assertNanProtocolMatchesTransform(map, fromRows(rows), 32, true, 1e-14);
+    }
+
     /** The simplified FrameSet read from {@code lsst.ast}. */
     private static Mapping loadLsst() {
         return LsstOracleTest.loadLsst().simplify();

@@ -279,6 +279,30 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: makes the point bad.
 - Java: as Rust.
 
+### The frequency correction factor of a SpecMap's change of rest frame
+
+- C: a 1-dimensional SpecMap works out the factor the first time it transforms points and keeps it in the conversion's last argument slot (`specmap.c` `FrameChange`), so a SpecMap written after it has transformed points carries a `Spec<n><x>` card for it, as the fixtures `simplify/cap_specmap_06.map` and `cap_winmap_01.map` do.
+- Rust: keeps the factor in a separate cache (`fcorr`), which is not written.
+- Java: as C.
+
+### SpecMap values that are not finite
+
+- C: each conversion that can make a value that is not finite tests for it and writes AST__BAD; ENTOFR, FRTOEN, WNTOFR, FRTOWN, BTTOVL and VLTOBT do not, so an overflow gives an infinity (`specmap.c` `SystemChange`).
+- Rust: also replaces every value that is not finite with AST__BAD after the last conversion.
+- Java: as C, apart from inputs that are not finite, which are bad (see "Infinite input coordinates").
+
+### SpecMap load errors
+
+- C: a missing or unknown conversion is AST__BADIN with C's messages (`astLoadSpecMap`).
+- Rust: AST__SPCIN.
+- Java: as C.
+
+### The SpecMap axis-count message
+
+- **C quirk**: `astInitSpecMap` refuses a number of axes other than 1 or 3 with a message saying "it should be 1 or 2".
+- Rust: gives its own message.
+- Java: keeps C's message.
+
 ## Units
 
 Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follows C in each.

@@ -56,6 +56,8 @@ final class ObjectRegistry {
                 return SkyFrame::new;
             case "SlaMap":
                 return SlaMap::new;
+            case "SpecMap":
+                return SpecMap::new;
             case "SphMap":
                 return SphMap::new;
             case "TimeFrame":

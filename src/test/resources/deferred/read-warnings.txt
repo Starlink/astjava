@@ -2,10 +2,10 @@
 # ./<path relative to ast_tester/fixtures> | <reason>
 # Rewritten by FixtureReadWarningsOracleTest with -Dast.writeDeferred=true.
 ./programs/testcmpmap/splittest1.ast | needs LutMap
-./programs/testfitschan/sparse.ast | needs DSBSpecFrame, LutMap, SpecMap
+./programs/testfitschan/sparse.ast | needs DSBSpecFrame, LutMap
 ./programs/testmocchan/backcompat_json.ast | needs MocChan
 ./programs/testmocchan/backcompat_string.ast | needs MocChan
-./programs/testplot3d/plot3d-test1.ast | needs DSBSpecFrame, SpecMap
+./programs/testplot3d/plot3d-test1.ast | needs DSBSpecFrame
 ./programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, PointList, PointSet, Prism, SpecFrame
 ./serialisation/c_dssmap.ast | needs DssMap
 ./serialisation/cmpframe.ast | needs SpecFrame
@@ -34,12 +34,12 @@
 ./simplify/cap_box_permmap_null_first.simp | needs NullRegion
 ./simplify/cap_cheby_consolidate.map | needs ChebyMap
 ./simplify/cap_cheby_consolidate.simp | needs ChebyMap
-./simplify/cap_cmpmap_01.map | needs MathMap, RateMap, SpecMap, TranMap
-./simplify/cap_cmpmap_01.simp | needs MathMap, RateMap, SpecMap, TranMap
+./simplify/cap_cmpmap_01.map | needs MathMap, RateMap, TranMap
+./simplify/cap_cmpmap_01.simp | needs MathMap, RateMap, TranMap
 ./simplify/cap_cmpmap_02.map | needs MathMap
 ./simplify/cap_cmpmap_02.simp | needs MathMap
-./simplify/cap_cmpmap_04.map | needs MathMap, RateMap, SpecMap, TranMap
-./simplify/cap_cmpmap_04.simp | needs MathMap, RateMap, SpecMap, TranMap
+./simplify/cap_cmpmap_04.map | needs MathMap, RateMap, TranMap
+./simplify/cap_cmpmap_04.simp | needs MathMap, RateMap, TranMap
 ./simplify/cap_cmpperm_resume.map | needs MathMap
 ./simplify/cap_cmpperm_resume.simp | needs MathMap
 ./simplify/cap_cmpperm_resume_inv.map | needs MathMap
@@ -70,37 +70,15 @@
 ./simplify/cap_slamap_02.simp | needs Box, PointSet, Polygon, Prism, SpecFrame
 ./simplify/cap_slamap_07.map | needs Box, Circle, CmpRegion, PointSet
 ./simplify/cap_slamap_07.simp | needs NullRegion
-./simplify/cap_specmap_01.map | needs SpecMap
-./simplify/cap_specmap_01.simp | needs SpecMap
-./simplify/cap_specmap_02.map | needs LutMap, SpecMap
-./simplify/cap_specmap_02.simp | needs LutMap, SpecMap
-./simplify/cap_specmap_03.map | needs SpecMap
-./simplify/cap_specmap_03.simp | needs SpecMap
-./simplify/cap_specmap_04.map | needs SpecMap
-./simplify/cap_specmap_05.map | needs SpecMap
-./simplify/cap_specmap_05.simp | needs SpecMap
-./simplify/cap_specmap_06.map | needs SpecMap
-./simplify/cap_specmap_06.simp | needs SpecMap
-./simplify/cap_specmap_07.map | needs SpecMap
-./simplify/cap_specmap_07.simp | needs SpecMap
-./simplify/cap_specmap_08.map | needs SpecMap
-./simplify/cap_specmap_08.simp | needs SpecMap
-./simplify/cap_specmap_09.map | needs LutMap, SpecMap
-./simplify/cap_specmap_10.map | needs SpecMap
-./simplify/cap_specmap_10.simp | needs SpecMap
-./simplify/cap_specmap_11.map | needs SpecMap
-./simplify/cap_specmap_12.map | needs SpecMap
-./simplify/cap_specmap_12.simp | needs SpecMap
-./simplify/cap_specmap_13.map | needs SpecMap
-./simplify/cap_specmap_13.simp | needs SpecMap
-./simplify/cap_specmap_14.map | needs MathMap, SpecMap
+./simplify/cap_specmap_02.map | needs LutMap
+./simplify/cap_specmap_02.simp | needs LutMap
+./simplify/cap_specmap_09.map | needs LutMap
+./simplify/cap_specmap_14.map | needs MathMap
 ./simplify/cap_specmap_14.simp | needs MathMap
 ./simplify/cap_timemap_02.map | needs Box, Interval, PointSet, SpecFrame, StcResourceProfile
 ./simplify/cap_timemap_02.simp | needs Box, Interval, PointSet, SpecFrame, StcResourceProfile
 ./simplify/cap_unitnormmap_01.map | needs UnitNormMap
 ./simplify/cap_unitnormmap_01.simp | needs UnitNormMap
-./simplify/cap_winmap_01.map | needs SpecMap
-./simplify/cap_winmap_01.simp | needs SpecMap
 ./simplify/cap_xphmap_01.map | needs XphMap
 ./simplify/cap_xphmap_02.map | needs XphMap
 ./simplify/cap_xphmap_02.simp | needs XphMap
@@ -118,15 +96,11 @@
 ./simplify/chebymap_inverse_cancel.map | needs ChebyMap
 ./simplify/cmpmap_decompose_middle.map | needs MathMap
 ./simplify/cmpmap_decompose_middle.simp | needs MathMap
-./simplify/cmpmap_inverted_lone.map | needs SpecMap
-./simplify/cmpmap_inverted_lone.simp | needs SpecMap
-./simplify/cmpmap_inverted_nested.map | needs MathMap, SpecMap
-./simplify/cmpmap_inverted_nested.simp | needs MathMap, SpecMap
+./simplify/cmpmap_inverted_nested.map | needs MathMap
+./simplify/cmpmap_inverted_nested.simp | needs MathMap
 ./simplify/cmpmap_parallel_in_series_merge.map | needs MathMap
 ./simplify/cmpmap_parallel_series_dim_mismatch.map | needs MathMap
 ./simplify/cmpmap_parallel_series_dim_mismatch.simp | needs MathMap
-./simplify/cmpmap_perm_parallel_swap.map | needs SpecMap
-./simplify/cmpmap_perm_parallel_swap.simp | needs SpecMap
 ./simplify/cmpmap_perm_swap_aconstants.map | needs MathMap
 ./simplify/cmpmap_perm_swap_aconstants.simp | needs MathMap
 ./simplify/cmpmap_perm_swap_bconstants.map | needs MathMap
@@ -255,12 +229,6 @@
 ./simplify/neg_selectormap_parallel.map | needs Box, PointSet, SelectorMap
 ./simplify/neg_selectormap_series_lower.map | needs Box, PointSet, SelectorMap
 ./simplify/neg_selectormap_series_upper.map | needs Box, PointSet, SelectorMap
-./simplify/neg_spec_2arg_mismatch.map | needs SpecMap
-./simplify/neg_spec_3arg_mismatch.map | needs SpecMap
-./simplify/neg_spec_6arg_mismatch.map | needs SpecMap
-./simplify/neg_spec_arg_mismatch.map | needs SpecMap
-./simplify/neg_spec_lone_forward.map | needs SpecMap
-./simplify/neg_spec_parallel.map | needs SpecMap
 ./simplify/neg_spline_different_coeffs.map | needs SplineMap
 ./simplify/neg_spline_nonspline_neighbour.map | needs SplineMap
 ./simplify/neg_spline_parallel.map | needs SplineMap
@@ -345,8 +313,6 @@
 ./simplify/regbasepick_cmpregion_subset.simp | needs CmpRegion, Interval, PointSet
 ./simplify/regbasepick_prism_subset.map | needs Box, PointSet
 ./simplify/regbasepick_prism_subset.simp | needs Box, PointSet
-./simplify/rigby.map | needs SpecMap
-./simplify/rigby.simp | needs SpecMap
 ./simplify/selectormap_inverse_cancel.map | needs Box, PointSet, SelectorMap
 ./simplify/selectormap_inverse_cancel_tail.map | needs Box, PointSet, SelectorMap
 ./simplify/selectormap_region_simplify.map | needs Box, PointSet, SelectorMap
@@ -365,23 +331,6 @@
 ./simplify/simpstab_box_nonlinear_unc.simp | needs Box, MathMap, PointSet
 ./simplify/simpstab_permmap_slice_unc.map | needs Box, PointSet
 ./simplify/simpstab_permmap_slice_unc.simp | needs Box, PointSet
-./simplify/spec_geocentric_cancel.map | needs SpecMap
-./simplify/spec_inverse_cancel.map | needs SpecMap
-./simplify/spec_invert_normalize.map | needs SpecMap
-./simplify/spec_invert_normalize.simp | needs SpecMap
-./simplify/spec_lsr_cancel.map | needs SpecMap
-./simplify/spec_merge_no_cancel.map | needs SpecMap
-./simplify/spec_merge_no_cancel.simp | needs SpecMap
-./simplify/spec_partial_cancel.map | needs SpecMap
-./simplify/spec_partial_cancel.simp | needs SpecMap
-./simplify/spec_run4_identity.map | needs SpecMap
-./simplify/spec_run_inverted_mid.map | needs SpecMap
-./simplify/spec_run_inverted_mid.simp | needs SpecMap
-./simplify/spec_topocentric_cancel.map | needs SpecMap
-./simplify/spec_unit_cancel.map | needs SpecMap
-./simplify/specmap_invert_normalize.map | needs SpecMap
-./simplify/specmap_invert_normalize.simp | needs SpecMap
-./simplify/specmap_pair_cancel.map | needs SpecMap
 ./simplify/spline_inverse_cancel.map | needs SplineMap
 ./simplify/switchmap_fwdonly_simplify.map | needs SwitchMap
 ./simplify/switchmap_fwdonly_simplify.simp | needs SwitchMap
@@ -438,11 +387,11 @@
 ./simplify/xph_inverse_cancel.map | needs XphMap
 ./specfluxframe_swapped.native | needs FluxFrame, SpecFluxFrame, SpecFrame
 ./wcsconv/expected/jan.ast | needs DSBSpecFrame
-./wcsconv/framesets/a20070718_00010_02_cube-ast.ast | needs DSBSpecFrame, SpecMap
+./wcsconv/framesets/a20070718_00010_02_cube-ast.ast | needs DSBSpecFrame
 ./wcsconv/framesets/alt-spectral-head.ast | needs SpecFrame
 ./wcsconv/framesets/awav-a2f-head.ast | needs SpecFrame
 ./wcsconv/framesets/axes-swap-head.ast | needs SpecFrame
-./wcsconv/framesets/beta-frq-head.ast | needs SpecFrame, SpecMap
+./wcsconv/framesets/beta-frq-head.ast | needs SpecFrame
 ./wcsconv/framesets/cd-cross-head.ast | needs SpecFrame
 ./wcsconv/framesets/class-ait-head.ast | needs SpecFrame
 ./wcsconv/framesets/class-arc-head.ast | needs SpecFrame
@@ -457,14 +406,14 @@
 ./wcsconv/framesets/crota-3d-head.ast | needs SpecFrame
 ./wcsconv/framesets/cube-reorder-head.ast | needs SpecFrame
 ./wcsconv/framesets/degen-wcsaxes-head.ast | needs SpecFrame
-./wcsconv/framesets/ener-vel-head.ast | needs SpecFrame, SpecMap
+./wcsconv/framesets/ener-vel-head.ast | needs SpecFrame
 ./wcsconv/framesets/fits-pc-alt-head.ast | needs SpecFrame
 ./wcsconv/framesets/fits-pc-unit-head.ast | needs SpecFrame
 ./wcsconv/framesets/freq-f2w-head.ast | needs SpecFrame
 ./wcsconv/framesets/freq-ghz-bary-head.ast | needs SpecFrame
 ./wcsconv/framesets/freq-log-head.ast | needs MathMap, SpecFrame
 ./wcsconv/framesets/freq-pixel3d-head.ast | needs SpecFrame
-./wcsconv/framesets/freq-wav-head.ast | needs SpecFrame, SpecMap
+./wcsconv/framesets/freq-wav-head.ast | needs SpecFrame
 ./wcsconv/framesets/grism-head.ast | needs GrismMap, SpecFrame
 ./wcsconv/framesets/jan-fits-class.ast | needs DSBSpecFrame
 ./wcsconv/framesets/longslit-fits-pc.ast | needs SpecFrame
@@ -481,18 +430,18 @@
 ./wcsconv/framesets/ssysobs-head.ast | needs SpecFrame
 ./wcsconv/framesets/velo-aips-head.ast | needs SpecFrame
 ./wcsconv/framesets/velo-vel-head.ast | needs SpecFrame
-./wcsconv/framesets/vopt-f2w-head.ast | needs SpecFrame, SpecMap
-./wcsconv/framesets/vopt-geo-head.ast | needs SpecFrame, SpecMap
+./wcsconv/framesets/vopt-f2w-head.ast | needs SpecFrame
+./wcsconv/framesets/vopt-geo-head.ast | needs SpecFrame
 ./wcsconv/framesets/vopt-wav-head.ast | needs SpecFrame
 ./wcsconv/framesets/vrad-lsrd-head.ast | needs SpecFrame
-./wcsconv/framesets/vrad-v2f-head.ast | needs SpecFrame, SpecMap
-./wcsconv/framesets/vrad-wav-head.ast | needs SpecFrame, SpecMap
+./wcsconv/framesets/vrad-v2f-head.ast | needs SpecFrame
+./wcsconv/framesets/vrad-wav-head.ast | needs SpecFrame
 ./wcsconv/framesets/wave-1d-head.ast | needs SpecFrame
-./wcsconv/framesets/wave-f2w-head.ast | needs SpecFrame, SpecMap
+./wcsconv/framesets/wave-f2w-head.ast | needs SpecFrame
 ./wcsconv/framesets/wave-w2f-head.ast | needs SpecFrame
 ./wcsconv/framesets/wavn-frq-head.ast | needs SpecFrame
 ./wcsconv/framesets/zero-cdelt-head.ast | needs SpecFrame
-./wcsconv/framesets/zopt-frq-head.ast | needs SpecFrame, SpecMap
-./wcsconv/inputs/a20070718_00010_02_cube.ast | needs DSBSpecFrame, SpecMap
+./wcsconv/framesets/zopt-frq-head.ast | needs SpecFrame
+./wcsconv/inputs/a20070718_00010_02_cube.ast | needs DSBSpecFrame
 ./wcsconv/inputs/lsst2.ast | needs SplineMap
 ./wcsconv/inputs/specflux.ast | needs SpecFrame

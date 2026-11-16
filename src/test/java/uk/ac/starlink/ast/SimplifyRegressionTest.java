@@ -135,22 +135,26 @@ class SimplifyRegressionTest {
         String refText = Fixtures.read(r.reference);
         Mapping simplified;
         Mapping input;
+        String dump;
         try {
             AstObject inObj = ChannelText.read(Fixtures.read(r.input));
             AstObject refObj = ChannelText.read(refText);
-            if (inObj instanceof FrameSet && !(refObj instanceof FrameSet)) {
-                input = ((FrameSet) inObj).getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
-            } else if (inObj instanceof Mapping) {
-                input = (Mapping) inObj;
-            } else {
+            input = inputMapping(inObj, refObj);
+            if (input == null) {
                 return "input is a " + inObj.getClass().getSimpleName() + ", not a Mapping";
             }
             String inputBefore = withoutRecords(ChannelText.dump(input));
-            List<double[][]> transformsBefore = inputTransforms(input, oracle.get(r.input));
             simplified = input.simplify();
             if (!inputBefore.equals(withoutRecords(ChannelText.dump(input)))) {
                 return "simplify() changed the input's dump";
             }
+            // Both dumps are taken before anything is transformed, since a transformation can
+            // store values that are written: a 1-dimensional SpecMap keeps each frequency
+            // correction factor it works out, as C's does (specmap.c FrameChange). What the input
+            // computed before it was simplified is found from a second reading of it.
+            dump = ChannelText.dump(simplified);
+            List<double[][]> transformsBefore = inputTransforms(
+                    inputMapping(ChannelText.read(Fixtures.read(r.input)), refObj), oracle.get(r.input));
             List<double[][]> transformsAfter = inputTransforms(input, oracle.get(r.input));
             for (int i = 0; i < transformsBefore.size(); i++) {
                 if (!Arrays.deepEquals(transformsBefore.get(i), transformsAfter.get(i))) {
@@ -162,7 +166,6 @@ class SimplifyRegressionTest {
         }
 
         boolean sameFile = r.input.equals(r.reference);
-        String dump = ChannelText.dump(simplified);
         if (sameFile) {
             boolean frame = simplified instanceof Frame;
             boolean card = hasTopLevelIsSimp(dump);
@@ -194,6 +197,20 @@ class SimplifyRegressionTest {
             problem = problem == null ? transform : problem + "; " + transform;
         }
         return problem;
+    }
+
+    /**
+     * The Mapping a row simplifies: the input itself, or a FrameSet's base-to-current Mapping when
+     * the reference is not a FrameSet; null if the input is not a Mapping.
+     */
+    private static Mapping inputMapping(AstObject inObj, AstObject refObj) {
+        if (inObj instanceof FrameSet && !(refObj instanceof FrameSet)) {
+            return ((FrameSet) inObj).getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        } else if (inObj instanceof Mapping) {
+            return (Mapping) inObj;
+        } else {
+            return null;
+        }
     }
 
     /**
