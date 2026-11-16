@@ -387,6 +387,20 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `fitschan/wcs_keywords.rs` looks each keyword up and takes the first card, so that header reads as FK5.
 - Java: as C; of the cards for one keyword the last whose value converts gives the value, and a later card that does not convert is passed over (`fitschan.c:37357-37373`).
 
+### SpecTrans translations of a keyword the header repeats
+
+- C: `SpecTrans` writes each translation into a new FitsChan, which `WcsToStore` reads after every card of the header, so a translation outranks every card with its keyword: `CDELT1 = 0.0` then `CDELT1 = 0.25` reads with CDELT1 1.0, and a CD matrix gives CDELTj 1.0 however many CDELTj cards the header has (C probe).
+  A second translation of one keyword replaces the first, its comment kept by `SetFits`'s rules in that FitsChan.
+  `WcsFcRead` stores the comment of each CTYPE card it visits, but `SetItemC` ignores a card with none, so the comment kept is that of the last card with one; with several "other" axes it becomes the axis Label (`fitschan.c:36848-36860`, `fitschan.c:39283-39304`).
+- Rust: `put_or_append` in `fitschan/card_list.rs` writes the translation over the card after the current one or the first card with the keyword, keeping that card's comment when the values are alike, so a later card with the keyword outranks it; the comment stored for a CTYPE is that of its last card, none if that card has none.
+- Java: as C (`FitsCardList.setTranslation`, `FitsCardList.getStoredComment`).
+
+### A NAXISn that is not a number
+
+- C: `DistortMaps` reads NAXIS1 to NAXISn, n the number of WCS axes of the description, with `astGetFitsF`, so `NAXIS1 = 'abc'` or `NAXIS1 = (1.0, 2.0)` makes the read fail with AST__FTCNV; a NAXISn beyond the WCS axes is not read (`fitschan.c:9017-9021`, C probe).
+- Rust: `fitschan/wcs_keywords.rs` reads the NAXISn it can convert and leaves the others unset, so the read succeeds.
+- Java: as C.
+
 ### More than 99 WCS axes
 
 - C: the FitsStore holds the keywords of intermediate axes 0 to 98 only, and `GetItem`, `GetItemC`, `SetItem` and `SetItemC` raise AST__INTER for any other axis (`fitschan.c:13354-13357`, `fitschan.c:13869-13872`, `fitschan.c:27993-27996`), so a header with `WCSAXES = 1000` fails with "intermediate axis index 99 is invalid".

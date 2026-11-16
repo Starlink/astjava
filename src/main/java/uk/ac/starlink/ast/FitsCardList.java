@@ -61,7 +61,7 @@ final class FitsCardList {
     /** Keywords recorded as consumed by the current read pass (C's {@code MarkCard} of a read). */
     private List<String> consumedNames = new ArrayList<>();
 
-    /** The keywords {@link #setFloat} and {@link #setString} have written while recording, or null. */
+    /** The keywords {@link #setTranslation} has written while recording, or null. */
     private List<String> writtenNames;
 
     /** Whether cards added now are flagged new, C's {@code mark_new}. */
@@ -381,17 +381,18 @@ final class FitsCardList {
 
     /**
      * The comment C's {@code WcsFcRead} stores for a CTYPE keyword: that of the last card not
-     * consumed with {@code keyword}, whether or not its value converts (fitschan.c:36848-36860),
-     * or null if there is none.
+     * consumed with {@code keyword} and a comment, whether or not its value converts
+     * (fitschan.c:36848-36860), since {@code SetItemC} ignores a card with none; null if there is
+     * none.
      */
     String getStoredComment(String keyword) {
-        FitsCard last = null;
+        String com = null;
         for (FitsCard c : list) {
-            if (!c.isConsumed() && c.keyword.equalsIgnoreCase(keyword)) {
-                last = c;
+            if (!c.isConsumed() && c.keyword.equalsIgnoreCase(keyword) && c.cComment() != null) {
+                com = c.cComment();
             }
         }
-        return last == null ? null : last.cComment();
+        return com;
     }
 
     /** {@link #find}, recording the keyword as consumed when a card is found. */
@@ -403,7 +404,7 @@ final class FitsCardList {
         return c;
     }
 
-    /** Starts recording the keywords {@link #setFloat} and {@link #setString} write. */
+    /** Starts recording the keywords {@link #setTranslation} writes. */
     void recordWrites() {
         writtenNames = new ArrayList<>();
     }
@@ -559,10 +560,14 @@ final class FitsCardList {
         return delete(keyword);
     }
 
-    /** Deletes the first card with {@code keyword}; whether there was one. */
+    /**
+     * Deletes the first card with {@code keyword}, passing over translations, which are not in the
+     * header; whether there was one.
+     */
     boolean delete(String keyword) {
         for (int idx = 0; idx < list.size(); idx++) {
-            if (list.get(idx).keyword.equalsIgnoreCase(keyword)) {
+            FitsCard c = list.get(idx);
+            if (!c.flags.translation && c.keyword.equalsIgnoreCase(keyword)) {
                 list.remove(idx);
                 if (pos > idx && pos > 0) {
                     pos--;
@@ -1027,23 +1032,52 @@ final class FitsCardList {
         return comment.isEmpty() ? null : comment;
     }
 
-    /** Stores an integer as C's {@code SetValue}: overwriting a card with the keyword, or inserting. */
-    void setInt(String keyword, long value, String comment) {
-        putOrAppend(new FitsCard(keyword.toUpperCase(Locale.ROOT), FitsCard.Value.ofInt(value), nullIfEmpty(comment)));
+    /**
+     * Stores a translation as C's {@code SpecTrans} stores one, with {@code SetValue} in its
+     * FitsChan of translations ({@code ret}), which C's {@code WcsToStore} reads after every card
+     * of the header: a translation with the keyword is replaced, keeping its comment as {@link
+     * #setValueAsWriter} keeps one at the FitsRounding of a new FitsChan, and otherwise the card
+     * follows the last card. The current card stays where it was, and the keyword is recorded as
+     * written.
+     *
+     * @throws AstException with status {@code AST__BDFTS} if a floating value is {@code AST__BAD},
+     *     as C's {@code SetValue} reports
+     */
+    void setTranslation(String keyword, FitsCard.Value value, String comment) {
+        checkNotBad(keyword, value);
+        noteWritten(keyword);
+        FitsCard card = new FitsCard(keyword.toUpperCase(Locale.ROOT), value, null);
+        card.flags.translation = true;
+        String com = commentToStore(value, comment);
+        int found = -1;
+        for (int k = 0; k < list.size(); k++) {
+            FitsCard c = list.get(k);
+            if (c.flags.translation && c.keyword.equals(card.keyword)) {
+                found = k;
+                break;
+            }
+        }
+        if (found >= 0) {
+            card.comment = trimComment(keptComment(list.get(found), value, com, NEW_FITS_ROUNDING));
+            list.set(found, card);
+        } else {
+            card.comment = trimComment(com);
+            boolean eof = pos >= list.size();
+            list.add(card);
+            if (eof) {
+                pos = list.size();
+            }
+        }
     }
 
-    /** Stores a floating value as {@link #setInt} stores an integer. */
-    void setFloat(String keyword, double value, String comment) {
-        noteWritten(keyword);
-        putOrAppend(
-                new FitsCard(keyword.toUpperCase(Locale.ROOT), FitsCard.Value.ofFloat(value), nullIfEmpty(comment)));
-    }
-
-    /** Stores a string as {@link #setInt} stores an integer. */
-    void setString(String keyword, String value, String comment) {
-        noteWritten(keyword);
-        putOrAppend(
-                new FitsCard(keyword.toUpperCase(Locale.ROOT), FitsCard.Value.ofString(value), nullIfEmpty(comment)));
+    /** The translation {@link #setTranslation} stored for {@code keyword}, or null. */
+    FitsCard findTranslation(String keyword) {
+        for (FitsCard c : list) {
+            if (c.flags.translation && c.keyword.equalsIgnoreCase(keyword)) {
+                return c;
+            }
+        }
+        return null;
     }
 
     /**
@@ -1058,41 +1092,6 @@ final class FitsCardList {
             }
         }
         pos = last >= 0 ? last + 1 : list.size();
-    }
-
-    /**
-     * Stores a card as C's {@code SetValue} does: overwriting a card with the same keyword (the card
-     * after the current one, else the first, used or not), which keeps its comment if the value is
-     * unchanged, or else inserting the card in front of the current card.
-     */
-    private void putOrAppend(FitsCard card) {
-        if (markNew) {
-            card.flags.newWrite = true;
-            card.flags.newVersion = true;
-        }
-        int found = -1;
-        if (pos + 1 < list.size() && list.get(pos + 1).keyword.equalsIgnoreCase(card.keyword)) {
-            found = pos + 1;
-        } else {
-            for (int k = 0; k < list.size(); k++) {
-                if (list.get(k).keyword.equalsIgnoreCase(card.keyword)) {
-                    found = k;
-                    break;
-                }
-            }
-        }
-        if (found >= 0) {
-            FitsCard old = list.get(found);
-            if (old.comment != null && valuesSimilar(old.value, card.value)) {
-                card.comment = old.comment;
-            }
-            // SetValue (fitschan.c:28510) leaves the current card as it was.
-            list.set(found, card);
-        } else {
-            int at = Math.min(pos, list.size());
-            list.add(at, card);
-            pos = at + 1;
-        }
     }
 
     /**
@@ -1113,15 +1112,8 @@ final class FitsCardList {
      *     undefined value, which C's {@code CnvValue} reports
      */
     void setValueAsWriter(String keyword, FitsCard.Value value, String comment, int fitsRounding) {
-        if (value.kind == FitsCard.Kind.FLOAT && value.d == AstObject.AST__BAD) {
-            throw Ast.err(
-                    AstException.AST__BDFTS,
-                    "astWrite(FitsChan): The required FITS keyword \"" + keyword + "\" is indeterminate.");
-        }
-        String com = comment == null || FitsCard.isBlank(comment) ? null : comment;
-        if (com != null && value.kind == FitsCard.Kind.STRING && com.equals(value.s)) {
-            com = null;
-        }
+        checkNotBad(keyword, value);
+        String com = commentToStore(value, comment);
         FitsCard card = new FitsCard(keyword.toUpperCase(Locale.ROOT), value, null);
         if (markNew) {
             card.flags.newWrite = true;
@@ -1139,22 +1131,52 @@ final class FitsCardList {
             }
         }
         if (found >= 0) {
-            FitsCard old = list.get(found);
-            FitsCardValue.Got got = FitsCardValue.cnvType(old.value, want(value.kind), fitsRounding, old.cName());
-            if (got != null && old.comment != null && sameValue(got, value)) {
-                com = null;
-            }
-            if (com == null) {
-                com = old.comment;
-            }
-            card.comment = com == null ? null : nullIfEmpty(FitsCard.trim(com));
+            card.comment = trimComment(keptComment(list.get(found), value, com, fitsRounding));
             list.set(found, card);
         } else {
-            card.comment = com == null ? null : nullIfEmpty(FitsCard.trim(com));
+            card.comment = trimComment(com);
             int at = Math.min(pos, list.size());
             list.add(at, card);
             pos = at + 1;
         }
+    }
+
+    /** The FitsRounding of a new FitsChan, such as C's FitsChan of translations. */
+    private static final int NEW_FITS_ROUNDING = 10;
+
+    /** C's {@code SetValue} refusal of a floating value of {@code AST__BAD}. */
+    private static void checkNotBad(String keyword, FitsCard.Value value) {
+        if (value.kind == FitsCard.Kind.FLOAT && value.d == AstObject.AST__BAD) {
+            throw Ast.err(
+                    AstException.AST__BDFTS,
+                    "astWrite(FitsChan): The required FITS keyword \"" + keyword + "\" is indeterminate.");
+        }
+    }
+
+    /** The comment C's {@code SetFits} stores with {@code value}: none if blank or, for a string, equal to the value. */
+    private static String commentToStore(FitsCard.Value value, String comment) {
+        if (comment == null || FitsCard.isBlank(comment)) {
+            return null;
+        }
+        return value.kind == FitsCard.Kind.STRING && comment.equals(value.s) ? null : comment;
+    }
+
+    /**
+     * The comment a card replacing {@code old} gets: {@code old}'s when {@code com} is null, or when
+     * {@code old}'s value, converted as C's {@code CnvValue} converts it, is the same as {@code
+     * value}; otherwise {@code com}.
+     */
+    private static String keptComment(FitsCard old, FitsCard.Value value, String com, int fitsRounding) {
+        FitsCardValue.Got got = FitsCardValue.cnvType(old.value, want(value.kind), fitsRounding, old.cName());
+        if (com == null || (got != null && old.comment != null && sameValue(got, value))) {
+            return old.comment;
+        }
+        return com;
+    }
+
+    /** A comment trimmed as C's {@code NewCard} trims one, or null if none is left. */
+    private static String trimComment(String com) {
+        return com == null ? null : nullIfEmpty(FitsCard.trim(com));
     }
 
     /** The type C's {@code CnvValue} converts a card's value to, to compare it with {@code kind}. */
@@ -1381,55 +1403,5 @@ final class FitsCardList {
             }
         }
         return false;
-    }
-
-    /**
-     * Whether two values are the same for keeping a comment on overwrite, as C's {@code SetFits}
-     * compares them (fitschan.c:15744): strings ignoring case and trailing spaces, floating values
-     * with C's {@code EQUAL}, others exactly.
-     */
-    // MODERN-JAVA(21): a switch over a sealed Value hierarchy.
-    private static boolean valuesSimilar(FitsCard.Value a, FitsCard.Value b) {
-        if (a.kind != b.kind) {
-            return false;
-        }
-        switch (a.kind) {
-            case STRING:
-                return FitsCard.trimEnd(a.s).equalsIgnoreCase(FitsCard.trimEnd(b.s));
-            case FLOAT:
-                return floatsSimilar(a.d, b.d);
-            case INT:
-            case KINT:
-                return a.i == b.i;
-            case LOGICAL:
-                return a.b == b.b;
-            case COMPLEX_FLOAT:
-                return floatsSimilar(a.d, b.d) && floatsSimilar(a.dIm, b.dIm);
-            case COMPLEX_INT:
-                return a.i == b.i && a.iIm == b.iIm;
-            default:
-                return false;
-        }
-    }
-
-    /**
-     * C's {@code EQUAL} macro (object.h): {@code fabs(a - b) <= 1.0E5 * max((|a| + |b|) *
-     * DBL_EPSILON, DBL_MIN)}.
-     */
-    private static boolean floatsSimilar(double a, double b) {
-        if (a == b) {
-            return true;
-        }
-        double scale = (Math.abs(a) + Math.abs(b)) * Math.ulp(1.0);
-        return Math.abs(a - b) <= 1.0e5 * Math.max(scale, Double.MIN_NORMAL);
-    }
-
-    /**
-     * Stores a value of any type as {@link #setFloat} stores a floating value: C's {@code SetValue}
-     * given the data and type of another card, as {@code SpecTrans} copies a QVi_m card to PVi_m.
-     */
-    void setValue(String keyword, FitsCard.Value value, String comment) {
-        noteWritten(keyword);
-        putOrAppend(new FitsCard(keyword.toUpperCase(Locale.ROOT), value, nullIfEmpty(comment)));
     }
 }

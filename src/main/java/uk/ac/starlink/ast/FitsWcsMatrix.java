@@ -74,6 +74,40 @@ final class FitsWcsMatrix {
     }
 
     /**
+     * C's {@code DistortMaps} notes the image dimensions NAXIS1 to NAXIS{@code naxes} with {@code
+     * astGetFitsF} (fitschan.c:9017-9021), which reports a card whose value does not convert to a
+     * floating value; an absent card gives no error. The extraction has stored the values; this
+     * makes the read fail where C's does. The current card is left as it was.
+     *
+     * @throws AstException with status {@code AST__FTCNV} for a NAXIS card whose value does not
+     *     convert
+     */
+    private static void checkImageDimensions(FitsCardList cards, int naxes) {
+        int icard = cards.getCard();
+        try {
+            for (int i = 1; i <= naxes; i++) {
+                String key = "NAXIS" + i;
+                if (cards.searchCard(key, "astGetFitsF")) {
+                    FitsCard c = cards.current();
+                    try {
+                        if (FitsCardValue.cnvType(c.value, FitsCardValue.Want.FLOAT, 10, c.cName()) == null) {
+                            throw Ast.err(
+                                    AstException.AST__FTCNV,
+                                    "astGetFitsF(FitsChan): Cannot convert FITS keyword '" + c.cName() + "' to "
+                                            + FitsCardValue.Want.FLOAT.cName() + ".");
+                        }
+                    } catch (AstException e) {
+                        throw Ast.withContext(
+                                e, "astGetFitsF(FitsChan): Cannot get value for FITS keyword '" + key + "'.");
+                    }
+                }
+            }
+        } finally {
+            cards.setCard(icard);
+        }
+    }
+
+    /**
      * C's {@code DistortMaps} (fitschan.c:8915): the Mappings that apply the Paper IV distortion
      * codes of the CTYPE values, at the four points of the chain C's {@code WcsIntWorld} splices
      * them into. Every distortion code found, recognised or not, is removed from the CTYPE values
@@ -89,6 +123,7 @@ final class FitsWcsMatrix {
     private static Mapping[] distortMaps(
             FitsStore store, FitsCardList cards, int naxes, FitsWarnings warnings, List<int[]> cursors) {
         Mapping[] ret = new Mapping[4];
+        checkImageDimensions(cards, naxes);
 
         // Spitzer distortion is applied to the translated pixel coordinates.
         if (store.hasSip()) {

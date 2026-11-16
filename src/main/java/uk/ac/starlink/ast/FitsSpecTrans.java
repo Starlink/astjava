@@ -1,10 +1,8 @@
 package uk.ac.starlink.ast;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import uk.ac.starlink.ast.internal.pal.Pal;
 
 /**
@@ -13,9 +11,10 @@ import uk.ac.starlink.ast.internal.pal.Pal;
  *
  * <p>C writes the equivalents into a new FitsChan {@code ret}, reads keyword values from {@code
  * ret} in preference to the FitsChan {@code this} ({@code GetValue2}), and marks each card of
- * {@code this} it reads as used. Here the equivalents are written into a copy of the cards, which
- * then holds both, as C's reader sees them; the cards read are recorded as consumed with {@link
- * FitsCardList#recordConsumed}, and no card is removed except where C deletes one.
+ * {@code this} it reads as used. Here the equivalents are added to a copy of the cards as
+ * translations ({@link FitsCardList#setTranslation}), which follow the header's cards, as C's
+ * {@code WcsToStore} reads {@code ret} after {@code this}; the cards read are recorded as consumed
+ * with {@link FitsCardList#recordConsumed}, and no card is removed except where C deletes one.
  *
  * <p>Some translations are made only for some encodings, as in C: RADECSYS to RADESYS, LONGPOLE to
  * LONPOLE, PROJPi to PVi_m, and CmVALi, CmPIXi, CmYPEi and CmNITi to alternate axis descriptions
@@ -505,9 +504,6 @@ final class FitsSpecTrans {
         /** C's {@code this}: the cards as supplied. */
         private final FitsCardList src;
 
-        /** The keywords C's {@code ret} holds, in upper case. */
-        private final Set<String> ret = new HashSet<>();
-
         private final TransAttrs attrs;
         private final TransWarnings warnings;
 
@@ -588,8 +584,9 @@ final class FitsSpecTrans {
          */
         private FitsCardValue.Got getValue2(String keyword, FitsCardValue.Want want, boolean report) {
             String k = keyword.toUpperCase(Locale.ROOT);
-            if (ret.contains(k)) {
-                FitsCardValue.Got g = getValue(cards, k, want, false);
+            FitsCard t = cards.findTranslation(k);
+            if (t != null) {
+                FitsCardValue.Got g = FitsCardValue.cnvType(t.value, want, 10, k);
                 if (g != null) {
                     return g;
                 }
@@ -630,25 +627,21 @@ final class FitsSpecTrans {
 
         /** C's {@code SetValue( ret, keyword, ... )} of a floating value. */
         private void setFloat(String keyword, double value, String comment) {
-            ret.add(keyword.toUpperCase(Locale.ROOT));
-            cards.setFloat(keyword, value, comment);
+            cards.setTranslation(keyword, FitsCard.Value.ofFloat(value), comment);
         }
 
         /** C's {@code SetValue( ret, keyword, ... )} of a string. */
         private void setString(String keyword, String value, String comment) {
-            ret.add(keyword.toUpperCase(Locale.ROOT));
-            cards.setString(keyword, value, comment);
+            cards.setTranslation(keyword, FitsCard.Value.ofString(value), comment);
         }
 
         /**
          * C's {@code SetValue( ret, keyword, ... )} of a string with no comment, which leaves the
          * comment of the keyword in {@code this} as the one a reader sees ({@code SetItemC} ignores
-         * a null comment): the value replaces the card's and keeps its comment.
+         * a null comment).
          */
         private void replaceString(String keyword, String value) {
-            FitsCard old = cards.find(keyword);
-            String comment = old == null || old.comment == null ? "" : old.comment;
-            setString(keyword, value, comment);
+            setString(keyword, value, null);
         }
 
         /**
@@ -1240,8 +1233,7 @@ final class FitsSpecTrans {
                 cards.recordConsumed(c.keyword);
                 String keyname = "P" + c.keyword.substring(1);
                 if (getValue2(keyname, FitsCardValue.Want.FLOAT, false) == null) {
-                    ret.add(keyname);
-                    cards.setValue(keyname, c.value, c.cComment() == null ? "" : c.cComment());
+                    cards.setTranslation(keyname, c.value, c.cComment());
                 }
             }
         }

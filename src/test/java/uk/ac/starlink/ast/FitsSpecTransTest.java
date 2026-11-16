@@ -72,7 +72,7 @@ class FitsSpecTransTest {
         FitsSpecTrans.specTransInplace(
                 cards, FitsChan.Encoding.FITS_WCS, new FitsSpecTrans.TransAttrs(), new FitsSpecTrans.TransWarnings());
         assertEquals(before, cards.len());
-        assertEquals("FK5     ", cards.getString("RADESYS"));
+        assertEquals("FK5     ", cards.getStoredString("RADESYS", 10));
     }
 
     @Test
@@ -86,16 +86,16 @@ class FitsSpecTransTest {
                 + "END");
         // A zero CDELT becomes 1.0, since 1.0E-6 times the zero CDELT is still zero
         // (fitschan.c:31700-31706).
-        assertEquals(1.0e-10, cards.getFloat("CDELT1"));
-        assertEquals(1.0, cards.getFloat("CDELT2"));
-        assertEquals(1.0, cards.getFloat("CDELT3"));
+        assertEquals(1.0e-10, cards.getStoredFloat("CDELT1"));
+        assertEquals(1.0, cards.getStoredFloat("CDELT2"));
+        assertEquals(1.0, cards.getStoredFloat("CDELT3"));
     }
 
     @Test
     void zeroCdeltHandlesAlternateVersions() {
         FitsCardList cards = wcs("CDELT1A =                  0.0\nCDELT2A =                  2.5\nEND");
-        assertEquals(1.0, cards.getFloat("CDELT1A"));
-        assertEquals(2.5, cards.getFloat("CDELT2A"));
+        assertEquals(1.0, cards.getStoredFloat("CDELT1A"));
+        assertEquals(2.5, cards.getStoredFloat("CDELT2A"));
     }
 
     @Test
@@ -124,10 +124,10 @@ class FitsSpecTransTest {
                 + "END");
         assertTrue(consumed(cards, "CROTA2"));
         double cos30 = Math.cos(Math.toRadians(30.0));
-        assertTrue(Math.abs(cards.getFloat("PC1_1") - cos30) < 1e-10);
-        assertTrue(Math.abs(cards.getFloat("PC2_2") - cos30) < 1e-10);
-        assertEquals(-1.0, cards.getFloat("CDELT1"));
-        assertEquals(1.0, cards.getFloat("CDELT2"));
+        assertTrue(Math.abs(cards.getStoredFloat("PC1_1") - cos30) < 1e-10);
+        assertTrue(Math.abs(cards.getStoredFloat("PC2_2") - cos30) < 1e-10);
+        assertEquals(-1.0, cards.getStoredFloat("CDELT1"));
+        assertEquals(1.0, cards.getStoredFloat("CDELT2"));
     }
 
     @Test
@@ -141,9 +141,9 @@ class FitsSpecTransTest {
                 + "PC2_2   =                  1.0\n"
                 + "CROTA2  =                 30.0\n"
                 + "END");
-        assertEquals(30.0, cards.getFloat("CROTA2"));
+        assertEquals(30.0, cards.getStoredFloat("CROTA2"));
         assertFalse(consumed(cards, "CROTA2"));
-        assertEquals(1.0, cards.getFloat("PC1_1"));
+        assertEquals(1.0, cards.getStoredFloat("PC1_1"));
     }
 
     @Test
@@ -159,12 +159,12 @@ class FitsSpecTransTest {
                 + "PC3_3   =                  1.0\n"
                 + "CROTA2  =                 30.0\n"
                 + "END");
-        assertEquals(30.0, cards.getFloat("CROTA2"));
+        assertEquals(30.0, cards.getStoredFloat("CROTA2"));
         assertNull(cards.find("PC1_1"));
         assertNull(cards.find("PC1_2"));
         assertNull(cards.find("PC2_1"));
         assertNull(cards.find("PC2_2"));
-        assertEquals(1.0, cards.getFloat("PC3_3"));
+        assertEquals(1.0, cards.getStoredFloat("PC3_3"));
     }
 
     @Test
@@ -197,52 +197,52 @@ class FitsSpecTransTest {
     void translatesEpochToEquinox() {
         FitsCardList cards = wcs("EPOCH   =               1995.0\nEND");
         assertTrue(consumed(cards, "EPOCH"));
-        assertEquals(1995.0, cards.getFloat("EQUINOX"));
+        assertEquals(1995.0, cards.getStoredFloat("EQUINOX"));
     }
 
     @Test
     void epochZeroBecomesB1950Equinox() {
         FitsCardList cards = wcs("EPOCH   =                  0.0\nEND");
-        assertEquals(1950.0, cards.getFloat("EQUINOX"));
+        assertEquals(1950.0, cards.getStoredFloat("EQUINOX"));
     }
 
     @Test
     void epochConsumedWhenEquinoxPresent() {
         FitsCardList cards = wcs("EPOCH   =               1995.0\nEQUINOX =               2000.0\nEND");
         assertTrue(consumed(cards, "EPOCH"));
-        assertEquals(2000.0, cards.getFloat("EQUINOX"));
+        assertEquals(2000.0, cards.getStoredFloat("EQUINOX"));
     }
 
     @Test
     void equinoxZeroBecomesB1950() {
         FitsCardList cards = wcs("EQUINOX =                  0.0\nEND");
-        assertEquals(1950.0, cards.getFloat("EQUINOX"));
+        assertEquals(1950.0, cards.getStoredFloat("EQUINOX"));
     }
 
     @Test
     void translatesEquinoxB1995StringToJulianNumber() {
         FitsCardList cards = wcs("EQUINOX = 'B1995.0'\nEND");
         // C: dval = palEpj( palEpb2d( dval ) ) (fitschan.c:32136).
-        assertEquals(Pal.epj(Pal.epb2d(1995.0)), cards.getFloat("EQUINOX"));
+        assertEquals(Pal.epj(Pal.epb2d(1995.0)), cards.getStoredFloat("EQUINOX"));
     }
 
     @Test
     void translatesEquinoxJ2000StringToPlainNumber() {
         FitsCardList cards = wcs("EQUINOX = 'J2000.0'\nEND");
-        assertEquals(2000.0, cards.getFloat("EQUINOX"));
+        assertEquals(2000.0, cards.getStoredFloat("EQUINOX"));
     }
 
     @Test
     void translatesDateObsToMjdObs() {
         FitsCardList cards = wcs("DATE-OBS= '2000-01-15T12:00:00'\nEND");
-        assertTrue(Math.abs(cards.getFloat("MJD-OBS") - 51558.5) < 1e-6);
+        assertTrue(Math.abs(cards.getStoredFloat("MJD-OBS") - 51558.5) < 1e-6);
         assertNotNull(cards.find("DATE-OBS"));
     }
 
     @Test
     void dateObsSkippedWhenMjdObsPresent() {
         FitsCardList cards = wcs("DATE-OBS= '2000-01-15T12:00:00'\nMJD-OBS =              50000.0\nEND");
-        assertEquals(50000.0, cards.getFloat("MJD-OBS"));
+        assertEquals(50000.0, cards.getStoredFloat("MJD-OBS"));
         // MJD-OBS is read only as a test for its presence (fitschan.c:32170-32175).
         List<String> names = cards.takeConsumedNames();
         assertTrue(names.contains("DATE-OBS"));
@@ -252,34 +252,34 @@ class FitsSpecTransTest {
     @Test
     void translatesNcpToSinWithPv22() {
         FitsCardList cards = wcs("CTYPE1  = 'RA---NCP'\nCTYPE2  = 'DEC--NCP'\nCRVAL2  =                 30.0\nEND");
-        assertEquals("RA---SIN", cards.getString("CTYPE1"));
-        assertEquals("DEC--SIN", cards.getString("CTYPE2"));
+        assertEquals("RA---SIN", cards.getStoredString("CTYPE1", 10));
+        assertEquals("DEC--SIN", cards.getStoredString("CTYPE2", 10));
         double cot30 = 1.0 / Math.tan(Math.toRadians(30.0));
-        assertTrue(Math.abs(cards.getFloat("PV2_2") - cot30) < 1e-10);
-        assertEquals(0.0, cards.getFloat("PV2_1"));
+        assertTrue(Math.abs(cards.getStoredFloat("PV2_2") - cot30) < 1e-10);
+        assertEquals(0.0, cards.getStoredFloat("PV2_1"));
     }
 
     @Test
     void translatesGlsToSfl() {
         FitsCardList cards = wcs("CTYPE1  = 'RA---GLS'\nCTYPE2  = 'DEC--GLS'\nEND");
-        assertEquals("RA---SFL", cards.getString("CTYPE1"));
-        assertEquals("DEC--SFL", cards.getString("CTYPE2"));
+        assertEquals("RA---SFL", cards.getStoredString("CTYPE1", 10));
+        assertEquals("DEC--SFL", cards.getStoredString("CTYPE2", 10));
     }
 
     @Test
     void ncpAtEquatorLeftAlone() {
         FitsCardList cards = wcs("CTYPE1  = 'RA---NCP'\nCTYPE2  = 'DEC--NCP'\nCRVAL2  =                  0.0\nEND");
-        assertEquals("DEC--NCP", cards.getString("CTYPE2"));
+        assertEquals("DEC--NCP", cards.getStoredString("CTYPE2", 10));
     }
 
     @Test
     void earlyPaperIiiWaveFrqBecomesWaveF2w() {
-        assertEquals("WAVE-F2W", wcs("CTYPE3  = 'WAVE-FRQ'\nEND").getString("CTYPE3"));
+        assertEquals("WAVE-F2W", wcs("CTYPE3  = 'WAVE-FRQ'\nEND").getStoredString("CTYPE3", 10));
     }
 
     @Test
     void earlyPaperIiiVeloVelRedundantBlanks() {
-        assertEquals("VELO    ", wcs("CTYPE3  = 'VELO-VEL'\nEND").getString("CTYPE3"));
+        assertEquals("VELO    ", wcs("CTYPE3  = 'VELO-VEL'\nEND").getStoredString("CTYPE3", 10));
     }
 
     @Test
@@ -295,20 +295,20 @@ class FitsSpecTransTest {
                 + "CO2_3   =                  0.0\n"
                 + "CO2_5   =                  0.7\n"
                 + "END");
-        assertEquals("RA---TPN", cards.getString("CTYPE1"));
-        assertEquals("DEC--TPN", cards.getString("CTYPE2"));
-        assertEquals(1.0, cards.getFloat("PV1_1"));
-        assertEquals(1.0, cards.getFloat("PV2_2"));
-        assertEquals(1.0, cards.getFloat("PC1_1"));
-        assertEquals(1.0, cards.getFloat("CDELT1"));
+        assertEquals("RA---TPN", cards.getStoredString("CTYPE1", 10));
+        assertEquals("DEC--TPN", cards.getStoredString("CTYPE2", 10));
+        assertEquals(1.0, cards.getStoredFloat("PV1_1"));
+        assertEquals(1.0, cards.getStoredFloat("PV2_2"));
+        assertEquals(1.0, cards.getStoredFloat("PC1_1"));
+        assertEquals(1.0, cards.getStoredFloat("CDELT1"));
     }
 
     @Test
     void translatesAtfToAit() {
         // The ATF translation has no encoding test (fitschan.c:32245-32257).
         FitsCardList cards = wcs("CTYPE1  = 'RA---ATF'\nCTYPE2  = 'DEC--ATF'\nEND");
-        assertEquals("RA---AIT", cards.getString("CTYPE1"));
-        assertEquals("DEC--AIT", cards.getString("CTYPE2"));
+        assertEquals("RA---AIT", cards.getStoredString("CTYPE1", 10));
+        assertEquals("DEC--AIT", cards.getStoredString("CTYPE2", 10));
     }
 
     @Test
@@ -318,34 +318,34 @@ class FitsSpecTransTest {
                 + "QV2_1   =                  0.5\n"
                 + "QV2_2   =                  0.7\n"
                 + "END");
-        assertEquals("RA---TPN", cards.getString("CTYPE1"));
-        assertEquals("DEC--TPN", cards.getString("CTYPE2"));
-        assertEquals(0.5, cards.getFloat("PV2_1"));
-        assertEquals(0.7, cards.getFloat("PV2_2"));
+        assertEquals("RA---TPN", cards.getStoredString("CTYPE1", 10));
+        assertEquals("DEC--TPN", cards.getStoredString("CTYPE2", 10));
+        assertEquals(0.5, cards.getStoredFloat("PV2_1"));
+        assertEquals(0.7, cards.getStoredFloat("PV2_2"));
         assertTrue(consumed(cards, "QV2_1"));
     }
 
     @Test
     void translatesTpvToTpn() {
         FitsCardList cards = wcs("CTYPE1  = 'RA---TPV'\nCTYPE2  = 'DEC--TPV'\nEND");
-        assertEquals("RA---TPN", cards.getString("CTYPE1"));
-        assertEquals("DEC--TPN", cards.getString("CTYPE2"));
+        assertEquals("RA---TPN", cards.getStoredString("CTYPE1", 10));
+        assertEquals("DEC--TPN", cards.getStoredString("CTYPE2", 10));
     }
 
     @Test
     void translatesZpxToZpnAndExtractsProjp() {
         FitsCardList cards = wcs(
                 "CTYPE1  = 'RA---ZPX'\n" + "CTYPE2  = 'DEC--ZPX'\n" + "WAT2_001= 'projp1=1.0 projp2=-0.4'\n" + "END");
-        assertEquals("RA---ZPN-ZPX", cards.getString("CTYPE1"));
-        assertEquals(1.0, cards.getFloat("PV2_1"));
-        assertEquals(-0.4, cards.getFloat("PV2_2"));
+        assertEquals("RA---ZPN-ZPX", cards.getStoredString("CTYPE1", 10));
+        assertEquals(1.0, cards.getStoredFloat("PV2_1"));
+        assertEquals(-0.4, cards.getStoredFloat("PV2_2"));
     }
 
     @Test
     void translatesTnxToTpn() {
         FitsCardList cards = wcs("CTYPE1  = 'RA---TNX'\nCTYPE2  = 'DEC--TNX'\nEND");
-        assertEquals("RA---TPN", cards.getString("CTYPE1"));
-        assertEquals("DEC--TPN", cards.getString("CTYPE2"));
+        assertEquals("RA---TPN", cards.getStoredString("CTYPE1", 10));
+        assertEquals("DEC--TPN", cards.getStoredString("CTYPE2", 10));
     }
 
     @Test
@@ -356,7 +356,7 @@ class FitsSpecTransTest {
                 + "CRPIX1  =               1000.0\n"
                 + "CDELT1  =                 -1.0\n"
                 + "END");
-        double crpix1 = cards.getFloat("CRPIX1");
+        double crpix1 = cards.getStoredFloat("CRPIX1");
         assertTrue(Math.abs(crpix1) < 250.0, "CRPIX1 not wrapped: " + crpix1);
     }
 
@@ -366,30 +366,30 @@ class FitsSpecTransTest {
         // translation of the CD matrix and gates the wrap on !CarLin (fitschan.c:32473).
         String text = Fixtures.read("wcsconv/inputs/car4.head");
         FitsCardList wrapped = run(text, new FitsSpecTrans.TransAttrs(), new FitsSpecTrans.TransWarnings());
-        assertNotEquals(211076.0, wrapped.getFloat("CRPIX1"));
+        assertNotEquals(211076.0, wrapped.getStoredFloat("CRPIX1"));
         FitsSpecTrans.TransAttrs carLin = new FitsSpecTrans.TransAttrs();
         carLin.carLin = true;
         FitsCardList kept = run(text, carLin, new FitsSpecTrans.TransWarnings());
-        assertEquals(211076.0, kept.getFloat("CRPIX1"));
+        assertEquals(211076.0, kept.getStoredFloat("CRPIX1"));
     }
 
     @Test
     void translatesRestfreqToRestfrqWithGhzScale() {
         FitsCardList cards = wcs("RESTFREQ=                1.42 / Rest frequency in GHz\nEND");
         assertTrue(consumed(cards, "RESTFREQ"));
-        assertTrue(Math.abs(cards.getFloat("RESTFRQ") - 1.42e9) < 1.0);
+        assertTrue(Math.abs(cards.getStoredFloat("RESTFRQ") - 1.42e9) < 1.0);
     }
 
     @Test
     void translatesVeloLsrToVradPlusSpecsys() {
         FitsCardList cards = wcs("CTYPE3  = 'VELO-LSR'\nEND");
-        assertEquals("VRAD    ", cards.getString("CTYPE3"));
-        assertEquals("LSRK", cards.getString("SPECSYS"));
+        assertEquals("VRAD    ", cards.getStoredString("CTYPE3", 10));
+        assertEquals("LSRK", cards.getStoredString("SPECSYS", 10));
     }
 
     @Test
     void translatesLambdaToWave() {
-        assertEquals("WAVE", wcs("CTYPE3  = 'LAMBDA  '\nEND").getString("CTYPE3"));
+        assertEquals("WAVE", wcs("CTYPE3  = 'LAMBDA  '\nEND").getStoredString("CTYPE3", 10));
     }
 
     @Test
@@ -398,10 +398,10 @@ class FitsSpecTransTest {
         // (Ustrcmp, fitschan.c:32597-32604), so only an unpadded value is translated.
         FitsCardList cards =
                 wcs("CUNIT1  = 'HZ'\n" + "CUNIT2  = 'M/S'\n" + "CUNIT3  = 'KM/S'\n" + "CUNIT4  = 'HZ      '\n" + "END");
-        assertEquals("Hz", cards.getString("CUNIT1"));
-        assertEquals("m/s", cards.getString("CUNIT2"));
-        assertEquals("km/s", cards.getString("CUNIT3"));
-        assertEquals("HZ      ", cards.getString("CUNIT4"));
+        assertEquals("Hz", cards.getStoredString("CUNIT1", 10));
+        assertEquals("m/s", cards.getStoredString("CUNIT2", 10));
+        assertEquals("km/s", cards.getStoredString("CUNIT3", 10));
+        assertEquals("HZ      ", cards.getStoredString("CUNIT4", 10));
     }
 
     @Test
@@ -431,7 +431,7 @@ class FitsSpecTransTest {
         // start of a read (CardComm( this ), fitschan.c:31663), which here is RADECSYS itself.
         FitsCardList cards = pc("RADECSYS= 'FK5     '           / Reference frame\nEND");
         assertTrue(consumed(cards, "RADECSYS"));
-        assertEquals("FK5     ", cards.getString("RADESYS"));
+        assertEquals("FK5     ", cards.getStoredString("RADESYS", 10));
         assertEquals("Reference frame", cards.find("RADESYS").comment);
     }
 
@@ -450,13 +450,13 @@ class FitsSpecTransTest {
         FitsCardList cards =
                 pc("RADECSYS= 'FK4     '           / Old\n" + "RADESYS = 'FK5     '           / New\n" + "END");
         assertTrue(consumed(cards, "RADECSYS"));
-        assertEquals("FK4     ", cards.getString("RADESYS"));
+        assertEquals("FK4     ", cards.getStoredString("RADESYS", 10));
     }
 
     @Test
     void renameKeywordHandlesFloatValues() {
         FitsCardList cards = pc("LONGPOLE=                180.0 / Old name\nEND");
-        assertEquals(180.0, cards.getFloat("LONPOLE"));
+        assertEquals(180.0, cards.getStoredFloat("LONPOLE"));
         assertTrue(consumed(cards, "LONGPOLE"));
     }
 
@@ -464,21 +464,21 @@ class FitsSpecTransTest {
     void translatesRadecsysToRadesys() {
         FitsCardList cards = pc("RADECSYS= 'FK5     '           / Old-style frame\nEND");
         assertTrue(consumed(cards, "RADECSYS"));
-        assertEquals("FK5     ", cards.getString("RADESYS"));
+        assertEquals("FK5     ", cards.getStoredString("RADESYS", 10));
     }
 
     @Test
     void radecsysReplacesRadesysWhenBothPresent() {
         // Rust's keeps_radesys_when_both_present; C gives the RADECSYS value (C probe p2 (a)).
         FitsCardList cards = pc("RADECSYS= 'FK4     '\nRADESYS = 'FK5     '\nEND");
-        assertEquals("FK4     ", cards.getString("RADESYS"));
+        assertEquals("FK4     ", cards.getStoredString("RADESYS", 10));
     }
 
     @Test
     void translatesLongpoleToLonpole() {
         FitsCardList cards = pc("LONGPOLE=                180.0 / Old name\nEND");
         assertTrue(consumed(cards, "LONGPOLE"));
-        assertEquals(180.0, cards.getFloat("LONPOLE"));
+        assertEquals(180.0, cards.getStoredFloat("LONPOLE"));
     }
 
     @Test
@@ -489,11 +489,11 @@ class FitsSpecTransTest {
                 + "CD002002=                  3.0\n"
                 + "END");
         assertTrue(consumed(cards, "CD001001"));
-        assertEquals(-2.0, cards.getFloat("PC1_1"));
-        assertEquals(3.0, cards.getFloat("PC2_2"));
+        assertEquals(-2.0, cards.getStoredFloat("PC1_1"));
+        assertEquals(3.0, cards.getStoredFloat("PC2_2"));
         // CDELT is 1.0 for every row that had a CDjjjiii.
-        assertEquals(1.0, cards.getFloat("CDELT1"));
-        assertEquals(1.0, cards.getFloat("CDELT2"));
+        assertEquals(1.0, cards.getStoredFloat("CDELT1"));
+        assertEquals(1.0, cards.getStoredFloat("CDELT2"));
     }
 
     @Test
@@ -502,8 +502,8 @@ class FitsSpecTransTest {
         List<String> names = cards.takeConsumedNames();
         assertTrue(names.contains("CD001001"));
         assertTrue(names.contains("CD002002"));
-        assertEquals(1.0, cards.getFloat("PC1_1"));
-        assertEquals(1.0, cards.getFloat("PC2_2"));
+        assertEquals(1.0, cards.getStoredFloat("PC1_1"));
+        assertEquals(1.0, cards.getStoredFloat("PC2_2"));
     }
 
     @Test
@@ -518,9 +518,9 @@ class FitsSpecTransTest {
         assertNotNull(cards.find("PROJP0"));
         assertNotNull(cards.find("PROJP1"));
         assertTrue(consumed(cards, "PROJP1"));
-        assertEquals(0.0, cards.getFloat("PV2_0"));
-        assertEquals(1.0, cards.getFloat("PV2_1"));
-        assertEquals(-0.4, cards.getFloat("PV2_2"));
+        assertEquals(0.0, cards.getStoredFloat("PV2_0"));
+        assertEquals(1.0, cards.getStoredFloat("PV2_1"));
+        assertEquals(-0.4, cards.getStoredFloat("PV2_2"));
     }
 
     @Test
@@ -532,7 +532,7 @@ class FitsSpecTransTest {
                 + "PV1_1   =                  1.0\n"
                 + "PV1_2   =                 -0.4\n"
                 + "END");
-        assertEquals(0.0, cards.getFloat("PV2_0"));
+        assertEquals(0.0, cards.getStoredFloat("PV2_0"));
     }
 
     @Test
@@ -549,15 +549,15 @@ class FitsSpecTransTest {
         List<String> names = cards.takeConsumedNames();
         assertTrue(names.contains("C1YPE1"));
         assertTrue(names.contains("C1ELT1"));
-        assertEquals("GLON-TAN", cards.getString("CTYPE1A"));
-        assertEquals("GLAT-TAN", cards.getString("CTYPE2A"));
-        assertEquals(101.255, cards.getFloat("CRVAL1A"));
-        assertEquals(50.5, cards.getFloat("CRPIX1A"));
-        assertEquals(-0.01, cards.getFloat("CDELT1A"));
+        assertEquals("GLON-TAN", cards.getStoredString("CTYPE1A", 10));
+        assertEquals("GLAT-TAN", cards.getStoredString("CTYPE2A", 10));
+        assertEquals(101.255, cards.getStoredFloat("CRVAL1A"));
+        assertEquals(50.5, cards.getStoredFloat("CRPIX1A"));
+        assertEquals(-0.01, cards.getStoredFloat("CDELT1A"));
         // The unit PC matrix, there being no PCjjjiii.
-        assertEquals(1.0, cards.getFloat("PC1_1A"));
-        assertEquals(0.0, cards.getFloat("PC1_2A"));
-        assertEquals(1.0, cards.getFloat("PC2_2A"));
+        assertEquals(1.0, cards.getStoredFloat("PC1_1A"));
+        assertEquals(0.0, cards.getStoredFloat("PC1_2A"));
+        assertEquals(1.0, cards.getStoredFloat("PC2_2A"));
     }
 
     @Test
@@ -567,7 +567,7 @@ class FitsSpecTransTest {
                 + "C1VAL1  =                100.0\n"
                 + "C1ELT1  =                  0.0\n"
                 + "END");
-        assertEquals(1.0, cards.getFloat("CDELT1A"));
+        assertEquals(1.0, cards.getStoredFloat("CDELT1A"));
     }
 
     // ------------------------------------------------------------------
@@ -671,8 +671,8 @@ class FitsSpecTransTest {
         // C's Match stores the fields from the last (fitschan.c:22790), so naxis is the highest
         // column index: a matrix with one column is a 1x1 matrix.
         FitsCardList cards = wcs("CD1_1   =                  2.0\nCD2_1   =                  1.0\nEND");
-        assertEquals(2.0, cards.getFloat("CDELT1"));
-        assertEquals(1.0, cards.getFloat("PC1_1"));
+        assertEquals(2.0, cards.getStoredFloat("CDELT1"));
+        assertEquals(1.0, cards.getStoredFloat("PC1_1"));
         assertNull(cards.find("CDELT2"));
         assertNull(cards.find("PC2_1"));
         assertFalse(consumed(cards, "CD2_1"));
@@ -713,10 +713,10 @@ class FitsSpecTransTest {
                 + "C1ELT1  =                  2.0\n"
                 + "C1ELT2  =                  3.0\n"
                 + "END");
-        assertEquals(2.0, cards.getFloat("CDELT1A"));
-        assertEquals(3.0, cards.getFloat("CDELT2A"));
-        assertEquals(1.0, cards.getFloat("PC1_1A"));
-        assertEquals(0.0, cards.getFloat("PC1_2A"));
+        assertEquals(2.0, cards.getStoredFloat("CDELT1A"));
+        assertEquals(3.0, cards.getStoredFloat("CDELT2A"));
+        assertEquals(1.0, cards.getStoredFloat("PC1_1A"));
+        assertEquals(0.0, cards.getStoredFloat("PC1_2A"));
         assertNull(cards.find("CRVAL1A"));
         assertTrue(consumed(cards, "C1VAL1"));
     }
@@ -734,7 +734,7 @@ class FitsSpecTransTest {
                         + "END",
                 new FitsSpecTrans.TransAttrs(),
                 w);
-        assertEquals("RA---TAN", cards.getString("CTYPE1"));
+        assertEquals("RA---TAN", cards.getStoredString("CTYPE1", 10));
         assertNull(cards.find("PV2_1"));
         assertNull(cards.find("PV2_2"));
         assertTrue(w.entry.isEmpty());
@@ -766,8 +766,8 @@ class FitsSpecTransTest {
                 new FitsSpecTrans.TransAttrs(),
                 new FitsSpecTrans.TransWarnings(),
                 new FitsWarnings());
-        assertEquals("RA---TPV", cards.getString("CTYPE1"));
-        assertEquals("RA---TPN", trans.getString("CTYPE1"));
+        assertEquals("RA---TPV", cards.getStoredString("CTYPE1", 10));
+        assertEquals("RA---TPN", trans.getStoredString("CTYPE1", 10));
         List<String> written = trans.takeWrittenNames();
         assertTrue(written.contains("CTYPE1"));
         assertTrue(written.contains("CTYPE2"));
