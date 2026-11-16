@@ -4,7 +4,7 @@ These are the decisions made while executing the phase 4 plan ([`2026-11-16-pure
 They are copied from the execution ledger (the controller's rulings) and from each task's report (the implementer's rulings), grouped by task; within a task the implementer's come first, in the order of the report, then the controller's, in the order they were made.
 Each gives what was decided, why, and what it costs if wrong.
 A later ruling can reverse an earlier one.
-There are 98 rulings.
+There are 104 rulings.
 The phase report is [`2026-11-16-phase4-report.md`](2026-11-16-phase4-report.md).
 
 ## Plan review
@@ -157,3 +157,17 @@ The phase report is [`2026-11-16-phase4-report.md`](2026-11-16-phase4-report.md)
 - Ruling: the over-run guard sits just before the CDELT scaling, where C writes past its array — earlier writes of CRPIX/CRVAL/CTYPE are unchanged — a FrameSet never reaches it, so no cost.
 - Ruling: uninitialised crval reads in C are replaced by 0 (as the existing code comment says) — unreachable from a FrameSet — none.
 - Ruling: causes of the three FITS-CLASS write failures not investigated beyond C's identical outcome — the test only needs the outcome — none.
+
+## Final review fix pass
+
+### Implementer
+
+- Ruling: a CmpFrame cast into a SpecFluxFrame keeps copies of the CmpFrame's components whatever their classes, as C's `astCastCopy` does, rather than giving null for components other than a SpecFrame and a FluxFrame — the cast SpecFluxFrame is only ever the template of a match against a SpecFluxFrame, whose `Match` and `SubFrame` read its axes and attributes and overlay it, never its SpecFrame and FluxFrame, so C's behaviour is defined there — cost if wrong: a `ClassCastException` if a later path reads the components of such a SpecFluxFrame as a SpecFrame and a FluxFrame.
+- Ruling: SpecFluxFrame's default Title reads the components' Labels as Frames, as C's `GetTitle` does through `astGetLabel`, so it works for a SpecFluxFrame made by that cast — cost if wrong: none.
+- Ruling: a CmpFrame cast into its own class is a copy, not `castCopy` — C's `astCastCopy` into the same class is `astCopy` followed by `astCleanAttribs`, which changes nothing in a valid object — cost if wrong: none.
+- Ruling: C's crash in `Cast` when no plain CmpFrame has been made is not copied; Java gives what C gives once one has been — cost if wrong: none.
+
+### Controller
+
+- Ruling: when re-expressing the SpecOrigin or SourceVel fails, a StdOfRest, SourceVRF or SourceSys setting or clearing throws and keeps the old value, where C throws and stores the new one; recorded as a C quirk in `docs/rust-c-differences.md` — C's state is inconsistent (a new rest frame with the SourceVel of the old one) — cost if wrong: after such a failed setting, later attribute values, the default Title and the dump differ from C's.
+- Ruling: the FITS-CLASS write at the edge of `IsMapLinear`'s tolerance (fuzz header `h00886`, residual 5.63e-5 pixels against 4.99e-5; C writes, Java returns 0) is recorded, not fixed — rounding in an ill-conditioned linear fit, not a porting error — cost if wrong: an occasional FITS-CLASS header near the tolerance that C writes and Java does not.

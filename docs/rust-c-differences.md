@@ -373,6 +373,20 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `specframe_overlay` overlays the template itself through `frame_overlay`, which transfers the System only to a result of the template's class, so the Title, Label, Symbol and Unit are overlaid.
 - Java: as C.
 
+### A SpecFrame Symbol changed by its Unit
+
+- **C quirk**: `GetSymbol` (specframe.c) copies the default Symbol, modified for a Unit other than the System's default, into a static 21-character buffer with `strcpy`, so a longer one overflows it: System `WAVN` with Unit `nm` gives a Symbol beginning `999999999.99999988/ WAVN`, and the fortified `strcpy` traps (probed: SIGTRAP from `astGetC( f, "Symbol(1)" )`, and from a NATIVE write of a header with `CTYPE1 = 'WAVN'`, `CUNIT1 = 'nm'`, through `Dump`).
+  `GetSymbol` in fluxframe.c has the same pattern (read from the code, not triggered by the units tried).
+- Rust: gives the whole Symbol.
+- Java: as Rust.
+
+### A failed StdOfRest, SourceVRF or SourceSys setting
+
+- **C quirk**: when re-expressing a set SpecOrigin or SourceVel in the new standard of rest or source System fails (AST__ATSER, AST__NOVAL, AST__BADUN), setting or clearing StdOfRest, SourceVRF or SourceSys reports the error but stores the new value anyway: `SetStdOfRest` and `ClearStdOfRest` (specframe.c) store it after `OriginStdOfRest` has cleared the SpecOrigin and failed, and the `astMAKE_SET` and `astMAKE_CLEAR` macros for SourceVRF and SourceSys store it after `ConvertSourceVel` has failed, leaving the SourceVel expressed in the old rest frame or System.
+  Later attribute values, the default Title (`Wavelength (LSRK)`, say) and the dump then describe the new value.
+- Rust: `set_std_of_rest`, `clear_std_of_rest`, `set_source_vrf`, `clear_source_vrf`, `set_source_sys` and `clear_source_sys` in `frames/specframe.rs` return the error before storing the value.
+- Java: as Rust: the setter throws and the attribute keeps its old value (a SpecOrigin already cleared by the failed re-expression stays cleared, as in C).
+
 ### Aligning DSBSpecFrames in sidebands sets the target's SideBand
 
 - **C quirk**: to find the observed sideband of the target and of the result, `SubFrame` (dsbspecframe.c) reads the SideBand, sets it to `observed` and sets it back with `astSetSideBand`, so after a conversion with AlignSideBand set on both DSBSpecFrames (or one restoring a FrameSet's integrity) the target's SideBand is set, to the value it had.
@@ -438,6 +452,13 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: `GetTitle` (specfluxframe.c) formats "<flux Label> versus <spectral Label>" with `sprintf` into a static 101-character buffer, so Labels longer than 92 characters between them write past it (read from the code, not probed). **C quirk.**
 - Rust: gives the whole Title.
 - Java: as Rust.
+
+### Casting between a CmpFrame and a SpecFluxFrame
+
+- C: `Cast` (cmpframe.c) copies a CmpFrame or SpecFluxFrame as an instance of any class of the CmpFrame family, a subclass included (`astCastCopy`), so a SpecFluxFrame template that matches no CmpFrame is cast into a plain CmpFrame and matched again, and a plain CmpFrame template that matches no SpecFluxFrame (the CmpFrame `ConvertX` gets from matching a SpecFluxFrame against a FluxFrame or SpecFrame) is cast into a SpecFluxFrame holding copies of its components, whose `Match` reaches `MakeSFMapping`.
+  **C quirk**: `Cast` compares the classes through CmpFrame's own `class_vtab`, which is initialised only when a plain CmpFrame is first made, so in a process that has made SpecFluxFrames but no CmpFrame a SpecFluxFrame match that fails dereferences null in `astClassCompare` (probed: SIGSEGV converting a SpecFluxFrame whose SpecFrame has Domain `FOO` to a default one).
+- Rust: SpecFluxFrame has no `cast`, and `CmpFrame::cast` in `frames/cmpframe.rs` copies a CmpFrame only into a CmpFrame, so neither becomes the other and these conversions find nothing.
+- Java: as C once a CmpFrame has been made: a FluxFrame or SpecFrame that does not match a SpecFluxFrame directly converts through `MakeSFMapping`, so it throws `needs RateMap` (or C's error, such as AST__ATSER from `GetSpecFrame`).
 
 ## FitsChan
 

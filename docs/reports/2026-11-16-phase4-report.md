@@ -7,9 +7,9 @@ SpecMap, SpecFrame, DSBSpecFrame, FluxFrame and SpecFluxFrame now exist with jni
 `FitsChan.read()` now reads spectral axes from FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++ and FITS-CLASS headers, and `FitsChan.write()` writes them in each of those encodings.
 Of the 194 rows of C's FITS conversion regression table (`ast_tester/fixtures/wcsconv/cases.txt`), 188 now give C's cards, against 118 at the start of the phase; the other six need MathMap (3), GrismMap (2) or SplineMap (1).
 47 more headers of the transform oracle now read and transform as C's do, leaving 4, and nine C-probe oracle suites of the Rust port were converted and pass.
-SpecFluxFrame converts only between equal components: pinned C builds a RateMap, a MathMap and a TranMap for every other conversion, unit changes included, so those throw `needs RateMap`, and SPLAT's flux-axis conversions wait for the phase that ports those Mappings.
-Porting found five places where C writes past a buffer or reads memory it never set, and a new route to the null dereference phase 3 found in `MakeFitsFrameSet`; they are recorded in [`docs/rust-c-differences.md`](../rust-c-differences.md) and listed below.
-Against the branch base the work adds 7,223 lines of main code and 8,960 lines of tests, and removes 239 and 1,234; `mvn verify` passes with 3,224 tests on JDK 21, and the tests pass on the JDK 27 runtime.
+SpecFluxFrame converts only between equal components: pinned C builds a RateMap, a MathMap and a TranMap for every other conversion, unit changes included, and for a FluxFrame or SpecFrame that does not match a SpecFluxFrame directly, so those throw `needs RateMap`, and SPLAT's flux-axis conversions wait for the phase that ports those Mappings.
+Porting found five places where C writes past a buffer or reads memory it never set, and a new route to the null dereference phase 3 found in `MakeFitsFrameSet`; the final review found a buffer overflow in SpecFrame's `GetSymbol` and a null dereference in CmpFrame's `Cast`; they are recorded in [`docs/rust-c-differences.md`](../rust-c-differences.md) and listed below.
+Against the branch base the work adds 7,313 lines of main code and 9,118 lines of tests, and removes 265 and 1,237; `mvn verify` passes with 3,229 tests on JDK 21, and the tests pass on the JDK 27 runtime.
 
 ## What was ported
 
@@ -76,7 +76,7 @@ The [rulings](2026-11-16-phase4-rulings.md) give each with its reason and cost; 
 | `FitsChanCursorOracleTest` cases run | 247 | 257 |
 | `FitsChanErrorsTest` cases run | 27 | 34 |
 | `FitsChanEncodingsOracleTest` cases excluded | 9 | 0 |
-| Tests | 2,829 | 3,224 |
+| Tests | 2,829 | 3,229 |
 
 No deferred entry names a class this phase adds or the FITS-CLASS encoding, and rewriting the lists with `-Dast.writeDeferred=true` changes nothing.
 New C-probe oracle suites, converted from the Rust port's `cases.rs` with `CasesToJson`: `SpecMap3dOracleTest`, `SpecConvertOracleTest` (208 cases), `SpecOriginSorOracleTest` (16), `DsbTopoOracleTest`, `FluxBadunOracleTest`, `FluxUnitSystemOracleTest`, `SpecFluxCmpOracleTest`, `SpecFluxPrimaryOracleTest` and `FitsChanSpecUnitOracleTest` (two cases need MathMap, listed and checked both ways).
@@ -121,6 +121,8 @@ Java gives a defined result in every case: it writes the whole text where C over
 | `CLASSFromStore` | Scales `cdelt[axspec]` past its array when the spectral axis is not among the axes with a CRPIX (latent: every axis of a FrameSet written has one) | Reading |
 | `CLASSFromStore` | Reads the `crval` elements of axes its CRVAL loop did not reach, for the velocity, AZIMUTH and ELEVATIO cards (latent: the write has already failed) | Reading |
 | `MakeFitsFrameSet`, `AddEncodingFrame` | A world Frame holding two SpecFrames, or a SpecFrame whose reference position gives no celestial FrameSet, makes no FrameSet, and the null FrameSet is then dereferenced (phase 3 found the two-SkyFrame route) | Probe (crash in `astGetFrame_`); fixed in PR #104 by `5a3e23e3`, where the probe's write returns 0 |
+| `specframe.c` `GetSymbol` | Copies a Symbol modified by the Unit into a static 21-character buffer with `strcpy`; System `WAVN` with Unit `nm` overflows it, as does a NATIVE write of a header with `CTYPE1 = 'WAVN'` and `CUNIT1 = 'nm'`; `fluxframe.c` `GetSymbol` has the same pattern | Probe (SIGTRAP from the fortified `strcpy`) for SpecFrame; reading for FluxFrame |
+| `cmpframe.c` `Cast` | Compares classes through CmpFrame's `class_vtab`, set only when a plain CmpFrame is first made, so in a process with SpecFluxFrames but no CmpFrame a failed SpecFluxFrame match dereferences null in `astClassCompare` | Probe (SIGSEGV converting a SpecFluxFrame whose SpecFrame has Domain `FOO`; with one CmpFrame made first, C finds no conversion, as Java does) |
 
 `SpectralAxes` shares `OtherAxes`'s use of a FitsTable that was never made, for a `-TAB` Mapping without table columns (phase 3); Java throws `needs FitsTable` there as it does for `OtherAxes`, though the entry in `docs/rust-c-differences.md` names only `OtherAxes`.
 
@@ -128,12 +130,40 @@ Kept as C has them, since they are defined: SpecMap's axis-count message saying 
 
 ## Final review
 
-Pending: a fresh reviewer reads the whole branch after this report is committed, and its findings and the fix pass will be recorded here and in the rulings.
+A fresh reviewer read the whole branch against the plan, the spec's phase rules, the rulings and C, and ran a differential fuzz of the branch against the pinned C build.
+
+- Frames: 11,900 random cases of SpecFrame, DSBSpecFrame, FluxFrame and SpecFluxFrame, alone and mixed, each with up to 11 settings, valid and invalid, in random order, with UseDefs set and cleared.
+  Each compared the status of every setting, 23 to 28 attribute values, the Channel dump, NATIVE FitsChan cards and their read-back, `convert` both ways and `findFrame` with 8 points transformed both ways, the dumps of both Frames given after each call, and FrameSet integrity after settings made through a FrameSet.
+- FITS: 5,252 headers mutated from the 63 spectral `wcsconv` inputs (every algorithm code, the standard-of-rest, source, rest-frequency, unit, reference, date, observer and FITS-CLASS keywords, deleted cards), read with AUTO or a random encoding, transformed both ways, written in FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++, FITS-CLASS and NATIVE, the cards compared to 1e-9 relative, and each written header read back.
+
+Statuses, cards, dumps and values agreed with C apart from the findings below, the `needs <Class>` refusals the phase rules require, and the state an object is left in after an error.
+The Review Focus checks:
+
+1. Unset RefRA, RefDec, Epoch, observer and SourceVel, with UseDefs set and cleared: every fuzz conversion gave C's values or C's status; the one silent velocity difference was on FITS reading (I2).
+2. Unit on a SpecFrame axis: C's behaviour (no System change, C's AST__BADUN errors) throughout.
+3. The dumps of the Frames given to `convert` and `findFrame` matched C's after every successful call, and 8 threads converting copies of a topocentric DSBSpecFrame pair and a FluxFrame pair 64 times got identical Mappings, values and dumps.
+4. Channel dumps and NATIVE cards of all five classes matched C's byte for byte, white space aside, and read back to the same dump.
+5. Every header needing an absent class gave `needs MathMap` or `needs GrismMap`, reading or writing, and `-TAB` gave C's AST__BDFTS with TabOK 0.
+
+Findings, and what the fix pass did:
+
+- **I1** (important): CmpFrame's `cast` did not follow cmpframe.c's `Cast`, which copies a CmpFrame into any class of the CmpFrame family (`astCastCopy`), a subclass included.
+  A SpecFluxFrame that matched no CmpFrame threw AST__INTER where C finds no conversion, and a FluxFrame or SpecFrame that did not match a SpecFluxFrame directly (13 fuzz cases) found no conversion where C casts the CmpFrame of its match into a SpecFluxFrame and reaches `MakeSFMapping`.
+  Fixed in "Cast SpecFluxFrames as C's CmpFrame Cast does": those cases now give C's null, `needs RateMap` (C builds its RateMap) or C's AST__ATSER, and the 13 fuzz cases give C's outcome; `SpecFluxFrameTest` checks them against C probes.
+- **I2** (important): reading a header with one celestial CRVAL dropped the other reference coordinate as well, so the SpecFrame had neither RefRA nor RefDec, its standard-of-rest conversions differed from C's, and a FITS-WCS write gave VELOSYS -24443.52 m/s where C writes 28372.57 m/s (11 fuzz headers).
+  Fixed in "Keep a SpecFrame's reference coordinates separate on read": `WcsCelestial` returns the two coordinates separately, as C does, and only SkyRef needs both; `FitsWcsSpectralTest` checks C's RefRA, conversion and VELOSYS, and the 11 headers now give C's cards.
+- **M1** (minor): when re-expressing the SpecOrigin or SourceVel fails, setting or clearing StdOfRest, SourceVRF or SourceSys throws in both, but C stores the new value and Java keeps the old one.
+  Ruled: Java keeps the old value; C's behaviour is recorded as a C quirk in `docs/rust-c-differences.md`.
+- **M2** (minor): SpecFluxFrame's Javadoc and the gap below now say that FluxFrame and SpecFrame to SpecFluxFrame conversions need RateMap too.
+- **M3** (minor, deferred): one FITS-CLASS write differs at the edge of `IsMapLinear`'s tolerance: header `h00886` of the fuzz (VOPT-F2W at 0.001 m/s per channel) has a residual of 5.63e-5 pixels against a tolerance of 4.99e-5, so Java rejects the linear fit and writes nothing where C writes the header; this is rounding in an ill-conditioned fit, the runtime-Math margin listed below.
+
+The review also found the two C defects added to the table above, and three C quirks of the state left after an error, which Java does not copy: `astFindFrame` leaves PreserveAxes set on a component of the template after an error, a Channel write that fails part way leaves its indentation raised for later writes, and `ClassTrans`'s uninitialised `crval` (already ruled) shows as SRCVEL_A = -299792458 m/s in C for one-axis WAVE headers with RESTFRQ 0.
+After the fix pass the fuzz cases of I1 and I2 agree with C, and the full suite passes with 3,229 tests.
 
 ## Gaps and risks
 
 - **SpecFluxFrame converts only equal components.**
-  Every other SpecFluxFrame conversion, and the integrity of a FrameSet whose current Frame is a SpecFluxFrame after its Unit or System changes, throws `needs RateMap` where C converts; SPLAT's flux-axis conversions wait for RateMap, MathMap and TranMap, and the rest of `MakeSFMapping` must then be ported from C.
+  Every other SpecFluxFrame conversion, every conversion between a SpecFluxFrame and a FluxFrame or SpecFrame that do not match directly (a FluxFrame in another flux System, say), and the integrity of a FrameSet whose current Frame is a SpecFluxFrame after its Unit or System changes, throws `needs RateMap` where C converts; SPLAT's flux-axis conversions wait for RateMap, MathMap and TranMap, and the rest of `MakeSFMapping` must then be ported from C.
   Review Focus 3's two-thread check covers SpecFrame only.
 - **Spectral axes that need absent Mappings.**
   A `-LOG` spectral axis with a non-zero CRVAL needs MathMap to read and to write, as do logarithmic units (`log(Hz)`, `log(Jy)`); a `-GRI` or `-GRA` axis needs GrismMap to read, and C's `ExtractGrismMap` is to be ported with it; a `-TAB` axis needs LutMap to read with TabOK set and FitsTable to write.
@@ -144,6 +174,7 @@ Pending: a fresh reviewer reads the whole branch after this report is committed,
   C's per-observer table of local apparent sidereal times is ported as C has it, per thread, so AZEL results depend on what the thread converted before; reading spectral headers with an observer now fills it, and tests comparing AZEL values with C's run on a fresh thread.
 - **Runtime-Math margins.**
   The galactic PC elements of `FitsSpectralAxesTest` differ by 6e-13 against a limit of 1e-12, a margin of under two; another JDK or libm could use it up.
+  A FITS-CLASS write near `IsMapLinear`'s tolerance can succeed in C and fail here (M3 above).
 - **FITS-CLASS headers that do not write back.**
   `class-noproj`, `class-spec` and `class-spec-hel` write nothing into a new FitsChan, as in C; why was not investigated.
 - **Probe sources outside the repository.**
@@ -153,4 +184,4 @@ Pending: a fresh reviewer reads the whole branch after this report is committed,
 
 ## Rulings
 
-Every decision made while executing the plan where it was wrong, unclear or silent, every departure from Rust or C and every C quirk kept is in [`2026-11-16-phase4-rulings.md`](2026-11-16-phase4-rulings.md), with its reason and its cost if wrong: 98 rulings, 92 by the implementers and 6 by the controller.
+Every decision made while executing the plan where it was wrong, unclear or silent, every departure from Rust or C and every C quirk kept is in [`2026-11-16-phase4-rulings.md`](2026-11-16-phase4-rulings.md), with its reason and its cost if wrong: 104 rulings, 96 by the implementers and 8 by the controller.
