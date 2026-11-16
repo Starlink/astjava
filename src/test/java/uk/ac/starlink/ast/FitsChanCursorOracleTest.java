@@ -41,26 +41,25 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * scope, throws {@code UnsupportedOperationException}; the number of such cases is pinned by {@link
  * #WAITING_FOR_ANOTHER_ENCODING}. A read that stops at another out-of-scope class (such as {@code
  * needs SpecFrame}) must be in {@link #EXCLUDED} with that reason, measured from the exception.
- * Cases whose scripts write to the
- * FitsChan ({@code W}, {@code WF}, {@code WFT}, {@code WC}, {@code WCF}, {@code RW}, {@code RCIW}
- * and {@code RSW}) need {@code FitsChan.write}, which is out of scope, as do the Rust tests {@code
- * excluded_cases_still_differ} (whose list holds a writing case) and {@code
- * native_full_1_matches_c_but_for_process_counts} (listed in {@code deferred/rust-tests.txt}).
+ * Cases whose scripts write an Object they make ({@code W}, {@code WF}, {@code WFT}, {@code WC} and
+ * {@code WCF}) run; {@code native_full_1}, whose Object parts C writes with counts this library
+ * does not keep, is excluded and compared without them. Cases whose scripts write what they read
+ * ({@code RW}, {@code RCIW} and {@code RSW}) write FrameSets with the foreign encodings and do not
+ * run yet.
  */
 class FitsChanCursorOracleTest {
 
-    /** The operations that write to the FitsChan. */
-    private static final Set<String> WRITES =
-            new HashSet<>(Arrays.asList("W", "WF", "WFT", "WC", "WCF", "RW", "RCIW", "RSW"));
+    /** The operations that write to the FitsChan an Object read from it. */
+    private static final Set<String> WRITES = new HashSet<>(Arrays.asList("RW", "RCIW", "RSW"));
 
     /** The operations that only read from the FitsChan. */
     private static final Set<String> READS = new HashSet<>(Arrays.asList("R", "RN", "PW"));
 
     /**
-     * The number of cases run here: those that write no Object, are not excluded, and whose reads
+     * The number of cases run here: those that write no Object read, are not excluded, and whose reads
      * need only the NATIVE and FITS-WCS encodings.
      */
-    private static final int RUNNABLE = 147;
+    private static final int RUNNABLE = 165;
 
     /** The number of cases whose reads reach the read of an encoding other than NATIVE and FITS-WCS. */
     private static final int WAITING_FOR_ANOTHER_ENCODING = 5;
@@ -97,6 +96,10 @@ class FitsChanCursorOracleTest {
         // on aarch64, JDK 21 and macOS libm), so the forward matrix element M2 is
         // 0.9992386149554825 here and 0.99923861495548261 in C.
         m.put("iwc_on_alt", RUNTIME_MATH + " the sine of 2 deg - pi/2 differs from C's libm by 1 ULP");
+        // With Full positive C also writes the unset RefCnt and Nobj of each Object part as comment
+        // cards: counts of pointers to the Object and of Objects of its class, which this library
+        // does not keep. nativeFull1MatchesCButForProcessCounts compares the rest.
+        m.put("native_full_1", "RefCnt and Nobj are counts this library does not keep");
         return Collections.unmodifiableMap(m);
     }
 
@@ -369,6 +372,19 @@ class FitsChanCursorOracleTest {
                 return "";
             case "QE":
                 return "= " + fc.getC("Encoding") + "\n";
+            case "W":
+                return "= " + fc.write(new ZoomMap(2, 2.0)) + "\n";
+            case "WF":
+                return "= " + fc.write(new Frame(2)) + "\n";
+            case "WFT": {
+                Frame fr = new Frame(2);
+                fr.setTitle(a1);
+                return "= " + fc.write(fr) + "\n";
+            }
+            case "WC":
+                return "= " + fc.write(new CmpMap(new ZoomMap(2, 2.0), new ZoomMap(2, 3.0), true)) + "\n";
+            case "WCF":
+                return "= " + fc.write(new CmpFrame(new Frame(1), new Frame(1))) + "\n";
             case "RDF":
                 fc.readFits();
                 return "";
@@ -602,6 +618,38 @@ class FitsChanCursorOracleTest {
                 WAITING_FOR_ANOTHER_ENCODING,
                 waitingCases.size(),
                 "cases waiting for the read of another encoding: " + waitingCases);
+    }
+
+    /**
+     * Case {@code native_full_1} with C's {@code REFCNT} and {@code NOBJ} comment cards left out,
+     * and the card counts that include them: everything else C writes with Full positive, every
+     * unset value and every {@code IsA} marker, matches.
+     */
+    @Test
+    void nativeFull1MatchesCButForProcessCounts() throws IOException {
+        JsonNode c = findCase("native_full_1");
+        String want = c.get(2).asText();
+        int refcnt = 0;
+        for (String line : CValues.lines(want)) {
+            if (line.startsWith("|COMMENT REFCNT_")) {
+                refcnt++;
+            }
+        }
+        // The Frame and its two Axes each have an Object part.
+        assertEquals(3, refcnt);
+        assertEquals(withoutProcessCounts(want), withoutProcessCounts(transcript(ops(c))));
+    }
+
+    private static List<String> withoutProcessCounts(String transcript) {
+        List<String> out = new ArrayList<>();
+        for (String line : CValues.lines(transcript)) {
+            if (!line.startsWith("card=")
+                    && !line.startsWith("|COMMENT REFCNT_")
+                    && !line.startsWith("|COMMENT NOBJ_")) {
+                out.add(line);
+            }
+        }
+        return out;
     }
 
     private static String context(List<String> lines, int at) {

@@ -145,9 +145,9 @@ class FitsChanApiTest {
         assertFalse(fc.test("Card"));
     }
 
-    /** {@code write} is out of scope. */
+    /** {@code write} with the default NATIVE encoding writes any Object. */
     @Test
-    void writeIsUnsupported() {
-        assertThrows(UnsupportedOperationException.class, () -> new FitsChan().write(new UnitMap(1)));
+    void writeWritesNative() {
+        assertEquals(1, new FitsChan().write(new UnitMap(1)));
     }
 }

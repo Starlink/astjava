@@ -502,6 +502,12 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `fitschan/wcs_read.rs` has no limit.
 - Java: as C.
 
+### The cards of a write that fails with an error
+
+- C: `Write` removes the cards a write added, and makes the card that was current current again, through `FixNew` and `astSetCard`, which do nothing once the error status is set, so a write that fails with an error leaves the cards it had added and the current card where the failure left it (`fitschan.c` `Write`, `FixNew`). **C quirk.**
+- Rust: `Channel::write` for `FitsChan` in `fitschan/mod.rs` removes the cards and restores the current card after any failure, an error included.
+- Java: as Rust: `FitsChan.write` undoes a write that throws as it undoes one that writes nothing.
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails

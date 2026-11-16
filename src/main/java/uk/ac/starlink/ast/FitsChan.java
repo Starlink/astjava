@@ -8,9 +8,11 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
@@ -117,6 +119,12 @@ public class FitsChan extends Channel {
     private boolean hasSink;
 
     private FitsCardList cardList = new FitsCardList();
+
+    /**
+     * The last sequence number a NATIVE write used for each keyword base, C's {@code keyseq}
+     * ({@link FitsNativeWriter#createKeyword}).
+     */
+    private Map<String, Integer> keySeq = new HashMap<>();
 
     /** The Encoding attribute, or null if unset. */
     private Encoding encodingSet;
@@ -557,6 +565,7 @@ public class FitsChan extends Channel {
     void deepCopy() {
         super.deepCopy();
         cardList = cardList.copy();
+        keySeq = new HashMap<>(keySeq);
         cardIt = null;
         sourcePending = false;
         sourceSaved = false;
@@ -860,15 +869,63 @@ public class FitsChan extends Channel {
     }
 
     /**
-     * Writes an Object to this FitsChan, using the encoding the Encoding attribute gives.
+     * Writes an Object to this FitsChan, using the encoding the Encoding attribute gives, in front
+     * of the current card. The warnings of the previous read or write are discarded.
+     *
+     * <p>With the NATIVE encoding any Object can be written, as header cards whose keywords are
+     * made unique with a two-character suffix ({@code BEGAST_A}, {@code NIN_A}, ...), passing over
+     * any keyword a card already has. Unless the Comment attribute is clear the cards are framed by
+     * comment cards, and the Full attribute selects the default values and markers written, as for
+     * a Channel. The current card stays current.
+     *
+     * <p>Any other encoding describes only a FrameSet, and only one the encoding can describe; for
+     * anything else nothing is written and 0 is returned. When a FrameSet is written, the FitsChan
+     * is left at end-of-file.
+     *
+     * <p>A write that writes nothing, or fails, leaves the cards and the current card as they were.
      *
      * @param obj the Object to write
-     * @return the number of Objects written
-     * @throws UnsupportedOperationException always: writing Objects to a FitsChan is out of scope
+     * @return the number of Objects written: 1, or 0 if the Object could not be written
      */
     @Override
     public int write(AstObject obj) {
-        throw new UnsupportedOperationException("FitsChan.write is out of scope");
+        // fitschan.c Write, with astWrite's discarding of the warnings (channel.c astWrite_).
+        clearWarnings();
+        readFromSource();
+        int card0 = cardList.position();
+        cardList.beginMarkingNew();
+        int ret = 0;
+        try {
+            Encoding enc = encoding();
+            if (enc == Encoding.NATIVE) {
+                new FitsNativeWriter(this).write(obj);
+                ret = 1;
+            } else if (obj instanceof FrameSet && writeForeign((FrameSet) obj, enc)) {
+                ret = 1;
+                cardList.setCard(Integer.MAX_VALUE);
+            }
+        } finally {
+            // C's FixNew: the cards a write that wrote nothing added are removed, and the card that
+            // was current is current again. A write that throws is undone in the same way.
+            boolean remove = ret == 0;
+            cardList.fixNew(FitsCardList.NewScope.WRITE, remove);
+            cardList.fixNew(FitsCardList.NewScope.VERSION, remove);
+            cardList.endMarkingNew();
+            if (remove) {
+                cardList.setPosition(card0);
+            }
+        }
+        return ret;
+    }
+
+    /**
+     * Writes {@code fs} with {@code enc}, an encoding other than NATIVE, from the current card, as
+     * fitschan.c {@code Write} does from reading the image dimensions on: false, C's failure, if
+     * the encoding cannot describe the FrameSet. {@link #write} undoes whatever a write that gives
+     * false did to the cards, and leaves end-of-file current after one that gives true.
+     */
+    boolean writeForeign(FrameSet fs, Encoding enc) {
+        return false;
     }
 
     // ------------------------------------------------------------------
@@ -878,6 +935,11 @@ public class FitsChan extends Channel {
     /** The cards, for the readers of the encodings. */
     FitsCardList cards() {
         return cardList;
+    }
+
+    /** C's {@code keyseq}: the last sequence number a NATIVE write used for each keyword base. */
+    Map<String, Integer> keySequences() {
+        return keySeq;
     }
 
     /**
@@ -1144,6 +1206,7 @@ public class FitsChan extends Channel {
 
     private void emptyFitsInner() {
         cardList = new FitsCardList();
+        keySeq = new HashMap<>();
         tables = null;
     }
 
@@ -1419,6 +1482,11 @@ public class FitsChan extends Channel {
         setValue(name, FitsCard.Value.ofKInt(value), comment, overwrite, "astSetFitsK");
     }
 
+    /** C's {@code astSetFitsI}: stores an integer value. */
+    void setFitsI(String name, long value, String comment, boolean overwrite) {
+        setValue(name, FitsCard.Value.ofInt(value), comment, overwrite, "astSetFitsI");
+    }
+
     /** C's {@code astSetFitsU}: stores a keyword with no value. */
     void setFitsU(String name, String comment, boolean overwrite) {
         setValue(name, FitsCard.Value.UNDEF, comment, overwrite, "astSetFitsU");
@@ -1433,7 +1501,7 @@ public class FitsChan extends Channel {
      * C's {@code SetFitsCom}: stores a commentary card with keyword {@code name}. When overwriting
      * a card with the same keyword, the card keeps its type and value and takes the new comment.
      */
-    private void setFitsCom(String name, String comment, boolean overwrite) {
+    void setFitsCom(String name, String comment, boolean overwrite) {
         readFromSource();
         String lname = splitName(name, "astSetFitsCom")[0];
         String com = comment == null || FitsCard.isBlank(comment) ? null : comment;

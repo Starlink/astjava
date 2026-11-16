@@ -925,6 +925,19 @@ final class FitsCardList {
         return findKeyCard(name, method);
     }
 
+    /**
+     * C's {@code HasCard}: whether a card, consumed or not, has the keyword {@code keyword}
+     * exactly.
+     */
+    boolean hasCard(String keyword) {
+        for (FitsCard c : list) {
+            if (c.keyword.equals(keyword)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Whether the list is at end-of-file. */
     boolean atEof() {
         return pos >= list.size();

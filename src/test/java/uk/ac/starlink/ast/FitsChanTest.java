@@ -26,9 +26,10 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * follows them, and {@code FITSCHAN_OPTIONS}. None of its tests waits for the FITS-WCS read (Task
  * 23).
  *
- * <p>The tests that write to the FitsChan ({@code native_round_trip_zoommap},
- * {@code native_round_trip_skyframe}, {@code native_rewind_and_reread} and {@code
- * translate_projp_retains_source_cards}) are listed in {@code deferred/rust-tests.txt}.
+ * <p>Of the tests that write to the FitsChan, {@code native_round_trip_zoommap}, {@code
+ * native_round_trip_skyframe} and {@code native_rewind_and_reread} use the NATIVE encoding and are
+ * translated here; {@code translate_projp_retains_source_cards} writes FITS-WCS cards and is listed
+ * in {@code deferred/rust-tests.txt}.
  */
 class FitsChanTest {
 
@@ -161,6 +162,62 @@ class FitsChanTest {
         // C's astFindFits searches forward from the current card only, leaving end-of-file.
         assertNull(fc.findFits("FIRST", true));
         assertEquals(fc.getNcard() + 1, fc.getCard());
+    }
+
+    @Test
+    void nativeRoundTripZoommap() {
+        FitsChan fc = new FitsChan();
+        fc.setEncoding("NATIVE");
+        assertEquals(1, fc.write(new ZoomMap(3, 2.5)));
+        assertTrue(fc.getNcard() > 0, "the FitsChan holds cards after the write");
+
+        fc.clear("Card");
+        AstObject obj = fc.read();
+        assertNotNull(obj, "read should return an object");
+        Mapping mapping = (Mapping) obj;
+        assertEquals(3, mapping.getNin());
+        assertEquals(3, mapping.getNout());
+        double[] out = mapping.tranN(1, 3, new double[] {1.0, 2.0, 3.0}, true, 3);
+        assertTrue(Math.abs(out[0] - 2.5) < 1e-10);
+        assertTrue(Math.abs(out[1] - 5.0) < 1e-10);
+        assertTrue(Math.abs(out[2] - 7.5) < 1e-10);
+    }
+
+    @Test
+    void nativeRoundTripSkyframe() {
+        SkyFrame sky = new SkyFrame();
+        sky.set("System=FK5,Epoch=MJD 51544.0,Equinox=MJD 51544.0");
+
+        FitsChan fc = new FitsChan();
+        fc.setEncoding("NATIVE");
+        assertEquals(1, fc.write(sky));
+        assertTrue(fc.getNcard() > 0);
+
+        fc.clear("Card");
+        AstObject obj = fc.read();
+        assertNotNull(obj, "read should return an object");
+        Frame frame = (Frame) obj;
+        assertEquals(2, frame.getNaxes());
+        assertEquals("FK5", frame.getSystem());
+    }
+
+    /**
+     * A NATIVE read removes the cards it read (C's {@code Read} calls {@code FixUsed} with {@code
+     * remove} set for the NATIVE encoding), so after a rewind there is nothing left to read.
+     */
+    @Test
+    void nativeRewindAndReread() {
+        FitsChan fc = new FitsChan();
+        fc.setEncoding("NATIVE");
+        fc.write(new ZoomMap(2, 3.0));
+
+        fc.clear("Card");
+        AstObject obj1 = fc.read();
+        assertNotNull(obj1, "first read");
+        assertEquals(2, ((Mapping) obj1).getNin());
+
+        fc.clear("Card");
+        assertNull(fc.read(), "second read should find no object");
     }
 
     @Test

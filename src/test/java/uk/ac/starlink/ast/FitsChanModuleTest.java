@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Translation of the card unit tests of Rust {@code fitschan/mod.rs}.
  *
- * <p>{@code native_round_trip} and {@code rewrite_after_read_re_emits_wcs_cards} write to the
- * FitsChan and are listed in {@code deferred/rust-tests.txt}.
+ * <p>{@code rewrite_after_read_re_emits_wcs_cards} writes FITS-WCS cards and is listed in {@code
+ * deferred/rust-tests.txt}.
  */
 class FitsChanModuleTest {
 
@@ -23,6 +23,19 @@ class FitsChanModuleTest {
         assertEquals("NATIVE", fc.getEncoding());
         assertFalse(fc.test("Encoding"));
         assertEquals(17, fc.getFitsDigits());
+    }
+
+    @Test
+    void nativeRoundTrip() {
+        FitsChan fc = new FitsChan();
+        fc.setEncoding("NATIVE");
+        assertEquals(1, fc.write(new ZoomMap(2, 3.5)));
+        assertTrue(fc.getNcard() > 0);
+
+        fc.clear("Card");
+        AstObject obj = fc.read();
+        assertNotNull(obj);
+        assertEquals(2, ((Mapping) obj).getNin());
     }
 
     @Test
