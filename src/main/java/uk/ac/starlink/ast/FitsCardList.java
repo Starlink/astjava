@@ -926,6 +926,24 @@ final class FitsCardList {
     }
 
     /**
+     * C's {@code SearchCard} with used cards included (C's {@code ignore_used} zero), as C's
+     * {@code GetValue} uses it, which then restores the current card: the card after the current
+     * one if it has keyword {@code keyword} (ignoring case), otherwise the first card that has;
+     * null if there is none. The current card is not changed.
+     */
+    FitsCard searchCardAnyUse(String keyword) {
+        if (pos + 1 < list.size() && list.get(pos + 1).cName().equalsIgnoreCase(keyword)) {
+            return list.get(pos + 1);
+        }
+        for (FitsCard c : list) {
+            if (c.cName().equalsIgnoreCase(keyword)) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+    /**
      * C's {@code HasCard}: whether a card, consumed or not, has the keyword {@code keyword}
      * exactly.
      */

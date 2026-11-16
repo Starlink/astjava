@@ -490,6 +490,49 @@ public class WcsMap extends Mapping {
     }
 
     /**
+     * C's {@code IsZenithal} (wcsmap.c): whether the projection is zenithal. TAN, STG, ARC, ZPN,
+     * ZEA, AIR and TPN always are; AZP is when parameter 2 of the latitude axis is unset or zero;
+     * SIN when parameters 1 and 2 of the latitude axis are both unset or zero; and SZP when
+     * parameter 2 of the latitude axis, defaulting to 90, is +/-90. C tests parameter 2 of SZP,
+     * whose default is 0, where the point of projection is given by parameter 3, so a default SZP
+     * projection is not zenithal; this C quirk is kept.
+     */
+    final boolean isZenithal() {
+        int type = getWcsType();
+        int latax = axes[1];
+        boolean ret = false;
+        if (type == AST__TAN
+                || type == AST__STG
+                || type == AST__ARC
+                || type == AST__ZPN
+                || type == AST__ZEA
+                || type == AST__AIR
+                || type == AST__TPN) {
+            ret = true;
+        } else if (type == AST__AZP) {
+            double p2 = getPV(latax, 2);
+            ret = p2 == AST__BAD || p2 == 0.0;
+        } else if (type == AST__SIN) {
+            double p1 = getPV(latax, 1);
+            double p2 = getPV(latax, 2);
+            if (p1 == AST__BAD) {
+                p1 = 0.0;
+            }
+            if (p2 == AST__BAD) {
+                p2 = 0.0;
+            }
+            ret = p1 == 0.0 && p2 == 0.0;
+        } else if (type == AST__SZP) {
+            double p3 = getPV(latax, 2);
+            if (p3 == AST__BAD) {
+                p3 = 90.0;
+            }
+            ret = p3 == 90.0 || p3 == -90.0;
+        }
+        return ret;
+    }
+
+    /**
      * Gets the attribute named {@code PVi_m}, as jniast's generated accessor does. No attribute
      * has that name ({@code i} and {@code m} must be numbers), so this always fails; read a
      * projection parameter with {@code getD("PV2_1")} and the like.

@@ -598,6 +598,30 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: has no `astMergeShift`.
 - Java: reads the number of outputs.
 
+### Systems, Domain and Labels in `SkySys`
+
+- C: `SkySys` stores nothing and returns 0 for a SkyFrame whose Domain is not `SKY` (`IsASkyFrame`), and stores WCSNAME only when the Domain is set, so only as `SKY`; a SkyFrame in the J2000 system, which is none of the systems it names, is described as an unknown one, its default Symbols giving `UNLN` and `UNLT` with no RADESYS; it stores EQUINOX, bad (unset) for the systems without one, replacing any earlier value; and a Label that is set becomes the CTYPE comment and CNAME even when empty (`fitschan.c` `SkySys`).
+- Rust: `fitschan/fset_to_store/sky_sys.rs` stores WCSNAME for any Domain other than `SKY`, describes J2000 as RA and Dec with RADESYS ICRS, leaves an earlier EQUINOX in place, and ignores an empty Label.
+- Java: as C.
+
+### The pole of a non-zenithal projection in `SkyPole`
+
+- C: `SkyPole` passes a bad native longitude of the celestial pole to `WcsNatPole`, which replaces it with its default, and stores LONPOLE and LATPOLE, bad (unset) when they take their defaults, replacing earlier values, and copies them, bad or not, to parameters 3 and 4 of the longitude axis (`fitschan.c` `SkyPole`).
+- Rust: `fitschan/fset_to_store/sky_pole.rs` stores nothing when the pole's native coordinates are not finite or its Mapping cannot be inverted, and stores or copies only values that are set, leaving earlier ones.
+- Java: as C.
+
+### The WcsMap `SplitMap2` makes for a projection found in parallel
+
+- C: `SplitMap2` gives a projection found among Mappings in parallel a new WcsMap with as many axes as the parallel outputs, copies every set projection parameter of every axis, and inverts it whatever the Invert value of the WcsMap found, the new WcsMap having none of that WcsMap's other attributes; and it searches a CmpMap with Ident set, which `astMapList` gives back whole for either decomposition, again without end, a **C quirk** (`fitschan.c` `SplitMap2`).
+- Rust: `lift_wcsmap_to_full_axes` in `fitschan/fset_to_store/celestial_axes.rs` copies the parameters of the longitude and latitude axes only and keeps the Invert value of the WcsMap found.
+- Java: as C, except that a CmpMap with Ident set is taken to hold no WcsMap.
+
+### The Mapping and axis exchange of `CelestialAxes`
+
+- C: `CelestialAxes` builds the Mapping from intermediate world to world coordinates from a ShiftMap, a MatrixMap, a copy of the WcsMap with parameters 3 and 4 of the longitude axis cleared, and `WcsNative`, between PermMaps when the axes need it; it exchanges the CRVAL values and the projection parameters of an exchanged celestial pair, and their CTYPE and CNAME values only when both are set (`fitschan.c` `CelestialAxes`).
+- Rust: `build_wcs_to_iwc` in `fitschan/fset_to_store/celestial_axes.rs` builds its own rotation, and the exchange swaps CTYPE and CNAME whether or not they are set.
+- Java: as C.
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails

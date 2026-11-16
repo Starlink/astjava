@@ -324,6 +324,26 @@ final class FitsStore {
         return table;
     }
 
+    /**
+     * C's {@code SetItem( &(store->pv), i, m, ... )}: sets PVi_m (zero-based axis {@code i}) to
+     * {@code val}, null being C's {@code AST__BAD}, lengthening the axis's parameters as C's table
+     * grows when {@code m} is beyond them.
+     *
+     * @throws AstException with status {@code AST__INTER} if {@code m} is outside 0 to 99, as C
+     *     checks
+     */
+    void setPv(int i, int m, Double val) {
+        if (m < 0 || m > 99) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    "SetItem(fitschan): AST internal error; pixel axis or parameter index " + m + " is invalid.");
+        }
+        if (pv[i].length <= m) {
+            pv[i] = Arrays.copyOf(pv[i], m + 1);
+        }
+        pv[i][m] = val;
+    }
+
     /** Whether any PC matrix element is set. */
     boolean hasPcMatrix() {
         for (Double[] row : pc) {

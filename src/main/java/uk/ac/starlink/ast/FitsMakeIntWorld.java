@@ -362,7 +362,7 @@ final class FitsMakeIntWorld {
     /**
      * C's {@code IsASkyFrame} macro in fitschan.c: a SkyFrame whose Domain is {@code SKY}.
      */
-    private static boolean isASkyFrame(Frame frame) {
+    static boolean isASkyFrame(Frame frame) {
         return frame instanceof SkyFrame && "SKY".equals(frame.getDomain());
     }
 
