@@ -173,6 +173,19 @@ final class FitsHeaders {
         return out;
     }
 
+    /** {@code cards}, each padded with spaces to 80 characters, as {@link #foundCards} lists them. */
+    static List<String> padded(String... cards) {
+        List<String> out = new ArrayList<>();
+        for (String card : cards) {
+            StringBuilder b = new StringBuilder(card);
+            while (b.length() < 80) {
+                b.append(' ');
+            }
+            out.add(b.toString());
+        }
+        return out;
+    }
+
     /** The strings of a JSON array, in order. */
     static List<String> strings(JsonNode node) {
         List<String> out = new ArrayList<>();

@@ -342,7 +342,6 @@ tests/test_serialisation.rs::round_trip_negated_circle | Circle (Region, out of 
 tests/test_fitschan_native_keyword.rs::polco_loads | MathMap (out of scope)
 tests/test_fitschan_native_keyword.rs::polco2_loads | MathMap (out of scope)
 tests/test_fitschan_native_keyword.rs::specflux_loads | SpecFrame (out of scope)
-src/fitschan/mod.rs::rewrite_after_read_re_emits_wcs_cards | out-of-scope method FitsChan.write
 src/fitschan/wcs_read.rs::decode_1d_spectral | SpecFrame (out of scope)
 src/fitschan/wcs_read.rs::decode_3d_mixed | SpecFrame (out of scope)
 src/fitschan/wcs_read.rs::build_pixel_to_world_handles_non_adjacent_celestial_axes | SpecFrame (out of scope)
@@ -361,13 +360,21 @@ tests/test_fitschan_time.rs::dtai_set_on_world_frame_for_ukirt | SpecFrame (out 
 tests/test_fitschan_time.rs::dtai_ignored_for_other_telescope | SpecFrame (out of scope)
 tests/test_fitschan_time.rs::dtai_ignored_when_telescop_absent | SpecFrame (out of scope)
 tests/test_fitschan_time.rs::dut1_set_on_world_frame_regardless_of_telescop | SpecFrame (out of scope)
-tests/test_fitschan_c_inline.rs::sip_header_does_not_write_as_fits_wcs | out-of-scope method FitsChan.write
 tests/test_fitschan_c_inline.rs::alternate_axes_with_a_bad_set | SpecFrame (out of scope)
 tests/test_fitschan_c_inline.rs::show_fits_succeeds | astShowFits (out-of-scope method; jniast has no showFits)
-tests/test_fitschan_c_inline.rs::azel_writes_as_fits_wcs | out-of-scope method FitsChan.write
 tests/test_fitschan_c_inline.rs::non_linear_spectral_writes | SpecFrame (out of scope)
-tests/test_fitschan_c_inline.rs::supergalactic_writes_slon | out-of-scope method FitsChan.write
-tests/test_fitschan_c_inline.rs::sky_systems_through_five_encodings | out-of-scope method FitsChan.write
 tests/test_fitschan_c_inline.rs::spectral_systems_through_fits_wcs | SpecFrame (out of scope)
 tests/test_fitschan_c_inline.rs::log_spectral_axis_writes_freq_log | MathMap and SpecFrame (out of scope)
-tests/test_fitschan_c_inline.rs::date_and_observatory_write_back | out-of-scope method FitsChan.write
+tests/test_fitschan_wcs_write.rs::write_spectral_frameset | SpecFrame (out of scope)
+tests/test_fitschan_wcs_write.rs::write_spectral_round_trip | SpecFrame (out of scope)
+tests/test_fitschan_wcs_write.rs::grism_interference_order_survives_a_round_trip | SpecFrame and GrismMap (out of scope)
+tests/test_fitschan_wcs_write.rs::a_non_linear_grism_axis_writes_a_header_that_reads_back | SpecFrame and GrismMap (out of scope)
+tests/test_fitschan_wcs_write.rs::a_splinemap_frameset_writes_nothing_at_a_tight_fits_tol | SplineMap (out of scope)
+tests/test_fitschan_wcs_write.rs::the_as_fits_wcs_wrapping_of_a_splinemap_frameset_also_writes_nothing | SplineMap (out of scope)
+tests/test_fitschan_wcs_write.rs::alternate_descriptions_are_withheld_when_the_primary_cannot_be_written | SplineMap (out of scope)
+tests/test_fitschan_wcs_write.rs::a_splinemap_frameset_writes_a_complete_header_at_the_default_fits_tol | SplineMap (out of scope)
+tests/test_fitschan_wcs_write.rs::a_sip_description_is_rejected_when_it_is_not_linear_over_the_image | MathMap (out of scope)
+tests/test_fitschan_encodings.rs::read_aips_spectral | SpecFrame (out of scope)
+tests/test_fitschan_encodings.rs::read_class_produces_frameset | FITS-CLASS encoding (out-of-scope method FitsChan.read)
+tests/test_fitschan_encodings.rs::freq_log_builds_log_mapping | MathMap and SpecFrame (out of scope)
+tests/test_fitschan_encodings.rs::grism_builds_grism_mapping | SpecFrame and GrismMap (out of scope)

@@ -768,3 +768,9 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: the transform-oracle checker has no exception for rows whose recorded inverse does not round-trip.
 - Rust: `test_transform_oracle.rs` excuses them.
 - Java: as Rust, pinned to the affected rows by `RTRIP_REFERENCE_GAPS_LICENSED`.
+
+### `roundtrip` of `testfitschan.c` when the current Frames do not align
+
+- C: `roundtrip` compares the pixel coordinates after a round trip through the first FrameSet and back through the second when `astConvert` finds no conversion between the two current Frames, and its sky System block (errors 500-534) accepts a write an encoding refuses.
+- Rust: `roundtrip` in `test_fitschan_c_inline.rs` expects the current Frames to align and has no fallback, and `sky_systems_through_five_encodings` accepts either outcome of each write.
+- Java: `FitsChanCInlineTest.roundtrip` is C's, fallback included, and each sky System and encoding expects the outcome C gives (FK4-NO-E and ICRS refused by FITS-AIPS and FITS-AIPS++, Supergalactic by FITS-IRAF, FITS-AIPS and FITS-AIPS++).

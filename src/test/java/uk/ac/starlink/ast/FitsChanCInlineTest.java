@@ -8,18 +8,25 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
+import uk.ac.starlink.ast.testsupport.Fixtures;
 
 /**
  * Translation of Rust {@code tests/test_fitschan_c_inline.rs}: checks made inline in {@code main()}
  * of C's {@code ast_tester/testfitschan.c}, each named by C's error numbers and made with C's
  * values.
  *
- * <p>Listed in {@code deferred/rust-tests.txt}: the tests that write a FrameSet to a FitsChan
- * ({@code sip_header_does_not_write_as_fits_wcs}, {@code azel_writes_as_fits_wcs}, {@code
- * supergalactic_writes_slon}, {@code sky_systems_through_five_encodings} and {@code
- * date_and_observatory_write_back}), those that need a SpecFrame ({@code
+ * <p>The write tests use {@link #roundtrip}, C's helper of the same name, and expect the values a
+ * C probe of the pinned library gives ({@code c1.c} beside the task report): where C's test accepts
+ * either of two outcomes, the one C gives.
+ *
+ * <p>Listed in {@code deferred/rust-tests.txt}: those that need a SpecFrame ({@code
  * alternate_axes_with_a_bad_set}, whose header has a VRAD axis, {@code non_linear_spectral_writes},
  * {@code spectral_systems_through_fits_wcs} and {@code log_spectral_axis_writes_freq_log}), and
  * {@code show_fits_succeeds} (jniast has no {@code showFits}).
@@ -241,5 +248,379 @@ class FitsChanCInlineTest {
                 assertTrue(Math.abs(epoch - epochUtc) >= 1.0e-8, "Error 821");
             }
         }
+    }
+
+    /** C's {@code roundtrip} result: the write or read failed. */
+    private static final int RT_FAILED = 0;
+
+    /** C's {@code roundtrip} result: the keyword did not have the expected value. */
+    private static final int RT_WRONG_KEY = -2;
+
+    /** C's {@code roundtrip} result: the coordinates disagreed. */
+    private static final int RT_DISAGREE = -1;
+
+    /** C's {@code roundtrip} result: all is well. */
+    private static final int RT_OK = 1;
+
+    /** The pixel value on every axis of each point {@link #roundtrip} compares. */
+    private static final double[] OFFSETS = {50.0, 50.5, 51.0, 55.0, 45.0};
+
+    /**
+     * C's {@code roundtrip} (testfitschan.c): writes {@code fs} with {@code encoding} into a new
+     * FitsChan, checks that {@code key} (any {@code CTYPEn}, n from 1 to 9, for {@code "CTYPE"})
+     * has the value {@code val}, reads it back, and, unless {@code tol} is negative, compares the
+     * world coordinates of the two FrameSets at {@link #OFFSETS} on every axis, after converting
+     * the first FrameSet's to the current Frame of the second, to {@code tol} absolute or relative.
+     * When the current Frames cannot be converted, the pixel coordinates are compared after a
+     * round trip through the first FrameSet and back through the second. An error clears to
+     * {@link #RT_FAILED}, as C clears the status.
+     */
+    private static int roundtrip(FrameSet fs, String encoding, double tol, String key, String val) {
+        try {
+            FitsChan fc = new FitsChan();
+            fc.setEncoding(encoding);
+            if (fc.write(fs) != 1) {
+                return RT_FAILED;
+            }
+            boolean found = false;
+            List<String> keys = new ArrayList<>();
+            if ("CTYPE".equals(key)) {
+                for (int iax = 1; iax <= 9; iax++) {
+                    keys.add("CTYPE" + iax);
+                }
+            } else {
+                keys.add(key);
+            }
+            for (String k : keys) {
+                fc.clear("Card");
+                if (val.equals(fc.getFitsS(k))) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                return RT_WRONG_KEY;
+            }
+            fc.clear("Card");
+            AstObject obj = fc.read();
+            if (obj == null) {
+                return RT_FAILED;
+            }
+            FrameSet fs2 = (FrameSet) obj;
+            if (tol < 0.0) {
+                return RT_OK;
+            }
+            Mapping map1 = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+            Mapping map2 = fs2.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+            Frame curfrm2 = fs2.getFrame(FrameSet.AST__CURRENT);
+            int nin = fs.getNin();
+            int nout = fs.getNout();
+            FrameSet cvt = fs.getFrame(FrameSet.AST__CURRENT).convert(curfrm2, " ");
+            if (cvt != null) {
+                for (double offset : OFFSETS) {
+                    double[] pix = new double[nin];
+                    Arrays.fill(pix, offset);
+                    double[] wcs1 = map1.tranN(1, nin, pix, true, nout);
+                    double[] wcs2 = map2.tranN(1, nin, pix, true, nout);
+                    double[] wcs1c = cvt.tranN(1, nout, wcs1, true, nout);
+                    for (int iax = 0; iax < nout; iax++) {
+                        double v1 = wcs1c[iax];
+                        double v2 = wcs2[iax];
+                        if (v1 == AstObject.AST__BAD || v2 == AstObject.AST__BAD) {
+                            continue;
+                        }
+                        double diff = Math.abs(curfrm2.axDistance(iax + 1, v1, v2));
+                        if (diff > tol) {
+                            double scale = Math.max(Math.abs(v1), Math.abs(v2));
+                            if (scale > 0.0 && diff / scale > tol) {
+                                return RT_DISAGREE;
+                            }
+                        }
+                    }
+                }
+            } else {
+                Mapping roundmap = new CmpMap(map1, fs2.getMapping(FrameSet.AST__CURRENT, FrameSet.AST__BASE), true);
+                for (double offset : OFFSETS) {
+                    double[] pixIn = new double[nin];
+                    Arrays.fill(pixIn, offset);
+                    double[] pixOut = roundmap.tranN(1, nin, pixIn, true, nin);
+                    for (int iax = 0; iax < nin; iax++) {
+                        if (pixIn[iax] == AstObject.AST__BAD || pixOut[iax] == AstObject.AST__BAD) {
+                            continue;
+                        }
+                        double diff = Math.abs(pixOut[iax] - pixIn[iax]);
+                        if (diff > tol) {
+                            double scale = Math.abs(pixIn[iax]);
+                            if (scale > 0.0 && diff / scale > tol) {
+                                return RT_DISAGREE;
+                            }
+                        }
+                    }
+                }
+            }
+            return RT_OK;
+        } catch (AstException e) {
+            return RT_FAILED;
+        }
+    }
+
+    /**
+     * The keywords whose values {@link #azelWritesAsFitsWcs} and {@link #supergalacticWritesSlon}
+     * compare within libm rounding ({@link FitsHeaders#cardsMatchC(List, List, java.util.Set)}).
+     * The Mappings fitted are C's, but java.lang.Math differs from C's libm by 1 ULP at the same
+     * arguments: in the sine MtrRot takes of the rotation angles (AZEL), in an arctangent of
+     * palEqgal and palGalsup giving the fiducial latitude, and so the angle, of the rotation
+     * (Supergalactic), and in the SphMap, SlaMap and TAN WcsMap transforms of the points FitLine
+     * fits (Galactic); IWC computed near the native pole amplify those differences (probes g1,
+     * a2, rep, sla and cs beside the task report).
+     */
+    private static final Set<String> LIBM_KEYWORDS =
+            new HashSet<>(Arrays.asList("CDELT1", "CDELT2", "PC1_1", "PC1_2", "PC2_1", "PC2_2"));
+
+    /** The FrameSet {@code fc} reads from {@code cards}. */
+    private static FrameSet readCards(String... cards) {
+        return FitsHeaders.readFrameSet(FitsHeaders.chan(cards));
+    }
+
+    /** 12-13: with SipOK off, a SIP header reads but is too non-linear to write as FITS-WCS. */
+    @Test
+    void sipHeaderDoesNotWriteAsFitsWcs() {
+        FitsChan fc = new FitsChan();
+        fc.set("SipOK=0");
+        fc.setC("SourceFile", Fixtures.root().resolve("wcsconv/inputs/sip.head").toString());
+        fc.clear("Card");
+        FrameSet fs = FitsHeaders.readFrameSet(fc);
+        fc.setEncoding("FITS-WCS");
+        assertEquals(0, fc.write(fs), "Error 13");
+        // C leaves the 244 cards the read left.
+        assertEquals(244, fc.getNcard());
+    }
+
+    /** The header of the AZEL test (630-633), without its MJD-OBS. */
+    private static final String[] AZEL_SOURCE = {
+        "SIMPLE  =                    T",
+        "BITPIX  =                  -32",
+        "NAXIS   =                    2",
+        "NAXIS1  =                  100",
+        "NAXIS2  =                  100",
+        "CTYPE1  = 'RA---TAN'",
+        "CTYPE2  = 'DEC--TAN'",
+        "CRVAL1  =              180.000",
+        "CRVAL2  =               45.000",
+        "CRPIX1  =               50.500",
+        "CRPIX2  =               50.500",
+        "CDELT1  =              -0.0100",
+        "CDELT2  =               0.0100",
+        "RADESYS = 'FK5'",
+        "EQUINOX =               2000.0",
+        "DATE-OBS= '2017-07-21T08:38:39.087'",
+        "OBSGEO-X=  -5464586.5949660344",
+        "OBSGEO-Y=  -2492996.5580556658",
+        "OBSGEO-Z=   2150654.3760909005",
+        "END",
+    };
+
+    /**
+     * 630-633: an FK5 header with an observation date and place, changed to AZEL, writes {@code
+     * AZ---TAN} as FITS-WCS (C puts the elevation axis first) and reads back.
+     */
+    @Test
+    void azelWritesAsFitsWcs() {
+        FrameSet fs = readCards(AZEL_SOURCE);
+        fs.setC("System", "AZEL");
+        assertEquals(RT_OK, roundtrip(fs, "FITS-WCS", 1e-3, "CTYPE", "AZ---TAN"), "Error 630-633");
+
+        FitsChan fc = new FitsChan();
+        fc.setEncoding("FITS-WCS");
+        assertEquals(1, fc.write(fs));
+        List<String> want = FitsHeaders.padded(
+                "WCSAXES =                    2 / Number of WCS axes",
+                "CRPIX1  =            50.499968 / Reference pixel on axis 1",
+                "CRPIX2  =            50.499981 / Reference pixel on axis 2",
+                "CRVAL1  =   11.615311196755748 / Value at ref. pixel on axis 1",
+                "CRVAL2  =   313.79068013639778 / Value at ref. pixel on axis 2",
+                "CTYPE1  = 'EL---TAN'           / Type of co-ordinate on axis 1", // codespell:ignore
+                "CTYPE2  = 'AZ---TAN'           / Type of co-ordinate on axis 2", // codespell:ignore
+                "CDELT1  = -0.010000493460993179 / Pixel size on axis 1",
+                "CDELT2  = 0.010000494181343293 / Pixel size on axis 2",
+                "PC1_1   =  0.95887433689593371 / Transformation matrix element",
+                "PC1_2   = -0.28383094623804417 / Transformation matrix element",
+                "PC2_1   =  0.28383092720225839 / Transformation matrix element",
+                "PC2_2   =  0.95887434253060821 / Transformation matrix element",
+                "MJD-OBS =   57955.360174618057 / Modified Julian Date of observation",
+                "DATE-OBS= '2017-07-21T08:38:39.087' / Date of observation",
+                "OBSGEO-X=  -5464586.5949660344 / [m] Observatory geocentric X",
+                "OBSGEO-Y=  -2492996.5580556653 / [m] Observatory geocentric Y",
+                "OBSGEO-Z=    2150654.376090901 / [m] Observatory geocentric Z");
+        List<String> got = FitsHeaders.foundCards(fc);
+        assertTrue(FitsHeaders.cardsMatchC(got, want, LIBM_KEYWORDS), String.join("\n", got));
+    }
+
+    /**
+     * 835-836: an FK5 header remapped to Galactic and to Supergalactic writes {@code GLON} and
+     * {@code SLON} as FITS-WCS; C puts the Galactic latitude axis first.
+     */
+    @Test
+    void supergalacticWritesSlon() {
+        String[][] want = {
+            {
+                "WCSAXES =                    2 / Number of WCS axes",
+                "CRPIX1  =                 50.0 / Reference pixel on axis 1",
+                "CRPIX2  =                 50.0 / Reference pixel on axis 2",
+                "CRVAL1  =   40.885263413197158 / Value at ref. pixel on axis 1",
+                "CRVAL2  =   141.58712489261552 / Value at ref. pixel on axis 2",
+                "CTYPE1  = 'GLAT-TAN'           / Type of co-ordinate on axis 1", // codespell:ignore
+                "CTYPE2  = 'GLON-TAN'           / Type of co-ordinate on axis 2", // codespell:ignore
+                "CDELT1  =                 0.01 / Pixel size on axis 1",
+                "CDELT2  =                 0.01 / Pixel size on axis 2",
+                "PC1_1   =  0.99949812396986037 / Transformation matrix element",
+                "PC1_2   = 0.031678070975510009 / Transformation matrix element",
+                "PC2_1   = -0.031678070968866552 / Transformation matrix element",
+                "PC2_2   =  0.99949812397007098 / Transformation matrix element",
+                "MJD-OBS =   51544.499257130781 / Modified Julian Date of observation",
+                "DATE-OBS= '2000-01-01T11:58:55.816' / Date of observation",
+            },
+            {
+                "WCSAXES =                    2 / Number of WCS axes",
+                "CRPIX1  =                 50.0 / Reference pixel on axis 1",
+                "CRPIX2  =                 50.0 / Reference pixel on axis 2",
+                "CRVAL1  =   320.87048231548192 / Value at ref. pixel on axis 1",
+                "CRVAL2  =  -52.245457827546453 / Value at ref. pixel on axis 2",
+                "CTYPE1  = 'SLON-TAN'           / Type of co-ordinate on axis 1", // codespell:ignore
+                "CTYPE2  = 'SLAT-TAN'           / Type of co-ordinate on axis 2", // codespell:ignore
+                "CDELT1  = -0.0099999999998425602 / Pixel size on axis 1",
+                "CDELT2  =                 0.01 / Pixel size on axis 2",
+                "PC1_1   =  0.99019598050830937 / Transformation matrix element",
+                "PC1_2   =  0.13968507502660274 / Transformation matrix element",
+                "PC2_1   = -0.13968507500640948 / Transformation matrix element",
+                "PC2_2   =  0.99019598051115809 / Transformation matrix element",
+                "MJD-OBS =   51544.499257130781 / Modified Julian Date of observation",
+                "DATE-OBS= '2000-01-01T11:58:55.816' / Date of observation",
+            },
+        };
+        String[] systems = {"Galactic", "Supergalactic"};
+        for (int it = 0; it < systems.length; it++) {
+            FrameSet fs = readCards(
+                    "NAXIS1  =                  100",
+                    "NAXIS2  =                  100",
+                    "CTYPE1  = 'RA---TAN'",
+                    "CTYPE2  = 'DEC--TAN'",
+                    "CRVAL1  =              180.000",
+                    "CRVAL2  =               45.000",
+                    "CRPIX1  =               50.000",
+                    "CRPIX2  =               50.000",
+                    "CDELT1  =              -0.0100",
+                    "CDELT2  =               0.0100",
+                    "RADESYS = 'FK5'",
+                    "EQUINOX =               2000.0",
+                    "END");
+            SkyFrame tgt = new SkyFrame();
+            tgt.setC("System", systems[it]);
+            FrameSet cvt = fs.getFrame(FrameSet.AST__CURRENT).convert(tgt, "");
+            fs.remapFrame(FrameSet.AST__CURRENT, cvt.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT));
+            fs.setC("System", systems[it]);
+
+            FitsChan wfc = FitsHeaders.chan("NAXIS1  =                  100", "NAXIS2  =                  100");
+            wfc.setEncoding("FITS-WCS");
+            assertEquals(1, wfc.write(fs), systems[it]);
+            List<String> w = FitsHeaders.padded("NAXIS1  =                  100", "NAXIS2  =                  100");
+            w.addAll(FitsHeaders.padded(want[it]));
+            List<String> got = FitsHeaders.foundCards(wfc);
+            assertTrue(
+                    FitsHeaders.cardsMatchC(got, w, LIBM_KEYWORDS),
+                    "Error " + (835 + it) + ": SkySys " + systems[it] + ":\n" + String.join("\n", got));
+        }
+    }
+
+    /**
+     * 500-534: a Galactic TAN header changed to each sky System and written in each of five
+     * encodings. C's test accepts a refused write; C refuses FK4-NO-E and ICRS with FITS-AIPS and
+     * FITS-AIPS++, and Supergalactic with FITS-IRAF, FITS-AIPS and FITS-AIPS++. Every write made
+     * has C's longitude CTYPE and reads back to the same sky positions.
+     */
+    @Test
+    void skySystemsThroughFiveEncodings() {
+        String[] systems = {"FK5", "FK4", "FK4-NO-E", "ICRS", "GALACTIC", "SUPERGALACTIC", "ECLIPTIC"};
+        String[] ctypes = {"RA---TAN", "RA---TAN", "RA---TAN", "RA---TAN", "GLON-TAN", "SLON-TAN", "ELON-TAN"};
+        String[] encodings = {"FITS-WCS", "FITS-PC", "FITS-IRAF", "FITS-AIPS", "FITS-AIPS++"};
+        int[][] want = {
+            {1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1},
+            {1, 1, 1, 0, 0},
+            {1, 1, 1, 0, 0},
+            {1, 1, 1, 1, 1},
+            {1, 1, 0, 0, 0},
+            {1, 1, 1, 1, 1},
+        };
+        for (int is = 0; is < systems.length; is++) {
+            for (int ie = 0; ie < encodings.length; ie++) {
+                FrameSet fs = readCards(
+                        "SIMPLE  =                    T",
+                        "BITPIX  =                  -32",
+                        "NAXIS   =                    2",
+                        "NAXIS1  =                  100",
+                        "NAXIS2  =                  100",
+                        "CTYPE1  = 'GLON-TAN'",
+                        "CTYPE2  = 'GLAT-TAN'",
+                        "CRVAL1  =              180.000",
+                        "CRVAL2  =                0.000",
+                        "CRPIX1  =               50.500",
+                        "CRPIX2  =               50.500",
+                        "CDELT1  =              -0.0100",
+                        "CDELT2  =               0.0100",
+                        "END");
+                fs.setC("System", systems[is]);
+                assertEquals(
+                        want[is][ie],
+                        roundtrip(fs, encodings[ie], 1e-3, "CTYPE", ctypes[is]),
+                        "Error " + (500 + is * encodings.length + ie) + ": " + systems[is] + " with " + encodings[ie]);
+            }
+        }
+    }
+
+    /**
+     * 650-659 (DATE-OBS block): an FK5 header with MJD-OBS and OBSGEO writes them back as FITS-WCS
+     * within 1e-3 days and 1 m, as the cards C writes.
+     */
+    @Test
+    void dateAndObservatoryWriteBack() {
+        String[] source = Arrays.copyOf(AZEL_SOURCE, AZEL_SOURCE.length + 1);
+        System.arraycopy(AZEL_SOURCE, 15, source, 16, AZEL_SOURCE.length - 15);
+        source[15] = "MJD-OBS =   57955.360174621412";
+        FrameSet fs = readCards(source);
+        FitsChan wfc = new FitsChan();
+        wfc.setEncoding("FITS-WCS");
+        assertEquals(1, wfc.write(fs), "Error 651");
+        String[] keys = {"MJD-OBS", "OBSGEO-X", "OBSGEO-Y", "OBSGEO-Z"};
+        // C's values, to the digits of its header cards.
+        String[] values = {"57955.360174621412", "-5464586.5949660344", "-2492996.5580556658", "2150654.3760909005"};
+        double[] tols = {1e-3, 1.0, 1.0, 1.0};
+        for (int i = 0; i < keys.length; i++) {
+            wfc.clear("Card");
+            Double got = wfc.getFitsF(keys[i]);
+            assertNotNull(got, "Error " + (652 + 2 * i) + ": " + keys[i] + " not written");
+            assertTrue(
+                    Math.abs(got - Double.parseDouble(values[i])) <= tols[i],
+                    "Error " + (653 + 2 * i) + ": " + keys[i] + " = " + got);
+        }
+        List<String> want = FitsHeaders.padded(
+                "WCSAXES =                    2 / Number of WCS axes",
+                "CRPIX1  =                 50.5 / Reference pixel on axis 1",
+                "CRPIX2  =                 50.5 / Reference pixel on axis 2",
+                "CRVAL1  =                180.0 / Value at ref. pixel on axis 1",
+                "CRVAL2  =                 45.0 / Value at ref. pixel on axis 2",
+                "CTYPE1  = 'RA---TAN'           / Type of co-ordinate on axis 1", // codespell:ignore
+                "CTYPE2  = 'DEC--TAN'           / Type of co-ordinate on axis 2", // codespell:ignore
+                "CDELT1  =                -0.01 / Pixel size on axis 1",
+                "CDELT2  =                 0.01 / Pixel size on axis 2",
+                "MJD-OBS =   57955.360174621412 / Modified Julian Date of observation",
+                "DATE-OBS= '2017-07-21T08:38:39.087' / Date of observation",
+                "RADESYS = 'FK5     '           / Reference frame for RA/DEC values",
+                "EQUINOX =               2000.0 / [yr] Epoch of reference equinox",
+                "OBSGEO-X=  -5464586.5949660344 / [m] Observatory geocentric X",
+                "OBSGEO-Y=  -2492996.5580556653 / [m] Observatory geocentric Y",
+                "OBSGEO-Z=    2150654.376090901 / [m] Observatory geocentric Z");
+        List<String> got = FitsHeaders.foundCards(wfc);
+        assertTrue(FitsHeaders.cardsMatchC(got, want), String.join("\n", got));
     }
 }

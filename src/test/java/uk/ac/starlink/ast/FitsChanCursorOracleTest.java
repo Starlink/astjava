@@ -35,30 +35,26 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * transcript C printed: the result of each operation and then the state. The same script is run
  * here, through the same string attribute interface the probe uses, and the transcripts compared.
  *
- * <p>Cases whose scripts read from the FitsChan ({@code R}, {@code RN} and {@code PW}) run when
- * their reads need only the encodings read here, all but FITS-CLASS. A read that reaches
- * FITS-CLASS, whose read is out of scope, throws {@code UnsupportedOperationException}; the number of such cases is pinned by {@link
- * #WAITING_FOR_ANOTHER_ENCODING}. A read that stops at another out-of-scope class (such as {@code
- * needs SpecFrame}) must be in {@link #EXCLUDED} with that reason, measured from the exception.
- * Cases whose scripts write an Object they make ({@code W}, {@code WF}, {@code WFT}, {@code WC} and
- * {@code WCF}) run; {@code native_full_1}, whose Object parts C writes with counts this library
- * does not keep, is excluded and compared without them. Cases whose scripts write what they read
- * ({@code RW}, {@code RCIW} and {@code RSW}) write FrameSets with the foreign encodings and do not
- * run yet.
+ * <p>Cases whose scripts read from the FitsChan ({@code R}, {@code RN}, {@code PW}, and {@code
+ * RW}, {@code RCIW} and {@code RSW}, which write what they read back into it) run when their reads
+ * and writes need only the encodings and classes of this library. A read that reaches FITS-CLASS,
+ * whose read is out of scope, throws {@code UnsupportedOperationException}; the number of such
+ * cases is pinned by {@link #WAITING_FOR_ANOTHER_ENCODING}. A read or write that stops at another
+ * out-of-scope class (such as {@code needs SpecFrame}) must be in {@link #EXCLUDED} with that
+ * reason, measured from the exception. Cases whose scripts write an Object they make ({@code W},
+ * {@code WF}, {@code WFT}, {@code WC} and {@code WCF}) run; {@code native_full_1}, whose Object
+ * parts C writes with counts this library does not keep, is excluded and compared without them.
  */
 class FitsChanCursorOracleTest {
 
-    /** The operations that write to the FitsChan an Object read from it. */
-    private static final Set<String> WRITES = new HashSet<>(Arrays.asList("RW", "RCIW", "RSW"));
-
-    /** The operations that only read from the FitsChan. */
-    private static final Set<String> READS = new HashSet<>(Arrays.asList("R", "RN", "PW"));
+    /** The operations that read from the FitsChan, and write what they read. */
+    private static final Set<String> READS = new HashSet<>(Arrays.asList("R", "RN", "PW", "RW", "RCIW", "RSW"));
 
     /**
      * The number of cases run here: those that write no Object read, are not excluded, and whose reads
      * need only the encodings read here.
      */
-    private static final int RUNNABLE = 168;
+    private static final int RUNNABLE = 247;
 
     /** The number of cases whose reads reach the read of an encoding whose read is not available. */
     private static final int WAITING_FOR_ANOTHER_ENCODING = 2;
@@ -86,7 +82,9 @@ class FitsChanCursorOracleTest {
                 "sao_three_ctypes",
                 "iwc_on_spectral",
                 "iwc_off_spectral",
-                "iwc_on_spectral_cunit")) {
+                "iwc_on_spectral_cunit",
+                "sao_three_ctypes_rw",
+                "fao_spec_order")) {
             m.put(name, "needs SpecFrame");
         }
         // Its transcript shows the FrameSet read. The rotation of the alternate description
@@ -94,6 +92,17 @@ class FitsChanCursorOracleTest {
         // java.lang.Math gives -0x1.ffb0278bf0566p-1 and C's libm -0x1.ffb0278bf0567p-1 (measured
         // on aarch64, JDK 21 and macOS libm), so the forward matrix element M2 is
         // 0.9992386149554825 here and 0.99923861495548261 in C.
+        // The offset SkyFrame's absolute description has a SKY_ORIGIN Domain, which C's write tests
+        // for the -LOG algorithm with a MathMap (fitschan.c LogAxis).
+        m.put("sky_offset_system_rw", "needs MathMap");
+        m.put("alt_axes_alt_offset", "needs MathMap");
+        // The Mapping C's FitLine fits for the primary description is the same as this library's
+        // (probe a1), but its SphMaps and inverse TAN WcsMap take sines, cosines and arctangents
+        // where java.lang.Math differs from C's libm by 1 ULP at the same arguments (probes a2 and
+        // rep), so the fitted CDELT2 differs by 1 ULP. runtimeMathCasesMatchCButForLicensedCards
+        // compares them.
+        m.put("alt_axes_offset", RUNTIME_MATH + " SphMap and TAN WcsMap transforms 1 ULP from C's libm");
+        m.put("alt_axes_offset_none", RUNTIME_MATH + " SphMap and TAN WcsMap transforms 1 ULP from C's libm");
         m.put("iwc_on_alt", RUNTIME_MATH + " the sine of 2 deg - pi/2 differs from C's libm by 1 ULP");
         // With Full positive C also writes the unset RefCnt and Nobj of each Object part as comment
         // cards: counts of pointers to the Object and of Objects of its class, which this library
@@ -418,6 +427,23 @@ class FitsChanCursorOracleTest {
                         "FrameSet".equals(cls) || "ZoomMap".equals(cls) || "Frame".equals(cls) || "CmpMap".equals(cls);
                 return "= " + (named ? cls : "another class") + "\n";
             }
+            case "RW": {
+                AstObject obj = fc.read();
+                return obj == null ? "= null 0\n" : "= " + obj.astClass() + " " + fc.write(obj) + "\n";
+            }
+            case "RCIW": {
+                AstObject obj = fc.read();
+                if (obj == null) {
+                    return "= null 0\n";
+                }
+                ((FrameSet) obj).getFrame(Integer.parseInt(a1)).clear("Ident");
+                return "= " + obj.astClass() + " " + fc.write(obj) + "\n";
+            }
+            case "RSW": {
+                AstObject obj = fc.read();
+                fc.setC("Warnings", a1);
+                return obj == null ? "= null 0\n" : "= " + obj.astClass() + " " + fc.write(obj) + "\n";
+            }
             case "RN": {
                 AstObject obj = fc.read();
                 if (obj == null) {
@@ -581,7 +607,7 @@ class FitsChanCursorOracleTest {
         for (JsonNode c : ProbeData.load("fitschan_cursor").get("CASES")) {
             List<String> ops = ops(c);
             String name = c.get(0).asText();
-            if (uses(ops, WRITES) || EXCLUDED.containsKey(name)) {
+            if (EXCLUDED.containsKey(name)) {
                 continue;
             }
             String want = c.get(2).asText();
@@ -617,6 +643,66 @@ class FitsChanCursorOracleTest {
                 WAITING_FOR_ANOTHER_ENCODING,
                 waitingCases.size(),
                 "cases waiting for the read of another encoding: " + waitingCases);
+    }
+
+    /**
+     * The cards of each case excluded for {@value #RUNTIME_MATH} whose values may differ from C's
+     * within libm rounding: a relative difference of at most {@link #LIBM_RTOL}.
+     */
+    private static final Map<String, List<String>> RUNTIME_MATH_CARDS = runtimeMathCards();
+
+    /** The relative difference of a value computed with java.lang.Math from C's libm value. */
+    private static final double LIBM_RTOL = 1.0e-13;
+
+    private static Map<String, List<String>> runtimeMathCards() {
+        Map<String, List<String>> m = new LinkedHashMap<>();
+        m.put("alt_axes_offset", Arrays.asList("CDELT2", "CDELT2A"));
+        m.put("alt_axes_offset_none", Arrays.asList("CDELT2"));
+        return Collections.unmodifiableMap(m);
+    }
+
+    /**
+     * The cases whose cards C computes with elementary functions of its libm match C's transcript
+     * line for line, but for the values of the named cards, which are within {@link #LIBM_RTOL}.
+     */
+    @Test
+    void runtimeMathCasesMatchCButForLicensedCards() throws IOException {
+        List<String> failed = new ArrayList<>();
+        for (Map.Entry<String, List<String>> e : RUNTIME_MATH_CARDS.entrySet()) {
+            assertTrue(EXCLUDED.get(e.getKey()).startsWith(RUNTIME_MATH), e.getKey());
+            JsonNode c = findCase(e.getKey());
+            List<String> g = CValues.lines(transcript(ops(c)));
+            List<String> w = CValues.lines(c.get(2).asText());
+            if (g.size() != w.size()) {
+                failed.add(e.getKey() + ": " + g.size() + " lines, C " + w.size());
+                continue;
+            }
+            for (int i = 0; i < g.size(); i++) {
+                if (!g.get(i).equals(w.get(i)) && !withinLibmRounding(g.get(i), w.get(i), e.getValue())) {
+                    failed.add(e.getKey() + " line " + (i + 1) + ":\n" + g.get(i) + "\n" + w.get(i));
+                }
+            }
+        }
+        assertTrue(failed.isEmpty(), String.join("\n", failed));
+    }
+
+    /** Whether two transcript lines are the same card of {@code keys} with values within libm rounding. */
+    private static boolean withinLibmRounding(String got, String want, List<String> keys) {
+        if (!got.startsWith("|") || !want.startsWith("|") || got.length() < 9 || want.length() < 9) {
+            return false;
+        }
+        String key = got.substring(1, 9).trim();
+        if (!keys.contains(key) || !got.substring(0, 11).equals(want.substring(0, 11))) {
+            return false;
+        }
+        int gs = got.indexOf(" /");
+        int ws = want.indexOf(" /");
+        if (gs < 0 || ws < 0 || !got.substring(gs).equals(want.substring(ws))) {
+            return false;
+        }
+        double g = Double.parseDouble(got.substring(11, gs).trim());
+        double w = Double.parseDouble(want.substring(11, ws).trim());
+        return Math.abs(g - w) <= LIBM_RTOL * Math.abs(w);
     }
 
     /**

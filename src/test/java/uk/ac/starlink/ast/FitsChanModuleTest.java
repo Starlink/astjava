@@ -5,13 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
  * Translation of the card unit tests of Rust {@code fitschan/mod.rs}.
- *
- * <p>{@code rewrite_after_read_re_emits_wcs_cards} writes FITS-WCS cards and is listed in {@code
- * deferred/rust-tests.txt}.
  */
 class FitsChanModuleTest {
 
@@ -227,6 +227,51 @@ class FitsChanModuleTest {
         String out = fc.toHeader();
         assertTrue(out.contains("CRVAL1"), "protected CRVAL1 should survive the read:\n" + out);
         assertFalse(out.contains("CRVAL2"), "CRVAL2 should be consumed:\n" + out);
+    }
+
+    /**
+     * The cards a read consumed are written again when the FrameSet read is written FITS-WCS into
+     * the same FitsChan: C puts each card back where the read found it, with its comment, and
+     * keeps MJD-OBS, which it does not write again (probe {@code c1.c} beside the task report).
+     */
+    @Test
+    void rewriteAfterReadReEmitsWcsCards() {
+        FitsChan fc = FitsChan.fromHeader(WCS_HEADER_WITH_MJDOBS);
+        AstObject obj = fc.read();
+        assertNotNull(obj, "reads a FrameSet");
+        fc.setEncoding("FITS-WCS");
+        assertEquals(1, fc.write(obj));
+        assertEquals(
+                Arrays.asList(
+                        "SIMPLE  =                    T / Fits standard",
+                        "BITPIX  =                  -32 / Bits per pixel",
+                        "NAXIS   =                    2 / Number of axes",
+                        "NAXIS1  =                  100 / Axis 1 length",
+                        "NAXIS2  =                  100 / Axis 2 length",
+                        "MJD-OBS =              51544.5 / MJD of observation",
+                        "CTYPE1  = 'RA---TAN'           / X type",
+                        "CTYPE2  = 'DEC--TAN'           / Y type",
+                        "CRVAL1  =                 10.0 / Reference value",
+                        "CRVAL2  =                 20.0 / Reference value",
+                        "CRPIX1  =                 50.5 / Reference pixel",
+                        "CRPIX2  =                 50.5 / Reference pixel",
+                        "CDELT1  =                 -0.1 / Degrees/pixel",
+                        "CDELT2  =                  0.1 / Degrees/pixel",
+                        "RADESYS = 'ICRS    '           / Reference frame for RA/DEC values",
+                        "END"),
+                trimmed(FitsHeaders.foundCards(fc)));
+    }
+
+    private static List<String> trimmed(List<String> cards) {
+        List<String> out = new ArrayList<>();
+        for (String c : cards) {
+            int end = c.length();
+            while (end > 0 && c.charAt(end - 1) == ' ') {
+                end--;
+            }
+            out.add(c.substring(0, end));
+        }
+        return out;
     }
 
     /** {@code s} padded with spaces to 80 characters. */
