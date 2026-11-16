@@ -745,6 +745,22 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `aips_store_ok` in `fitschan/enc_aips.rs` combines the checks.
 - Java: as C.
 
+### The cards a DSS read uses, and the sign of PLTDECSN
+
+- C: `DSSToStore` reads every keyword with `GetValue`, which marks the card it finds as used: the plate solution's keywords, and PLTSCALE, PPO1, PPO2, PPO4 and PPO5, read only so that they are not copied to another header.
+  A required keyword that is missing stops the read, the cards read before it marked (used if Clean is set, made available again otherwise).
+  The declination is negative only when the first word of PLTDECSN is `-` (`fitschan.c` `DSSToStore`).
+  The description has WCSAXES 2.
+- Rust: `read_from_cards` in `fitschan/enc_dss.rs` does not read PLTSCALE, PPO1, PPO2, PPO4 or PPO5, so they stay unused; it takes the declination to be negative when PLTDECSN starts with `-` (so `-5` is negative where C's is positive); and it sets no WCSAXES.
+- Java: as C (`FitsEncDss`).
+
+### `CLASSFromStore` with celestial pixel axes of one pixel
+
+- C: when the image has three or more pixel axes and both celestial pixel axes span one pixel, `CLASSFromStore` transforms pixel (1, 1, 1) with the FrameSet written and stores the celestial result as CRVAL, with CRPIX 1, before its other checks; `astTranN` is given three coordinates whatever the number of pixel and world axes, so a FrameSet with four pixel axes makes the write fail with `AST__NCPIN`.
+  It looks up the sizes of those pixel axes in `dim` at the indices of the celestial WCS axes (`fitschan.c` `CLASSFromStore`). **C quirk** (three coordinates for any FrameSet; WCS axis indices into the pixel dimensions).
+- Rust: `class_store_ok` in `fitschan/enc_class.rs` reads the NAXIS cards for the rotation and LONPOLE checks but neither moves the reference point nor transforms anything, so it writes the reference point unchanged and reports no error for four axes.
+- Java: as C (`FitsEncClass`), as far as C goes without a SpecFrame: every FrameSet of this library's classes is refused, as C refuses it, since only a SpecFrame gives SPECSYS.
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails

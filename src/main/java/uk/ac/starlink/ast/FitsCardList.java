@@ -595,6 +595,18 @@ final class FitsCardList {
         return pos;
     }
 
+    /** The position of {@code card}, this very card, or end-of-file if the list does not hold it. */
+    // A card is found by identity, as C holds a pointer to it.
+    @SuppressWarnings("PMD.CompareObjectsWithEquals")
+    int indexOf(FitsCard card) {
+        for (int k = 0; k < list.size(); k++) {
+            if (list.get(k) == card) {
+                return k;
+            }
+        }
+        return list.size();
+    }
+
     /**
      * The keyword of the card at {@code index} and how many cards with it precede it, by which
      * {@link #occurrenceIndex} finds it again after other cards change; null at end-of-file.
@@ -941,6 +953,56 @@ final class FitsCardList {
             }
         }
         return null;
+    }
+
+    /**
+     * C's {@code GetValue} (fitschan.c:18399): the value of the card with keyword {@code keyword}
+     * that {@link #searchCard} finds, passing over used cards, converted to {@code want} as C's
+     * {@code CnvValue} converts it with FitsRounding {@code fitsRounding}; with {@code mark}, a
+     * card whose value converts is marked as provisionally used (C's {@code MarkCard}). The
+     * current card is restored. Null if there is no such card or its value does not convert.
+     *
+     * @param report whether a missing card or a value that does not convert is an error
+     * @throws AstException with status {@code AST__BDFTS} for a missing card and {@code
+     *     AST__FTCNV} for a value that does not convert, with {@code report}; {@code AST__FUNDEF}
+     *     for a card with no value, which C's {@code CnvValue} reports whatever {@code report}
+     */
+    FitsCardValue.Got getValue(
+            String keyword,
+            FitsCardValue.Want want,
+            boolean report,
+            boolean mark,
+            int fitsRounding,
+            String method,
+            String cls) {
+        int icard = getCard();
+        try {
+            if (!searchCard(keyword, method)) {
+                if (report) {
+                    throw Ast.err(
+                            AstException.AST__BDFTS,
+                            method + "(" + cls + "): Unable to find a value for FITS keyword \"" + keyword + "\".");
+                }
+                return null;
+            }
+            FitsCard c = list.get(pos);
+            FitsCardValue.Got got = FitsCardValue.cnvType(c.value, want, fitsRounding, c.cName());
+            if (got == null) {
+                if (report) {
+                    throw Ast.err(
+                            AstException.AST__FTCNV,
+                            method + "(" + cls + "): Cannot convert FITS keyword '" + keyword + "' to " + want.cName()
+                                    + ".");
+                }
+                return null;
+            }
+            if (mark) {
+                markAt(pos);
+            }
+            return got;
+        } finally {
+            setCard(icard);
+        }
     }
 
     /**

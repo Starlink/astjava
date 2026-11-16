@@ -2,8 +2,6 @@
 # <row name> | <reason>
 # Rewritten by WcsconvTest with -Dast.writeDeferred=true.
 a20070718_fits-wcs | needs DSBSpecFrame
-dss_fits-dss_ast | encoding DSS
-dss_ast_dss | out-of-scope method FitsChan.write
 sip-3d_fits-wcs | needs SpecFrame
 sip-3d-swap_fits-wcs | needs SpecFrame
 lsst_fits-wcs | needs MathMap
@@ -55,17 +53,17 @@ vrad-lsrd_fits-aips | needs SpecFrame
 vrad-lsrd_fits-aips++ | needs SpecFrame
 freq-pixel3d_fits-aips | needs SpecFrame
 freq-pixel3d_fits-aips++ | needs SpecFrame
-class-write_fits-class | out-of-scope method FitsChan.write
-class-gal_fits-class | out-of-scope method FitsChan.write
-jan_fits-class-rt | out-of-scope method FitsChan.write
+class-write_fits-class | encoding FITS-CLASS
+class-gal_fits-class | needs SpecFrame
+jan_fits-class-rt | encoding FITS-CLASS
 class-arc_native | needs SpecFrame
-class-arc_fits-class | out-of-scope method FitsChan.write
+class-arc_fits-class | needs SpecFrame
 class-ait_native | needs SpecFrame
-class-ait_fits-class | out-of-scope method FitsChan.write
+class-ait_fits-class | needs SpecFrame
 class-sin_native | needs SpecFrame
-class-sin_fits-class | out-of-scope method FitsChan.write
-class-sfl_fits-class | out-of-scope method FitsChan.write
-class-olddate_fits-class | out-of-scope method FitsChan.write
+class-sin_fits-class | needs SpecFrame
+class-sfl_fits-class | needs SpecFrame
+class-olddate_fits-class | needs SpecFrame
 a20070718_fits-iraf | needs DSBSpecFrame
 skyspec3d_native | needs SpecFrame
 skyspec3d_fits-wcs | needs SpecFrame
@@ -75,7 +73,7 @@ skyspec3d_fits-iraf | needs SpecFrame
 wave-1d_fits-iraf | needs SpecFrame
 skyspec3d_fits-pc | needs SpecFrame
 skyspec3d-class_native | needs SpecFrame
-skyspec3d-class_fits-class | out-of-scope method FitsChan.write
+skyspec3d-class_fits-class | needs SpecFrame
 offset-sky_fits-wcs | needs MathMap
 offset-sky-pole_fits-wcs | needs MathMap
 vopt-f2w_native | needs SpecFrame

@@ -30,18 +30,12 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * {@code oracle/fitschan_encodings.json}, made by {@code
  * tools/oracle_fixtures/fitschan_encodings_probe.c}.
  *
- * <p>The FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS and FITS-AIPS++ columns run: the encodings in
- * {@link #NOT_WRITTEN}, whose writers this library does not have, are pinned by number. A header
- * whose read needs a class this library does not have is in {@link #EXCLUDED} with the reason its
- * read gives, measured, so the list is checked both ways.
+ * <p>Every encoding's column runs; C's FITS-CLASS writer refuses each FrameSet here, none having
+ * the SpecFrame that encoding needs. A header whose read needs a class this library does not have
+ * is in {@link #EXCLUDED} with the reason its read gives, measured, so the list is checked both
+ * ways.
  */
 class FitsChanEncodingsOracleTest {
-
-    /** The encodings whose writers this library does not have. */
-    private static final Set<String> NOT_WRITTEN = new HashSet<>(Arrays.asList("FITS-CLASS", "DSS"));
-
-    /** The number of writes of the encodings in {@link #NOT_WRITTEN}. */
-    private static final int NOT_WRITTEN_WRITES = 50;
 
     /** Headers whose read stops for want of a class, with the reason the read gives. */
     private static final Map<String, String> EXCLUDED = excludedCases();
@@ -79,6 +73,37 @@ class FitsChanEncodingsOracleTest {
         Map<String, Set<String>> m = new HashMap<>();
         m.put("tan_offset_origin", new HashSet<>(Arrays.asList("PC1_2", "PC2_1")));
         m.put("tan_offset_pole", new HashSet<>(Arrays.asList("CRVAL2", "PC1_1", "PC1_2", "PC2_1", "PC2_2")));
+        return Collections.unmodifiableMap(m);
+    }
+
+    /**
+     * The DSS cards whose numbers depend on the runtime's elementary functions, by header, with
+     * the absolute tolerance each is compared with. DSS writes the reference point as degrees (or
+     * hours), minutes and seconds, so PLTRAS and PLTDECS hold the difference of CRVAL1 / 15 or
+     * CRVAL2 from a whole number, times 3600: there, a difference of CRVAL in its last bits is
+     * the number's leading digits. CRVAL is made as C makes it but for java.lang.Math's atan2,
+     * which differs from C's libm by 1 ULP at identical arguments: in the forward SphMap ({@code
+     * atan2(0.34202014332566877, 0.9396926207859083)}, 0x3fd657184ae74489 here and
+     * 0x3fd657184ae74488 in libm, which is correctly rounded), and for the headers whose Epoch is
+     * set, also in the FK5HZ step of the SlaMap that follows ({@code eraFk5hz}'s {@code eraC2s},
+     * 0x3fc65716f92aed2c here and 0x3fc65716f92aed2b in libm); every other operation agrees to
+     * the bit (C probes {@code p3.c}, {@code rep.c} and {@code at.c} of Task 9, beside the task
+     * report). C's store then holds CRVAL (10, 20) one or two ULP from this library's, which the
+     * FITS-WCS cards absorb. The tolerance is the difference 4 ULP of CRVAL (10, 20) makes, the
+     * difference the cards of the wcsconv gate allow CRVAL itself: 4 ULP of 10 degrees times 240
+     * seconds of time per degree, and 4 ULP of 20 degrees times 3600 arcseconds per degree.
+     */
+    private static final Map<String, Map<String, Double>> DSS_RUNTIME_MATH = dssRuntimeMath();
+
+    private static Map<String, Map<String, Double>> dssRuntimeMath() {
+        Map<String, Double> sexagesimal = new HashMap<>();
+        sexagesimal.put("PLTRAS", 4 * Math.ulp(10.0) * 240.0);
+        sexagesimal.put("PLTDECS", 4 * Math.ulp(20.0) * 3600.0);
+        Map<String, Map<String, Double>> m = new HashMap<>();
+        for (String name :
+                Arrays.asList("tan_fk5", "tpn", "alt_pc", "alt_j", "tan_new_epoch", "tan_new_epoch_no_mjd", "cname")) {
+            m.put(name, Collections.unmodifiableMap(sexagesimal));
+        }
         return Collections.unmodifiableMap(m);
     }
 
@@ -153,7 +178,6 @@ class FitsChanEncodingsOracleTest {
     void writesMatchC() {
         List<String> failed = new ArrayList<>();
         int run = 0;
-        int notWritten = 0;
         for (JsonNode c : ProbeData.load("fitschan_encodings").get("CASES")) {
             String name = c.get(0).asText();
             List<String> header = FitsHeaders.strings(c.get(1));
@@ -168,10 +192,6 @@ class FitsChanEncodingsOracleTest {
             }
             for (JsonNode w : c.get(3)) {
                 String enc = w.get(0).asText();
-                if (NOT_WRITTEN.contains(enc)) {
-                    notWritten++;
-                    continue;
-                }
                 run++;
                 Written want = new Written(
                         w.get(1).asInt(),
@@ -183,15 +203,18 @@ class FitsChanEncodingsOracleTest {
                         && got.ncard == want.ncard
                         && got.names.equals(want.names)
                         && FitsHeaders.cardsMatchC(
-                                got.cards, want.cards, RUNTIME_MATH.getOrDefault(name, Collections.<String>emptySet()));
+                                got.cards,
+                                want.cards,
+                                RUNTIME_MATH.getOrDefault(name, Collections.<String>emptySet()),
+                                "DSS".equals(enc)
+                                        ? DSS_RUNTIME_MATH.getOrDefault(name, Collections.<String, Double>emptyMap())
+                                        : Collections.<String, Double>emptyMap());
                 if (!same) {
                     failed.add(name + " " + enc + ":\n--- Java\n" + got + "\n--- C\n" + want);
                 }
             }
         }
         assertTrue(failed.isEmpty(), String.join("\n", failed));
-        assertEquals(
-                5 * (25 - EXCLUDED.size()), run, "FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS and FITS-AIPS++ writes run");
-        assertEquals(NOT_WRITTEN_WRITES - 2 * EXCLUDED.size(), notWritten, "writes of encodings not written");
+        assertEquals(7 * (25 - EXCLUDED.size()), run, "writes run, seven encodings for each header");
     }
 }

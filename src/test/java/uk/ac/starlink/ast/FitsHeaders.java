@@ -203,6 +203,15 @@ final class FitsHeaders {
      * of the runtime's elementary functions (java.lang.Math) from C's libm reaches.
      */
     static boolean cardsMatchC(List<String> got, List<String> want, java.util.Set<String> libm) {
+        return cardsMatchC(got, want, libm, java.util.Collections.<String, Double>emptyMap());
+    }
+
+    /**
+     * {@link #cardsMatchC(List, List, java.util.Set)}, but the number on a card whose keyword is
+     * a key of {@code atol} need only be within that absolute tolerance of C's.
+     */
+    static boolean cardsMatchC(
+            List<String> got, List<String> want, java.util.Set<String> libm, java.util.Map<String, Double> atol) {
         if (got.size() != want.size()) {
             return false;
         }
@@ -212,9 +221,14 @@ final class FitsHeaders {
             String key = want.get(i).length() >= 8
                     ? want.get(i).substring(0, 8).trim()
                     : want.get(i).trim();
-            boolean ok = libm.contains(key)
-                    ? CValues.nativeStringsWithinLibmRounding(g, w)
-                    : CValues.nativeStringsEquivalent(g, w, CARD_ULPS);
+            boolean ok;
+            if (atol.containsKey(key)) {
+                ok = CValues.nativeStringsWithin(g, w, atol.get(key));
+            } else if (libm.contains(key)) {
+                ok = CValues.nativeStringsWithinLibmRounding(g, w);
+            } else {
+                ok = CValues.nativeStringsEquivalent(g, w, CARD_ULPS);
+            }
             if (!ok) {
                 return false;
             }

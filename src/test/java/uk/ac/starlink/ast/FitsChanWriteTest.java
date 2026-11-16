@@ -299,13 +299,16 @@ class FitsChanWriteTest {
 
     /** The encodings whose headers {@link #everyInScopeHeaderRoundTrips} writes and reads back. */
     private static final Set<String> ROUND_TRIP_ENCODINGS =
-            new LinkedHashSet<>(Arrays.asList("FITS-WCS", "FITS-PC", "FITS-IRAF", "FITS-AIPS", "FITS-AIPS++"));
+            new LinkedHashSet<>(Arrays.asList("FITS-WCS", "FITS-PC", "FITS-IRAF", "FITS-AIPS", "FITS-AIPS++", "DSS"));
 
     /**
-     * Every FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS and FITS-AIPS++ header of {@code headers.oracle}
-     * whose sections match C here, read, written with its own encoding into a new FitsChan and read back, transforms the
-     * inputs of its forward section to the outputs C recorded, within the section's tolerances,
-     * unless it is in {@link #NOT_ROUND_TRIPPED} with the outcome it gives, which is checked.
+     * Every FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++ and DSS header of {@code
+     * headers.oracle} whose sections match C here, read, written with its own encoding into a new
+     * FitsChan and read back, transforms the inputs of its forward section to the outputs C
+     * recorded, within the section's tolerances, unless it is in {@link #NOT_ROUND_TRIPPED} with
+     * the outcome it gives, which is checked. {@code headers.oracle} has no DSS header (C probe
+     * {@code rt.c} of Task 9); {@code FitsEncDssTest.writtenAndReadBackAsC} round-trips C's DSS
+     * header. Its FITS-CLASS headers need SpecFrame.
      */
     @Test
     void everyInScopeHeaderRoundTrips() {

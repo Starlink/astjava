@@ -36,9 +36,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * here, through the same string attribute interface the probe uses, and the transcripts compared.
  *
  * <p>Cases whose scripts read from the FitsChan ({@code R}, {@code RN} and {@code PW}) run when
- * their reads need only the NATIVE, FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS and FITS-AIPS++
- * encodings. A read that reaches another foreign encoding (FITS-CLASS or DSS), whose read is out of
- * scope, throws {@code UnsupportedOperationException}; the number of such cases is pinned by {@link
+ * their reads need only the encodings read here, all but FITS-CLASS. A read that reaches
+ * FITS-CLASS, whose read is out of scope, throws {@code UnsupportedOperationException}; the number of such cases is pinned by {@link
  * #WAITING_FOR_ANOTHER_ENCODING}. A read that stops at another out-of-scope class (such as {@code
  * needs SpecFrame}) must be in {@link #EXCLUDED} with that reason, measured from the exception.
  * Cases whose scripts write an Object they make ({@code W}, {@code WF}, {@code WFT}, {@code WC} and
@@ -57,7 +56,7 @@ class FitsChanCursorOracleTest {
 
     /**
      * The number of cases run here: those that write no Object read, are not excluded, and whose reads
-     * need only the NATIVE, FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS and FITS-AIPS++ encodings.
+     * need only the encodings read here.
      */
     private static final int RUNNABLE = 168;
 

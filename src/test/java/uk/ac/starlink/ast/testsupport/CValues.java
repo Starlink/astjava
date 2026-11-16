@@ -171,6 +171,11 @@ public final class CValues {
         return linesMatch(got, want, CValues::withinLibmRounding);
     }
 
+    /** {@link #nativeStringsEquivalent} with an absolute tolerance {@code atol} on numbers. */
+    public static boolean nativeStringsWithin(String got, String want, double atol) {
+        return linesMatch(got, want, (a, b) -> Math.abs(a - b) <= atol);
+    }
+
     /** {@link #nativeStringsEquivalent} with C's {@code astEQUAL} tolerance on numbers. */
     public static boolean nativeStringsAstEqual(String got, String want) {
         return linesMatch(got, want, CValues::astEqualClose);

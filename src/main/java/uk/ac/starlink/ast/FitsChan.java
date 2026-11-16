@@ -859,8 +859,9 @@ public class FitsChan extends Channel {
             case FITS_AIPS:
             case FITS_AIPSPP:
                 return FitsWcsRead.read(this, enc);
-            case FITS_CLASS:
             case DSS:
+                return FitsWcsRead.readDss(this);
+            case FITS_CLASS:
                 throw new UnsupportedOperationException(
                         "FitsChan: reading the " + enc.cName() + " encoding is not available");
             default:
@@ -941,17 +942,17 @@ public class FitsChan extends Channel {
         // C's Write passes FsetToStore its method and class names in the wrong order, so the
         // method its warnings name is the class (C-library quirk, kept).
         FitsPlaneStores store = FitsFsetToStore.fsetToStore(this, fs, naxis, dim, enc, astClass(), "astWrite");
-        return store != null && fitsFromStore(store, enc, "astWrite", astClass());
+        return store != null && fitsFromStore(store, enc, dim, fs, "astWrite", astClass());
     }
 
     /**
      * C's {@code FitsFromStore}: puts the current card after the last card describing WCS ({@link
      * FitsCardList#positionWriteCursor}, C's {@code FindWcs}), and writes the descriptions in
-     * {@code store} with the writer of {@code enc}. FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS and
-     * FITS-AIPS++ have writers here; for the other encodings nothing is written and the result is
-     * false.
+     * {@code store} with the writer of {@code enc}. The FITS-CLASS writer also takes the image
+     * dimensions {@code dim} and the FrameSet {@code fs} the descriptions were made from.
      */
-    private boolean fitsFromStore(FitsPlaneStores store, Encoding enc, String method, String cls) {
+    private boolean fitsFromStore(
+            FitsPlaneStores store, Encoding enc, double[] dim, FrameSet fs, String method, String cls) {
         cardList.positionWriteCursor();
         // MODERN-JAVA(21): switch expression
         switch (enc) {
@@ -966,8 +967,9 @@ public class FitsChan extends Channel {
             case FITS_AIPSPP:
                 return FitsEncAips.aipsppFromStore(this, store, method, cls);
             case FITS_CLASS:
+                return FitsEncClass.classFromStore(this, store, fs, dim, method, cls);
             case DSS:
-                return false;
+                return FitsEncDss.dssFromStore(this, store, method, cls);
             default:
                 throw Ast.err(AstException.AST__INTER, "astWrite(FitsChan): unexpected encoding " + enc + ".");
         }

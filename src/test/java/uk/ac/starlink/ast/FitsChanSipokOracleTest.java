@@ -6,10 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.Fixtures;
@@ -26,17 +23,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * tools/oracle_fixtures/fitschan_sipok_probe.c} against the C library fixed upstream in bdc6336c
  * (Rust c-library-quirks.md: SipOK applies only to FITS-WCS). Each case is compared byte for byte:
  * what {@code write} returns, then every card.
- *
- * <p>The cases of the encodings in {@link #NOT_WRITTEN}, whose writers this library does not
- * have, do not run; their number is pinned.
  */
 class FitsChanSipokOracleTest {
-
-    /** The encodings whose writers this library does not have. */
-    private static final Set<String> NOT_WRITTEN = new HashSet<>(Arrays.asList("FITS-CLASS", "DSS"));
-
-    /** The number of cases of the encodings in {@link #NOT_WRITTEN}. */
-    private static final int NOT_WRITTEN_CASES = 6;
 
     /** What this library writes for one case, in the probe's format. */
     private static String run(String enc, String sipOk) {
@@ -76,14 +64,9 @@ class FitsChanSipokOracleTest {
     void sipOkWritesMatchTheCLibrary() {
         List<String> failed = new ArrayList<>();
         int run = 0;
-        int notWritten = 0;
         for (JsonNode c : ProbeData.load("fitschan_sipok").get("CASES")) {
             String enc = c.get(0).asText();
             String sipOk = c.get(1).asText();
-            if (NOT_WRITTEN.contains(enc)) {
-                notWritten++;
-                continue;
-            }
             run++;
             String want = c.get(2).asText();
             String got = run(enc, sipOk);
@@ -92,8 +75,7 @@ class FitsChanSipokOracleTest {
             }
         }
         assertTrue(failed.isEmpty(), String.join("\n", failed));
-        assertEquals(15, run, "FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS and FITS-AIPS++ cases run");
-        assertEquals(NOT_WRITTEN_CASES, notWritten, "cases of encodings not written");
+        assertEquals(21, run, "cases run, three for each of seven encodings");
     }
 
     @Test

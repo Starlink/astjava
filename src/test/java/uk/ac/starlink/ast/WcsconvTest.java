@@ -1,6 +1,5 @@
 package uk.ac.starlink.ast;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -26,12 +25,8 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * -Dast.writeDeferred=true} to rewrite the list from what the rows give.
  *
  * <ul>
- *   <li>A row whose output is written with FITS-CLASS or DSS needs {@code FitsChan.write} with
- *       that encoding, which does not write yet, and cannot run at all; there are {@value
- *       #WRITE_ROWS} of them, each listed as {@value #WRITE}.
- *   <li>A {@code native}, {@code fits-wcs}, {@code fits-pc}, {@code fits-iraf}, {@code fits-aips}
- *       or {@code fits-aips++} row's output is the cards {@code FitsChan.write}
- *       gives with that encoding, written as {@code wcsconverter.c} writes them: to the FitsChan
+ *   <li>A row written with a FITS encoding (any encoding but {@code ast}) has as output the cards
+ *       {@code FitsChan.write} gives with that encoding, written as {@code wcsconverter.c} writes them: to the FitsChan
  *       the input was read from (or, if the input was read as a native dump, to a new FitsChan
  *       with the row's attributes), from its first card, the cards then listed from the first by
  *       {@code astFindFits} with the template {@code %f}. A write that stops at an out-of-scope
@@ -46,12 +41,6 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * input.
  */
 class WcsconvTest {
-
-    /** The reason of a row whose output needs {@code FitsChan.write}. */
-    static final String WRITE = "out-of-scope method FitsChan.write";
-
-    /** The number of rows whose output is written with FITS-CLASS or DSS. */
-    static final int WRITE_ROWS = 10;
 
     /** One row of the manifest. */
     private static final class Row {
@@ -83,16 +72,6 @@ class WcsconvTest {
                 default:
                     throw new IllegalArgumentException("wcsconv/cases.txt: unknown compare mode " + mode);
             }
-        }
-
-        boolean needsWrite() {
-            return !"native".equalsIgnoreCase(encoding)
-                    && !"ast".equalsIgnoreCase(encoding)
-                    && !"fits-wcs".equalsIgnoreCase(encoding)
-                    && !"fits-pc".equalsIgnoreCase(encoding)
-                    && !"fits-iraf".equalsIgnoreCase(encoding)
-                    && !"fits-aips".equalsIgnoreCase(encoding)
-                    && !"fits-aips++".equalsIgnoreCase(encoding);
         }
     }
 
@@ -216,9 +195,6 @@ class WcsconvTest {
      *     differs from C's
      */
     private static String outcome(Row row) {
-        if (row.needsWrite()) {
-            return WRITE;
-        }
         Input in;
         try {
             in = readInput(row);
@@ -309,18 +285,5 @@ class WcsconvTest {
             }
         }
         assertTrue(stale.isEmpty(), String.join("\n", stale));
-    }
-
-    @Test
-    void writeRowsCannotRunAndArePinned() {
-        Map<String, String> listed = Deferred.load("wcsconv");
-        int n = 0;
-        for (Row row : manifest()) {
-            if (row.needsWrite()) {
-                n++;
-                assertEquals(WRITE, listed.get(row.name), row.name);
-            }
-        }
-        assertEquals(WRITE_ROWS, n, "rows whose output needs FitsChan.write");
     }
 }
