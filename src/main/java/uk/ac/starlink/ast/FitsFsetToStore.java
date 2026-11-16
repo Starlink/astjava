@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * C's {@code FsetToStore} (fitschan.c): the FITS-WCS axis descriptions of a FrameSet that a write
  * turns into cards, with the functions it calls to make each description ({@code AddVersion},
- * {@code MakeFitsFrameSet}, {@code FitsAxisOrder}, {@code ReadCrval} and {@code SpectralAxes}).
+ * {@code MakeFitsFrameSet} with {@code AddEncodingFrame}, {@code FitsAxisOrder} and {@code ReadCrval}).
  *
  * <p>The base Frame of the FrameSet is the pixel Frame and its current Frame gives the primary
  * description; each other Frame (but those whose Domain begins {@code IWC}) gives an alternate
@@ -25,6 +25,9 @@ final class FitsFsetToStore {
 
     /** Radians to degrees, C's {@code AST__DR2D}. */
     private static final double AST__DR2D = 57.29577951308232;
+
+    /** C's {@code AST__DBL_DIG}: the significant digits C's {@code %.*g} gives a double. */
+    private static final int AST__DBL_DIG = 17;
 
     /** Machine precision, C's {@code DBL_EPSILON}. */
     private static final double DBL_EPSILON = Math.ulp(1.0);
@@ -91,7 +94,7 @@ final class FitsFsetToStore {
      * C's {@code AddVersion}: stores in version {@code s} of {@code stores} the description of
      * Frame {@code iwcs} of {@code fs} relative to the pixel Frame {@code ipix}, and whether it
      * could be made: the celestial axes ({@link FitsCelestialAxes#celestialAxes}), the spectral
-     * axes ({@link #spectralAxes}) and the rest ({@link FitsOtherAxes#otherAxes}) give the Mapping
+     * axes ({@link FitsSpectralAxes#spectralAxes}) and the rest ({@link FitsOtherAxes#otherAxes}) give the Mapping
      * from world to intermediate world coordinates, and {@link FitsMakeIntWorld#makeIntWorld} the
      * CRPIX, PC and CDELT values that make the pixel to intermediate world Mapping. For a
      * description it makes, WCSNAME is the Frame's Domain if that is set, the primary description
@@ -172,7 +175,7 @@ final class FitsFsetToStore {
         FitsStore store = stores.version(s, Math.max(fset.getNin(), nwcs));
 
         Mapping iwcmap = FitsCelestialAxes.celestialAxes(fc, fset, dim, wperm, s, store, axisDone, jsoff, method, cls);
-        Mapping tmap = spectralAxes(fset);
+        Mapping tmap = FitsSpectralAxes.spectralAxes(fc, fset, dim, wperm, s, store, crvals, axisDone, method, cls);
         iwcmap = new CmpMap(iwcmap, tmap, true);
         tmap = FitsOtherAxes.otherAxes(fc, fset, dim, wperm, s, store, crvals, axisDone, method, cls);
         iwcmap = new CmpMap(iwcmap, tmap, true);
@@ -239,13 +242,18 @@ final class FitsFsetToStore {
      * there is none, the Unit is set to the internal units (to degrees for internal radians,
      * converted by a ZoomMap).
      *
-     * <p>C's other changes are for a SpecFrame: one with a celestial reference point gains
-     * celestial axes, or has the reference point made that of the celestial axes; and for
-     * FITS-CLASS {@code AddEncodingFrame} adds a Frame for the SpecFrame and SkyFrame. Spectral
-     * axes are not yet written, so a world Frame with a SpecFrame axis is refused.
+     * <p>A SpecFrame whose RefRA and RefDec are both set is given the celestial axes of its
+     * reference position: when the world Frame has no SkyFrame and at most two axes, a SkyFrame
+     * (FK5 J2000) is added after its axes, fed by the Mapping of a TAN header with the reference
+     * position at pixel (0, 0), the constant 0 being given to its two pixel axes; when it has a
+     * SkyFrame, the SpecFrame's RefRA and RefDec are set, through the FrameSet, to the FK5 J2000
+     * position of the fiducial point of the celestial projection, if there is one.
      *
-     * @return the FrameSet, or null if the world Frame holds axes of two SkyFrames
-     * @throws UnsupportedOperationException if the world Frame has a SpecFrame axis
+     * <p>Then {@link #addEncodingFrame} may add a Frame that suits the encoding, which replaces the
+     * world Frame.
+     *
+     * @return the FrameSet, or null if the world Frame holds axes of two SkyFrames or of two
+     *     SpecFrames, or the celestial axes of a SpecFrame's reference position cannot be found
      */
     // C compares the pointers astPrimaryFrame returns: whether two axes are in the same SkyFrame.
     @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
@@ -254,24 +262,28 @@ final class FitsFsetToStore {
         Frame pixfrm = (Frame) fset.getFrame(ipix).copy();
         Frame wcsfrm = (Frame) fset.getFrame(iwcs).copy();
         Mapping map = (Mapping) fset.getMapping(ipix, iwcs).copy();
+        int npix = pixfrm.getNaxes();
         int nwcs = wcsfrm.getNaxes();
-        for (int iax = 0; iax < nwcs; iax++) {
-            if (wcsfrm.primaryFrame(iax + 1, new int[1]) instanceof SpecFrame) {
-                throw new UnsupportedOperationException(method + "(" + cls + "): the spectral axis " + (iax + 1)
-                        + " of the Frame written needs SpecFrame");
-            }
-        }
 
-        // The SkyFrame of the world Frame, which must be its only one, and the Mapping from the
-        // internal units of each axis to its Unit.
+        // The SpecFrame and SkyFrame of the world Frame, each of which must be its only one, and
+        // the Mapping from the internal units of each other axis to its Unit.
         Mapping remap = null;
+        SpecFrame specfrm = null;
         Frame skyfrm = null;
         boolean ok = true;
+        int ilat = -1;
+        int ilon = -1;
         int[] paxis = new int[1];
         for (int iax = 0; iax < nwcs; iax++) {
             Frame pframe = wcsfrm.primaryFrame(iax + 1, paxis);
             Mapping umap = null;
-            if (FitsMakeIntWorld.isASkyFrame(pframe)) {
+            if (pframe instanceof SpecFrame) {
+                if (specfrm != null) {
+                    ok = false;
+                    break;
+                }
+                specfrm = (SpecFrame) pframe;
+            } else if (FitsMakeIntWorld.isASkyFrame(pframe)) {
                 if (skyfrm != null) {
                     if (pframe != skyfrm) {
                         ok = false;
@@ -279,6 +291,11 @@ final class FitsFsetToStore {
                     }
                 } else {
                     skyfrm = pframe;
+                }
+                if (paxis[0] == 1) {
+                    ilon = iax;
+                } else {
+                    ilat = iax;
                 }
             } else {
                 String extunit = pframe.getUnit(paxis[0]);
@@ -311,15 +328,205 @@ final class FitsFsetToStore {
             map = new CmpMap(map, remap, true);
         }
 
-        // Two SkyFrames make the FrameSet unusable. C then passes a NULL FrameSet to
-        // AddEncodingFrame, which dereferences it; the FrameSet that is not made is reported here
-        // as C's caller expects.
+        // Two SkyFrames or two SpecFrames make the FrameSet unusable. C then passes a NULL
+        // FrameSet to AddEncodingFrame, which dereferences it; the FrameSet that is not made is
+        // reported here as C's caller expects.
         if (!ok) {
             return null;
         }
-        FrameSet ret = new FrameSet(pixfrm);
-        ret.addFrame(FrameSet.AST__BASE, map, wcsfrm);
+        FrameSet ret;
+        if (specfrm == null || !specfrm.testRefRA() || !specfrm.testRefDec() || (nwcs > 2 && skyfrm == null)) {
+            ret = new FrameSet(pixfrm);
+            ret.addFrame(FrameSet.AST__BASE, map, wcsfrm);
+        } else if (skyfrm == null) {
+            ret = addReferenceSkyFrame(pixfrm, wcsfrm, map, specfrm, npix);
+        } else {
+            ret = setReferencePosition(pixfrm, wcsfrm, map, ilon, ilat);
+        }
+        // C passes a NULL FrameSet to AddEncodingFrame, which dereferences it.
+        if (ret == null) {
+            return null;
+        }
+
+        int icurr = addEncodingFrame(ret, enc);
+        if (icurr != FrameSet.AST__NOFRAME) {
+            ret.removeFrame(icurr);
+        }
         return ret;
+    }
+
+    /**
+     * The FrameSet {@link #makeFitsFrameSet} makes for a SpecFrame with a celestial reference
+     * position and a world Frame with no SkyFrame: the world Frame and an FK5 J2000 SkyFrame,
+     * whose axes come from a TAN projection with the reference position at pixel (0, 0), the
+     * constant 0 being given to those two pixel axes. The projection is that of a FITS-WCS header,
+     * with an MJD-OBS (UTC) of the SpecFrame's Epoch, read by a FitsChan.
+     *
+     * @return the FrameSet, or null if the header gives none
+     */
+    private static FrameSet addReferenceSkyFrame(Frame pixfrm, Frame wcsfrm, Mapping map, SpecFrame specfrm, int npix) {
+        FitsChan fc = new FitsChan();
+        fc.putFits("CRPIX1  = 0", false);
+        fc.putFits("CRPIX2  = 0", false);
+        fc.putFits("CDELT1  = 0.0003", false);
+        fc.putFits("CDELT2  = 0.0003", false);
+        fc.putFits("CTYPE1  = 'RA---TAN'", false);
+        fc.putFits("CTYPE2  = 'DEC--TAN'", false);
+        fc.putFits("RADESYS = 'FK5'", false);
+        fc.putFits("EQUINOX = 2000.0", false);
+        fc.putFits("CRVAL1  = " + CFormat.format("%." + AST__DBL_DIG + "g", AST__DR2D * specfrm.refRaValue()), false);
+        fc.putFits("CRVAL2  = " + CFormat.format("%." + AST__DBL_DIG + "g", AST__DR2D * specfrm.refDecValue()), false);
+        fc.putFits(
+                "MJD-OBS = "
+                        + CFormat.format(
+                                "%." + AST__DBL_DIG + "g",
+                                FitsEpoch.tdbConv(specfrm.getEpochMjd(), TimeFrame.AST__UTC, true)),
+                false);
+        fc.cards().clearCard();
+        AstObject obj = fc.read();
+        if (!(obj instanceof FrameSet)) {
+            return null;
+        }
+        FrameSet tfs = (FrameSet) obj;
+
+        // The pixel to world Mapping in parallel with the pixel to sky Mapping, the two sky pixel
+        // axes being given the constant 0.0, the CRPIX value of the header.
+        Mapping tmap0 = tfs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        Mapping tmap1 = new CmpMap(map, tmap0, false);
+        int[] perm = new int[npix + 2];
+        for (int iax = 0; iax < npix; iax++) {
+            perm[iax] = iax;
+        }
+        perm[npix] = -1;
+        perm[npix + 1] = -1;
+        Mapping pm = PermMap.fromInternal(npix, perm, npix + 2, perm, new double[] {0.0});
+        Mapping tmap2 = new CmpMap(pm, tmap1, true);
+
+        Frame tfrm0 = new CmpFrame(wcsfrm, tfs.getFrame(FrameSet.AST__CURRENT));
+        FrameSet ret = new FrameSet(pixfrm);
+        ret.addFrame(FrameSet.AST__BASE, tmap2, tfrm0);
+        return ret;
+    }
+
+    /**
+     * The FrameSet {@link #makeFitsFrameSet} makes for a SpecFrame with a celestial reference
+     * position and a world Frame with a SkyFrame: the world Frame, with the SpecFrame's RefRA and
+     * RefDec set through the FrameSet to the FK5 J2000 position of the fiducial point of the
+     * celestial projection, formatted with 20 digits. The SkyFrame's System and Equinox are set to
+     * FK5 and J2000 meanwhile, and set back if they were set. With no projection, the reference
+     * position is kept.
+     *
+     * @return the FrameSet, or null if the fiducial point is not found
+     */
+    private static FrameSet setReferencePosition(Frame pixfrm, Frame wcsfrm, Mapping map, int ilon, int ilat) {
+        FrameSet tfs = new FrameSet(pixfrm);
+        tfs.addFrame(FrameSet.AST__BASE, map, wcsfrm);
+
+        String systemAttr = "System(" + (ilon + 1) + ")";
+        String skysys = tfs.test(systemAttr) ? tfs.getC(systemAttr) : null;
+        tfs.setC(systemAttr, "FK5");
+        String equinoxAttr = "Equinox(" + (ilon + 1) + ")";
+        String eqn = tfs.test(equinoxAttr) ? tfs.getC(equinoxAttr) : null;
+        tfs.setC(equinoxAttr, "J2000");
+
+        FrameSet ret = null;
+        Mapping tmap0 = tfs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        FitsCelestialAxes.Split split = FitsCelestialAxes.splitMap(tmap0, tmap0.getInvert(), ilon, ilat);
+        if (split != null) {
+            double[] fid = FitsFiducial.getFiducialWcs(split.map2, split.map3, ilon, ilat);
+            if (fid != null) {
+                // The Digits of the latitude and longitude axes are 20 while the position is
+                // formatted, so that no precision is lost, and then set back or cleared.
+                int[] digs = new int[2];
+                for (int iax = 0; iax < 2; iax++) {
+                    String digitsAttr = "Digits(" + ((iax != 0 ? ilon : ilat) + 1) + ")";
+                    digs[iax] = tfs.test(digitsAttr) ? tfs.getI(digitsAttr) : -1;
+                    tfs.setI(digitsAttr, 20);
+                }
+                tfs.setC("RefRA", tfs.format(ilon + 1, fid[0]));
+                tfs.setC("RefDec", tfs.format(ilat + 1, fid[1]));
+                for (int iax = 0; iax < 2; iax++) {
+                    String digitsAttr = "Digits(" + ((iax != 0 ? ilon : ilat) + 1) + ")";
+                    if (digs[iax] == -1) {
+                        tfs.clear(digitsAttr);
+                    } else {
+                        tfs.setI(digitsAttr, digs[iax]);
+                    }
+                }
+                ret = tfs;
+            }
+        } else {
+            ret = tfs;
+        }
+
+        if (skysys != null) {
+            tfs.setC(systemAttr, skysys);
+        }
+        if (eqn != null) {
+            tfs.setC(equinoxAttr, eqn);
+        }
+        return ret;
+    }
+
+    /**
+     * C's {@code AddEncodingFrame}: for FITS-CLASS, a Frame added to {@code fs} as its current
+     * Frame, if a SpecFrame and a SkyFrame of the current Frame (the first of each) can be
+     * converted to it: a CmpFrame of a copy of the SpecFrame, in FREQ with Unit Hz and the Source
+     * standard of rest, and a copy of the SkyFrame, in FK4 (equinox B1950), FK5 (equinox J2000)
+     * or galactic coordinates (FK5 for any other system); the Frame added is the one the
+     * conversion gives.
+     *
+     * @return the index of the original current Frame if a Frame was added, otherwise {@link
+     *     FrameSet#AST__NOFRAME}
+     */
+    static int addEncodingFrame(FrameSet fs, FitsChan.Encoding enc) {
+        int result = FrameSet.AST__NOFRAME;
+        Frame cfrm = fs.getFrame(FrameSet.AST__CURRENT);
+        int naxc = cfrm.getNaxes();
+        if (enc == FitsChan.Encoding.FITS_CLASS) {
+            SpecFrame specfrm = null;
+            SkyFrame skyfrm = null;
+            int[] paxis = new int[1];
+            for (int i = 0; i < naxc; i++) {
+                Frame pfrm = cfrm.primaryFrame(i + 1, paxis);
+                if (pfrm instanceof SpecFrame) {
+                    if (specfrm == null) {
+                        specfrm = (SpecFrame) pfrm.copy();
+                    }
+                } else if (skyfrm == null && FitsMakeIntWorld.isASkyFrame(pfrm)) {
+                    skyfrm = (SkyFrame) pfrm.copy();
+                }
+            }
+
+            if (specfrm != null && skyfrm != null) {
+                if (specfrm.systemValue() != SpecFrame.AST__FREQ) {
+                    specfrm.setSystemValue(SpecFrame.AST__FREQ);
+                }
+                specfrm.setUnit(1, "Hz");
+                specfrm.setStdOfRestValue(SpecFrame.AST__SCSOR);
+
+                int sys = skyfrm.systemValue();
+                if (sys != SkyFrame.AST__FK4 && sys != SkyFrame.AST__FK5 && sys != SkyFrame.AST__GALACTIC) {
+                    skyfrm.setSystemValue(SkyFrame.AST__FK5);
+                    sys = SkyFrame.AST__FK5;
+                }
+                if (sys == SkyFrame.AST__FK5) {
+                    skyfrm.setC("Equinox", "J2000.0");
+                } else if (sys == SkyFrame.AST__FK4) {
+                    skyfrm.setC("Equinox", "B1950.0");
+                }
+
+                CmpFrame cmpfrm = new CmpFrame(specfrm, skyfrm);
+                FrameSet fsconv = cfrm.convert(cmpfrm, "");
+                if (fsconv != null) {
+                    Frame newfrm = fsconv.getFrame(FrameSet.AST__CURRENT);
+                    Mapping map = fsconv.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+                    result = fs.getCurrent();
+                    fs.addFrame(FrameSet.AST__CURRENT, map, newfrm);
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -460,14 +667,5 @@ final class FitsFsetToStore {
             }
         }
         return ret;
-    }
-
-    /**
-     * C's {@code SpectralAxes} for a FrameSet with no SpecFrame axis ({@link #makeFitsFrameSet}
-     * refuses one): no axis is spectral, nothing is stored, and the Mapping from world to
-     * intermediate world coordinates is a UnitMap passing every axis of the current Frame.
-     */
-    static Mapping spectralAxes(FrameSet fs) {
-        return new UnitMap(fs.getNout());
     }
 }

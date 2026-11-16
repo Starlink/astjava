@@ -30,29 +30,33 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * {@code oracle/fitschan_encodings.json}, made by {@code
  * tools/oracle_fixtures/fitschan_encodings_probe.c}.
  *
- * <p>Every encoding's column runs. A header whose read or writes need a class this library does
- * not have (a spectral FrameSet, whose write {@link FitsFsetToStore#makeFitsFrameSet} refuses,
- * gives {@code needs SpecFrame}) is in {@link #EXCLUDED} with the reason they give, measured, so
- * the list is checked both ways.
+ * <p>Every encoding's column runs. A write that stops for want of a class or an encoding this
+ * library does not have (a FITS-CLASS write that {@link FitsEncClass#classFromStore} would accept
+ * gives {@code needs SpecFrame}) is in {@link #EXCLUDED}, by header and encoding, with the reason
+ * it gives, measured, so the list is checked both ways; the header's other writes are compared.
  */
 class FitsChanEncodingsOracleTest {
 
-    /** Headers whose read or writes stop for want of a class, with the reason they give. */
+    /**
+     * Writes that stop for want of a class, keyed by header and encoding ({@code "<header>
+     * <encoding>"}), with the reason they give.
+     */
     private static final Map<String, String> EXCLUDED = excludedCases();
 
     private static Map<String, String> excludedCases() {
         Map<String, String> m = new LinkedHashMap<>();
+        // C's CLASSFromStore accepts these descriptions and makes a SpecFrame to find the VELO-LSR
+        // value, which FitsEncClass refuses.
         for (String name : Arrays.asList(
                 "freq_cube",
                 "class_cube",
                 "class_lonpole_180",
-                "class_lonpole_90",
                 "class_new_epoch",
                 "source_zsource",
                 "topocent",
                 "velolsr_late",
                 "velolsr_dup")) {
-            m.put(name, "needs SpecFrame");
+            m.put(name + " FITS-CLASS", "needs SpecFrame");
         }
         return Collections.unmodifiableMap(m);
     }
@@ -164,22 +168,6 @@ class FitsChanEncodingsOracleTest {
         return new Written(ret, ncard, cards, names);
     }
 
-    /**
-     * The reason the read of {@code header}, or one of the writes of {@code writes} (C's rows for
-     * the case), stops for want of a class, or null.
-     */
-    private static String needs(List<String> header, String epoch, JsonNode writes) {
-        try {
-            read(new FitsChan(), header, "");
-            for (JsonNode w : writes) {
-                written(header, epoch, w.get(0).asText());
-            }
-            return null;
-        } catch (UnsupportedOperationException e) {
-            return FitsHeaders.outOfScope(e);
-        }
-    }
-
     @Test
     void writesMatchC() {
         List<String> failed = new ArrayList<>();
@@ -188,24 +176,29 @@ class FitsChanEncodingsOracleTest {
             String name = c.get(0).asText();
             List<String> header = FitsHeaders.strings(c.get(1));
             String epoch = c.get(2).asText();
-            String needs = needs(header, epoch, c.get(3));
-            String listed = EXCLUDED.get(name);
-            if (needs != null || listed != null) {
-                if (needs == null || !needs.equals(listed)) {
-                    failed.add(name + ": the read and writes give \"" + needs + "\" but it is listed as \"" + listed
-                            + "\"");
-                }
-                continue;
-            }
             for (JsonNode w : c.get(3)) {
                 String enc = w.get(0).asText();
+                String key = name + " " + enc;
+                String listed = EXCLUDED.get(key);
+                String needs = null;
+                Written got = null;
+                try {
+                    got = written(header, epoch, enc);
+                } catch (UnsupportedOperationException e) {
+                    needs = FitsHeaders.outOfScope(e);
+                }
+                if (needs != null || listed != null) {
+                    if (needs == null || !needs.equals(listed)) {
+                        failed.add(key + ": the write gives \"" + needs + "\" but it is listed as \"" + listed + "\"");
+                    }
+                    continue;
+                }
                 run++;
                 Written want = new Written(
                         w.get(1).asInt(),
                         w.get(2).asInt(),
                         FitsHeaders.strings(w.get(3)),
                         FitsHeaders.strings(w.get(4)));
-                Written got = written(header, epoch, enc);
                 boolean same = got.ret == want.ret
                         && got.ncard == want.ncard
                         && got.names.equals(want.names)
@@ -222,6 +215,6 @@ class FitsChanEncodingsOracleTest {
             }
         }
         assertTrue(failed.isEmpty(), String.join("\n", failed));
-        assertEquals(7 * (25 - EXCLUDED.size()), run, "writes run, seven encodings for each header");
+        assertEquals(7 * 25 - EXCLUDED.size(), run, "writes run, seven encodings for each header");
     }
 }

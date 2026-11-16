@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,16 +43,11 @@ class FitsChanErrorsTest {
 
     private static Map<String, String> excludedCases() {
         Map<String, String> m = new LinkedHashMap<>();
-        // These cases go on to write the spectral FrameSet read, which FitsFsetToStore refuses.
-        for (String name : Arrays.asList(
-                "aips-reject-wave", "aips++-reject-wave", "aips-reject-topocent", "aips++-reject-topocent")) {
-            m.put(name, "needs SpecFrame");
-        }
         return Collections.unmodifiableMap(m);
     }
 
     /** The number of cases run: every case of C's table but those excluded. */
-    private static final int RUNNABLE = 30;
+    private static final int RUNNABLE = 34;
 
     private static String text(JsonNode c, String field) {
         JsonNode v = c.get(field);

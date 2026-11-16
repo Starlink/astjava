@@ -26,10 +26,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * are compared with C's.
  *
  * <p>The read of the cube is checked for every case. A case can stop at something not available:
- * {@link FitsFsetToStore#makeFitsFrameSet} refuses to write a world Frame with a SpecFrame axis
- * ({@code needs SpecFrame}), and a logarithmic Unit set through the FrameSet needs the MathMap that
- * converts to it ({@code needs MathMap}). Such cases are listed with their reason in {@link
- * #UNAVAILABLE}, and the list is checked both ways: a listed case must stop with the reason
+ * a logarithmic Unit set through the FrameSet needs the MathMap that converts to it ({@code needs
+ * MathMap}). Such cases are listed with their reason in {@link #UNAVAILABLE}, and the list is checked both ways: a listed case must stop with the reason
  * listed, and every other case must match C.
  */
 class FitsChanSpecUnitOracleTest {
@@ -61,9 +59,6 @@ class FitsChanSpecUnitOracleTest {
 
     private static Map<String, String> unavailableCases() {
         Map<String, String> m = new TreeMap<>();
-        for (String name : new String[] {"all_dims", "spectral_dim_only", "spatial_dims_only", "no_dims", "unit_mhz"}) {
-            m.put(name, "needs SpecFrame");
-        }
         m.put("unit_log", "needs MathMap");
         m.put("unit_log_no_dims", "needs MathMap");
         return Collections.unmodifiableMap(m);

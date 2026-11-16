@@ -1,11 +1,7 @@
 # Rows of fixtures/wcsconv/cases.txt that do not match C:
 # <row name> | <reason>
 # Rewritten by WcsconvTest with -Dast.writeDeferred=true.
-a20070718_fits-wcs | needs SpecFrame
-sip-3d_fits-wcs | needs SpecFrame
-sip-3d-swap_fits-wcs | needs SpecFrame
 lsst2_fits-wcs | needs SplineMap
-longslit_fits-wcs | needs SpecFrame
 jan_fits-class_ast | encoding FITS-CLASS
 polco_native | needs MathMap
 polco2_native | needs MathMap
@@ -15,16 +11,6 @@ grism_fits-wcs | needs GrismMap
 class-spec_native | encoding FITS-CLASS
 class-hel_native | encoding FITS-CLASS
 class-noproj_native | encoding FITS-CLASS
-a20070718_fits-aips | needs SpecFrame
-a20070718_fits-aips++ | needs SpecFrame
-freq-ghz-bary_fits-aips | needs SpecFrame
-freq-ghz-bary_fits-aips++ | needs SpecFrame
-vopt-geo_fits-aips | needs SpecFrame
-vopt-geo_fits-aips++ | needs SpecFrame
-vrad-lsrd_fits-aips | needs SpecFrame
-vrad-lsrd_fits-aips++ | needs SpecFrame
-freq-pixel3d_fits-aips | needs SpecFrame
-freq-pixel3d_fits-aips++ | needs SpecFrame
 class-write_fits-class | encoding FITS-CLASS
 class-gal_fits-class | needs SpecFrame
 jan_fits-class-rt | encoding FITS-CLASS
@@ -33,13 +19,4 @@ class-ait_fits-class | needs SpecFrame
 class-sin_fits-class | needs SpecFrame
 class-sfl_fits-class | needs SpecFrame
 class-olddate_fits-class | needs SpecFrame
-a20070718_fits-iraf | needs SpecFrame
-skyspec3d_fits-wcs | needs SpecFrame
-skyspec3d_fits-aips | needs SpecFrame
-skyspec3d_fits-aips++ | needs SpecFrame
-skyspec3d_fits-iraf | needs SpecFrame
-wave-1d_fits-iraf | needs SpecFrame
-skyspec3d_fits-pc | needs SpecFrame
 skyspec3d-class_fits-class | needs SpecFrame
-vopt-f2w_fits-wcs | needs SpecFrame
-wave-f2w_fits-wcs | needs SpecFrame

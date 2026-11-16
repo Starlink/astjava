@@ -27,9 +27,9 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * C probe of the pinned library gives ({@code c1.c} beside the task report): where C's test accepts
  * either of two outcomes, the one C gives.
  *
- * <p>Listed in {@code deferred/rust-tests.txt}: those that write a SpecFrame ({@code non_linear_spectral_writes},
- * {@code spectral_systems_through_fits_wcs} and {@code log_spectral_axis_writes_freq_log}), and
- * {@code show_fits_succeeds} (jniast has no {@code showFits}).
+ * <p>Listed in {@code deferred/rust-tests.txt}: {@code log_spectral_axis_writes_freq_log}, whose
+ * FrameSet is built with a MathMap, and {@code show_fits_succeeds} (jniast has no {@code
+ * showFits}).
  */
 class FitsChanCInlineTest {
 
@@ -681,5 +681,84 @@ class FitsChanCInlineTest {
                 "OBSGEO-Z=    2150654.376090901 / [m] Observatory geocentric Z");
         List<String> got = FitsHeaders.foundCards(wfc);
         assertTrue(FitsHeaders.cardsMatchC(got, want), String.join("\n", got));
+    }
+
+    /**
+     * testfitschan.c's spectral FrameSet: a GRID axis mapped by a ZoomMap of {@code zoom} to a
+     * SpecFrame with {@code attrs}, its System then set to {@code newSys} through the FrameSet,
+     * and its Unit to {@code newUnit} unless that is null.
+     */
+    private static FrameSet specFrameSet(String attrs, double zoom, String newSys, String newUnit) {
+        SpecFrame spec = new SpecFrame();
+        spec.set(attrs);
+        Frame pixel = new Frame(1);
+        pixel.setDomain("GRID");
+        FrameSet fs = new FrameSet(pixel);
+        fs.addFrame(FrameSet.AST__CURRENT, new ZoomMap(1, zoom), spec);
+        if (newSys != null) {
+            fs.setC("System", newSys);
+        }
+        if (newUnit != null) {
+            fs.setC("Unit(1)", newUnit);
+        }
+        return fs;
+    }
+
+    /**
+     * 600-609: linear SpecFrames in six Systems, and pixel axes linear in FREQ written as VOPT and
+     * WAVE, round-trip through FITS-WCS with C's CTYPE1.
+     */
+    @Test
+    void spectralSystemsThroughFitsWcs() {
+        String[][] linear = {
+            {"System=FREQ,Unit=Hz,StdOfRest=Barycentric,RestFreq=1.4204e9 Hz", "FREQ"},
+            {"System=WAVE,Unit=m,StdOfRest=Barycentric,RestFreq=5.996e14 Hz", "WAVE"},
+            {"System=VRAD,Unit=m/s,StdOfRest=LSRK,RestFreq=1.4204e9 Hz", "VRAD"},
+            {"System=VOPT,Unit=m/s,StdOfRest=Barycentric,RestFreq=1.4204e9 Hz", "VOPT"},
+            {"System=ZOPT,Unit= ,StdOfRest=Barycentric,RestFreq=1.4204e9 Hz", "ZOPT"},
+            {"System=BETA,Unit= ,StdOfRest=Barycentric,RestFreq=1.4204e9 Hz", "BETA"},
+        };
+        double[] zooms = {1.0e6, 1.0e-10, 1000.0, 1000.0, 1.0e-6, 1.0e-6};
+        for (int i = 0; i < linear.length; i++) {
+            FrameSet fs = specFrameSet(linear[i][0], zooms[i], null, null);
+            assertEquals(
+                    RT_OK,
+                    roundtrip(fs, "FITS-WCS", 1e-3, "CTYPE1", linear[i][1]),
+                    "Error " + (600 + i) + ": " + linear[i][1]);
+        }
+        String freq = "System=FREQ,Unit=Hz,StdOfRest=Barycentric,RestFreq=1.4204e9 Hz";
+        assertEquals(
+                RT_OK,
+                roundtrip(specFrameSet(freq, 1.0e6, "VOPT", null), "FITS-WCS", 1e-3, "CTYPE1", "VOPT-F2W"),
+                "Error 606-607");
+        assertEquals(
+                RT_OK,
+                roundtrip(specFrameSet(freq, 1.0e6, "WAVE", "m"), "FITS-WCS", 1e-3, "CTYPE1", "WAVE-F2W"),
+                "Error 608-609");
+    }
+
+    /**
+     * 650-655, 660-665: SpecFrames whose pixel axis is linear in one System, written in another,
+     * give C's non-linear FITS-WCS algorithm codes and read back.
+     */
+    @Test
+    void nonLinearSpectralWrites() {
+        Object[][] cases = {
+            {"System=WAVE,Unit=m", 1.0e-10, "WAVN", "1/m", 1e-3, "WAVN-W2F", 650},
+            {"System=FREQ,Unit=Hz", 1.0e6, "AWAV", "m", 1e-3, "AWAV-F2A", 652},
+            {"System=VELO,Unit=m/s", 1000.0, "BETA", null, 1e-3, "BETA", 654},
+            {"System=FREQ,Unit=Hz", 1.0e6, "VELO", "m/s", 1e-3, "VELO-F2V", 660},
+            {"System=AWAV,Unit=m", 1.0e-10, "FREQ", "Hz", 0.1, "FREQ-A2F", 662},
+            {"System=VELO,Unit=m/s", 1000.0, "FREQ", "Hz", 1e-3, "FREQ-V2F", 664},
+        };
+        for (Object[] c : cases) {
+            FrameSet fs = specFrameSet(
+                    c[0] + ",StdOfRest=Barycentric,RestFreq=1.4204e9 Hz", (Double) c[1], (String) c[2], (String) c[3]);
+            int err = (Integer) c[6];
+            assertEquals(
+                    RT_OK,
+                    roundtrip(fs, "FITS-WCS", (Double) c[4], "CTYPE1", (String) c[5]),
+                    "Error " + err + "-" + (err + 1) + ": " + c[5]);
+        }
     }
 }

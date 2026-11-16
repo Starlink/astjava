@@ -3,7 +3,6 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -14,16 +13,15 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Translation of the unit tests of Rust {@code fitschan/fset_to_store/mod.rs}, {@code
- * fitschan/wcs_write/plane_stores.rs} and {@code spectral_axes.rs} (C {@code FsetToStore}, {@code
- * AddVersion}, {@code MakeFitsFrameSet}, {@code FitsAxisOrder}, {@code ReadCrval} and {@code
- * SpectralAxes}, fitschan.c) that need no class this library lacks, and the store C fills for
+ * fitschan/wcs_write/plane_stores.rs} (C {@code FsetToStore}, {@code AddVersion}, {@code
+ * MakeFitsFrameSet}, {@code FitsAxisOrder} and {@code ReadCrval}, fitschan.c) that need no class
+ * this library lacks, and the store C fills for
  * FrameSets written by a C-oracle probe linked against the pinned C library: each expected value
  * is the card C writes from that store entry. C's cards are rounded (its {@code RoundFString}
  * removes runs of four or more 0s or 9s), so where the value of a card is rounded it is compared
  * to within 4 units in the last place.
  *
- * <p>Not translated: the {@code spectral_axes.rs} tests other than {@code
- * no_spectral_axis_returns_unitmap}, which need SpecFrame.
+ * <p>The tests of {@code spectral_axes.rs} are in {@link FitsSpectralAxesTest}.
  */
 class FitsFsetToStoreTest {
 
@@ -93,13 +91,6 @@ class FitsFsetToStoreTest {
                 .get(' ');
         assertEquals(50.0, store.crpix[0], 1e-6);
         assertEquals(50.0, store.crpix[1], 1e-6);
-    }
-
-    @Test
-    void noSpectralAxisReturnsUnitMap() {
-        Mapping map = FitsFsetToStore.spectralAxes(basicShift());
-        assertInstanceOf(UnitMap.class, map);
-        assertEquals(2, map.getNin());
     }
 
     @Test

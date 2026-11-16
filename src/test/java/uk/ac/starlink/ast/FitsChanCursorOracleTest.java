@@ -40,7 +40,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * and writes need only the encodings and classes of this library. A read that reaches FITS-CLASS,
  * whose read is out of scope, throws {@code UnsupportedOperationException}; the number of such
  * cases is pinned by {@link #WAITING_FOR_ANOTHER_ENCODING}. A read or write that stops at another
- * out-of-scope class (such as {@code needs SpecFrame}) must be in {@link #EXCLUDED} with that
+ * out-of-scope class (such as {@code needs MathMap}) must be in {@link #EXCLUDED} with that
  * reason, measured from the exception. Cases whose scripts write an Object they make ({@code W},
  * {@code WF}, {@code WFT}, {@code WC} and {@code WCF}) run; {@code native_full_1}, whose Object
  * parts C writes with counts this library does not keep, is excluded and compared without them.
@@ -54,7 +54,7 @@ class FitsChanCursorOracleTest {
      * The number of cases run here: those that write no Object read, are not excluded, and whose reads
      * need only the encodings read here.
      */
-    private static final int RUNNABLE = 253;
+    private static final int RUNNABLE = 255;
 
     /** The number of cases whose reads reach the read of an encoding whose read is not available. */
     private static final int WAITING_FOR_ANOTHER_ENCODING = 2;
@@ -75,11 +75,6 @@ class FitsChanCursorOracleTest {
 
     private static Map<String, String> excludedCases() {
         Map<String, String> m = new LinkedHashMap<>();
-        // Headers with a spectral axis, read and written again, whose write FitsFsetToStore
-        // refuses.
-        for (String name : Arrays.asList("sao_three_ctypes_rw", "fao_spec_order")) {
-            m.put(name, "needs SpecFrame");
-        }
         // The absolute description of the offset SkyFrame passes C's LogAxis test on its first
         // axis, so C builds the -LOG Mapping, which holds a MathMap; the description then fails
         // MakeIntWorld and is not written (lldb probe s2 of the final review fixes).

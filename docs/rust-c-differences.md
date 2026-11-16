@@ -752,11 +752,17 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `other_axes` in `fitschan/fset_to_store/other_axes.rs` gets `None` from `is_map_tab_1d` for such an axis.
 - Java: throws `UnsupportedOperationException` for any Mapping `IsMapTab1D` returns there (this library has no FitsTable).
 
-### Two SkyFrames in `MakeFitsFrameSet`
+### Two SkyFrames or two SpecFrames in `MakeFitsFrameSet`
 
-- C: `MakeFitsFrameSet` marks a world Frame with axes of two SkyFrames (of Domain `SKY`) unusable and makes no FrameSet, but then passes the null FrameSet to `AddEncodingFrame`, which dereferences it (a C-oracle probe writing a CmpFrame of two SkyFrames crashes in `astGetFrame_`) (`fitschan.c` `MakeFitsFrameSet`, `AddEncodingFrame`). **C quirk.**
-- Rust: `make_fits_frameset` in `fitschan/fset_to_store/mod.rs` does not look for a second SkyFrame.
+- C: `MakeFitsFrameSet` marks a world Frame with axes of two SkyFrames (of Domain `SKY`), or of two SpecFrames, unusable and makes no FrameSet, but then passes the null FrameSet to `AddEncodingFrame`, which dereferences it (a C-oracle probe writing a CmpFrame of two SkyFrames crashes in `astGetFrame_`); so it does when the celestial axes it makes or finds for a SpecFrame's reference position give no FrameSet or no fiducial point (`fitschan.c` `MakeFitsFrameSet`, `AddEncodingFrame`). **C quirk.**
+- Rust: `make_fits_frameset` in `fitschan/fset_to_store/mod.rs` looks for neither a second SkyFrame nor a second SpecFrame.
 - Java: makes no FrameSet, so that the description cannot be made, which is what `AddVersion` does with the null FrameSet C means to return.
+
+### A SpecFrame's reference position in `MakeFitsFrameSet`
+
+- C: when the SpecFrame of the world Frame has RefRA and RefDec set, and the world Frame has no SkyFrame and at most two axes, `MakeFitsFrameSet` adds FK5 J2000 celestial axes, read by a FitsChan from a TAN header with the reference position at pixel (0, 0) and the SpecFrame's Epoch as MJD-OBS, the two new pixel axes being given the constant 0; when the world Frame has a SkyFrame, it sets the SkyFrame to FK5 J2000 and sets RefRA and RefDec through the FrameSet to the fiducial point of the projection, formatted by the SkyFrame with Digits 20, then sets back the SkyFrame's System and Equinox if they were set (`fitschan.c` `MakeFitsFrameSet`).
+- Rust: `make_fits_frameset` in `fitschan/fset_to_store/mod.rs` adds no celestial axes, and sets RefRA and RefDec on the SpecFrame to the fiducial point, normalised, without formatting it.
+- Java: as C (`FitsFsetToStore.makeFitsFrameSet`).
 
 ### Units in `MakeFitsFrameSet`
 
@@ -888,6 +894,27 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: sets System, the reference position, Unit (CUNIT, or the system's default unit, which is blank for ZOPT and BETA), Epoch, RestFreq (set to `AST__BAD` when there is neither RESTFRQ nor RESTWAV), ObsLat/ObsLon/ObsAlt, SourceVRF, SourceVel, StdOfRest and Label, in that order, and then calls `DSBSetUp` with the AXREF value, else the CRVAL value, which is `AST__BAD` when there is neither (`fitschan.c` `WcsSpectral`).
 - Rust: `build_spectral_axis` sets StdOfRest second, skips the Unit when it is blank, so a ZOPT or BETA axis with no CUNIT has no Unit set, and gives `dsb_set_up` an observation centre of 0 when there is neither AXREF nor CRVAL.
 - Java: as C (`FitsWcsSpectral`); C's blank Unit is set and recorded as the Unit used with the System.
+
+### How `SpectralAxes` tries the non-linear and grism algorithms
+
+- C: `SpectralAxes` tries each System of the `-X2P` algorithm (FREQ, WAVE, AWAV and VELO, the axis's own System among them) and of the grism algorithm (WAVE and AWAV in m) by setting it, and clearing or setting the Unit, through the FrameSet being written, which remaps its current Frame, and sets the original System and the linear Unit back after each, so the FrameSet's Mapping goes through each conversion and back, and a Unit that was not set is left set; it gives `IsMapTab1D` no unit (`fitschan.c` `SpectralAxes`).
+- Rust: `try_x2p_cascade` and `try_grism_cascade` in `fitschan/fset_to_store/spectral_axes.rs` convert clones of the SpecFrame and join the conversion to the pixel to world Mapping themselves, leaving the FrameSet unchanged; they skip the axis's own System, and pass to the next System when the reference value or the rate does not convert; `is_map_tab_1d` is given the linear Unit.
+- Java: as C (`FitsSpectralAxes`).
+  A FrameSet of this library's classes holds no GrismMap, so C's grism algorithm finds none, and only the attribute changes are made.
+
+### The keywords `SpectralAxes` stores
+
+- C: `SpectralAxes` describes every SpecFrame axis of the world Frame; uses the reference value it has even when it is bad; takes a set Label, blank or not, as the CTYPE comment and CNAME; gives the Local_group standard of rest as `LOCALGRP` (`GetFitsSor`); and finds VELOSYS by setting SourceVRF and SourceVel on the SpecFrame in the FrameSet, setting them back only when SourceVel was set, so that SourceVRF is left set (`fitschan.c` `SpectralAxes`).
+- Rust: `spectral_axes` in `fitschan/fset_to_store/spectral_axes.rs` describes the first spectral axis only; describes none when the reference value is bad; skips a blank Label; gives `LOCAL` for the Local_group standard of rest; and finds VELOSYS on a clone of the SpecFrame.
+- Java: as C (`FitsSpectralAxes`).
+
+### The default reference value of `SpectralAxes`
+
+- C: the default reference value is the middle of the spectral range when the size of the one pixel axis that feeds the spectral axis is known, found by splitting the inverted pixel to world Mapping, and the value at pixel 1 otherwise (`fitschan.c` `SpectralAxes`).
+  The Rust repository's `docs/issues/c-library-quirks.md` lists this as a fix made after the pin (upstream e09bc221), but the pinned C has it, as commit 0dfd0f74.
+  It also has the fixes the same file lists as upstream 85e75a4e (`IsMapLinear` centres the values it fits, as d2c047eb) and 7f4ba71d (`AddVersion` takes the pixel to world Mapping again after the axes are described, as 12e9ed4a).
+- Rust: as C.
+- Java: as C (`FitsSpectralAxes`, `FitsIsMapLinear`, `FitsFsetToStore.addVersion`).
 
 ## Test harness
 

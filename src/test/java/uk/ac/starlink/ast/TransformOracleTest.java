@@ -61,7 +61,7 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  * FrameSet's base-to-current Mapping, and its base and current Frames say which axes are angular.
  * Why a {@code .head} fixture cannot be read is measured, not listed by hand: when the read throws
  * {@code UnsupportedOperationException}, the reason is the text of its message from {@code needs}
- * on (such as {@code needs SpecFrame}), or {@code encoding <name>} for an encoding whose read is not
+ * on (such as {@code needs MathMap}), or {@code encoding <name>} for an encoding whose read is not
  * available; a failed read of the NATIVE encoding needs the classes its {@code BEGAST} cards name
  * that are not ported. Any other read that gives no FrameSet, or throws {@code AstException}, is a
  * failure the gate reports unless a measured cause is written for it by hand.
