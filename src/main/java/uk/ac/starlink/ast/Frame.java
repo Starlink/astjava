@@ -817,9 +817,10 @@ public class Frame extends Mapping {
     /**
      * A deep copy of this Frame as an instance of the class of {@code obj}, one of its ancestors,
      * with the attributes that class does not allow cleared (C's {@code astCastCopy} followed by
-     * {@code astCleanAttribs}). The ancestors of the Frame classes that are not FrameSets are
-     * Frame itself; the copy then has this Frame's Object, Mapping and Frame attributes, except
-     * the ID, as C's copy has, and copies of its Axis objects and variants.
+     * {@code astCleanAttribs}). Here {@code obj} is a plain Frame, the ancestor of every Frame
+     * class that is not a FrameSet; the copy then has this Frame's Object, Mapping and Frame
+     * attributes, except the ID, as C's copy has, and copies of its Axis objects and variants.
+     * A class with another Frame class as an ancestor overrides this for that ancestor.
      *
      * @throws AstException with status {@code AST__INTER} if {@code obj} is not a plain Frame
      */
