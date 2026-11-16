@@ -12,15 +12,21 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * keyword-card form of the NATIVE encoding ({@code BEGAST_xx}, {@code ENDAST_xx} and data-keyword
  * cards).
  *
- * <p>Of the four headers, {@code polco.head} and {@code polco2.head} hold a MathMap and {@code
- * specflux.head} a SpecFrame, classes out of scope, so {@code polco_loads}, {@code polco2_loads}
- * and {@code specflux_loads} are listed in {@code deferred/rust-tests.txt}, and {@code
- * native_read_consumes_its_cards} is translated for {@code timeplot.head} only.
+ * <p>{@code polco.head} and {@code polco2.head} hold a MathMap, a class out of scope, so {@code
+ * polco_loads} and {@code polco2_loads} are listed in {@code deferred/rust-tests.txt}, and {@code
+ * native_read_consumes_its_cards} is translated for {@code specflux.head} and {@code
+ * timeplot.head}.
  */
 class FitsChanNativeKeywordTest {
 
     private static FitsChan header(String name) {
         return FitsChan.fromHeader(Fixtures.read("wcsconv/inputs/" + name));
+    }
+
+    @Test
+    void specfluxLoads() {
+        AstObject obj = header("specflux.head").read();
+        assertNotNull(obj, "specflux.head: read returned null");
     }
 
     @Test
@@ -38,9 +44,11 @@ class FitsChanNativeKeywordTest {
      */
     @Test
     void nativeReadConsumesItsCards() {
-        FitsChan fc = header("timeplot.head");
-        assertTrue(fc.getNcard() > 0, "no cards to start with");
-        assertNotNull(fc.read(), "read returned null");
-        assertEquals(1, fc.getNcard(), "cards left after a NATIVE read");
+        for (String name : new String[] {"specflux.head", "timeplot.head"}) {
+            FitsChan fc = header(name);
+            assertTrue(fc.getNcard() > 0, name + ": no cards to start with");
+            assertNotNull(fc.read(), name + ": read returned null");
+            assertEquals(1, fc.getNcard(), name + ": cards left after a NATIVE read");
+        }
     }
 }

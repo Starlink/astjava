@@ -324,7 +324,6 @@ tests/test_serialisation.rs::round_trip_prism | Prism, Circle and Interval (Regi
 tests/test_serialisation.rs::round_trip_negated_circle | Circle (Region, out of scope)
 tests/test_fitschan_native_keyword.rs::polco_loads | MathMap (out of scope)
 tests/test_fitschan_native_keyword.rs::polco2_loads | MathMap (out of scope)
-tests/test_fitschan_native_keyword.rs::specflux_loads | SpecFrame (out of scope)
 tests/test_fitschan_read.rs::log_suffix_is_stripped_from_the_domain_and_symbol | MathMap (out of scope)
 tests/test_fitschan_read.rs::unset_system_still_leaves_system_unset | Rust-only API (SkyFrame::unset_system)
 tests/test_fitschan_c_inline.rs::show_fits_succeeds | astShowFits (out-of-scope method; jniast has no showFits)

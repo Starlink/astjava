@@ -410,4 +410,28 @@ class FitsEncClassTest {
                 e.getMessage());
         assertEquals(5, FitsHeaders.foundCards(fc).size());
     }
+
+    @Test
+    void aSpectralAxisBeyondTheWrittenAxesIsAnInternalError() {
+        // CRPIX is set for axis 1 only, so one axis is written but the spectral axis is the third;
+        // C then writes past its CDELT array. A FrameSet always gives a CRPIX for every axis, so
+        // this is unreachable by a write.
+        FitsPlaneStores stores = writeStores("RA---TAN", "DEC--TAN", 40.738, 62.933);
+        FitsStore st = stores.get(' ');
+        st.ctype[0] = "RA---TAN";
+        st.ctype[1] = "DEC--TAN";
+        st.ctype[2] = "FREQ";
+        st.cunit[0] = null;
+        st.cunit[2] = "Hz";
+        st.crpix[1] = null;
+        st.crpix[2] = null;
+        st.radesys = "FK5";
+        st.equinox = 2000.0;
+        AstException e = assertThrows(
+                AstException.class,
+                () -> FitsEncClass.classFromStore(
+                        new FitsChan(), stores, new FrameSet(new Frame(3)), unknownDims(), "astWrite", "FitsChan"));
+        assertEquals(AstException.AST__INTER, e.getStatus());
+        assertTrue(e.getMessage().contains("CLASSFromStore"), e.getMessage());
+    }
 }

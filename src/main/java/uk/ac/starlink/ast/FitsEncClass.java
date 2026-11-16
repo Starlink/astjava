@@ -322,7 +322,15 @@ final class FitsEncClass {
             }
         }
 
-        // CDELT, the spectral one in Hz.
+        // CDELT, the spectral one in Hz. C's cdelt array has one element per axis written and it
+        // writes past the end of it here, when the spectral axis is not one of them; no FrameSet
+        // gives that, since every WCS axis has a CRPIX.
+        if (axspec >= naxis) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    "CLASSFromStore: the spectral axis " + (axspec + 1) + " is beyond the " + naxis
+                            + " axes written, where C writes past the end of its CDELT array.");
+        }
         cdelt[axspec] *= specfactor;
         for (int i = 0; i < naxis; i++) {
             setFloat(cards, "CDELT" + (i + 1), cdelt[i], "Pixel size", rnd);

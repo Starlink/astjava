@@ -266,7 +266,8 @@ class FitsChanWriteTest {
      * {@code rt7.c} and {@code rtc.c} of the final review fixes for the offset SkyFrames): C's
      * write returns 0 (for FITS-IRAF, a description with a LONPOLE or projection parameters, or a
      * TNX or ZPX projection read as TPN or ZPN; for FITS-WCS, crota-3d, a spectral cube whose
-     * celestial axes are rotated: C probe {@code write_probe} of Task 8), or C's cards read back give values where C's read
+     * celestial axes are rotated: C probe {@code write_probe} of Task 8; for FITS-CLASS, class-noproj,
+     * class-spec and class-spec-hel: C probe {@code classrt.c} of Task 10), or C's cards read back give values where C's read
      * of the header gives BAD (the CAR headers whose longitude range the projection bounds, among
      * them the FITS-AIPS header cmap_3years_GP_D2) or other values (scp, at a point 1.3E-6 radians
      * from the pole, where longitude changes fast; the offset SkyFrames, whose offset
@@ -286,6 +287,9 @@ class FitsChanWriteTest {
         for (String h : Arrays.asList(
                 "programs/joye_car_headers/CHIPASS_Equ.head",
                 "wcsconv/inputs/car6.head",
+                "wcsconv/inputs/class-noproj.head",
+                "wcsconv/inputs/class-spec-hel.head",
+                "wcsconv/inputs/class-spec.head",
                 "wcsconv/inputs/crota-3d.head",
                 "wcsconv/inputs/tsc.head",
                 "wcsconv/inputs/iraf-longpole.head",
@@ -370,17 +374,17 @@ class FitsChanWriteTest {
     }
 
     /** The encodings whose headers {@link #everyInScopeHeaderRoundTrips} writes and reads back. */
-    private static final Set<String> ROUND_TRIP_ENCODINGS =
-            new LinkedHashSet<>(Arrays.asList("FITS-WCS", "FITS-PC", "FITS-IRAF", "FITS-AIPS", "FITS-AIPS++", "DSS"));
+    private static final Set<String> ROUND_TRIP_ENCODINGS = new LinkedHashSet<>(
+            Arrays.asList("FITS-WCS", "FITS-PC", "FITS-IRAF", "FITS-AIPS", "FITS-AIPS++", "FITS-CLASS", "DSS"));
 
     /**
-     * Every FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++ and DSS header of {@code
+     * Every FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++, FITS-CLASS and DSS header of {@code
      * headers.oracle} whose sections match C here, read, written with its own encoding into a new
      * FitsChan and read back, transforms the inputs of its forward section to the outputs C
      * recorded, within the section's tolerances, unless it is in {@link #NOT_ROUND_TRIPPED} with
      * the outcome it gives, which is checked. {@code headers.oracle} has no DSS header (C probe
      * {@code rt.c} of Task 9); {@code FitsEncDssTest.writtenAndReadBackAsC} round-trips C's DSS
-     * header. Its FITS-CLASS headers are not round-tripped here.
+     * header.
      */
     @Test
     void everyInScopeHeaderRoundTrips() {

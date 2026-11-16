@@ -355,6 +355,22 @@ class FitsFsetToStoreTest {
     }
 
     @Test
+    void twoSpecFramesCannotBeDescribed() {
+        // As two SkyFrames: MakeFitsFrameSet finds two SpecFrames and makes no FrameSet, and C
+        // then passes the NULL FrameSet to AddEncodingFrame, which crashes (C probe twospec.c:
+        // SIGSEGV, exit status 139, in astWrite).
+        SpecFrame freq = new SpecFrame();
+        freq.setSystem("FREQ");
+        freq.setUnit(1, "GHz");
+        SpecFrame wave = new SpecFrame();
+        wave.setSystem("WAVE");
+        wave.setUnit(1, "m");
+        FrameSet fs = frameSet(new ZoomMap(2, 0.001), new CmpFrame(freq, wave));
+        assertNull(FitsFsetToStore.makeFitsFrameSet(
+                new FitsChan(), fs, 1, 2, FitsChan.Encoding.FITS_WCS, "FitsChan", "astWrite"));
+    }
+
+    @Test
     void theReferencePointAlreadyInTheFitsChanIsUsed() {
         // C probe readcrval: the FrameSet read from the FitsChan, written back to it, keeps
         // CRVAL1 7.5 at CRPIX1 1.
