@@ -27,11 +27,13 @@ final class FitsMakeIntWorld {
      * origin. A Mapping with more outputs than inputs gets degenerate grid axes, whose unit
      * vectors are chosen orthogonal to the other grid axes and scaled to look natural; the CRVAL
      * values, which the caller stores first, may be changed for them. When {@code sipok} is true
-     * and {@code fr} holds a celestial axis, C first describes any distortion with SIP coefficients
-     * through {@code SIPIntWorld}.
+     * and {@code fr} holds a celestial longitude axis, any distortion of the celestial axes that
+     * {@link FitsSipIntWorld#sipIntWorld} can describe with SIP coefficients is stored as those
+     * coefficients, and its CRPIX and CD values are used for the celestial axes.
      *
-     * <p>C stores CDELT values even when it fails, from memory it never sets; nothing is stored
-     * here when the description fails.
+     * <p>C stores CDELT values even when it fails, from memory it never sets; when the
+     * description fails nothing is stored here but the SIP coefficients and CTYPE values, which C
+     * stores too.
      *
      * @param cmap the grid to intermediate world coordinate Mapping, with at least as many
      *     outputs as inputs
@@ -49,8 +51,6 @@ final class FitsMakeIntWorld {
      * @param method the calling method, for messages
      * @param cls the class of the object being written, for messages
      * @return whether the values were found
-     * @throws UnsupportedOperationException if {@code sipok} is true and {@code fr} holds a
-     *     celestial axis, which needs {@code SIPIntWorld}
      */
     // C compares the pointers astPrimaryFrame returns: whether two axes are in the same SkyFrame.
     @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
@@ -72,19 +72,35 @@ final class FitsMakeIntWorld {
         }
         Mapping map = cmap.simplify();
 
-        // The Mapping output of the longitude axis of any SkyFrame.
+        // The Mapping outputs of the longitude and latitude axes of any SkyFrame.
         int lonax = -1;
+        int latax = -1;
         int[] paxis = new int[1];
         for (int i = 0; i < nout; i++) {
             Frame pfrm = fr.primaryFrame(i + 1, paxis);
-            if (pfrm instanceof SkyFrame && paxis[0] == 1) {
-                lonax = i;
+            if (pfrm instanceof SkyFrame) {
+                if (paxis[0] == 1) {
+                    lonax = i;
+                } else {
+                    latax = i;
+                }
             }
         }
+
+        // SIP coefficients for any distortion of the celestial axes, with their CRPIX and CD
+        // values; the Mapping without the distortion is used from here on, so that it does not
+        // break the linearity test of the other axes.
+        boolean havesip = false;
+        int[] sipax = new int[2];
+        double[] crpixSip = new double[2];
+        double[] cdSip = new double[4];
         if (sipok && lonax != -1) {
-            throw new UnsupportedOperationException(
-                    method + "(" + cls + "): describing the celestial axes of axis description '" + s
-                            + "' with SIP coefficients needs FitsSipIntWorld");
+            Mapping sipmap = FitsSipIntWorld.sipIntWorld(
+                    map, fitstol, lonax, latax, s, store, dim, sipax, crpixSip, cdSip, method, cls);
+            if (sipmap != null) {
+                map = sipmap;
+                havesip = true;
+            }
         }
 
         int nwcs = fr.getNaxes();
@@ -136,6 +152,15 @@ final class FitsMakeIntWorld {
             if (partmat[i] == null) {
                 ret = false;
             }
+        }
+
+        // The CD values SIPIntWorld found replace those of the celestial axes, once every column
+        // has been found.
+        if (ret && havesip) {
+            partmat[sipax[0]][lonax] = cdSip[0];
+            partmat[sipax[1]][lonax] = cdSip[1];
+            partmat[sipax[0]][latax] = cdSip[2];
+            partmat[sipax[1]][latax] = cdSip[3];
         }
 
         // Columns for the degenerate grid axes, orthogonal to the others.
@@ -199,6 +224,13 @@ final class FitsMakeIntWorld {
             double crp;
             if (j < nin) {
                 crp = g0[j] - y[j];
+                if (havesip) {
+                    if (j == sipax[0]) {
+                        crp = crpixSip[0];
+                    } else if (j == sipax[1]) {
+                        crp = crpixSip[1];
+                    }
+                }
             } else {
                 crp = 1.0 - y[j];
             }
@@ -400,7 +432,7 @@ final class FitsMakeIntWorld {
     }
 
     /** C's {@code round}: to the nearest integer, halfway cases away from zero. */
-    private static double roundHalfAway(double x) {
+    static double roundHalfAway(double x) {
         double a = Math.abs(x);
         double fl = Math.floor(a);
         return Math.copySign(a - fl >= 0.5 ? fl + 1.0 : fl, x);

@@ -1,5 +1,6 @@
 package uk.ac.starlink.ast;
 
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -284,6 +285,43 @@ final class FitsStore {
             c[i] = a[i].clone();
         }
         return c;
+    }
+
+    /**
+     * C's {@code SetItem} for a table indexed by two numbers, such as the SIP coefficients: {@code
+     * item} with element {@code [i][jm]} set to {@code val}, rows added and lengthened as needed,
+     * new rows empty and new elements {@code AST__BAD}. The table is changed in place unless it
+     * has to gain rows, when a longer copy is returned.
+     *
+     * @throws AstException with status {@code AST__INTER} if {@code i} is outside 0 to 98 or
+     *     {@code jm} outside 0 to 99, as C checks
+     */
+    static double[][] setItem(double[][] item, int i, int jm, double val) {
+        if (i < 0 || i > 98) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    "SetItem(fitschan): AST internal error; intermediate axis index " + i + " is invalid.");
+        }
+        if (jm < 0 || jm > 99) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    "SetItem(fitschan): AST internal error; pixel axis or parameter index " + jm + " is invalid.");
+        }
+        double[][] table = item;
+        if (table.length < i + 1) {
+            int nel = table.length;
+            table = Arrays.copyOf(table, i + 1);
+            for (int el = nel; el <= i; el++) {
+                table[el] = new double[0];
+            }
+        }
+        if (table[i].length < jm + 1) {
+            int nel = table[i].length;
+            table[i] = Arrays.copyOf(table[i], jm + 1);
+            Arrays.fill(table[i], nel, jm + 1, AstObject.AST__BAD);
+        }
+        table[i][jm] = val;
+        return table;
     }
 
     /** Whether any PC matrix element is set. */

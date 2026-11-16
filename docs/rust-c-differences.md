@@ -556,6 +556,48 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `nearest_pix_value` in `fitschan/fset_to_store/spectral_axes.rs` uses the split Mapping only when it has one output.
 - Java: as C.
 
+### What `SIPIntWorld` stores
+
+- C: `SIPIntWorld` stores the SIP coefficients only, by power, each table first filled with bad values up to the largest powers used, which for an iterative inverse is the single element (0, 0); `WcsFromStore` finds each order when it writes the cards (`fitschan.c` `SIPIntWorld`, `WcsFromStore`).
+- Rust: `fitschan/fset_to_store/sip_int_world.rs` also stores the A, B, AP and BP orders, zero for an empty table, and stores no AP or BP table for an iterative inverse.
+- Java: as C.
+
+### The `-SIP` code on a short CTYPE
+
+- C: `SIPIntWorld` copies the CTYPE value into a buffer and writes `-SIP` from its ninth character, so a value of fewer than eight characters keeps the null that ends it and is stored unchanged (`fitschan.c` `SIPIntWorld`).
+- Rust: `append_sip_suffix` in `fitschan/fset_to_store/sip_int_world.rs` appends `-SIP` to a value of any length.
+- Java: as C.
+
+### The grid axes of the other outputs in `SIPIntWorld`
+
+- C: `SIPIntWorld` reads one grid axis for each of the `Nin - 2` other inputs from the array `astMapSplit` returns for the other outputs, past its end if the split has fewer inputs (`fitschan.c` `SIPIntWorld`). **C quirk.**
+- Rust: `build_perm_inputs` in `fitschan/fset_to_store/sip_int_world.rs` uses the inputs the split returns, however many there are.
+- Java: reports `AST__INTER` when the split has fewer inputs.
+
+### Shifting a PolyMap in `AnalysePoly`
+
+- C: `AnalysePoly` merges the shift into the PolyMap with `astMergeShift`, which expands each term with `ExpandTerm` and simplifies the result, adding coefficients of the same powers in the order the expansion gives them and keeping the order of the terms (`polymap.c` `MergeShift`, `MergeShifts`, `ExpandTerm`); it simplifies the new PolyMap in the same way (`fitschan.c` `AnalysePoly`).
+- Rust: `mappings/helpers/analyse_poly.rs` expands the terms with binomial coefficients (`merge_shift_2d`) and adds coefficients in a `BTreeMap`, as does `amalgamate`, so the terms come in sorted order and sums can differ in the last bit.
+- Java: as C; `PolyMap.mergeShift` ports `astMergeShift`.
+
+### Failures of `AnalysePoly` and `ScalePolyInputs`
+
+- C: `AnalysePoly` reports `AST__INTER` for a PolyMap without two inputs and two outputs, and goes on with whatever the iterative inverse gives for the shift; `ScalePolyInputs` reports `AST__INTER` for a zero or bad scale, which reaches it from `SIPIntWorld` when the Mapping before the PolyMap has a zero scale (`fitschan.c` `AnalysePoly`, `ScalePolyInputs`).
+- Rust: `analyse_poly` returns `None` for these PolyMaps and for a shift that is not finite, and `scale_poly_inputs` returns `None` for a zero or non-finite scale or a scale array of the wrong length; `sip_int_world` returns `None` before calling it for a zero scale.
+- Java: as C.
+
+### Output indices past the end of `AnalysePoly`'s coefficient array
+
+- C: `AnalysePoly` sets the output index of the next coefficient before testing whether the coefficient is used, so once the last coefficient of the new PolyMap is written it writes past the end of its array for each remaining unused one (`fitschan.c` `AnalysePoly`). **C quirk.**
+- Rust: `analyse_poly` builds a list of terms.
+- Java: sets the index only for a coefficient that is used.
+
+### The number of outputs in `astMergeShift`
+
+- C: `MergeShift` reads the number of outputs with `astGetNin`, which matters only for a PolyMap with unequal numbers of inputs and outputs; its one caller, `AnalysePoly`, passes a 2-input, 2-output PolyMap (`polymap.c` `MergeShift`). **C quirk.**
+- Rust: has no `astMergeShift`.
+- Java: reads the number of outputs.
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails

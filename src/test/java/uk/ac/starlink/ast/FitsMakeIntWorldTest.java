@@ -3,8 +3,9 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static uk.ac.starlink.ast.PolyTerms.flat;
+import static uk.ac.starlink.ast.PolyTerms.term;
 
 import org.junit.jupiter.api.Test;
 
@@ -172,16 +173,63 @@ class FitsMakeIntWorldTest {
         assertEquals(1.0, store.cdelt[1], 1e-15);
     }
 
-    /** With SipOK set and a celestial pair, C describes any distortion with SIPIntWorld. */
+    /**
+     * Translation of Rust {@code sip_chain_routes_through_sip_int_world}: with SipOK set and a
+     * SkyFrame, a SIP-shaped chain goes through {@code SIPIntWorld}, whose CRPIX values (the grid
+     * position C's simplified chain gives for IWC zero) are used for the celestial axes, whose
+     * coefficients are stored, and which adds {@code -SIP} to the CTYPE values.
+     */
     @Test
-    void sipWithACelestialPairNeedsSipIntWorld() {
-        FrameSet fs = frameSet(new UnitMap(2), new SkyFrame());
-        UnsupportedOperationException e = assertThrows(
-                UnsupportedOperationException.class,
-                () -> makeIntWorld(fs, new FitsStore(2), new double[] {100, 100}, true));
-        assertTrue(e.getMessage().endsWith("needs FitsSipIntWorld"), e.getMessage());
-        assertTrue(
-                makeIntWorld(frameSet(new UnitMap(2), new Frame(2)), new FitsStore(2), new double[] {100, 100}, true));
+    void sipChainRoutesThroughSipIntWorld() {
+        double[] fwd = flat(
+                term(1.0, 1, 1, 0),
+                term(1.0, 2, 0, 1),
+                term(2.9656e-06, 1, 0, 2),
+                term(3.7746e-09, 1, 0, 3),
+                term(2.1886e-05, 1, 1, 1),
+                term(-2.3863e-05, 1, 2, 0),
+                term(2.31e-05, 2, 0, 2),
+                term(-2.4386e-05, 2, 1, 1),
+                term(2.1197e-06, 2, 2, 0));
+        double[] inv = flat(
+                term(1.0, 1, 1, 0),
+                term(1.0, 2, 0, 1),
+                term(-6.4275e-07, 1, 0, 1),
+                term(-1.4897e-05, 1, 1, 0),
+                term(2.4146e-05, 1, 2, 0),
+                term(-1.6588e-05, 2, 0, 1),
+                term(2.4753e-05, 2, 1, 1),
+                term(2.0482e-08, 2, 3, 0));
+        double[] cd = {0.000249756880272355, 0.000230177809743655, 0.000230428519265417, -0.000249965770576587};
+        Mapping chain = new CmpMap(
+                new CmpMap(
+                        new ShiftMap(new double[] {-128.0, -128.0}),
+                        new PolyMap(2, 2, fwd.length / 4, fwd, inv.length / 4, inv),
+                        true),
+                new MatrixMap(2, 2, MatrixMap.FULL, cd),
+                true);
+        FrameSet fs = frameSet(chain, new SkyFrame());
+        FitsStore store = new FitsStore(2);
+        store.ctype[0] = "RA---TAN";
+        store.ctype[1] = "DEC--TAN";
+        assertTrue(makeIntWorld(fs, store, new double[] {256, 256}, true));
+        assertEquals(128.0, store.crpix[0], 1e-6);
+        assertEquals(128.0, store.crpix[1], 1e-6);
+        assertEquals("RA---TAN-SIP", store.ctype[0]);
+        assertEquals("DEC--TAN-SIP", store.ctype[1]);
+        assertEquals(2.9656e-06, store.sipA[0][2]);
+        assertEquals(2.31e-05, store.sipB[0][2]);
+        assertEquals(-6.4275e-07, store.sipAp[0][1]);
+        assertEquals(2.0482e-08, store.sipBp[3][0]);
+    }
+
+    /** With SipOK set, a SkyFrame and no PolyMap, SIPIntWorld finds no SIP distortion. */
+    @Test
+    void sipWithoutAPolyMapTakesTheLinearDescription() {
+        FitsStore store = new FitsStore(2);
+        assertTrue(makeIntWorld(frameSet(new UnitMap(2), new SkyFrame()), store, new double[] {100, 100}, true));
+        assertEquals(0, store.sipA.length);
+        assertEquals(0.0, store.crpix[0], 1e-9);
     }
 
     /** NearestPix: 5.3 is pixel 2.65, which rounds to 3, value 6; -5 is pixel -2.5, rounded away from zero. */
