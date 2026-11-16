@@ -45,7 +45,7 @@ final class FitsWcsWrite {
         cards.positionWriteCursor();
 
         // The primary description, then the alternates A to the last with a CRVAL.
-        char sup = maxVersion(store);
+        char sup = store.maxCrvalVersion();
         char s = ' ';
         while (s <= sup) {
             boolean ok;
@@ -79,24 +79,6 @@ final class FitsWcsWrite {
             }
         }
         return ret;
-    }
-
-    /**
-     * C's {@code GetMaxS( &(store->crval) )}: the last version letter with a CRVAL value, or the
-     * primary description's (a space) if no alternate has one.
-     */
-    private static char maxVersion(FitsPlaneStores store) {
-        for (char s = 'Z'; s >= 'A'; s--) {
-            FitsStore st = store.get(s);
-            if (st != null) {
-                for (Double v : st.crval) {
-                    if (v != null) {
-                        return s;
-                    }
-                }
-            }
-        }
-        return ' ';
     }
 
     /**

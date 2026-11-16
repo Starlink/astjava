@@ -18,9 +18,7 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  * <p>Listed in {@code deferred/rust-tests.txt}: {@code read_spectral_header}, {@code
  * axes_swap_non_adjacent_celestial_axes} and {@code crota_3d_forward_matches_oracle_inverse_undefined}
  * (spectral axes, SpecFrame; {@code crota-3d.head} is also read with the FITS-AIPS encoding), {@code
- * jan_class_no_naxis_keyword} and {@code class_noproj_builds_sfl} (the FITS-CLASS encoding), {@code
- * serpens_dut1_is_seconds} and {@code serpens_swapped_axis_transform} ({@code serpens.head} is read
- * with the FITS-IRAF encoding).
+ * jan_class_no_naxis_keyword} and {@code class_noproj_builds_sfl} (the FITS-CLASS encoding).
  */
 class FitsChanWcsTest {
 
@@ -268,5 +266,25 @@ class FitsChanWcsTest {
         Frame cur = readCar1(true).getFrame(FrameSet.AST__CURRENT);
         assertInstanceOf(SkyFrame.class, cur, "current Frame is a " + cur.astClass());
         assertEquals("Cartesian", ((SkyFrame) cur).getProjection());
+    }
+
+    @Test
+    void serpensDut1IsSeconds() {
+        // serpens.head, read with the FITS-IRAF encoding C guesses for it, has DUT1 =
+        // -1.145603703E-6 in days; C multiplies it by the seconds in a day before setting Dut1.
+        FrameSet fs = FitsHeaders.readFrameSet(FitsChan.fromHeader(fixture("serpens.head")));
+        double expected = -1.145603703e-6 * 86400.0;
+        assertTrue(fs.test("Dut1"), "Dut1 is set from the DUT1 card");
+        assertTrue(Math.abs(fs.getD("Dut1") - expected) < 1e-9, "Dut1 " + fs.getD("Dut1"));
+    }
+
+    @Test
+    void serpensSwappedAxisTransform() {
+        // serpens.head has CTYPE1 = 'DEC--TAN' and CTYPE2 = 'RA---TAN'. Pixel (150, 120) gives
+        // (0.018049750, -1.440691695) radians on (axis 1, axis 2) in the C library.
+        Mapping map = FitsHeaders.readFrameSet(FitsChan.fromHeader(fixture("serpens.head")));
+        double[] out = FitsHeaders.tran(map, new double[] {150.0, 120.0}, true);
+        assertTrue(Math.abs(out[0] - 0.018_049_750) < 1e-6, "axis 1 " + out[0]);
+        assertTrue(Math.abs(out[1] - -1.440_691_695) < 1e-6, "axis 2 " + out[1]);
     }
 }

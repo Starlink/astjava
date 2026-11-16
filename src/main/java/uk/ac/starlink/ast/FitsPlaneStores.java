@@ -52,6 +52,24 @@ final class FitsPlaneStores {
     }
 
     /**
+     * C's {@code GetMaxS( &(store->crval) )}: the last version letter with a CRVAL value, or the
+     * primary description's (a space) if no alternate has one.
+     */
+    char maxCrvalVersion() {
+        for (char s = 'Z'; s >= 'A'; s--) {
+            FitsStore st = get(s);
+            if (st != null) {
+                for (Double v : st.crval) {
+                    if (v != null) {
+                        return s;
+                    }
+                }
+            }
+        }
+        return ' ';
+    }
+
+    /**
      * The store of version {@code s}, made empty if there is none, with room for at least {@code
      * naxes} axes.
      */

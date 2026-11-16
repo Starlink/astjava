@@ -24,8 +24,9 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
 /**
  * Writing FrameSets as FITS-WCS through {@link FitsChan#write}: what a failed write leaves, where
  * the cards of a successful one go, that the cards read back transform as the FrameSet written,
- * and that writes in several threads agree. The cards expected come from C probes of the pinned
- * library (fitschan.c {@code Write}, {@code FitsFromStore}, {@code WcsFromStore}).
+ * also for FITS-PC and FITS-IRAF, and that writes in several threads agree. The cards expected
+ * come from C probes of the pinned library (fitschan.c {@code Write}, {@code FitsFromStore},
+ * {@code WcsFromStore}, {@code PCFromStore}, {@code IRAFFromStore}).
  */
 class FitsChanWriteTest {
 
@@ -205,25 +206,40 @@ class FitsChanWriteTest {
     private static final String DIFFERS = "the cards read back transform differently";
 
     /**
-     * The headers that do not round-trip, with their outcome, which C's gives too (C probe {@code
-     * p3.c}, beside the task report): C's write returns 0, or C's cards read back give values where
-     * C's read of the header gives BAD (the CAR headers whose longitude range the projection
-     * bounds), or C's write reaches {@code LogAxis}, which makes a MathMap, for the description of
-     * absolute coordinates of an offset SkyFrame whose Domain is not {@code SKY}.
+     * The headers that do not round-trip, with their outcome, which C's gives too (C probes {@code
+     * p3.c} for FITS-WCS and {@code rt.c} for FITS-PC and FITS-IRAF, beside the task reports): C's
+     * write returns 0 (for FITS-IRAF, a description with a LONPOLE or projection parameters, or a
+     * TNX or ZPX projection read as TPN or ZPN), or C's cards read back give values where C's read
+     * of the header gives BAD (the CAR headers whose longitude range the projection bounds) or
+     * other values (scp, at a point 1.3E-6 radians from the pole, where longitude changes fast),
+     * or C's write
+     * reaches {@code LogAxis}, which makes a MathMap, for the description of absolute coordinates
+     * of an offset SkyFrame whose Domain is not {@code SKY}.
      */
     private static final Map<String, String> NOT_ROUND_TRIPPED = notRoundTripped();
 
     private static Map<String, String> notRoundTripped() {
         Map<String, String> m = new LinkedHashMap<>();
         for (String h : Arrays.asList(
-                "programs/joye_car_headers/CHIPASS_Equ.head", "wcsconv/inputs/car6.head", "wcsconv/inputs/tsc.head")) {
+                "programs/joye_car_headers/CHIPASS_Equ.head",
+                "wcsconv/inputs/car6.head",
+                "wcsconv/inputs/tsc.head",
+                "wcsconv/inputs/iraf-longpole.head",
+                "wcsconv/inputs/projp-nopv0.head",
+                "wcsconv/inputs/projp-pv.head",
+                "wcsconv/inputs/projp-pv0only.head",
+                "wcsconv/inputs/projp.head",
+                "wcsconv/inputs/tnx-cheb.head",
+                "wcsconv/inputs/tnx.head",
+                "wcsconv/inputs/zpx.head")) {
             m.put(h, WRITE_FAILS);
         }
         for (String h : Arrays.asList(
                 "programs/joye_car_headers/car1.head",
                 "programs/joye_car_headers/car2.head",
                 "wcsconv/inputs/car1.head",
-                "wcsconv/inputs/car2.head")) {
+                "wcsconv/inputs/car2.head",
+                "wcsconv/inputs/scp.head")) {
             m.put(h, DIFFERS);
         }
         for (String h : Arrays.asList(
@@ -238,18 +254,19 @@ class FitsChanWriteTest {
     }
 
     /**
-     * What a header gives when its FrameSet is written FITS-WCS into a new FitsChan and read back:
-     * null if the FrameSet read back transforms the inputs of the header's forward section to the
-     * outputs C recorded, within the section's tolerances, and otherwise {@link #WRITE_FAILS},
-     * {@link #DIFFERS} or the class the write needs.
+     * What a header gives when its FrameSet is written with {@code encoding} into a new FitsChan
+     * and read back: null if the FrameSet read back transforms the inputs of the header's forward
+     * section to the outputs C recorded, within the section's tolerances, and otherwise {@link
+     * #WRITE_FAILS}, {@link #DIFFERS} or the class the write needs.
      */
     private static String roundTrip(
             OracleSection s,
             FrameSet fs,
+            String encoding,
             TransformOracleTest.Overrides overrides,
             Map<String, TransformOracleTest.ExcusedRows> excused) {
         FitsChan out = new FitsChan();
-        out.setEncoding("FITS-WCS");
+        out.setEncoding(encoding);
         try {
             if (out.write(fs) != 1) {
                 return WRITE_FAILS;
@@ -278,11 +295,15 @@ class FitsChanWriteTest {
         return misses.isEmpty() ? null : DIFFERS;
     }
 
+    /** The encodings whose headers {@link #everyInScopeHeaderRoundTrips} writes and reads back. */
+    private static final Set<String> ROUND_TRIP_ENCODINGS =
+            new LinkedHashSet<>(Arrays.asList("FITS-WCS", "FITS-PC", "FITS-IRAF"));
+
     /**
-     * Every FITS-WCS header of {@code headers.oracle} whose sections match C here, read, written
-     * FITS-WCS into a new FitsChan and read back, transforms the inputs of its forward section to
-     * the outputs C recorded, within the section's tolerances, unless it is in {@link
-     * #NOT_ROUND_TRIPPED} with the outcome it gives, which is checked.
+     * Every FITS-WCS, FITS-PC and FITS-IRAF header of {@code headers.oracle} whose sections match C
+     * here, read, written with its own encoding into a new FitsChan and read back, transforms the
+     * inputs of its forward section to the outputs C recorded, within the section's tolerances,
+     * unless it is in {@link #NOT_ROUND_TRIPPED} with the outcome it gives, which is checked.
      */
     @Test
     void everyInScopeHeaderRoundTrips() {
@@ -297,10 +318,11 @@ class FitsChanWriteTest {
                 continue;
             }
             FitsChan in = FitsHeaders.fixture(s.path);
-            if (!"FITS-WCS".equals(in.getEncoding())) {
+            String encoding = in.getEncoding();
+            if (!ROUND_TRIP_ENCODINGS.contains(encoding)) {
                 continue;
             }
-            String got = roundTrip(s, FitsHeaders.readFrameSet(in), overrides, excused);
+            String got = roundTrip(s, FitsHeaders.readFrameSet(in), encoding, overrides, excused);
             String want = NOT_ROUND_TRIPPED.get(s.path);
             if (got == null && want == null) {
                 roundTripped++;
@@ -310,7 +332,7 @@ class FitsChanWriteTest {
         }
         for (String h : NOT_ROUND_TRIPPED.keySet()) {
             if (!seen.contains(h)) {
-                failed.add(h + " is listed but is not an in-scope FITS-WCS header of headers.oracle");
+                failed.add(h + " is listed but is not an in-scope header of headers.oracle of those encodings");
             }
         }
         assertTrue(failed.isEmpty(), String.join("\n", failed));

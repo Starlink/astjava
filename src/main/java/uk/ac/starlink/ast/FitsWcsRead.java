@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The FITS-WCS read of a FitsChan: the FrameSet its cards describe in the FITS-WCS encoding (C's
- * {@code FitsToStore} and {@code FsetFromStore} for that encoding).
+ * The FITS-WCS read of a FitsChan: the FrameSet its cards describe in the FITS-WCS encoding, or in
+ * an encoding C reads as a variant of it, FITS-PC or FITS-IRAF (C's {@code FitsToStore} and {@code
+ * FsetFromStore} for those encodings).
  *
- * <p>The read translates the header ({@code SpecTrans}), sweeps the WCS cards as C's {@code
+ * <p>The read translates the header ({@code SpecTrans}, whose translations depend on the
+ * encoding), sweeps the WCS cards as C's {@code
  * WcsFcRead} does, extracts every axis description into a {@link FitsStore} and makes from them a
  * FrameSet whose base Frame describes pixel coordinates and whose current Frame describes the
  * primary axis description, with a Frame for each alternate description. For each description the
@@ -37,9 +39,9 @@ final class FitsWcsRead {
     // ------------------------------------------------------------------
 
     /**
-     * The FrameSet the cards of {@code fc} describe in the FITS-WCS encoding, or null when they
-     * describe none (C's {@code Read} for a foreign encoding, fitschan.c:26007, through {@code
-     * FitsToStore} and {@code FsetFromStore}).
+     * The FrameSet the cards of {@code fc} describe in {@code encoding}, FITS-WCS or a variant of it
+     * (FITS-PC, FITS-IRAF), or null when they describe none (C's {@code Read} for a foreign
+     * encoding, fitschan.c:26007, through {@code FitsToStore} and {@code FsetFromStore}).
      *
      * <p>The cards the read uses are marked as provisionally used, and the warnings it raises are
      * stored as {@code ASTWARN} cards. {@link FitsChan#read} then makes the marked cards used, or,
@@ -49,15 +51,15 @@ final class FitsWcsRead {
      * @throws UnsupportedOperationException if the header has a spectral axis, a {@code -TAB} axis
      *     with TabOK above zero, or a non-spectral {@code -LOG} axis
      */
-    static FrameSet read(FitsChan fc) {
+    static FrameSet read(FitsChan fc, FitsChan.Encoding encoding) {
         FitsCardList cards = fc.cards();
         boolean defB1950 = fc.getDefB1950();
         // SpecTrans works on a copy of the cards (C's temporary FitsChan), whose warnings are
         // stored on the FitsChan itself.
         int entry = cards.position();
         FitsSpecTrans.TransWarnings transWarnings = new FitsSpecTrans.TransWarnings();
-        FitsCardList trans = FitsSpecTrans.specTrans(
-                cards, FitsChan.Encoding.FITS_WCS, transAttrs(fc), transWarnings, fc.warnList(METHOD));
+        FitsCardList trans =
+                FitsSpecTrans.specTrans(cards, encoding, transAttrs(fc), transWarnings, fc.warnList(METHOD));
         // The cards SpecTrans used, which C marks before WcsFcRead runs.
         List<String> specNames = trans.takeConsumedNames();
         // C's WcsFcRead sweeps the cards before the FrameSet is made, and makes nothing when the

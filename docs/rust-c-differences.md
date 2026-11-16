@@ -398,7 +398,15 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 
 - C: `SpecTrans` reads RADECSYS, LONGPOLE and CmVALi, CmPIXi, CmYPEi and CmNITi, and writes CDELTis and PCj_is from CmELTi, whatever the encoding (`fitschan.c:31656-31675`, `fitschan.c:31962-32098`).
 - Rust: `fitschan/spec_trans.rs` does these only for FITS-PC and FITS-IRAF.
-- Java: as C for the FITS-WCS read; the FITS-PC, FITS-IRAF and FITS-CLASS reads are out of scope.
+- Java: as C.
+
+### SpecTrans translations for FITS-PC and FITS-IRAF
+
+- C: `SpecTrans` writes the RADESYS, LONPOLE, PVi_m (from PROJPm), CRVALis, CRPIXis, CTYPEis and CUNITis it translates into its own FitsChan, whose values `WcsToStore` reads after those of the header, so they replace any the header has: with both RADECSYS and RADESYS the RADECSYS value is used (C probe).
+  Each of these cards, and each CDELTis from CmELTi, is given the comment of the current card of the header, `CardComm( this )`, which at the start of a read is the first card, not the comment of the card translated.
+  The alternate letter of the CmVALi, CmPIXi, CmYPEi, CmNITi and CmELTi of each `m` is `A` for the lowest `m` the header has for that keyword and the next letter for each `m` after it, so `C2VAL1` alone becomes `CRVAL1A` (`fitschan.c:31656-31675`, `fitschan.c:31948-32098`). **C quirk** (the comment and the letter).
+- Rust: `rename_keyword` in `fitschan/spec_trans.rs` keeps a RADESYS, CRVALis or other keyword the header already has, and moves the comment of the card it renames; `translate_cnxxx` gives `m` the letter `A + m - 1`.
+- Java: as C.
 
 ### SpecTrans PC matrix translations
 
@@ -701,6 +709,18 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: `WcsFromStore` formats DATE-OBS from MJD-OBS with `palDjcal` before 1999 and with `palDjcl` and `palDd2tf` (milliseconds) after, so a time of day that rounds up is written `T24:00:00.000` on the same day, and a year before 1900 as a negative two-digit year (`fitschan.c` `WcsFromStore`; C probe). **C quirk.**
 - Rust: `mjd_to_date_str` in `fitschan/wcs_write/mod.rs` works the date out with Meeus's algorithm and carries a rounded-up time into the next second.
 - Java: as C (`FitsDates.mjdToDateStr`).
+
+### Alternate descriptions in `PCFromStore`
+
+- C: `PCFromStore` compares an alternate description's PC matrix with the primary one's element by element in storage order, so matrices of different sizes are compared as flat arrays and C reads past the primary matrix for an alternate with more axes; it compares an alternate RADECSYS with the primary one's even when the primary description has none, reading an uninitialised string, and an alternate's projection parameters with values never set when the primary description has no celestial axes (`fitschan.c` `PCFromStore`). **C quirk** (undefined behaviour).
+- Rust: `write_pc` in `fitschan/enc_pc.rs` compares the two matrices as far as the shorter goes, and holds the unset values as absent or `AST__BAD`.
+- Java: an element past the primary matrix differs; an unset primary RADECSYS differs from any; unset primary parameters are `AST__BAD` (`FitsEncPc`).
+
+### `IRAFFromStore` writes the primary description only
+
+- C: `IRAFFromStore` writes the primary description alone, its keywords without a version letter, refusing it when the number of CRPIX values differs from the number of pixel axes (`store->naxis`); it stops part way, leaving its cards for `Write` to remove, at a missing CRPIX, CRVAL or CTYPE or a `-TAB` axis; it writes DATE-OBS from MJD-OBS, and MJD-OBS only over a card the header already has (`fitschan.c` `IRAFFromStore`).
+- Rust: `encode_wcs_per_plane` in `fitschan/wcs_write/mod.rs` passes the primary plane to `enc_iraf::write_to_cards`, which checks the plane's own axis count, checks CRPIX, CRVAL and CTYPE before writing, and writes DATE-OBS from the plane's stored date string.
+- Java: as C (`FitsEncIraf`).
 
 ## Test harness
 

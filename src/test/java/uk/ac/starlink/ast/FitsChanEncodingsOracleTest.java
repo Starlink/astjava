@@ -30,8 +30,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * {@code oracle/fitschan_encodings.json}, made by {@code
  * tools/oracle_fixtures/fitschan_encodings_probe.c}.
  *
- * <p>Only the FITS-WCS column runs: the encodings in {@link #NOT_WRITTEN}, whose writers this
- * library does not have, are pinned by number. A header whose read needs a class this library
+ * <p>The FITS-WCS, FITS-PC and FITS-IRAF columns run: the encodings in {@link #NOT_WRITTEN}, whose
+ * writers this library does not have, are pinned by number. A header whose read needs a class this library
  * does not have is in {@link #EXCLUDED} with the reason its read gives, measured, so the list is
  * checked both ways.
  */
@@ -39,10 +39,10 @@ class FitsChanEncodingsOracleTest {
 
     /** The encodings whose writers this library does not have. */
     private static final Set<String> NOT_WRITTEN =
-            new HashSet<>(Arrays.asList("FITS-PC", "FITS-IRAF", "FITS-AIPS", "FITS-AIPS++", "FITS-CLASS", "DSS"));
+            new HashSet<>(Arrays.asList("FITS-AIPS", "FITS-AIPS++", "FITS-CLASS", "DSS"));
 
     /** The number of writes of the encodings in {@link #NOT_WRITTEN}. */
-    private static final int NOT_WRITTEN_WRITES = 150;
+    private static final int NOT_WRITTEN_WRITES = 100;
 
     /** Headers whose read stops for want of a class, with the reason the read gives. */
     private static final Map<String, String> EXCLUDED = excludedCases();
@@ -191,7 +191,7 @@ class FitsChanEncodingsOracleTest {
             }
         }
         assertTrue(failed.isEmpty(), String.join("\n", failed));
-        assertEquals(25 - EXCLUDED.size(), run, "FITS-WCS writes run");
-        assertEquals(NOT_WRITTEN_WRITES - 6 * EXCLUDED.size(), notWritten, "writes of encodings not written");
+        assertEquals(3 * (25 - EXCLUDED.size()), run, "FITS-WCS, FITS-PC and FITS-IRAF writes run");
+        assertEquals(NOT_WRITTEN_WRITES - 4 * EXCLUDED.size(), notWritten, "writes of encodings not written");
     }
 }

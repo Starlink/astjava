@@ -854,9 +854,9 @@ public class FitsChan extends Channel {
         // MODERN-JAVA(21): switch expression
         switch (enc) {
             case FITS_WCS:
-                return FitsWcsRead.read(this);
             case FITS_PC:
             case FITS_IRAF:
+                return FitsWcsRead.read(this, enc);
             case FITS_AIPS:
             case FITS_AIPSPP:
             case FITS_CLASS:
@@ -947,8 +947,8 @@ public class FitsChan extends Channel {
     /**
      * C's {@code FitsFromStore}: puts the current card after the last card describing WCS ({@link
      * FitsCardList#positionWriteCursor}, C's {@code FindWcs}), and writes the descriptions in
-     * {@code store} with the writer of {@code enc}. Only FITS-WCS has a writer here; for the other
-     * encodings nothing is written and the result is false.
+     * {@code store} with the writer of {@code enc}. FITS-WCS, FITS-PC and FITS-IRAF have writers
+     * here; for the other encodings nothing is written and the result is false.
      */
     private boolean fitsFromStore(FitsPlaneStores store, Encoding enc, String method, String cls) {
         cardList.positionWriteCursor();
@@ -957,7 +957,9 @@ public class FitsChan extends Channel {
             case FITS_WCS:
                 return FitsWcsWrite.wcsFromStore(this, store, method, cls);
             case FITS_PC:
+                return FitsEncPc.pcFromStore(this, store, method, cls);
             case FITS_IRAF:
+                return FitsEncIraf.irafFromStore(this, store, method, cls);
             case FITS_AIPS:
             case FITS_AIPSPP:
             case FITS_CLASS:

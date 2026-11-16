@@ -19,11 +19,13 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * non-standard FITS-WCS keywords (fitschan.c {@code SpecTrans}).
  *
  * <p>Many Rust tests run under FITS-PC although the translation they test is not gated on the
- * encoding; those run here under FITS-WCS, which C translates the same way. The tests of the
- * translations only FITS-PC, FITS-IRAF and FITS-CLASS make are deferred, since those encodings are
- * not read. C marks the cards a translation reads as used rather than deleting them, so where Rust
- * asserts a card has gone, these tests assert it was consumed. The tests after the translated ones
- * check behaviour of C that the Rust port does not share, each citing the C it follows.
+ * encoding; those run here under FITS-WCS, which C translates the same way, and those of the
+ * translations only FITS-PC and FITS-IRAF make run under that encoding. The test of C's {@code
+ * ClassTrans} is deferred, since FITS-CLASS is not read. C marks the cards a translation reads as
+ * used rather than deleting them, so where Rust asserts a card has gone, these tests assert it was
+ * consumed. Rust's {@code rename_keyword} tests run as the RADECSYS and LONGPOLE translations C
+ * makes in its place. The tests after the translated ones check behaviour of C that the Rust port
+ * does not share, each citing the C it follows.
  */
 class FitsSpecTransTest {
 
@@ -35,6 +37,22 @@ class FitsSpecTransTest {
 
     private static FitsCardList wcs(String header) {
         return run(header, new FitsSpecTrans.TransAttrs(), new FitsSpecTrans.TransWarnings());
+    }
+
+    /** The cards of {@code header} translated under {@code encoding}. */
+    private static FitsCardList under(FitsChan.Encoding encoding, String header) {
+        FitsCardList cards = FitsCardList.fromHeader(header);
+        FitsSpecTrans.specTransInplace(
+                cards, encoding, new FitsSpecTrans.TransAttrs(), new FitsSpecTrans.TransWarnings());
+        return cards;
+    }
+
+    private static FitsCardList pc(String header) {
+        return under(FitsChan.Encoding.FITS_PC, header);
+    }
+
+    private static FitsCardList iraf(String header) {
+        return under(FitsChan.Encoding.FITS_IRAF, header);
     }
 
     private static boolean consumed(FitsCardList cards, String keyword) {
@@ -404,23 +422,235 @@ class FitsSpecTransTest {
     }
 
     // ------------------------------------------------------------------
+    // The translations of FITS-PC and FITS-IRAF
+    // ------------------------------------------------------------------
+
+    @Test
+    void renameKeywordMovesValueAndCommentToNewName() {
+        // C writes RADESYS with the comment of the FitsChan's current card, the first card at the
+        // start of a read (CardComm( this ), fitschan.c:31663), which here is RADECSYS itself.
+        FitsCardList cards = pc("RADECSYS= 'FK5     '           / Reference frame\nEND");
+        assertTrue(consumed(cards, "RADECSYS"));
+        assertEquals("FK5     ", cards.getString("RADESYS"));
+        assertEquals("Reference frame", cards.find("RADESYS").comment);
+    }
+
+    @Test
+    void renameKeywordNoOpWhenSourceAbsent() {
+        FitsCardList cards = pc("END");
+        assertNull(cards.find("RADECSYS"));
+        assertNull(cards.find("RADESYS"));
+    }
+
+    @Test
+    void renameKeywordReplacesTheDestinationWhenAlreadyPresent() {
+        // Rust keeps RADESYS; C writes the RADECSYS value as RADESYS into the FitsChan of
+        // translations, whose values replace those of the header (WcsToStore), so RADECSYS wins
+        // (C probe p2 (a): the SkyFrame's System is FK4).
+        FitsCardList cards =
+                pc("RADECSYS= 'FK4     '           / Old\n" + "RADESYS = 'FK5     '           / New\n" + "END");
+        assertTrue(consumed(cards, "RADECSYS"));
+        assertEquals("FK4     ", cards.getString("RADESYS"));
+    }
+
+    @Test
+    void renameKeywordHandlesFloatValues() {
+        FitsCardList cards = pc("LONGPOLE=                180.0 / Old name\nEND");
+        assertEquals(180.0, cards.getFloat("LONPOLE"));
+        assertTrue(consumed(cards, "LONGPOLE"));
+    }
+
+    @Test
+    void translatesRadecsysToRadesys() {
+        FitsCardList cards = pc("RADECSYS= 'FK5     '           / Old-style frame\nEND");
+        assertTrue(consumed(cards, "RADECSYS"));
+        assertEquals("FK5     ", cards.getString("RADESYS"));
+    }
+
+    @Test
+    void radecsysReplacesRadesysWhenBothPresent() {
+        // Rust's keeps_radesys_when_both_present; C gives the RADECSYS value (C probe p2 (a)).
+        FitsCardList cards = pc("RADECSYS= 'FK4     '\nRADESYS = 'FK5     '\nEND");
+        assertEquals("FK4     ", cards.getString("RADESYS"));
+    }
+
+    @Test
+    void translatesLongpoleToLonpole() {
+        FitsCardList cards = pc("LONGPOLE=                180.0 / Old name\nEND");
+        assertTrue(consumed(cards, "LONGPOLE"));
+        assertEquals(180.0, cards.getFloat("LONPOLE"));
+    }
+
+    @Test
+    void translatesCdjjjiiiToPcWithUnitCdeltForFitsIraf() {
+        FitsCardList cards = iraf("CD001001=                 -2.0\n"
+                + "CD001002=                  0.0\n"
+                + "CD002001=                  0.0\n"
+                + "CD002002=                  3.0\n"
+                + "END");
+        assertTrue(consumed(cards, "CD001001"));
+        assertEquals(-2.0, cards.getFloat("PC1_1"));
+        assertEquals(3.0, cards.getFloat("PC2_2"));
+        // CDELT is 1.0 for every row that had a CDjjjiii.
+        assertEquals(1.0, cards.getFloat("CDELT1"));
+        assertEquals(1.0, cards.getFloat("CDELT2"));
+    }
+
+    @Test
+    void cdjjjiiiTranslatedAndConsumedUnderFitsIraf() {
+        FitsCardList cards = iraf("CD001001=                  1.0\nCD002002=                  1.0\nEND");
+        List<String> names = cards.takeConsumedNames();
+        assertTrue(names.contains("CD001001"));
+        assertTrue(names.contains("CD002002"));
+        assertEquals(1.0, cards.getFloat("PC1_1"));
+        assertEquals(1.0, cards.getFloat("PC2_2"));
+    }
+
+    @Test
+    void translatesProjpToPvOnLatitudeAxis() {
+        // C reads PROJP with GetValue2, which marks the card used but does not delete it.
+        FitsCardList cards = pc("CTYPE1  = 'RA---ZPN'\n"
+                + "CTYPE2  = 'DEC--ZPN'\n"
+                + "PROJP0  =                  0.0\n"
+                + "PROJP1  =                  1.0\n"
+                + "PROJP2  =                 -0.4\n"
+                + "END");
+        assertNotNull(cards.find("PROJP0"));
+        assertNotNull(cards.find("PROJP1"));
+        assertTrue(consumed(cards, "PROJP1"));
+        assertEquals(0.0, cards.getFloat("PV2_0"));
+        assertEquals(1.0, cards.getFloat("PV2_1"));
+        assertEquals(-0.4, cards.getFloat("PV2_2"));
+    }
+
+    @Test
+    void projpUsedWhenPvSetIsIncomplete() {
+        // PV1_1 and PV1_2 without PV1_0: the PV values are not trusted (fitschan.c:31929-31935).
+        FitsCardList cards = pc("CTYPE1  = 'RA---ZPN'\n"
+                + "CTYPE2  = 'DEC--ZPN'\n"
+                + "PROJP0  =                  0.0\n"
+                + "PV1_1   =                  1.0\n"
+                + "PV1_2   =                 -0.4\n"
+                + "END");
+        assertEquals(0.0, cards.getFloat("PV2_0"));
+    }
+
+    @Test
+    void translatesCnxxxToAltLetterFormForFitsPc() {
+        FitsCardList cards = pc("C1YPE1  = 'GLON-TAN'\n"
+                + "C1YPE2  = 'GLAT-TAN'\n"
+                + "C1VAL1  =              101.255\n"
+                + "C1VAL2  =               16.177\n"
+                + "C1PIX1  =                 50.5\n"
+                + "C1PIX2  =                 50.5\n"
+                + "C1ELT1  =                -0.01\n"
+                + "C1ELT2  =                 0.01\n"
+                + "END");
+        List<String> names = cards.takeConsumedNames();
+        assertTrue(names.contains("C1YPE1"));
+        assertTrue(names.contains("C1ELT1"));
+        assertEquals("GLON-TAN", cards.getString("CTYPE1A"));
+        assertEquals("GLAT-TAN", cards.getString("CTYPE2A"));
+        assertEquals(101.255, cards.getFloat("CRVAL1A"));
+        assertEquals(50.5, cards.getFloat("CRPIX1A"));
+        assertEquals(-0.01, cards.getFloat("CDELT1A"));
+        // The unit PC matrix, there being no PCjjjiii.
+        assertEquals(1.0, cards.getFloat("PC1_1A"));
+        assertEquals(0.0, cards.getFloat("PC1_2A"));
+        assertEquals(1.0, cards.getFloat("PC2_2A"));
+    }
+
+    @Test
+    void cnxxxZeroCdeltFallsBackToCrvalOrOne() {
+        // A zero CmELTi becomes 0.01 times CRVALiA, the translated C1VAL1 (fitschan.c:32063-32068).
+        FitsCardList cards = pc("C1YPE1  = 'GLON-TAN'\n"
+                + "C1VAL1  =                100.0\n"
+                + "C1ELT1  =                  0.0\n"
+                + "END");
+        assertEquals(1.0, cards.getFloat("CDELT1A"));
+    }
+
+    // ------------------------------------------------------------------
     // C behaviour beyond the Rust tests
     // ------------------------------------------------------------------
 
     @Test
-    void encodingsThatAreNotReadThrow() {
-        for (FitsChan.Encoding e : new FitsChan.Encoding[] {
-            FitsChan.Encoding.FITS_PC, FitsChan.Encoding.FITS_IRAF, FitsChan.Encoding.FITS_CLASS
-        }) {
-            UnsupportedOperationException ex = assertThrows(
-                    UnsupportedOperationException.class,
-                    () -> FitsSpecTrans.specTransInplace(
-                            FitsCardList.fromHeader("END"),
-                            e,
-                            new FitsSpecTrans.TransAttrs(),
-                            new FitsSpecTrans.TransWarnings()));
-            assertEquals("FitsChan: reading the " + e.cName() + " encoding is not available", ex.getMessage());
+    void fitsClassIsNotRead() {
+        UnsupportedOperationException ex = assertThrows(
+                UnsupportedOperationException.class,
+                () -> FitsSpecTrans.specTransInplace(
+                        FitsCardList.fromHeader("END"),
+                        FitsChan.Encoding.FITS_CLASS,
+                        new FitsSpecTrans.TransAttrs(),
+                        new FitsSpecTrans.TransWarnings()));
+        assertEquals("FitsChan: reading the FITS-CLASS encoding is not available", ex.getMessage());
+    }
+
+    @Test
+    void translatedCardsTakeTheCommentOfTheFirstCard() {
+        // C gives the cards it translates from RADECSYS, LONGPOLE, PROJPm and CmXXXi the comment of
+        // the current card of the FitsChan read (CardComm( this ), fitschan.c:31663-31673,
+        // 31956-32034), which is the first card when a read starts.
+        FitsCardList cards = pc("NAXIS   =                    2 / first card\n"
+                + "LONGPOLE=                180.0 / Old name\n"
+                + "C1VAL1  =                 10.0 / CRVAL1 of A\n"
+                + "END");
+        assertEquals("first card", cards.find("LONPOLE").comment);
+        assertEquals("first card", cards.find("CRVAL1A").comment);
+    }
+
+    @Test
+    void radecsysWinsOverRadesysInARead() {
+        // C probe p2 (a): with both, the FITS-PC read's SkyFrame takes the RADECSYS system.
+        FitsChan fc = FitsHeaders.chan(
+                "NAXIS   = 2 / first card comment",
+                "NAXIS1  = 100",
+                "NAXIS2  = 100",
+                "CTYPE1  = 'RA---TAN'",
+                "CTYPE2  = 'DEC--TAN'",
+                "CRPIX1  = 50",
+                "CRPIX2  = 50",
+                "CRVAL1  = 10",
+                "CRVAL2  = 20",
+                "CDELT1  = -0.001",
+                "CDELT2  = 0.001",
+                "RADECSYS= 'FK4'",
+                "RADESYS = 'FK5'",
+                "EQUINOX = 1950.0");
+        fc.setEncoding("FITS-PC");
+        assertEquals("FK4", FitsHeaders.readFrameSet(fc).getC("System"));
+    }
+
+    @Test
+    void projpParametersReachTheProjectionOnlyUnderPcAndIraf() {
+        // C probe p2 (c): a ZPN projection whose parameters are PROJPm. Under FITS-PC and FITS-IRAF
+        // they become PV2_m; under FITS-WCS they are only read, and the projection has none.
+        String[] header = {
+            "NAXIS   = 2",
+            "NAXIS1  = 100",
+            "NAXIS2  = 100",
+            "CTYPE1  = 'RA---ZPN'",
+            "CTYPE2  = 'DEC--ZPN'",
+            "CRPIX1  = 50",
+            "CRPIX2  = 50",
+            "CRVAL1  = 10",
+            "CRVAL2  = 80",
+            "CDELT1  = -0.01",
+            "CDELT2  = 0.01",
+            "PROJP1  = 1.0",
+            "PROJP3  = 0.5"
+        };
+        for (String enc : new String[] {"FITS-PC", "FITS-IRAF"}) {
+            FitsChan fc = FitsHeaders.chan(header);
+            fc.setEncoding(enc);
+            double[] out = FitsHeaders.tran(FitsHeaders.readFrameSet(fc), new double[] {10.0, 90.0}, true);
+            assertEquals(0.21636900620530422, out[0], 1e-15, enc);
+            assertEquals(1.4031004897573576, out[1], 1e-15, enc);
         }
+        FitsChan fc = FitsHeaders.chan(header);
+        fc.setEncoding("FITS-WCS");
+        FrameSet fs = FitsHeaders.readFrameSet(fc);
+        assertThrows(AstException.class, () -> FitsHeaders.tran(fs, new double[] {10.0, 90.0}, true));
     }
 
     @Test

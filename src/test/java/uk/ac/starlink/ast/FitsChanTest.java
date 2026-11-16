@@ -27,9 +27,8 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * 23).
  *
  * <p>Of the tests that write to the FitsChan, {@code native_round_trip_zoommap}, {@code
- * native_round_trip_skyframe} and {@code native_rewind_and_reread} use the NATIVE encoding and are
- * translated here; {@code translate_projp_retains_source_cards} writes FITS-WCS cards and is listed
- * in {@code deferred/rust-tests.txt}.
+ * native_round_trip_skyframe}, {@code native_rewind_and_reread} and {@code
+ * translate_projp_retains_source_cards} use the NATIVE encoding and are translated here.
  */
 class FitsChanTest {
 
@@ -458,5 +457,41 @@ class FitsChanTest {
             buf.write(b, 0, n);
         }
         return new String(buf.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    @Test
+    void translateProjpRetainsSourceCards() {
+        // C reads PROJPm only when the PV values of the longitude axis look incomplete
+        // (fitschan.c:31910-31947); with PV1_0, PV1_1 and PV1_2 it trusts them, so the PROJP cards
+        // are not read, not consumed, and are kept by a later write.
+        String header = String.join(
+                "\n",
+                "SIMPLE  =                    T / Fits standard",
+                "NAXIS   =                    2 / Number of dimensions",
+                "CTYPE1  = 'RA---TAN'           / Axis type",
+                "CTYPE2  = 'DEC--TAN'           / Axis type",
+                "CRVAL1  =                 40.0 / Reference value",
+                "CRVAL2  =                 60.0 / Reference value",
+                "CRPIX1  =                256.0 / Reference pixel",
+                "CRPIX2  =                256.0 / Reference pixel",
+                "CDELT1  =                -0.01 / Pixel size",
+                "CDELT2  =                 0.01 / Pixel size",
+                "PROJP0  =                999.0 / Projection parameter",
+                "PROJP1  =                999.0 / Projection parameter",
+                "PROJP2  =                999.0 / Projection parameter",
+                "PV1_0   =                  0.0 / Standard PV",
+                "PV1_1   =                  0.0 / Standard PV",
+                "PV1_2   =                  0.0 / Standard PV",
+                "END",
+                "");
+        FitsChan fc = FitsChan.fromHeader(header);
+        AstObject obj = fc.read();
+        assertNotNull(obj);
+        fc.setEncoding("NATIVE");
+        assertEquals(1, fc.write(obj));
+        String out = fc.toHeader();
+        for (String key : new String[] {"PROJP0", "PROJP1", "PROJP2"}) {
+            assertTrue(out.contains(key), key + " is kept");
+        }
     }
 }

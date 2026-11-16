@@ -466,17 +466,18 @@ final class FitsStore {
 
     /**
      * C's {@code FindLonLatSpecAxes} (fitschan.c:10822): the longitude, latitude and spectral axes,
-     * numbered from 0 (-1 for none), among the first WCSAXES (or NAXIS) CTYPE values. A spectral
-     * axis is one {@code IsSpectral} or {@code IsAIPSSpectral} recognises; a celestial axis has
-     * {@code -} as its fifth character, and is a longitude axis for {@code RA--}, {@code AZ--},
-     * {@code xLON} and {@code xyLN}, and a latitude axis for {@code DEC-}, {@code EL--}, {@code
-     * xLAT} and {@code xyLT}. The last axis of each kind is the one given.
+     * numbered from 0 (-1 for none), among the first WCSAXES CTYPE values, or, without WCSAXES,
+     * the first {@code storeNaxis}, C's {@code store->naxis}. A spectral axis is one {@code
+     * IsSpectral} or {@code IsAIPSSpectral} recognises; a celestial axis has {@code -} as its fifth
+     * character, and is a longitude axis for {@code RA--}, {@code AZ--}, {@code xLON} and {@code
+     * xyLN}, and a latitude axis for {@code DEC-}, {@code EL--}, {@code xLAT} and {@code xyLT}. The
+     * last axis of each kind is the one given.
      */
-    int[] lonLatSpecAxes() {
+    int[] lonLatSpecAxes(int storeNaxis) {
         int axlon = -1;
         int axlat = -1;
         int axspec = -1;
-        int n = wcsaxes != null ? wcsaxes : naxis;
+        int n = wcsaxes != null ? wcsaxes : storeNaxis;
         for (int i = 0; i < n; i++) {
             String ct = i < ctype.length ? ctype[i] : null;
             if (ct == null) {

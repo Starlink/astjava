@@ -34,10 +34,10 @@ class FitsChanSipokOracleTest {
 
     /** The encodings whose writers this library does not have. */
     private static final Set<String> NOT_WRITTEN =
-            new HashSet<>(Arrays.asList("FITS-PC", "FITS-IRAF", "FITS-AIPS", "FITS-AIPS++", "FITS-CLASS", "DSS"));
+            new HashSet<>(Arrays.asList("FITS-AIPS", "FITS-AIPS++", "FITS-CLASS", "DSS"));
 
     /** The number of cases of the encodings in {@link #NOT_WRITTEN}. */
-    private static final int NOT_WRITTEN_CASES = 18;
+    private static final int NOT_WRITTEN_CASES = 12;
 
     /** What this library writes for one case, in the probe's format. */
     private static String run(String enc, String sipOk) {
@@ -93,7 +93,7 @@ class FitsChanSipokOracleTest {
             }
         }
         assertTrue(failed.isEmpty(), String.join("\n", failed));
-        assertEquals(3, run, "FITS-WCS cases run");
+        assertEquals(9, run, "FITS-WCS, FITS-PC and FITS-IRAF cases run");
         assertEquals(NOT_WRITTEN_CASES, notWritten, "cases of encodings not written");
     }
 

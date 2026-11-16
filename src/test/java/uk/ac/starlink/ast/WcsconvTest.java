@@ -26,10 +26,11 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * -Dast.writeDeferred=true} to rewrite the list from what the rows give.
  *
  * <ul>
- *   <li>A row whose output is written with a FITS encoding other than FITS-WCS, or DSS, needs
+ *   <li>A row whose output is written with FITS-AIPS, FITS-AIPS++, FITS-CLASS or DSS needs
  *       {@code FitsChan.write} with that encoding, which does not write yet, and cannot run at all;
  *       there are {@value #WRITE_ROWS} of them, each listed as {@value #WRITE}.
- *   <li>A {@code native} or {@code fits-wcs} row's output is the cards {@code FitsChan.write}
+ *   <li>A {@code native}, {@code fits-wcs}, {@code fits-pc} or {@code fits-iraf} row's output is the
+ *       cards {@code FitsChan.write}
  *       gives with that encoding, written as {@code wcsconverter.c} writes them: to the FitsChan
  *       the input was read from (or, if the input was read as a native dump, to a new FitsChan
  *       with the row's attributes), from its first card, the cards then listed from the first by
@@ -49,8 +50,8 @@ class WcsconvTest {
     /** The reason of a row whose output needs {@code FitsChan.write}. */
     static final String WRITE = "out-of-scope method FitsChan.write";
 
-    /** The number of rows whose output is written with a FITS encoding other than FITS-WCS, or DSS. */
-    static final int WRITE_ROWS = 59;
+    /** The number of rows whose output is written with FITS-AIPS, FITS-AIPS++, FITS-CLASS or DSS. */
+    static final int WRITE_ROWS = 45;
 
     /** One row of the manifest. */
     private static final class Row {
@@ -87,7 +88,9 @@ class WcsconvTest {
         boolean needsWrite() {
             return !"native".equalsIgnoreCase(encoding)
                     && !"ast".equalsIgnoreCase(encoding)
-                    && !"fits-wcs".equalsIgnoreCase(encoding);
+                    && !"fits-wcs".equalsIgnoreCase(encoding)
+                    && !"fits-pc".equalsIgnoreCase(encoding)
+                    && !"fits-iraf".equalsIgnoreCase(encoding);
         }
     }
 
@@ -151,7 +154,7 @@ class WcsconvTest {
     }
 
     /**
-     * The cards {@code wcsconverter.c} writes for a {@code native} or {@code fits-wcs} row: the
+     * The cards {@code wcsconverter.c} writes for a row written with a FITS encoding: the
      * Object written with the row's encoding from the first card of the FitsChan it was read from,
      * or of a new FitsChan with the row's attributes, and then every card from the first, as {@code
      * astFindFits} with the template {@code %f} gives them, one per line.
