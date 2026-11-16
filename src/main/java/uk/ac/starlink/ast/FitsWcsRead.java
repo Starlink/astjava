@@ -526,8 +526,8 @@ final class FitsWcsRead {
 
     /**
      * C's {@code TabMapping} (fitschan.c:33898), which makes the look-up Mapping of every {@code
-     * -TAB} axis when TabOK is above zero; with TabOK at most zero it makes none and the axes are
-     * read as linear.
+     * -TAB} axis when TabOK is above zero; with TabOK at most zero it makes none, a non-spectral
+     * {@code -TAB} axis is read as linear, and a spectral one is refused by {@code WcsSpectral}.
      *
      * @throws UnsupportedOperationException for a {@code -TAB} axis with TabOK above zero, whose
      *     look-up needs LutMap
