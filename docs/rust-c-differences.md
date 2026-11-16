@@ -508,6 +508,54 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `Channel::write` for `FitsChan` in `fitschan/mod.rs` removes the cards and restores the current card after any failure, an error included.
 - Java: as Rust: `FitsChan.write` undoes a write that throws as it undoes one that writes nothing.
 
+### The largest grid dimension of `FindBasisVectors`
+
+- C: `FindBasisVectors` takes the largest dimension, which limits its search, from the dimensions before the first unknown one (`fitschan.c` `FindBasisVectors`).
+- Rust: `fitschan/wcs_decompose.rs` `find_basis_vectors` uses 10240 whenever any dimension is unknown.
+- Java: as C.
+
+### The tolerance test of `FitOK`
+
+- C: `FitOK` accepts a fit whose mean squared residual is strictly less than the squared tolerance (`fitschan.c` `FitOK`).
+- Rust: `fitschan/wcs_decompose.rs` `fit_ok` accepts a root mean square residual less than or equal to the tolerance.
+- Java: as C.
+
+### Celestial axes in `MakeIntWorld`
+
+- C: `MakeIntWorld` finds the longitude axis for `SIPIntWorld` with `astIsASkyFrame`, and calls it when SipOK is set and there is a longitude axis; when scaling degenerate axes it pairs celestial axes with the file's `IsASkyFrame` macro, which also needs the Domain to be `SKY` (`fitschan.c` `MakeIntWorld`).
+- Rust: `fitschan/fset_to_store/make_int_world.rs` calls `sip_int_world` only when both a longitude and a latitude axis are found, and pairs any SkyFrame axes whatever their Domain.
+- Java: as C.
+
+### CDELT values of a failed `MakeIntWorld`
+
+- C: when no linear description is found, `MakeIntWorld` still calls `SplitMat` on its CD matrix, which is all bad, and stores the CDELT array, which `SplitMat` has not set, so the store holds uninitialised values (`fitschan.c` `MakeIntWorld`). **C quirk.**
+- Rust: `fitschan/fset_to_store/make_int_world.rs` stores nothing on failure.
+- Java: as Rust; `FsetToStore` discards the store when the primary description fails, but keeps an alternate description's partial values.
+
+### Dimensions of degenerate axes in `MakeInvertable`
+
+- C: `MakeInvertable` reads a dimension for every input of the square matrix, but its caller's array has one per pixel axis, so for degenerate axes it reads past the end of the array (`fitschan.c` `MakeInvertable`, `Write`). **C quirk.**
+- Rust: `fitschan/fset_to_store/invertable.rs` stops at the end of the array.
+- Java: as Rust: an input with no dimension is not patched.
+
+### `OrthVector` with no vectors, and its normalisation
+
+- C: `OrthVector` with no vectors solves an empty system, which `palDmat` does not find singular, and gives the unit vector of the first column, so `OrthVectorSet` with no vectors gives the unit basis; it normalises by dividing by the length (`fitschan.c` `OrthVector`).
+- Rust: `fitschan/fset_to_store/orth.rs` `orth_vector` returns `None` with no vectors, and normalises by multiplying by the reciprocal of the length, which can differ in the last bit.
+- Java: as C.
+
+### `WorldAxes`
+
+- C: `WorldAxes` simplifies the Mapping first, takes as the root pixel position the inverse-transformed root world position even when it is bad, compares tangents with `astEQUAL`, and, for a Mapping with only a forward transformation, reads `perm[j]` for each input `j`, past the end of the array when there are more inputs than outputs (`fitschan.c` `WorldAxes`); the last is a **C quirk.**
+- Rust: `fitschan/fset_to_store/world_axes.rs` does not simplify, keeps the previous root position on an axis whose inverse-transformed value is not finite, compares tangents with a local `ast_equal` scaled by the larger magnitude rather than the sum of the two, with a floor of the smallest normal double rather than 1e-12, and treats an input with no output of the same index as not retained.
+- Java: as C, except that an input with no output of the same index is treated as Rust treats it.
+
+### `NearestPix`
+
+- C: `NearestPix` uses the Mapping split off for the axis whatever its number of outputs (`fitschan.c` `NearestPix`).
+- Rust: `nearest_pix_value` in `fitschan/fset_to_store/spectral_axes.rs` uses the split Mapping only when it has one output.
+- Java: as C.
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails
