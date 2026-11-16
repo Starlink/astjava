@@ -26,11 +26,11 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * -Dast.writeDeferred=true} to rewrite the list from what the rows give.
  *
  * <ul>
- *   <li>A row whose output is written with FITS-AIPS, FITS-AIPS++, FITS-CLASS or DSS needs
- *       {@code FitsChan.write} with that encoding, which does not write yet, and cannot run at all;
- *       there are {@value #WRITE_ROWS} of them, each listed as {@value #WRITE}.
- *   <li>A {@code native}, {@code fits-wcs}, {@code fits-pc} or {@code fits-iraf} row's output is the
- *       cards {@code FitsChan.write}
+ *   <li>A row whose output is written with FITS-CLASS or DSS needs {@code FitsChan.write} with
+ *       that encoding, which does not write yet, and cannot run at all; there are {@value
+ *       #WRITE_ROWS} of them, each listed as {@value #WRITE}.
+ *   <li>A {@code native}, {@code fits-wcs}, {@code fits-pc}, {@code fits-iraf}, {@code fits-aips}
+ *       or {@code fits-aips++} row's output is the cards {@code FitsChan.write}
  *       gives with that encoding, written as {@code wcsconverter.c} writes them: to the FitsChan
  *       the input was read from (or, if the input was read as a native dump, to a new FitsChan
  *       with the row's attributes), from its first card, the cards then listed from the first by
@@ -50,8 +50,8 @@ class WcsconvTest {
     /** The reason of a row whose output needs {@code FitsChan.write}. */
     static final String WRITE = "out-of-scope method FitsChan.write";
 
-    /** The number of rows whose output is written with FITS-AIPS, FITS-AIPS++, FITS-CLASS or DSS. */
-    static final int WRITE_ROWS = 45;
+    /** The number of rows whose output is written with FITS-CLASS or DSS. */
+    static final int WRITE_ROWS = 10;
 
     /** One row of the manifest. */
     private static final class Row {
@@ -90,7 +90,9 @@ class WcsconvTest {
                     && !"ast".equalsIgnoreCase(encoding)
                     && !"fits-wcs".equalsIgnoreCase(encoding)
                     && !"fits-pc".equalsIgnoreCase(encoding)
-                    && !"fits-iraf".equalsIgnoreCase(encoding);
+                    && !"fits-iraf".equalsIgnoreCase(encoding)
+                    && !"fits-aips".equalsIgnoreCase(encoding)
+                    && !"fits-aips++".equalsIgnoreCase(encoding);
         }
     }
 

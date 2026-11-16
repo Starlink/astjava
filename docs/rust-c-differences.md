@@ -722,6 +722,29 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `encode_wcs_per_plane` in `fitschan/wcs_write/mod.rs` passes the primary plane to `enc_iraf::write_to_cards`, which checks the plane's own axis count, checks CRPIX, CRVAL and CTYPE before writing, and writes DATE-OBS from the plane's stored date string.
 - Java: as C (`FitsEncIraf`).
 
+### `AIPSFromStore` and `AIPSPPFromStore`
+
+- C: both write the primary description alone, refusing it when the number of CRPIX values differs from the number of pixel axes (`store->naxis`).
+  Writing CRPIX, CRVAL and CTYPE stops at a missing value or a `-TAB` axis, but CDELT, CUNIT, CROTA (or the CD matrix), EPOCH, LATPOLE, LONPOLE, DATE-OBS, MJD-OBS, PROJPm and RESTFREQ are still written before the function returns 0, leaving the cards for `Write` to remove.
+  `AIPSFromStore` writes CROTA whenever there is a pair of rotation axes, zero included; `AIPSPPFromStore` writes it only when it is not zero, and a CD matrix when the two estimates of CROTA disagree.
+  `AIPSPPFromStore` writes any LONPOLE and LATPOLE stored, 180 degrees included.
+  RESTFREQ is written only with a spectral axis; a spectral axis needs a SPECSYS of LSRK, LSRD, BARYCENT or GEOCENTR (not TOPOCENT) and units of Hz or m/s or a multiple of them.
+  DATE-OBS is formatted from MJD-OBS, and MJD-OBS is written only over a card the header already has (`fitschan.c` `AIPSFromStore`, `AIPSPPFromStore`).
+- Rust: `aips_store_ok` and `write_to_cards`/`write_to_cards_pp` in `fitschan/enc_aips.rs` check every value before writing; `write_to_cards_pp` leaves out a LONPOLE of 180 degrees; `write_to_cards` writes RESTFREQ without a spectral axis and CROTA only with two or more axes; `translate_aips_spectral_write` writes TOPOCENT as `-OBS`; DATE-OBS comes from the store's date string.
+- Java: as C (`FitsEncAips`).
+
+### `PROJPm` written by `AIPSPPFromStore` are not read back
+
+- C: `AIPSPPFromStore` writes the projection parameters of the latitude axis as `PROJPm`, but `SpecTrans` translates `PROJPm` to `PV<axlat>_m` only for FITS-PC and FITS-IRAF (`fitschan.c` `SpecTrans`), so a FITS-AIPS++ header read as FITS-AIPS++ loses them. **C quirk**.
+- Rust: as C.
+- Java: as C.
+
+### The SIN check of `AIPSFromStore`
+
+- C: `AIPSFromStore` sets its status from the SIN projection parameters alone, overriding an earlier refusal for a missing CRVAL on a celestial axis; the description is then refused when CRVAL is written (`fitschan.c` `AIPSFromStore`). **C quirk** (no effect on the result).
+- Rust: `aips_store_ok` in `fitschan/enc_aips.rs` combines the checks.
+- Java: as C.
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails

@@ -24,9 +24,10 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
 /**
  * Writing FrameSets as FITS-WCS through {@link FitsChan#write}: what a failed write leaves, where
  * the cards of a successful one go, that the cards read back transform as the FrameSet written,
- * also for FITS-PC and FITS-IRAF, and that writes in several threads agree. The cards expected
- * come from C probes of the pinned library (fitschan.c {@code Write}, {@code FitsFromStore},
- * {@code WcsFromStore}, {@code PCFromStore}, {@code IRAFFromStore}).
+ * also for FITS-PC, FITS-IRAF, FITS-AIPS and FITS-AIPS++, and that writes in several threads
+ * agree. The cards expected come from C probes of the pinned library (fitschan.c {@code Write},
+ * {@code FitsFromStore}, {@code WcsFromStore}, {@code PCFromStore}, {@code IRAFFromStore}, {@code
+ * AIPSFromStore}, {@code AIPSPPFromStore}).
  */
 class FitsChanWriteTest {
 
@@ -207,14 +208,14 @@ class FitsChanWriteTest {
 
     /**
      * The headers that do not round-trip, with their outcome, which C's gives too (C probes {@code
-     * p3.c} for FITS-WCS and {@code rt.c} for FITS-PC and FITS-IRAF, beside the task reports): C's
+     * p3.c} for FITS-WCS and {@code rt.c} for the other encodings, beside the task reports): C's
      * write returns 0 (for FITS-IRAF, a description with a LONPOLE or projection parameters, or a
      * TNX or ZPX projection read as TPN or ZPN), or C's cards read back give values where C's read
-     * of the header gives BAD (the CAR headers whose longitude range the projection bounds) or
-     * other values (scp, at a point 1.3E-6 radians from the pole, where longitude changes fast),
-     * or C's write
-     * reaches {@code LogAxis}, which makes a MathMap, for the description of absolute coordinates
-     * of an offset SkyFrame whose Domain is not {@code SKY}.
+     * of the header gives BAD (the CAR headers whose longitude range the projection bounds, among
+     * them the FITS-AIPS header cmap_3years_GP_D2) or other values (scp, at a point 1.3E-6 radians
+     * from the pole, where longitude changes fast), or C's write reaches {@code LogAxis}, which
+     * makes a MathMap, for the description of absolute coordinates of an offset SkyFrame whose
+     * Domain is not {@code SKY}.
      */
     private static final Map<String, String> NOT_ROUND_TRIPPED = notRoundTripped();
 
@@ -237,6 +238,7 @@ class FitsChanWriteTest {
         for (String h : Arrays.asList(
                 "programs/joye_car_headers/car1.head",
                 "programs/joye_car_headers/car2.head",
+                "programs/joye_car_headers/cmap_3years_GP_D2.head",
                 "wcsconv/inputs/car1.head",
                 "wcsconv/inputs/car2.head",
                 "wcsconv/inputs/scp.head")) {
@@ -297,11 +299,11 @@ class FitsChanWriteTest {
 
     /** The encodings whose headers {@link #everyInScopeHeaderRoundTrips} writes and reads back. */
     private static final Set<String> ROUND_TRIP_ENCODINGS =
-            new LinkedHashSet<>(Arrays.asList("FITS-WCS", "FITS-PC", "FITS-IRAF"));
+            new LinkedHashSet<>(Arrays.asList("FITS-WCS", "FITS-PC", "FITS-IRAF", "FITS-AIPS", "FITS-AIPS++"));
 
     /**
-     * Every FITS-WCS, FITS-PC and FITS-IRAF header of {@code headers.oracle} whose sections match C
-     * here, read, written with its own encoding into a new FitsChan and read back, transforms the
+     * Every FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS and FITS-AIPS++ header of {@code headers.oracle}
+     * whose sections match C here, read, written with its own encoding into a new FitsChan and read back, transforms the
      * inputs of its forward section to the outputs C recorded, within the section's tolerances,
      * unless it is in {@link #NOT_ROUND_TRIPPED} with the outcome it gives, which is checked.
      */

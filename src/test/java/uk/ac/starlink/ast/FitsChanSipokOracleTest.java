@@ -33,11 +33,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
 class FitsChanSipokOracleTest {
 
     /** The encodings whose writers this library does not have. */
-    private static final Set<String> NOT_WRITTEN =
-            new HashSet<>(Arrays.asList("FITS-AIPS", "FITS-AIPS++", "FITS-CLASS", "DSS"));
+    private static final Set<String> NOT_WRITTEN = new HashSet<>(Arrays.asList("FITS-CLASS", "DSS"));
 
     /** The number of cases of the encodings in {@link #NOT_WRITTEN}. */
-    private static final int NOT_WRITTEN_CASES = 12;
+    private static final int NOT_WRITTEN_CASES = 6;
 
     /** What this library writes for one case, in the probe's format. */
     private static String run(String enc, String sipOk) {
@@ -93,7 +92,7 @@ class FitsChanSipokOracleTest {
             }
         }
         assertTrue(failed.isEmpty(), String.join("\n", failed));
-        assertEquals(9, run, "FITS-WCS, FITS-PC and FITS-IRAF cases run");
+        assertEquals(15, run, "FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS and FITS-AIPS++ cases run");
         assertEquals(NOT_WRITTEN_CASES, notWritten, "cases of encodings not written");
     }
 

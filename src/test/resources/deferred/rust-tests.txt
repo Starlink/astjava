@@ -154,7 +154,6 @@ tests/test_equal_oracle.rs::equality_matches_the_c_library | astEqual (out-of-sc
 tests/test_equal_oracle.rs::wcsmap_equality_is_symmetric_where_c_checks_it | astEqual (out-of-scope method)
 tests/test_trangrid.rs::tranmap | TranMap (out of scope)
 tests/test_trangrid.rs::nonlinear_mathmap_1d | MathMap (out of scope)
-tests/test_trangrid.rs::fits_wcs_pixel_to_sky | out-of-scope method FitsChan.read of the FITS-AIPS encoding
 tests/test_tran_grid_oracle.rs::quadratic_fits_match_c | astQuadApprox (out-of-scope method)
 tests/test_tran_grid_oracle.rs::quadratic_fit_needs_two_inputs | astQuadApprox (out-of-scope method)
 tests/test_map_split.rs::normmap_split_picks_axes | NormMap (out of scope)

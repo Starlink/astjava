@@ -40,7 +40,7 @@ final class FitsWcsRead {
 
     /**
      * The FrameSet the cards of {@code fc} describe in {@code encoding}, FITS-WCS or a variant of it
-     * (FITS-PC, FITS-IRAF), or null when they describe none (C's {@code Read} for a foreign
+     * (FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++), or null when they describe none (C's {@code Read} for a foreign
      * encoding, fitschan.c:26007, through {@code FitsToStore} and {@code FsetFromStore}).
      *
      * <p>The cards the read uses are marked as provisionally used, and the warnings it raises are

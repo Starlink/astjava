@@ -20,10 +20,12 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * alike, so every value must equal C's.
  *
  * <p>{@code grids_match_c} runs the grids of the Mappings in the first phase. The grids of the
- * FrameSet of a TAN header ({@code tan}) are not run: the header has a {@code CROTA1} card, which
- * C's FitsChan guesses to be FITS-AIPS (fitschan.c:12880), an encoding whose read is out of scope;
- * the MathMap grids ({@code cubic}) are outside the first phase. In {@code grid_errors_match_c}, a
- * Mapping with no inverse stands in for the MathMap whose inverse is undefined. {@code
+ * FrameSet of a TAN header ({@code tan}) are not run: the projection's outputs come from the
+ * elementary functions of java.lang.Math, which can differ from C's libm in the last bit, and the
+ * grids are compared bit for bit ({@code tan_small} gives another hash, while its sampled positions
+ * agree with C's within libm rounding); the MathMap grids ({@code cubic}) are outside the first
+ * phase. In {@code grid_errors_match_c}, a Mapping with no inverse stands in for the MathMap whose
+ * inverse is undefined. {@code
  * quadratic_fits_match_c} and {@code quadratic_fit_needs_two_inputs} test {@code astQuadApprox},
  * which jniast does not have.
  */

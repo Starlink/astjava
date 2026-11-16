@@ -1,8 +1,6 @@
 # Fixtures of fixtures/oracle/headers.oracle whose sections do not all match C:
 # <path relative to ast_tester/fixtures> | <reason>
 # Rewritten by TransformOracleTest with -Dast.writeDeferred=true.
-programs/joye_car_headers/CAR_model.head | encoding FITS-AIPS
-programs/joye_car_headers/cmap_3years_GP_D2.head | encoding FITS-AIPS
 wcsconv/inputs/alt-spectral.head | needs SpecFrame
 wcsconv/inputs/awav-a2f.head | needs SpecFrame
 wcsconv/inputs/axes-swap.head | needs SpecFrame
@@ -18,8 +16,7 @@ wcsconv/inputs/class-sin.head | needs SpecFrame
 wcsconv/inputs/class-spec-hel.head | encoding FITS-CLASS
 wcsconv/inputs/class-spec.head | encoding FITS-CLASS
 wcsconv/inputs/class-write.head | encoding FITS-CLASS
-wcsconv/inputs/cobe.head | encoding FITS-AIPS
-wcsconv/inputs/crota-3d.head | encoding FITS-AIPS
+wcsconv/inputs/crota-3d.head | needs SpecFrame
 wcsconv/inputs/cube-reorder.head | needs SpecFrame
 wcsconv/inputs/degen-wcsaxes.head | needs SpecFrame
 wcsconv/inputs/ener-vel.head | needs SpecFrame
@@ -34,14 +31,14 @@ wcsconv/inputs/grism.head | needs SpecFrame
 wcsconv/inputs/multi-wcs-spec.head | needs SpecFrame
 wcsconv/inputs/polco.head | needs MathMap
 wcsconv/inputs/polco2.head | needs MathMap
-wcsconv/inputs/restfreq-ghz.head | encoding FITS-AIPS
-wcsconv/inputs/restfreq-mhz.head | encoding FITS-AIPS
+wcsconv/inputs/restfreq-ghz.head | needs SpecFrame
+wcsconv/inputs/restfreq-mhz.head | needs SpecFrame
 wcsconv/inputs/sip-3d-swap.head | needs SpecFrame
 wcsconv/inputs/sip-3d.head | needs SpecFrame
 wcsconv/inputs/skyspec3d-class.head | needs SpecFrame
 wcsconv/inputs/skyspec3d.head | needs SpecFrame
 wcsconv/inputs/ssysobs.head | needs SpecFrame
-wcsconv/inputs/velo-aips.head | encoding FITS-AIPS
+wcsconv/inputs/velo-aips.head | needs SpecFrame
 wcsconv/inputs/velo-vel.head | needs SpecFrame
 wcsconv/inputs/vopt-f2w.head | needs SpecFrame
 wcsconv/inputs/vopt-geo.head | needs SpecFrame

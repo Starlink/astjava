@@ -1,7 +1,6 @@
 # Rows of fixtures/wcsconv/cases.txt that do not match C:
 # <row name> | <reason>
 # Rewritten by WcsconvTest with -Dast.writeDeferred=true.
-timj_fits-aips | out-of-scope method FitsChan.write
 a20070718_fits-wcs | needs DSBSpecFrame
 dss_fits-dss_ast | encoding DSS
 dss_ast_dss | out-of-scope method FitsChan.write
@@ -11,7 +10,6 @@ lsst_fits-wcs | needs MathMap
 lsst2_fits-wcs | needs SplineMap
 longslit_fits-wcs | needs SpecFrame
 jan_fits-class_ast | encoding FITS-CLASS
-cobe_native | encoding FITS-AIPS
 polco_native | needs MathMap
 polco2_native | needs MathMap
 specflux_native | needs SpecFrame
@@ -25,7 +23,7 @@ degen-wcsaxes_native | needs SpecFrame
 wave-w2f_native | needs SpecFrame
 vrad-v2f_native | needs SpecFrame
 fits-pc-alt_native | needs SpecFrame
-velo-aips_native | encoding FITS-AIPS
+velo-aips_native | needs SpecFrame
 awav-a2f_native | needs SpecFrame
 cube-reorder_native | needs SpecFrame
 velo-vel_native | needs SpecFrame
@@ -41,41 +39,22 @@ ssysobs_native | needs SpecFrame
 ener-vel_native | needs SpecFrame
 beta-frq_native | needs SpecFrame
 vrad-wav_native | needs SpecFrame
-restfreq-ghz_native | encoding FITS-AIPS
-restfreq-mhz_native | encoding FITS-AIPS
-crota-3d_native | encoding FITS-AIPS
+restfreq-ghz_native | needs SpecFrame
+restfreq-mhz_native | needs SpecFrame
+crota-3d_native | needs SpecFrame
 axes-swap_native | needs SpecFrame
 cd-cross_native | needs SpecFrame
 class-noproj_native | encoding FITS-CLASS
-timj_fits-aips++ | out-of-scope method FitsChan.write
-a20070718_fits-aips | out-of-scope method FitsChan.write
-a20070718_fits-aips++ | out-of-scope method FitsChan.write
-freq-ghz-bary_fits-aips | out-of-scope method FitsChan.write
-freq-ghz-bary_fits-aips++ | out-of-scope method FitsChan.write
-vopt-geo_fits-aips | out-of-scope method FitsChan.write
-vopt-geo_fits-aips++ | out-of-scope method FitsChan.write
-ncp_fits-aips | out-of-scope method FitsChan.write
-ncp_fits-aips++ | out-of-scope method FitsChan.write
-fk4-aips_fits-aips | out-of-scope method FitsChan.write
-fk4-aips_fits-aips++ | out-of-scope method FitsChan.write
-sfl-origin_fits-aips | out-of-scope method FitsChan.write
-sfl-origin_fits-aips++ | out-of-scope method FitsChan.write
-sin-plain_fits-aips | out-of-scope method FitsChan.write
-sin-plain_fits-aips++ | out-of-scope method FitsChan.write
-tan-rotated_fits-aips | out-of-scope method FitsChan.write
-tan-rotated_fits-aips++ | out-of-scope method FitsChan.write
-tan-cdmatrix_fits-aips++ | out-of-scope method FitsChan.write
-pixel-2d_fits-aips | out-of-scope method FitsChan.write
-pixel-2d_fits-aips++ | out-of-scope method FitsChan.write
-vrad-lsrd_fits-aips | out-of-scope method FitsChan.write
-vrad-lsrd_fits-aips++ | out-of-scope method FitsChan.write
-freq-pixel3d_fits-aips | out-of-scope method FitsChan.write
-freq-pixel3d_fits-aips++ | out-of-scope method FitsChan.write
-pixel-1d_fits-aips | out-of-scope method FitsChan.write
-pixel-1d_fits-aips++ | out-of-scope method FitsChan.write
-pixel-rotated_fits-aips | out-of-scope method FitsChan.write
-pixel-rotated_fits-aips++ | out-of-scope method FitsChan.write
-pixel-shear_fits-aips++ | out-of-scope method FitsChan.write
+a20070718_fits-aips | needs DSBSpecFrame
+a20070718_fits-aips++ | needs DSBSpecFrame
+freq-ghz-bary_fits-aips | needs SpecFrame
+freq-ghz-bary_fits-aips++ | needs SpecFrame
+vopt-geo_fits-aips | needs SpecFrame
+vopt-geo_fits-aips++ | needs SpecFrame
+vrad-lsrd_fits-aips | needs SpecFrame
+vrad-lsrd_fits-aips++ | needs SpecFrame
+freq-pixel3d_fits-aips | needs SpecFrame
+freq-pixel3d_fits-aips++ | needs SpecFrame
 class-write_fits-class | out-of-scope method FitsChan.write
 class-gal_fits-class | out-of-scope method FitsChan.write
 jan_fits-class-rt | out-of-scope method FitsChan.write
@@ -90,8 +69,8 @@ class-olddate_fits-class | out-of-scope method FitsChan.write
 a20070718_fits-iraf | needs DSBSpecFrame
 skyspec3d_native | needs SpecFrame
 skyspec3d_fits-wcs | needs SpecFrame
-skyspec3d_fits-aips | out-of-scope method FitsChan.write
-skyspec3d_fits-aips++ | out-of-scope method FitsChan.write
+skyspec3d_fits-aips | needs SpecFrame
+skyspec3d_fits-aips++ | needs SpecFrame
 skyspec3d_fits-iraf | needs SpecFrame
 wave-1d_fits-iraf | needs SpecFrame
 skyspec3d_fits-pc | needs SpecFrame
@@ -103,6 +82,3 @@ vopt-f2w_native | needs SpecFrame
 vopt-f2w_fits-wcs | needs SpecFrame
 wave-f2w_native | needs SpecFrame
 wave-f2w_fits-wcs | needs SpecFrame
-galactic-tan_fits-aips | out-of-scope method FitsChan.write
-galactic-tan_fits-aips++ | out-of-scope method FitsChan.write
-ecliptic-tan_fits-aips | out-of-scope method FitsChan.write

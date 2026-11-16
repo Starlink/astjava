@@ -856,9 +856,9 @@ public class FitsChan extends Channel {
             case FITS_WCS:
             case FITS_PC:
             case FITS_IRAF:
-                return FitsWcsRead.read(this, enc);
             case FITS_AIPS:
             case FITS_AIPSPP:
+                return FitsWcsRead.read(this, enc);
             case FITS_CLASS:
             case DSS:
                 throw new UnsupportedOperationException(
@@ -947,8 +947,9 @@ public class FitsChan extends Channel {
     /**
      * C's {@code FitsFromStore}: puts the current card after the last card describing WCS ({@link
      * FitsCardList#positionWriteCursor}, C's {@code FindWcs}), and writes the descriptions in
-     * {@code store} with the writer of {@code enc}. FITS-WCS, FITS-PC and FITS-IRAF have writers
-     * here; for the other encodings nothing is written and the result is false.
+     * {@code store} with the writer of {@code enc}. FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS and
+     * FITS-AIPS++ have writers here; for the other encodings nothing is written and the result is
+     * false.
      */
     private boolean fitsFromStore(FitsPlaneStores store, Encoding enc, String method, String cls) {
         cardList.positionWriteCursor();
@@ -961,7 +962,9 @@ public class FitsChan extends Channel {
             case FITS_IRAF:
                 return FitsEncIraf.irafFromStore(this, store, method, cls);
             case FITS_AIPS:
+                return FitsEncAips.aipsFromStore(this, store, method, cls);
             case FITS_AIPSPP:
+                return FitsEncAips.aipsppFromStore(this, store, method, cls);
             case FITS_CLASS:
             case DSS:
                 return false;

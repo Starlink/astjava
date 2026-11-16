@@ -27,10 +27,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * {@code error-set-readonly}) run here; {@code excluded_cases_are_in_the_c_table} has no
  * counterpart, since none of those is excluded.
  *
- * <p>A case naming a write encoding ({@code write_enc}) is checked by C writing the FrameSet read to
- * that encoding, which must refuse it, and to FITS-WCS, which must accept it; {@code
- * FitsChan.write} is out of scope, so those cases are run up to the read and the writes are left
- * out. A case whose read stops at something out of scope ({@code UnsupportedOperationException})
+ * <p>A case naming a write encoding ({@code write_enc}) is checked by writing the FrameSet read to
+ * that encoding, which must refuse it, and to FITS-WCS, which must accept it, as C does. A case whose read stops at something out of scope ({@code UnsupportedOperationException})
  * cannot be compared with C, and is in {@link #EXCLUDED} with the reason measured from the
  * exception; {@code port_gap_cases_still_differ} becomes {@code excludedCasesStillDiffer}, which
  * checks every excluded case still differs from C, for that reason where it is measured.
@@ -121,9 +119,10 @@ class FitsChanErrorsTest {
             }
         }
         AstException readError = null;
+        AstObject obj = null;
         if (!c.get("skip_read").asBoolean()) {
             try {
-                fc.read();
+                obj = fc.read();
             } catch (AstException e) {
                 readError = e;
             } catch (UnsupportedOperationException e) {
@@ -159,8 +158,23 @@ class FitsChanErrorsTest {
             }
             return null;
         }
-        // A write_enc case goes on in C to write the FrameSet read (testfitschanerrors.c
-        // test_bad_header); FitsChan.write is out of scope, so that is left out.
+        // A write_enc case goes on in C to write the Object read (testfitschanerrors.c
+        // test_bad_header): its encoding must refuse it, and FITS-WCS must accept it.
+        String writeEnc = text(c, "write_enc");
+        if (writeEnc != null && obj != null) {
+            FitsChan wfc = new FitsChan();
+            wfc.setEncoding(writeEnc);
+            int nw = wfc.write(obj);
+            if (nw != 0) {
+                return "write to " + writeEnc + " returned " + nw + ", expected 0";
+            }
+            wfc.emptyFits();
+            wfc.setEncoding("FITS-WCS");
+            nw = wfc.write(obj);
+            if (nw != 1) {
+                return "write to FITS-WCS returned " + nw + ", expected 1";
+            }
+        }
         return null;
     }
 
