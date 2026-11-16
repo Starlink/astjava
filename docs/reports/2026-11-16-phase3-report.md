@@ -8,7 +8,7 @@ Of the 194 rows of C's FITS conversion regression table (`ast_tester/fixtures/wc
 Every one of the other 76 needs a class outside this library: SpecFrame (63), the FITS-CLASS read (6), DSBSpecFrame (4), MathMap (2) or SplineMap (1).
 19 more headers of the transform oracle now read and transform as C's do, and six C-probe oracle suites of the Rust port were converted and pass.
 Porting found about 20 places where C reads or writes memory it does not own, dereferences a null pointer or recurses without end; they are recorded in [`docs/rust-c-differences.md`](../rust-c-differences.md), and listed below.
-The work added 8,331 lines of main code and 8,654 lines of tests; `mvn verify` passes with 2,826 tests on JDK 21, and the tests pass on the JDK 27 runtime.
+The work added 8,441 lines of main code and 8,838 lines of tests; `mvn verify` passes with 2,829 tests on JDK 21, and the tests pass on the JDK 27 runtime.
 
 ## What was ported
 
@@ -63,7 +63,7 @@ The [rulings](2026-11-16-phase3-rulings.md) give each with its reason and cost; 
 | `rust-tests.txt` entries | 399 | 376, after adding 13 entries for two Rust test files the list had missed |
 | `FitsChanCursorOracleTest` cases run | 147 | 247 |
 | `TranGridOracleTest` grids run | 14 | 19 |
-| Tests | 2,467 | 2,826 |
+| Tests | 2,467 | 2,829 |
 
 New C-probe oracle suites, converted from the Rust port's `cases.rs` with `CasesToJson`: `FitsChanEncodingsOracleTest` (every encoding column), `FitsChanSipokOracleTest`, `FitsChanSplitmapOracleTest`, `FitsChanAltNaxesOracleTest` and `FitsChanAltEpochOracleTest`, and the write cases of `SkyPoleOracleTest`; cases needing an absent class are listed in each and checked both ways.
 `FitsChanWriteTest` holds the Review Focus tests: a failed or Strict write leaves the cards, their order and the current card as they were, except that a card the write replaced before failing is lost, as in C; cards go where C puts them; every in-scope header of the transform oracle, read and written in each encoding that accepts it, reads back to transform as C's own round trip does (where C's round trip fails or differs, the test expects that); four threads writing copies of one FrameSet give identical cards.
@@ -82,13 +82,13 @@ Added; each runtime-Math entry was traced, with a debugger on C and replays in C
 | `FitsChanEncodingsOracleTest` offset-SkyRef cases | PC elements within 1e-13 relative | about 1e-16: identical MatrixMaps, `atan2` 1 ULP apart |
 | `FitsChanEncodingsOracleTest` DSS cases (7) | PLTRAS and PLTDECS within the effect of 4 ULP of CRVAL | CRVAL 1 to 2 ULP from C through `atan2` (forward SphMap, and `eraC2s` in `eraFk5hz` with Epoch set); the keywords hold 3600 times CRVAL's fractional part |
 | `TranGridOracleTest` `tan` grids (5) | Sampled positions within `ulp(π/2)`; the bit-for-bit hash not checked for them | at most 2.2e-16 rad: `atan2`, `sin` and `cos` 1 ULP apart in 472 of 682 pixels, at identical arguments |
-| `FitsChanCursorOracleTest` `alt_axes_offset{,_none}` | CDELT2 and CDELT2A within 1e-13 relative | 1 ULP, runtime Math |
-| `FitsChanCursorOracleTest` `sky_offset_system_rw` | CDELT1 and CDELT2 within 1e-13 relative, PC1_2 and PC2_1 within 1e-13 absolute (the PC diagonal is 1) | CDELT1 8 ULP, PC2_1 2.0e-15: identical fitted Mappings, whose SphMap and TAN WcsMap transforms differ first at equal inputs (traced with a debugger and per-component comparisons, not replayed), the slopes of the differences being the differences of the fitted gradients |
+| `FitsChanCursorOracleTest` `alt_axes_offset{,_none}` | CDELT2 and CDELT2A within 1e-14 relative | 1 ULP, runtime Math |
+| `FitsChanCursorOracleTest` `sky_offset_system_rw` | CDELT1 and CDELT2 within 1e-14 relative, PC1_2 and PC2_1 within 1e-14 absolute (the PC diagonal is 1) | CDELT1 8 ULP, PC2_1 2.0e-15: identical fitted Mappings, whose SphMap and TAN WcsMap transforms differ first at equal inputs (traced with a debugger and per-component comparisons, not replayed), the slopes of the differences being the differences of the fitted gradients |
 | `FitsLogMapTest` | Logarithms and exponentials within 1 ULP of C's MathMap | `Math.exp(1)` is 1 ULP from libm |
 | `FitsChanWcsWriteTest` AZEL, Galactic and Supergalactic writes | CDELTn and PCi_j within 1e-14 absolute plus 1e-13 relative; other cards within 4 ULP | identical fitted Mappings; IWC computed from native latitudes near 90° amplify 1-ULP differences; the Galactic PC1_2 differs by 2.8e-15 against a limit of 1.3e-14 |
 | `FitsFsetToStoreTest` offset-sky description | Within 1e-14 rather than 4 ULP | the FrameSet read from the header already differs by 15 to 20 ULP, from the same runtime functions |
 | `FitsSipIntWorldTest` SIP_2D | CD within 1e-12 relative; CRPIX, the 32 coefficients and the samples exact | 1 to 3 ULP: the Rust oracle's copy of `SIPIntWorld` fits over an older box than current C; current C is checked end to end by the `sip` rows of `wcsconv` |
-| `FitsSkyPoleTest`, `FitsCelestialAxesTest` | Stored LONPOLE and LATPOLE within 1e-9 and 1e-12 of C's cards | the values come from C's cards, written with 15 and 17 significant digits |
+| `FitsSkyPoleTest`, `FitsCelestialAxesTest` | Stored LONPOLE and LATPOLE within 1e-12 of C's cards | the values come from C's cards, written with 15 and 17 significant digits, and are at most 180 |
 
 ## Defects found in the C library
 
@@ -133,7 +133,13 @@ The fix pass dealt with:
   The Javadoc of `write` now says where each encoding puts its cards, and that a failed write loses a card it had already replaced (C does the same; recorded as a C quirk, and pinned by a test); a test name that said the opposite of what it asserts was corrected.
 
 A scoped re-review found all four findings addressed and no new problem.
-Deferred as minor: the `FitsSkyPoleTest` tolerance (1e-9 where 1e-12 would do), the `sky_offset_system_rw` licence (1e-13 where about 1e-14 would do), and three read differences from earlier phases that the fuzz exposed, listed under Gaps and risks.
+The minor findings were then fixed.
+The `FitsSkyPoleTest` tolerance is 1e-12 (it was 1e-9), and the libm licence of the cursor-oracle cases is 1e-14 relative (it was 1e-13), five times the largest difference.
+Two read differences from earlier phases that the fuzz exposed now follow C, each pinned by a test whose expected values come from a C probe:
+the read's keyword translations are kept apart from the header's cards and read after them, as C reads its FitsChan of translations, so a translation outranks every card with its keyword (a zero CDELT followed by another CDELT, several CDELTs before a CD matrix) and a repeated translation keeps its comment by `SetFits`'s rules;
+and a NAXISn of a described axis that is not a number fails the read with `AST__FTCNV`, as C's `DistortMaps` reads it with `astGetFitsF`.
+A CTYPE card without a comment no longer clears the comment an earlier card gave, which with several "other" axes becomes the axis Label.
+Rust shares all three; they are in `docs/rust-c-differences.md`.
 
 ## Gaps and risks
 
@@ -146,11 +152,6 @@ Deferred as minor: the `FitsSkyPoleTest` tolerance (1e-9 where 1e-12 would do), 
 - **Runtime-Math margins.**
   The Galactic PC1_2 comparison has a margin of about 4.6 times; another JDK or libm could use more of it.
   Only every 97th position of the `tan` grids is compared, because C's oracle holds only those samples and a hash.
-- **Read-side translations** keep the phase 1 comment rule when they replace a card, where C applies `SetFits`'s rules; no gate shows a difference (deferred minor).
-- **Read differences from earlier phases**, found by the review's read fuzz and present before this phase:
-  with duplicate CDELT cards whose first is zero, C replaces the zero with 1.0 and Java takes the later card (all 17 transform differences in the fuzz);
-  a non-numeric NAXISn makes C's read fail with `AST__FTCNV` where Java reads the header.
-  Both are deferred to a later read-side fix.
 - **ReadCrval** reads the FitsChan before a write, so a write into a FitsChan holding a header this library cannot read (spectral, FITS-CLASS) throws `UnsupportedOperationException` naming the class.
 
 ## Rulings
