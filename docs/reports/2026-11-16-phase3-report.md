@@ -120,19 +120,37 @@ Kept as C has them, since they are defined: DATE-OBS written `T24:00:00.000` whe
 
 ## Final review
 
-To be completed after the whole-branch review.
+A fresh reviewer read the whole branch and ran a differential fuzz against the pinned C library: 1,800 random FrameSets of this library's classes written in all seven encodings (12,600 writes), some into FitsChans already holding cards with a random current card and attributes, and 4,440 mutated FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++ and DSS headers read.
+No exception other than `AstException` and `UnsupportedOperationException` escaped; wherever both libraries wrote, the cards, their order, their placement and the current card matched C's, and wherever both refused, both FitsChans were unchanged; Review Focus items 4 and 5 were confirmed against C.
+It found no Critical problem and no phase 3 port error.
+The fix pass dealt with:
+
+- **Writes refused that C completes.**
+  `LogAxis` threw `needs MathMap` for every non-linear axis with a non-zero CRVAL, where C uses the MathMap only to test whether the axis's logarithm is linear and, when it is not, goes on to describe the axis linearly within FitsTol; the fuzz found 231 writes C completed that Java refused.
+  The test is now ported with a package-private Mapping computing what C's MathMap computes, and `needs MathMap` is thrown only where the test passes; of the 735 fuzzed writes that threw there, 700 now give C's outcome and cards, 28 reach `-TAB` and throw `needs FitsTable`, and 7 (one FrameSet) still throw where C builds the `-LOG` Mapping and then writes nothing.
+  This reverses the Task 4 ruling, and it made the `lsst`, `offset-sky` and `offset-sky-pole` FITS-WCS rows match C.
+- **Documentation.**
+  The Javadoc of `write` now says where each encoding puts its cards, and that a failed write loses a card it had already replaced (C does the same; recorded as a C quirk, and pinned by a test); a test name that said the opposite of what it asserts was corrected.
+
+A scoped re-review found all four findings addressed and no new problem.
+Deferred as minor: the `FitsSkyPoleTest` tolerance (1e-9 where 1e-12 would do), the `sky_offset_system_rw` licence (1e-13 where about 1e-14 would do), and three read differences from earlier phases that the fuzz exposed, listed under Gaps and risks.
 
 ## Gaps and risks
 
 - **Logarithmic axes need MathMap.**
   `LogAxis` tests an axis for the `-LOG` algorithm as C does, with an internal Mapping computing what C's MathMap computes, and `write` throws `needs MathMap` only where C would then describe the axis with `-LOG`, a description whose Mapping holds a MathMap.
   C sometimes builds that description and then drops it, when `MakeIntWorld` cannot fit it: the absolute description of an offset SkyFrame in the cursor-oracle case `alt_axes_alt_offset`, and one FrameSet of the review's write fuzz, which C writes in no encoding and Java refuses in all seven.
-  With the test ported, offset sky coordinates (`offset-sky`, `offset-sky-pole`, `offset-sref`, `skyref`, `skyref-alt`), `lsst`, and non-celestial axes that are linear only within FitsTol are written as C writes them: the `offset-sky`, `offset-sky-pole` and `lsst` rows of `wcsconv` match, and the review's write fuzz, rerun, gives C's outcome and cards for all 735 writes that threw at `LogAxis` before, but for the seven above and 28 more that now reach a `-TAB` description with TabOK set and throw `needs FitsTable`.
+  With the test ported, offset sky coordinates (`offset-sky`, `offset-sky-pole`, `offset-sref`, `skyref`, `skyref-alt`), `lsst`, and non-celestial axes that are linear only within FitsTol are written as C writes them: the `offset-sky`, `offset-sky-pole` and `lsst` rows of `wcsconv` match.
+  Of the 735 fuzzed writes that threw at `LogAxis` before, 700 now give C's outcome and cards, 28 reach a `-TAB` description with TabOK set and throw `needs FitsTable`, and 7 are the FrameSet above.
 - **Everything spectral needs SpecFrame**, which accounts for 63 of the 76 deferred `wcsconv` rows and 45 of the 51 deferred headers; reading FITS-CLASS needs SpecFrame and DSBSpecFrame.
 - **Runtime-Math margins.**
   The Galactic PC1_2 comparison has a margin of about 4.6 times; another JDK or libm could use more of it.
   Only every 97th position of the `tan` grids is compared, because C's oracle holds only those samples and a hash.
 - **Read-side translations** keep the phase 1 comment rule when they replace a card, where C applies `SetFits`'s rules; no gate shows a difference (deferred minor).
+- **Read differences from earlier phases**, found by the review's read fuzz and present before this phase:
+  with duplicate CDELT cards whose first is zero, C replaces the zero with 1.0 and Java takes the later card (all 17 transform differences in the fuzz);
+  a non-numeric NAXISn makes C's read fail with `AST__FTCNV` where Java reads the header.
+  Both are deferred to a later read-side fix.
 - **ReadCrval** reads the FitsChan before a write, so a write into a FitsChan holding a header this library cannot read (spectral, FITS-CLASS) throws `UnsupportedOperationException` naming the class.
 
 ## Rulings
