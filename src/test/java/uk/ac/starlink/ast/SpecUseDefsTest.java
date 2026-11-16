@@ -18,14 +18,14 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * SubFrame} and {@code VerifyAttrs}); finding a TimeFrame in one is not. A SpecFrame's default
  * Title leaves out a RestFreq that has not been set (specframe.c {@code GetTitle}).
  *
- * <p>The TimeFrame cases of {@code conversions_match_the_c_library} run here; its SpecFrame and
- * DSBSpecFrame cases convert between SpecFrames, which this class does not yet test.
+ * <p>The TimeFrame and SpecFrame cases of {@code conversions_match_the_c_library} run here; its
+ * DSBSpecFrame cases are left to the DSBSpecFrame tests.
  */
 class SpecUseDefsTest {
 
-    /** The probe's {@code make}: a TimeFrame with the settings applied. */
-    private static TimeFrame make(String settings) {
-        TimeFrame f = new TimeFrame();
+    /** The probe's {@code make}: a TimeFrame or SpecFrame with the settings applied. */
+    private static Frame make(String cls, String settings) {
+        Frame f = "TimeFrame".equals(cls) ? new TimeFrame() : new SpecFrame();
         if (!settings.isEmpty()) {
             f.set(settings);
         }
@@ -33,8 +33,8 @@ class SpecUseDefsTest {
     }
 
     /** The value 230 converted, "None" if there is no conversion, or "Err:Noval". */
-    private static String convert(String target, String template) {
-        TimeFrame t = make(target);
+    private static String convert(String cls, String target, String template) {
+        Frame t = make(cls, target);
         Mapping map;
         try {
             if ("pick".equals(template)) {
@@ -42,7 +42,7 @@ class SpecUseDefsTest {
                 t.pickAxes(1, new int[] {1}, m);
                 map = m[0];
             } else {
-                FrameSet fs = t.findFrame(make(template), "");
+                FrameSet fs = t.findFrame(make(cls, template), "");
                 if (fs == null) {
                     return "None";
                 }
@@ -85,14 +85,15 @@ class SpecUseDefsTest {
         List<String> failures = new ArrayList<>();
         int ran = 0;
         for (JsonNode c : ProbeData.load("spec_use_defs").get("CONVERSIONS")) {
-            if (!"TimeFrame".equals(c.get(0).asText())) {
+            String cls = c.get(0).asText();
+            if ("DSBSpecFrame".equals(cls)) {
                 continue;
             }
             ran++;
             String target = c.get(1).asText();
             String template = c.get(2).asText();
             JsonNode w = c.get(3);
-            String got = convert(target, template);
+            String got = convert(cls, target, template);
             boolean ok;
             String want;
             if ("Err".equals(w.get("variant").asText())) {
@@ -107,10 +108,10 @@ class SpecUseDefsTest {
                 ok = !got.startsWith("Err") && !"None".equals(got) && CValues.cValueEq(Double.parseDouble(got), v);
             }
             if (!ok) {
-                failures.add("[" + target + "] -> [" + template + "]: got " + got + ", C gives " + want);
+                failures.add(cls + " [" + target + "] -> [" + template + "]: got " + got + ", C gives " + want);
             }
         }
-        assertEquals(4, ran, "the TimeFrame cases");
+        assertEquals(23, ran, "the TimeFrame and SpecFrame cases");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 }

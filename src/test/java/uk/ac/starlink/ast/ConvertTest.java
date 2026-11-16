@@ -12,12 +12,12 @@ import org.junit.jupiter.api.Test;
  * convert} between Frames.
  *
  * <p>{@code convert_constant_numerator_units}, {@code convert_domain_gate_blocks_mismatch}, {@code
- * find_frame_domain_mismatch_returns_none} and {@code convert_basic_sky_unitmap} run here; the
- * last leaves out its {@code astEqual} checks that the base and current Frames of each result are
- * the Frames converted, which need {@code astEqual}, outside the first phase. The tests whose
- * Frames include a SpecFrame or a Circle are deferred, among them the CmpFrame tests ({@code
- * convert_basic_cmp_permmap}, {@code convert_sky_cmp_permmap} and {@code
- * find_frame_cmp_needs_widened_axes}), whose CmpFrames hold a SpecFrame.
+ * find_frame_domain_mismatch_returns_none}, {@code convert_basic_sky_unitmap}, and the CmpFrame
+ * tests ({@code convert_basic_cmp_permmap}, {@code convert_sky_cmp_permmap} and {@code
+ * find_frame_cmp_needs_widened_axes}), whose CmpFrames hold a SpecFrame, run here; they leave out
+ * their {@code astEqual} checks that the base and current Frames of each result are the Frames
+ * converted, as this library has no {@code astEqual}. The tests whose Frames include a Circle are
+ * deferred.
  *
  * <p>{@code aFramesetTriesItsBaseFrameFirst} has no Rust counterpart: it checks the order in which
  * frameset.c {@code ConvertX} tries a FrameSet's Frames.
@@ -35,6 +35,72 @@ class ConvertTest {
         SkyFrame f = new SkyFrame();
         f.setSystem(system);
         return f;
+    }
+
+    /** The CmpFrame of a frequency SpecFrame and an FK5 SkyFrame (testconvert.c {@code cf}). */
+    private static CmpFrame specSky() {
+        SpecFrame df = new SpecFrame();
+        df.setSystem("FREQ");
+        return new CmpFrame(df, sky("FK5"));
+    }
+
+    private static boolean isPerm(FrameSet fs) {
+        return fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT) instanceof PermMap;
+    }
+
+    /**
+     * A plain two-axis Frame converts to and from a CmpFrame of a SpecFrame and a SkyFrame only if
+     * its Domain is SKY, with a PermMap, as the CmpFrame holds the SkyFrame on axes 2 and 3
+     * (testconvert.c Errors 11-26).
+     */
+    @Test
+    void convertBasicCmpPermmap() {
+        CmpFrame cf = specSky();
+        Frame notSky = new Frame(2);
+        notSky.setDomain("NOTSKY");
+        assertNull(notSky.convert(cf, ""));
+        assertNull(cf.convert(notSky, ""));
+
+        Frame bf = new Frame(2);
+        bf.setDomain("SKY");
+        FrameSet fs = bf.convert(cf, "");
+        assertNotNull(fs, "bf->cf converts");
+        assertTrue(isPerm(fs));
+        fs = cf.convert(bf, "");
+        assertNotNull(fs, "cf->bf converts");
+        assertTrue(isPerm(fs));
+    }
+
+    /** A SkyFrame converts to and from a CmpFrame holding it with a PermMap. */
+    @Test
+    void convertSkyCmpPermmap() {
+        SkyFrame sf = sky("FK5");
+        CmpFrame cf = specSky();
+        FrameSet fs = sf.convert(cf, "");
+        assertNotNull(fs, "sf->cf converts");
+        assertTrue(isPerm(fs));
+        fs = cf.convert(sf, "");
+        assertNotNull(fs, "cf->sf converts");
+        assertTrue(isPerm(fs));
+    }
+
+    /**
+     * A CmpFrame template is found in a SkyFrame target; a SkyFrame template, whose MinAxes and
+     * MaxAxes are 2, is not found in the three-axis CmpFrame until they are widened, and then with
+     * a PermMap.
+     */
+    @Test
+    void findFrameCmpNeedsWidenedAxes() {
+        SkyFrame sf = sky("FK5");
+        CmpFrame cf = specSky();
+        assertNotNull(sf.findFrame(cf, " "));
+        assertNull(cf.findFrame(sf, " "));
+        SkyFrame sf2 = sky("FK5");
+        sf2.setMaxAxes(3);
+        sf2.setMinAxes(1);
+        FrameSet fs = cf.findFrame(sf2, " ");
+        assertNotNull(fs, "widened template matches");
+        assertTrue(isPerm(fs));
     }
 
     /**

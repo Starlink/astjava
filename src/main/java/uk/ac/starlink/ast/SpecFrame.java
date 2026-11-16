@@ -1676,6 +1676,349 @@ public class SpecFrame extends Frame {
     }
 
     // ------------------------------------------------------------------
+    // Matching
+    // ------------------------------------------------------------------
+
+    /** Adds to {@code specmap} the conversion from System {@code system} to frequency. */
+    private void addToFrequency(SpecMap specmap, int system, double rf, String vmess) {
+        if (system == AST__ENERGY) {
+            specmap.specAdd("ENTOFR", null);
+        } else if (system == AST__WAVENUM) {
+            specmap.specAdd("WNTOFR", null);
+        } else if (system == AST__WAVELEN) {
+            specmap.specAdd("WVTOFR", null);
+        } else if (system == AST__AIRWAVE) {
+            specmap.specAdd("AWTOFR", null);
+        } else {
+            if (system == AST__VRADIO) {
+                specmap.specAdd("VRTOVL", null);
+            } else if (system == AST__VOPTICAL) {
+                specmap.specAdd("VOTOVL", null);
+            } else if (system == AST__REDSHIFT) {
+                specmap.specAdd("ZOTOVL", null);
+            } else if (system == AST__BETA) {
+                specmap.specAdd("BTTOVL", null);
+            }
+            verifyAttrs(vmess, "RestFreq", "astMatch");
+            specmap.specAdd("VLTOFR", new double[] {rf});
+        }
+    }
+
+    /** Adds to {@code specmap} the conversion from frequency to System {@code system}. */
+    private void addFromFrequency(SpecMap specmap, int system, double rf, String vmess) {
+        if (system == AST__ENERGY) {
+            specmap.specAdd("FRTOEN", null);
+        } else if (system == AST__WAVENUM) {
+            specmap.specAdd("FRTOWN", null);
+        } else if (system == AST__WAVELEN) {
+            specmap.specAdd("FRTOWV", null);
+        } else if (system == AST__AIRWAVE) {
+            specmap.specAdd("FRTOAW", null);
+        } else {
+            verifyAttrs(vmess, "RestFreq", "astMatch");
+            specmap.specAdd("FRTOVL", new double[] {rf});
+            if (system == AST__VRADIO) {
+                specmap.specAdd("VLTOVR", null);
+            } else if (system == AST__VOPTICAL) {
+                specmap.specAdd("VLTOVO", null);
+            } else if (system == AST__REDSHIFT) {
+                specmap.specAdd("VLTOZO", null);
+            } else if (system == AST__BETA) {
+                specmap.specAdd("VLTOBT", null);
+            }
+        }
+    }
+
+    /**
+     * A copy of {@code alignFrm} with the properties that define the rest frames of {@code frm}:
+     * its Epoch, RefRA, RefDec, SourceVRF, SourceVel and observer's position.
+     */
+    private static SpecFrame alignCopy(SpecFrame alignFrm, SpecFrame frm) {
+        SpecFrame a = (SpecFrame) alignFrm.copy();
+        a.setEpochMjd(frm.getEpochMjd());
+        a.setRefRaValue(frm.refRaValue());
+        a.setRefDecValue(frm.refDecValue());
+        a.setSourceVrfValue(frm.sourceVrfValue());
+        a.setSourceVelValue(frm.sourceVelValue());
+        a.setObsLatValue(frm.getObsLatValue());
+        a.setObsLonValue(frm.getObsLonValue());
+        a.setObsAlt(frm.getObsAlt());
+        return a;
+    }
+
+    /**
+     * The Mapping from SpecFrame {@code target} to SpecFrame {@code result}, or null if there is
+     * none (C's {@code MakeSpecMapping}). The values go from the target's System to frequency, from
+     * the target's standard of rest to the alignment standard of rest, to the alignment System and
+     * back (only for a relative alignment System and different rest frequencies), from the
+     * alignment standard of rest to the result's, and from frequency to the result's System, using
+     * the target's properties on the way to the alignment Frame and the result's after it. The
+     * alignment System (frequency for an absolute System, apparent radial velocity for a relative
+     * one) and standard of rest are the System and StdOfRest of {@code alignFrm}. Restoring a
+     * FrameSet's integrity ({@code AST__INTFLAG} set on the target), the alignment rest frames are
+     * defined by {@code alignFrm}'s own properties; otherwise by those of the target and of the
+     * result, so that, say, two source rest frames align however their sources differ. The
+     * Mapping converts between the two Frames' units, and adds the target's SpecOrigin before and
+     * subtracts the result's after, or, if both Frames have AlignSpecOffset set, the target's
+     * origin transformed (the result's own when that is bad).
+     *
+     * @param report whether a Unit of another kind than the System's is an error rather than no
+     *     Mapping
+     * @throws AstException with status {@code AST__NOVAL} if UseDefs is false and an attribute the
+     *     conversion needs is not set, or {@code AST__BADUN} for units that cannot be converted when
+     *     {@code report} is true
+     */
+    private static Mapping makeSpecMapping(SpecFrame target, SpecFrame result, SpecFrame alignFrm, boolean report) {
+        boolean match = true;
+        SpecMap specmap = new SpecMap(1, 0);
+        double targetRf = target.restFreqValue();
+        double resultRf = result.restFreqValue();
+        int targetSystem = target.systemValue();
+        int resultSystem = result.systemValue();
+        int alignSystem = alignFrm.systemValue();
+        String vmess = "convert between spectral systems";
+        result.verifyAttrs(vmess, "StdOfRest", "astMatch");
+        target.verifyAttrs(vmess, "StdOfRest", "astMatch");
+
+        SpecFrame alignTarget;
+        SpecFrame alignResult;
+        if ((target.getFrameFlags() & AST__INTFLAG) != 0) {
+            alignTarget = alignFrm;
+            alignResult = alignFrm;
+        } else {
+            alignTarget = alignCopy(alignFrm, target);
+            alignResult = alignCopy(alignFrm, result);
+        }
+        alignSystem = absSystem(alignSystem) ? AST__FREQ : AST__VREL;
+
+        boolean step2 = true;
+        boolean step3 = true;
+        boolean step4 = true;
+        boolean step5 = true;
+        boolean step6 = true;
+        boolean step7 = true;
+        if (targetSystem == AST__FREQ) {
+            step2 = false;
+        }
+        if (equalSor(target, alignTarget)) {
+            step3 = false;
+        }
+        if (equalSor(result, alignResult)) {
+            step6 = false;
+        }
+        if (resultSystem == AST__FREQ) {
+            step7 = false;
+        }
+        // C compares the rest frequencies exactly.
+        boolean sameRf = resultRf == targetRf;
+        if (alignSystem == AST__FREQ || sameRf) {
+            step4 = false;
+            step5 = false;
+        }
+        if (!step4 && !step5 && equalSor(target, result)) {
+            step3 = false;
+            step6 = false;
+        }
+        if (!step3
+                && !step4
+                && !step5
+                && !step6
+                && equalSor(target, result)
+                && targetSystem == resultSystem
+                && !absSystem(targetSystem)
+                && sameRf) {
+            step2 = false;
+            step7 = false;
+        }
+
+        if (step2 && targetSystem != AST__FREQ) {
+            target.addToFrequency(specmap, targetSystem, targetRf, vmess);
+        }
+        if (step3) {
+            sorConvert(target, alignTarget, specmap);
+        }
+        if (step4 && alignSystem == AST__VREL) {
+            target.verifyAttrs(vmess, "RestFreq", "astMatch");
+            specmap.specAdd("FRTOVL", new double[] {targetRf});
+        }
+        if (step5 && alignSystem == AST__VREL) {
+            result.verifyAttrs(vmess, "RestFreq", "astMatch");
+            specmap.specAdd("VLTOFR", new double[] {resultRf});
+        }
+        if (step6) {
+            sorConvert(alignResult, result, specmap);
+        }
+        if (step7 && resultSystem != AST__FREQ) {
+            result.addFromFrequency(specmap, resultSystem, resultRf, vmess);
+        }
+
+        String utarg = target.getUnit(1);
+        Mapping umap1 = Units.unitMapper(utarg, specMapUnit(targetSystem, "MakeSpecMap", "SpecFrame"));
+        String ures = result.getUnit(1);
+        Mapping umap2 = Units.unitMapper(specMapUnit(resultSystem, "MakeSpecMap", "SpecFrame"), ures);
+        Mapping map2;
+        if (umap1 != null && umap2 != null) {
+            map2 = new CmpMap(new CmpMap(umap1, specmap, true), umap2, true);
+        } else {
+            map2 = specmap.simplify();
+            if (!(map2 instanceof UnitMap) || !ures.equals(utarg)) {
+                match = false;
+                if (report) {
+                    String uerr;
+                    int serr;
+                    if (umap1 == null) {
+                        uerr = utarg;
+                        serr = target.systemValue();
+                    } else {
+                        uerr = ures;
+                        serr = result.systemValue();
+                    }
+                    throw Ast.err(
+                            AstException.AST__BADUN,
+                            "astMatch(SpecFrame): Inappropriate units (" + uerr + ") specified for a "
+                                    + systemLabel(serr) + " axis.");
+                }
+            }
+        }
+
+        double targetOrigin = target.specOriginCur();
+        Mapping map1;
+        if (targetOrigin != 0.0) {
+            map1 = new CmpMap(new ShiftMap(new double[] {targetOrigin}), map2, true);
+        } else {
+            map1 = map2;
+        }
+
+        double resultOrigin;
+        if (target.alignSpecOffsetValue() && result.alignSpecOffsetValue()) {
+            resultOrigin = transformValue(map1, 0.0);
+            if (resultOrigin == AST__BAD) {
+                resultOrigin = result.specOriginCur();
+            }
+        } else {
+            resultOrigin = result.specOriginCur();
+        }
+        if (resultOrigin != 0.0) {
+            map2 = new CmpMap(map1, new ShiftMap(new double[] {-resultOrigin}), true);
+        } else {
+            map2 = map1;
+        }
+        Mapping map = map2.simplify();
+        return match ? map : null;
+    }
+
+    /**
+     * Matches this SpecFrame, a template, against a target (C's {@code Match}, specframe.c): the
+     * target must pass the Frame tests and have an axis of a SpecFrame, the first of which is
+     * selected.
+     */
+    @Override
+    FrameFinder.MatchResult match(Frame target, boolean matchSub) {
+        FrameFinder.MatchResult parent = super.match(target, matchSub);
+        if (parent == null) {
+            return null;
+        }
+        int targetNaxes = target.getNaxes();
+        int[] pax = new int[1];
+        int targetAxis0 = -1;
+        for (int iaxis = 0; iaxis < targetNaxes; iaxis++) {
+            if (target.primaryFrame(iaxis + 1, pax) instanceof SpecFrame) {
+                targetAxis0 = iaxis;
+                break;
+            }
+        }
+        if (targetAxis0 < 0) {
+            return null;
+        }
+        int[] templateAxes = parent.templateAxes;
+        int[] targetAxes = parent.targetAxes;
+        templateAxes[0] = 0;
+        targetAxes[0] = targetAxis0;
+        Mapping[] map = new Mapping[1];
+        Frame[] result = new Frame[1];
+        if (!target.subFrame(this, 1, targetAxes, templateAxes, map, result)) {
+            return null;
+        }
+        return new FrameFinder.MatchResult(templateAxes, targetAxes, map[0], result[0]);
+    }
+
+    /**
+     * Selects axes from this SpecFrame (C's {@code SubFrame}, specframe.c). Selecting the one axis
+     * gives a SpecFrame, a copy with the template's attributes overlaid, and the Mapping converts
+     * between the two SpecFrames, aligned in the AlignSystem and AlignStdOfRest of a copy of the
+     * template (of this SpecFrame if the template is not a SpecFrame or there is none); with a
+     * SpecFrame template, units that cannot be converted are an error rather than no match. Any
+     * other selection gives a plain Frame, made from a copy whose Domain, Title, Label, Symbol and
+     * Unit are set to their values and whose System and AlignSystem are cleared, which clears the
+     * Title, Label and Symbol again if the System changes (a C quirk, followed here).
+     *
+     * @throws AstException with status {@code AST__NOVAL} if UseDefs is false and the StdOfRest,
+     *     or an attribute the conversion needs, is not set, or {@code AST__BADUN} for units that
+     *     cannot be converted
+     */
+    @Override
+    boolean subFrame(
+            Frame template, int resultNaxes, int[] targetAxes, int[] templateAxes, Mapping[] map, Frame[] result) {
+        map[0] = null;
+        result[0] = null;
+        boolean match;
+        if (resultNaxes == 1 && targetAxes[0] == 0) {
+            SpecFrame res = (SpecFrame) copy();
+            result[0] = res;
+            boolean report = false;
+            SpecFrame alignFrm;
+            if (template != null) {
+                template.overlay(templateAxes, res);
+                if (template instanceof SpecFrame) {
+                    alignFrm = (SpecFrame) template.copy();
+                    report = true;
+                } else {
+                    alignFrm = (SpecFrame) copy();
+                }
+            } else {
+                verifyAttrs("convert between different spectral systems", "StdOfRest", "astMatch");
+                alignFrm = (SpecFrame) copy();
+            }
+            alignFrm.setSystemValue(alignFrm.alignSystemValue());
+            alignFrm.setStdOfRestValue(alignFrm.alignStdOfRestValue());
+            Mapping m = makeSpecMapping(this, res, alignFrm, report);
+            match = m != null;
+            map[0] = m;
+        } else {
+            SpecFrame temp = (SpecFrame) copy();
+            if (!temp.testDomain()) {
+                temp.setDomain(temp.getDomain());
+            }
+            if (!temp.testTitle()) {
+                temp.setTitle(temp.getTitle());
+            }
+            if (!temp.testLabel(1)) {
+                temp.setLabel(1, temp.getLabel(1));
+            }
+            if (!temp.testSymbol(1)) {
+                temp.setSymbol(1, temp.getSymbol(1));
+            }
+            if (!temp.testUnit(1)) {
+                temp.setUnit(1, temp.getUnit(1));
+            }
+            temp.clearSystem();
+            temp.clearAlignSystem();
+            match = temp.frameSubFrame(template, resultNaxes, targetAxes, templateAxes, map, result);
+        }
+        if (!match) {
+            map[0] = null;
+            result[0] = null;
+        }
+        return match;
+    }
+
+    /** The Frame class's {@code SubFrame}, for a copy of this SpecFrame. */
+    private boolean frameSubFrame(
+            Frame template, int resultNaxes, int[] targetAxes, int[] templateAxes, Mapping[] map, Frame[] result) {
+        return super.subFrame(template, resultNaxes, targetAxes, templateAxes, map, result);
+    }
+
+    // ------------------------------------------------------------------
     // Overlay
     // ------------------------------------------------------------------
 

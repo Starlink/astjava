@@ -4,25 +4,37 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
 /**
  * Translation of the tests of Rust {@code tests/test_specframe.rs} and {@code
- * frames/specframe.rs} that need no conversion between SpecFrames, and of the checks of C's {@code
- * ast_tester/testspecframe.c} that are about attributes and dumps (Errors 0 to 3 and 10 to 12):
- * construction and defaults, the System and StdOfRest names, the attributes and the units they
- * are given in, the SpecOrigin, SourceVel, SourceVRF and SourceSys, formatting and reading values,
- * Overlay, the reference position, and native dumps through a Channel and a FitsChan.
+ * frames/specframe.rs}, and of the checks of C's {@code ast_tester/testspecframe.c}: construction
+ * and defaults, the System and StdOfRest names, the attributes and the units they are given in, the
+ * SpecOrigin, SourceVel, SourceVRF and SourceSys, formatting and reading values, Overlay, the
+ * reference position, native dumps through a Channel and a FitsChan, and conversions between
+ * SpecFrames (specframe.c {@code Match}, {@code SubFrame} and {@code MakeSpecMapping}).
  *
- * <p>The Rust tests that convert between SpecFrames, and {@code set_system_rescales_spec_origin},
- * whose System change converts the SpecOrigin, belong to the conversion work. {@code
- * test_equal_same}, {@code test_not_equal_different_system} and {@code
+ * <p>The expected values of the conversions are C's, from a probe run against the pinned C library
+ * (each case is a pair of attribute settings, applied as the probe applies them), where the Rust
+ * tests compare with formulae. Further conversion tests cover a Unit that differs together with
+ * the System, RestFreq or StdOfRest, FrameSet integrity, each attribute a standard of rest needs
+ * left unset with and without UseDefs, and conversions that leave their Frames unchanged and give
+ * the same Mapping in two threads.
+ *
+ * <p>{@code test_equal_same}, {@code test_not_equal_different_system} and {@code
  * test_not_equal_different_sor} test {@code astEqual}, which this library does not have.
  */
 class SpecFrameTest {
@@ -717,5 +729,580 @@ class SpecFrameTest {
         copy.setSystem("VRAD");
         copy.setSystem("FREQ");
         assertEquals("kHz", copy.getUnit(1));
+    }
+
+    // ------------------------------------------------------------------
+    // Conversions between SpecFrames
+    //
+    // Expected values are C's, from the probe spec_convert_cases.c run against the pinned C
+    // library; each case is a pair of attribute settings as the probe's make() applies them.
+    // ------------------------------------------------------------------
+
+    /** The probe's {@code make}: a SpecFrame with the comma-separated settings applied in order. */
+    private static SpecFrame make(String settings) {
+        SpecFrame f = new SpecFrame();
+        if (!settings.isEmpty()) {
+            f.set(settings);
+        }
+        return f;
+    }
+
+    /** The FrameSet {@code convert} finds from {@code from} to {@code to}, which must exist. */
+    private static FrameSet converted(Frame from, Frame to) {
+        FrameSet fs = from.convert(to, "");
+        assertNotNull(fs, "a conversion");
+        return fs;
+    }
+
+    /** The class of the simplified Mapping from the base to the current Frame. */
+    private static String mappingClass(FrameSet fs) {
+        return fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)
+                .simplify()
+                .astClass();
+    }
+
+    /**
+     * Converts {@code x} from a SpecFrame with settings {@code a} to one with {@code b}, and checks
+     * the value and the class of the simplified Mapping against C's.
+     */
+    private static void assertConverts(String a, String b, double x, boolean forward, double want, String wantClass) {
+        FrameSet fs = converted(make(a), make(b));
+        double got = fs.tran1(1, new double[] {x}, forward)[0];
+        assertTrue(CValues.cValueEq(got, want), "[" + a + "] -> [" + b + "]: got " + got + ", C gives " + want);
+        assertEquals(wantClass, mappingClass(fs), "the Mapping");
+    }
+
+    /**
+     * Checks that converting from {@code a} to {@code b} fails with {@code AST__NOVAL} and C's
+     * message, naming the attribute that is not set.
+     */
+    private static void assertNoValue(String a, String b, String message) {
+        SpecFrame from = make(a);
+        SpecFrame to = make(b);
+        AstException e = assertThrows(AstException.class, () -> from.convert(to, ""));
+        assertEquals(AstException.AST__NOVAL, e.getStatus(), e.getMessage());
+        assertTrue(e.getMessage().contains(message), "C's message " + message + ", got: " + e.getMessage());
+    }
+
+    @Test
+    void freqToWavelengthConvert() {
+        assertConverts("System=FREQ,Unit=Hz", "System=WAVE,Unit=m", 5.0e14, true, 5.99584916e-07, "SpecMap");
+        assertConverts(
+                "System=FREQ,Unit=Hz",
+                "System=WAVE,Unit=m",
+                2.99792458e8 / 5.0e14,
+                false,
+                500000000000000.0,
+                "SpecMap");
+    }
+
+    @Test
+    void freqToEnergy() {
+        assertConverts("System=FREQ,Unit=Hz", "System=ENER", 1.0e15, true, 6.6260755e-19, "SpecMap");
+    }
+
+    @Test
+    void freqToWavenum() {
+        assertConverts("System=FREQ,Unit=Hz", "System=WAVN", 3.0e14, true, 1000692.2855944561, "SpecMap");
+    }
+
+    @Test
+    void freqToVrel() {
+        String a = "System=FREQ,Unit=Hz,RestFreq=1.42040575E9 Hz";
+        String b = "System=VELO,Unit=m/s,RestFreq=1.42040575E9 Hz";
+        assertConverts(a, b, 1.42040575e9, true, 0.0, "SpecMap");
+        assertConverts(a, b, 1.42040575e9 * 1.001, true, -299642.561845836, "SpecMap");
+    }
+
+    @Test
+    void vradioToFreq() {
+        assertConverts(
+                "System=VRAD,Unit=m/s,RestFreq=1.42040575E9 Hz",
+                "System=FREQ,Unit=Hz,RestFreq=1.42040575E9 Hz",
+                100000.0,
+                true,
+                1419931953.641187,
+                "SpecMap");
+    }
+
+    /** A heliocentric to LSRK change is a small Doppler shift, and the inverse undoes it. */
+    @Test
+    void sorHelioToLsrk() {
+        String a = "System=FREQ,StdOfRest=Helio,RefRA=0:00:00,RefDec=0:00:00";
+        String b = "System=FREQ,StdOfRest=LSRK,RefRA=0:00:00,RefDec=0:00:00";
+        assertConverts(a, b, 1.42040575e9, true, 1420404375.9912238, "CmpMap");
+        FrameSet fs = converted(make(a), make(b));
+        double y = fs.tran1(1, new double[] {1.42040575e9}, true)[0];
+        double back = fs.tran1(1, new double[] {y}, false)[0];
+        assertTrue(CValues.cValueEq(back, 1420405749.9999995), "round trip: " + back);
+    }
+
+    @Test
+    void sameSystemSameSorIsUnitMap() {
+        assertConverts("System=FREQ", "System=FREQ", 1.234e10, true, 1.234e10, "UnitMap");
+    }
+
+    /**
+     * FrameSet integrity: a change of System and Unit on the current SpecFrame of a FrameSet remaps
+     * it by the conversion from the old Frame to the new one.
+     */
+    @Test
+    void mapFromSystemChange() {
+        FrameSet fs = new FrameSet(new Frame(1));
+        fs.addFrame(FrameSet.AST__BASE, new UnitMap(1), make("System=FREQ,Unit=Hz"));
+        fs.set("System=WAVE,Unit=m");
+        assertEquals("WAVE", fs.getC("System"));
+        double got = fs.tran1(1, new double[] {5.0e14}, true)[0];
+        assertTrue(CValues.cValueEq(got, 5.99584916e-07), "got " + got);
+        assertEquals("SpecMap", mappingClass(fs));
+    }
+
+    @Test
+    void wavelenToVoptical() {
+        String a = "System=WAVE,Unit=m,RestFreq=1.42040575E9 Hz";
+        String b = "System=VOPT,Unit=m/s,RestFreq=1.42040575E9 Hz";
+        double lambda0 = 2.99792458e8 / 1.42040575e9;
+        assertConverts(a, b, lambda0, true, 0.0, "SpecMap");
+        assertConverts(a, b, lambda0 * 1.1, true, 29979245.800000027, "SpecMap");
+    }
+
+    @Test
+    void unitMhzToHzWithinFreq() {
+        assertConverts("System=FREQ,Unit=MHz", "System=FREQ,Unit=Hz", 1.0, true, 1.0e6, "ZoomMap");
+    }
+
+    @Test
+    void unitKmsToMsWithinVrad() {
+        assertConverts("System=VRAD,Unit=km/s", "System=VRAD,Unit=m/s", 1.0, true, 1000.0, "ZoomMap");
+    }
+
+    @Test
+    void unitUnchangedReturnsUnitMap() {
+        assertConverts("System=FREQ", "System=FREQ", 42.0, true, 42.0, "UnitMap");
+    }
+
+    @Test
+    void unitRoundTripMhzToGhz() {
+        assertConverts("System=FREQ,Unit=MHz", "System=FREQ,Unit=GHz", 1000.0, true, 1.0, "ZoomMap");
+    }
+
+    @Test
+    void badValueTransform() {
+        FrameSet fs = converted(make("System=FREQ"), make("System=WAVE"));
+        assertEquals(AstObject.AST__BAD, fs.tran1(1, new double[] {AstObject.AST__BAD}, true)[0]);
+    }
+
+    /** RestFreq 1.420405752 GHz, LSRK, radio velocity in km/s. */
+    private static final String VRAD_LSRK = "System=VRAD,StdOfRest=LSRK,RestFreq=1.420405752E9 Hz";
+
+    /** Offset to offset: the value plus the first origin less the second. */
+    @Test
+    void convertAppliesSpecOrigins() {
+        assertConverts(VRAD_LSRK + ",SpecOrigin=10", VRAD_LSRK + ",SpecOrigin=25", 5.0, true, -10.0, "ShiftMap");
+    }
+
+    @Test
+    void convertOffsetToAbsoluteAppliesOrigin() {
+        assertConverts(VRAD_LSRK + ",SpecOrigin=10", VRAD_LSRK, 5.0, true, 15.0, "ShiftMap");
+    }
+
+    /** With AlignSpecOffset set on both Frames the offset values align directly. */
+    @Test
+    void alignSpecOffsetAlignsOffsetValues() {
+        assertConverts(
+                VRAD_LSRK + ",SpecOrigin=10,AlignSpecOffset=1",
+                VRAD_LSRK + ",SpecOrigin=25,AlignSpecOffset=1",
+                5.0,
+                true,
+                5.0,
+                "UnitMap");
+    }
+
+    /** A SpecOrigin is re-expressed in a new System, and back again (with C's rounding). */
+    @Test
+    void setSystemRescalesSpecOrigin() {
+        SpecFrame sf = make(VRAD_LSRK + ",SpecOrigin=10");
+        sf.setSystem("FREQ");
+        assertEquals("GHz", sf.getUnit(1));
+        assertTrue(CValues.cValueEq(sf.getD("SpecOrigin"), 1.4203583723640518), "FREQ: " + sf.getD("SpecOrigin"));
+        sf.setSystem("VRAD");
+        assertEquals("km/s", sf.getUnit(1));
+        assertTrue(CValues.cValueEq(sf.getD("SpecOrigin"), 10.000000000076058), "VRAD: " + sf.getD("SpecOrigin"));
+    }
+
+    /**
+     * Rust {@code frames/specframe.rs} {@code sub_frame_specframe_to_specframe}: selecting the axis
+     * of a SpecFrame with a SpecFrame template gives a SpecFrame with the template's System and
+     * StdOfRest, and a Mapping with one input and one output.
+     */
+    @Test
+    void subFrameSpecFrameToSpecFrame() {
+        SpecFrame target = make("System=FREQ,StdOfRest=Helio,RestFreq=1.420405751E9 Hz");
+        SpecFrame template = make("System=VRAD,StdOfRest=LSRK,RestFreq=1.420405751E9 Hz");
+        Mapping[] map = new Mapping[1];
+        Frame[] result = new Frame[1];
+        assertTrue(target.subFrame(template, 1, new int[] {0}, new int[] {0}, map, result));
+        assertEquals(1, map[0].getNin());
+        assertEquals(1, map[0].getNout());
+        SpecFrame r = assertInstanceOf(SpecFrame.class, result[0]);
+        assertEquals(SpecFrame.AST__VRADIO, r.systemValue());
+        assertEquals(SpecFrame.AST__LKSOR, r.stdOfRestValue());
+    }
+
+    @Test
+    void matchTemplateSpecFrameSelf() {
+        FrameFinder.MatchResult m = make("System=VRAD").match(make("System=FREQ"), false);
+        assertNotNull(m);
+        assertEquals(1, m.templateAxes.length);
+        assertEquals(1, m.targetAxes.length);
+        assertEquals(0, m.templateAxes[0]);
+        assertEquals(0, m.targetAxes[0]);
+        assertEquals(
+                SpecFrame.AST__VRADIO,
+                assertInstanceOf(SpecFrame.class, m.result).systemValue());
+    }
+
+    /** A target with no SpecFrame axis is not matched (specframe.c {@code Match}). */
+    @Test
+    void matchTemplateSpecFrameAgainstBasicFrameFails() {
+        assertNull(make("System=FREQ").match(new Frame(1), false));
+    }
+
+    @Test
+    void matchTemplateSpecFrameSupportsMaxAxesOversized() {
+        SpecFrame template = make("System=FREQ");
+        template.setMaxAxes(2);
+        assertNull(template.match(new Frame(2), false));
+    }
+
+    /** Picking the axis of a SpecFrame gives a SpecFrame. */
+    @Test
+    void pickAxesSpecFrameFull() {
+        Frame f = make("System=VRAD").pickAxes(1, new int[] {1}, null);
+        assertEquals(SpecFrame.AST__VRADIO, assertInstanceOf(SpecFrame.class, f).systemValue());
+    }
+
+    /** Picking no axis of a SpecFrame gives a plain one-axis Frame. */
+    @Test
+    void pickAxesSpecFramePartial() {
+        Frame f = make("System=VRAD").pickAxes(1, new int[] {0}, null);
+        assertEquals(1, f.getNaxes());
+        assertFalse(f instanceof SpecFrame);
+    }
+
+    /** A SpecFrame's set System is overlaid onto the alignment Frame of a conversion. */
+    @Test
+    void convertThroughGenericDriverTransfersSystem() {
+        assertConverts(
+                "System=VRAD,Unit=m/s,RestFreq=1.0E9 Hz,StdOfRest=Topo",
+                "System=FREQ,Unit=Hz,RestFreq=1.0E9 Hz,StdOfRest=Topo",
+                1000.0,
+                true,
+                999996664.3590481,
+                "SpecMap");
+    }
+
+    /**
+     * testspecframe.c Errors 4 to 9 and 13 to 15: a SpecOrigin is re-expressed when the System and
+     * StdOfRest change; SpecOrigins shift conversions unless AlignSpecOffset aligns the offsets; and
+     * with AlignSpecOffset set in a wavelength System, whose zero point has no frequency, a change
+     * of rest frame converts as it does without it, and a SpecOrigin is still re-expressed. The
+     * values asserted exactly are C's; the tolerances are testspecframe.c's.
+     */
+    @Test
+    void testspecframeConversions() {
+        SpecFrame sf = make("system=freq,unit=Hz");
+        double rf = sf.getD("RestFreq");
+        sf.setD("SpecOrigin", rf * 1.0e9);
+        sf.setC("Unit(1)", "GHz");
+        sf.setC("System", "vrad");
+        assertTrue(Math.abs(sf.getD("SpecOrigin")) <= 1.0e-8, "Error 4");
+        assertTrue(CValues.cValueEq(sf.getD("SpecOrigin"), 6.656729789611404e-11), "Error 4: " + sf.getD("SpecOrigin"));
+        sf.setC("System", "freq");
+        sf.setC("Unit(1)", "Hz");
+        assertTrue(Math.abs(sf.getD("SpecOrigin") - rf * 1.0e9) <= 0.1, "Error 5");
+        assertTrue(CValues.cValueEq(sf.getD("SpecOrigin"), 99999999999999.97), "Error 5: " + sf.getD("SpecOrigin"));
+        sf.setC("StdOfRest", "LSRD");
+        assertTrue(Math.abs(sf.getD("SpecOrigin") - rf * 1.00000212890848e9) <= 10.0, "Error 6");
+        assertTrue(CValues.cValueEq(sf.getD("SpecOrigin"), 100000212890839.06), "Error 6: " + sf.getD("SpecOrigin"));
+
+        SpecFrame sf1 = make("system=freq,unit=Hz");
+        sf1.setD("SpecOrigin", 1.0e20);
+        SpecFrame sf2 = make("system=freq,unit=Hz");
+        sf2.setD("SpecOrigin", 1.01e20);
+        FrameSet fs = converted(sf1, sf2);
+        double x = 0.03e20;
+        assertEquals(0.02e20, fs.tran1(1, new double[] {x}, true)[0], "Error 7");
+        assertEquals(0, sf1.getI("AlignSpecOffset"), "Error 8");
+        sf1.setL("AlignSpecOffset", 1);
+        sf2.setL("AlignSpecOffset", 1);
+        fs = converted(sf1, sf2);
+        assertEquals(x, fs.tran1(1, new double[] {x}, true)[0], "Error 9");
+
+        sf1 = make("system=wave,unit=Angstrom,StdOfRest=LSRK,Epoch=2005.0,RefRA=10:00:00,RefDec=20:00:00");
+        sf2 = (SpecFrame) sf1.copy();
+        sf2.setC("StdOfRest", "HELIO");
+        fs = converted(sf1, sf2);
+        x = 1.3e7;
+        double plain = fs.tran1(1, new double[] {x}, true)[0];
+        assertTrue(CValues.cValueEq(plain, 13000214.726950744), "without AlignSpecOffset: " + plain);
+        sf1.setL("AlignSpecOffset", 1);
+        sf2.setL("AlignSpecOffset", 1);
+        fs = converted(sf1, sf2);
+        double y = fs.tran1(1, new double[] {x}, true)[0];
+        assertTrue(y != AstObject.AST__BAD && Math.abs(y - plain) <= 1.0e-6, "Error 13: " + y);
+        sf1.setD("SpecOrigin", 1.299e7);
+        sf1.setC("StdOfRest", "HELIO");
+        assertTrue(Math.abs(sf1.getD("SpecOrigin") - 1.299e7) <= 1.0e3, "Error 15");
+        assertTrue(CValues.cValueEq(sf1.getD("SpecOrigin"), 12990214.56177617), "Error 15: " + sf1.getD("SpecOrigin"));
+    }
+
+    // Regressions: the Unit differs between the two SpecFrames together with the System, the
+    // RestFreq or the StdOfRest, so the conversion is more than a change of units.
+
+    @Test
+    void unitsAndSystemDifferTogether() {
+        assertConverts(
+                "System=VRAD,Unit=km/s,RestFreq=230",
+                "System=VOPT,Unit=m/s,RestFreq=230",
+                10.0,
+                true,
+                10000.333575262843,
+                "CmpMap");
+    }
+
+    @Test
+    void unitsRestFreqAndStdOfRestDifferTogether() {
+        assertConverts(
+                "System=VRAD,Unit=km/s,RestFreq=230,StdOfRest=Helio",
+                "System=VRAD,Unit=m/s,RestFreq=345,StdOfRest=LSRK",
+                10.0,
+                true,
+                99937679.32679091,
+                "CmpMap");
+    }
+
+    @Test
+    void identicalSpecFramesConvertWithAUnitMap() {
+        String a = "System=VRAD,RestFreq=230,StdOfRest=LSRK";
+        assertConverts(a, a, 10.0, true, 10.0, "UnitMap");
+        assertConverts("", "", 5000.0, true, 5000.0, "UnitMap");
+        SpecFrame f = make(a);
+        assertEquals("UnitMap", mappingClass(converted(f, f)));
+    }
+
+    /**
+     * A FrameSet whose current Frame is a SpecFrame keeps its integrity when the System, StdOfRest,
+     * RestFreq, Unit or SourceVel of that Frame is set through it: the current Frame is remapped by
+     * the conversion from the Frame before the change to the Frame after it, aligned as the old
+     * Frame's AlignSystem and AlignStdOfRest say (with C's {@code AST__INTFLAG}, the alignment Frame
+     * keeps its own rest frame properties). Changing only how two SpecFrames are aligned changes no
+     * Mapping.
+     */
+    @Test
+    void framesetIntegrityFollowsTheCLibrary() {
+        Object[][] cases = {
+            {"System=VRAD,RestFreq=230", "System=FREQ", 10.0, 229.99232802581045, "CmpMap", "FREQ"},
+            {"System=VRAD,RestFreq=230", "StdOfRest=LSRK", 10.0, 10.289990186390046, "CmpMap", "VRAD"},
+            {"System=VRAD,RestFreq=230", "RestFreq=345", 10.0, 99937.48600000002, "CmpMap", "VRAD"},
+            {"System=VRAD,RestFreq=230", "Unit(1)=m/s", 10.0, 10000.0, "ZoomMap", "VRAD"},
+            {"System=FREQ,StdOfRest=Source,RestFreq=230", "SourceVel=100", 230.0, 230.07673254164038, "CmpMap", "FREQ"},
+            {"System=VRAD,RestFreq=230", "AlignStdOfRest=LSRK", 10.0, 10.0, "UnitMap", "VRAD"},
+            {"System=VRAD,RestFreq=230", "AlignSystem=VRAD,RestFreq=345", 10.0, 10.0, "UnitMap", "VRAD"},
+        };
+        for (Object[] c : cases) {
+            String what = c[0] + " then " + c[1];
+            FrameSet fs = new FrameSet(new Frame(1));
+            fs.addFrame(FrameSet.AST__BASE, new UnitMap(1), make((String) c[0]));
+            fs.set((String) c[1]);
+            double got = fs.tran1(1, new double[] {(Double) c[2]}, true)[0];
+            assertTrue(CValues.cValueEq(got, (Double) c[3]), what + ": got " + got + ", C gives " + c[3]);
+            assertEquals(c[4], mappingClass(fs), what);
+            assertEquals(c[5], fs.getC("System"), what);
+        }
+    }
+
+    /** A set SpecOrigin is re-expressed when the System or StdOfRest changes. */
+    @Test
+    void specOriginFollowsSystemAndStdOfRest() {
+        String base = "System=VRAD,StdOfRest=LSRK,RestFreq=230,SpecOrigin=10";
+        SpecFrame f = make(base);
+        f.set("System=WAVE");
+        assertEquals("Angstrom", f.getUnit(1));
+        assertTrue(CValues.cValueEq(f.getD("SpecOrigin"), 13034889.492764141), "WAVE: " + f.getD("SpecOrigin"));
+        f = make(base);
+        f.set("StdOfRest=Helio");
+        assertTrue(CValues.cValueEq(f.getD("SpecOrigin"), 9.710009533114343), "Helio: " + f.getD("SpecOrigin"));
+    }
+
+    // Review Focus 1: a standard of rest needs a reference position, an Epoch or an observer
+    // position. With UseDefs true (the default) an unset one takes its default, as C's does; with
+    // UseDefs false the conversion fails with AST__NOVAL, naming the first one C checks.
+
+    private static final String REF = "RefRA=10:00:00,RefDec=20:00:00";
+
+    private static final String SOR_MESSAGE =
+            "astMatch(SpecFrame): Cannot convert between different standards of rest.";
+
+    /** Each case converts 230 GHz, or 10 km/s from a radio velocity. */
+    @Test
+    void unsetAttributesTakeTheirDefaults() {
+        String helio = "System=FREQ,StdOfRest=Helio,";
+        Object[][] cases = {
+            {"System=FREQ,StdOfRest=Topo", "System=FREQ,StdOfRest=Helio", 230.02250828722228},
+            {"System=FREQ,StdOfRest=Topo," + REF + ",Epoch=2005.0", helio + REF + ",Epoch=2005.0", 229.9835593392818},
+            {"System=FREQ,StdOfRest=Topo," + REF + ",ObsLon=W30,ObsLat=N20,ObsAlt=1000", helio + REF, 229.98408837024638
+            },
+            {"System=FREQ,StdOfRest=Geo," + REF, helio + REF, 229.98377836897598},
+            {"System=FREQ,StdOfRest=Bary," + REF, helio + REF, 229.9999885899968},
+            {"System=FREQ,StdOfRest=LSRK", "System=FREQ,StdOfRest=Helio", 230.00022248735908},
+            {"System=FREQ,StdOfRest=Source," + REF + ",RestFreq=230", helio + REF, 229.99999999999997},
+            {"System=FREQ,StdOfRest=Source," + REF + ",RestFreq=230,SourceVel=100", helio + REF, 229.923293049313},
+            {"System=VRAD", "System=FREQ", 99996.66435904801},
+            {
+                "UseDefs=0,System=FREQ,StdOfRest=Topo," + REF + ",ObsLon=W30,ObsLat=N20,ObsAlt=1000,Epoch=2005.0",
+                "UseDefs=0," + helio + REF + ",Epoch=2005.0",
+                229.98371973623955
+            },
+            {
+                "UseDefs=0,System=VRAD,StdOfRest=Helio,RestFreq=230",
+                "UseDefs=0,System=FREQ,StdOfRest=Helio",
+                229.99232802581045
+            },
+        };
+        for (Object[] c : cases) {
+            assertConverts(
+                    (String) c[0],
+                    (String) c[1],
+                    c[0].toString().contains("System=VRAD") ? 10.0 : 230.0,
+                    true,
+                    (Double) c[2],
+                    "CmpMap");
+        }
+    }
+
+    @Test
+    void unsetAttributesAreRefusedWithoutUseDefs() {
+        String noDefs = "UseDefs=0,";
+        String helio = noDefs + "System=FREQ,StdOfRest=Helio";
+        assertNoValue(
+                noDefs + "System=FREQ,StdOfRest=Topo",
+                helio,
+                SOR_MESSAGE + "\nNo value has been set for the AST" + " \"RefRA\" attribute (source RA).");
+        assertNoValue(
+                noDefs + "System=FREQ,StdOfRest=Topo," + REF + ",Epoch=2005.0",
+                helio + "," + REF + ",Epoch=2005.0",
+                SOR_MESSAGE + "\nNo value has been set for the AST \"ObsLon\" attribute (observer's longitude).");
+        String epoch = SOR_MESSAGE + "\nNo value has been set for the AST \"Epoch\" attribute (epoch of observation).";
+        assertNoValue(
+                noDefs + "System=FREQ,StdOfRest=Topo," + REF + ",ObsLon=W30,ObsLat=N20,ObsAlt=1000",
+                helio + "," + REF,
+                epoch);
+        assertNoValue(noDefs + "System=FREQ,StdOfRest=Geo," + REF, helio + "," + REF, epoch);
+        assertNoValue(noDefs + "System=FREQ,StdOfRest=Bary," + REF, helio + "," + REF, epoch);
+        assertNoValue(
+                noDefs + "System=FREQ,StdOfRest=LSRK",
+                helio,
+                SOR_MESSAGE + "\nNo value has been set for the AST" + " \"RefRA\" attribute (source RA).");
+        assertNoValue(
+                noDefs + "System=FREQ,StdOfRest=LSRK,RefRA=10:00:00",
+                helio + "," + REF,
+                SOR_MESSAGE + "\nNo value has been set for the AST \"RefDec\" attribute (source Dec).");
+        assertNoValue(
+                helio + "," + REF,
+                noDefs + "System=FREQ,StdOfRest=LSRK",
+                SOR_MESSAGE + "\nNo value has been set for the AST \"RefRA\" attribute (source RA).");
+        assertNoValue(
+                noDefs + "System=FREQ,StdOfRest=Source," + REF + ",RestFreq=230",
+                helio + "," + REF,
+                "astMatch(SpecFrame): Cannot convert source velocity to a new standard of rest.\nNo value has been"
+                        + " set for the AST \"SourceVel\" attribute (source velocity).");
+        String spectral = "astMatch(SpecFrame): Cannot convert between spectral systems.\nNo value has been set for"
+                + " the AST ";
+        assertNoValue(noDefs + "System=FREQ", helio, spectral + "\"StdOfRest\" attribute (spectral standard of rest).");
+        assertNoValue(
+                noDefs + "System=VRAD,StdOfRest=Helio", helio, spectral + "\"RestFreq\" attribute (rest frequency).");
+        assertNoValue(
+                helio, noDefs + "System=VRAD,StdOfRest=Helio", spectral + "\"RestFreq\" attribute (rest frequency).");
+    }
+
+    // Review Focus 3: converting and finding Frames, SpecFrames or FrameSets holding one, leave the
+    // Frames given as they were, and conversions in two threads, each between its own copies, give
+    // the same Mapping.
+
+    @Test
+    void convertLeavesBothFramesAsTheyWere() {
+        SpecFrame a = make("System=VRAD,Unit=m/s,RestFreq=230,StdOfRest=Topo,ObsLon=W30,ObsLat=N20,Epoch=2005.0," + REF
+                + ",SpecOrigin=12,AlignStdOfRest=LSRK");
+        SpecFrame b = make("System=WAVE,RestFreq=345,StdOfRest=LSRK," + REF + ",AlignSpecOffset=1");
+        SpecFrame c = make("UseDefs=0,System=FREQ,StdOfRest=Geo");
+        String da = ChannelText.dump(a);
+        String db = ChannelText.dump(b);
+        String dc = ChannelText.dump(c);
+        assertNotNull(a.convert(b, ""));
+        assertNotNull(b.convert(a, ""));
+        assertNotNull(a.findFrame(b, ""));
+        assertNotNull(b.findFrame(a, ""));
+        assertThrows(AstException.class, () -> c.convert(a, ""));
+        assertThrows(AstException.class, () -> a.convert(c, ""));
+        assertEquals(da, ChannelText.dump(a));
+        assertEquals(db, ChannelText.dump(b));
+        assertEquals(dc, ChannelText.dump(c));
+
+        // astConvert sets the Base of a FrameSet it is given to the Frame it used (frameset.c
+        // ConvertX), as AST documents; the Frames the FrameSet holds are left as they were.
+        FrameSet fs = new FrameSet(new Frame(1));
+        fs.addFrame(FrameSet.AST__BASE, new UnitMap(1), make("System=FREQ,RestFreq=230,StdOfRest=Bary," + REF));
+        String dbase = ChannelText.dump(fs.getFrame(1));
+        String dcur = ChannelText.dump(fs.getFrame(2));
+        assertNotNull(fs.findFrame(b, ""));
+        assertNotNull(fs.convert(a, ""));
+        assertNotNull(a.convert(fs, ""));
+        assertEquals(dbase, ChannelText.dump(fs.getFrame(1)));
+        assertEquals(dcur, ChannelText.dump(fs.getFrame(2)));
+        assertEquals(2, fs.getCurrent());
+        assertEquals(da, ChannelText.dump(a));
+        assertEquals(db, ChannelText.dump(b));
+    }
+
+    // ExecutorService is not AutoCloseable before Java 19; the pool is shut down in the finally block.
+    @SuppressWarnings("PMD.CloseResource")
+    @Test
+    void twoThreadsConvertingCopiesGetIdenticalMappings() throws Exception {
+        SpecFrame a = make("System=VRAD,Unit=m/s,RestFreq=230,StdOfRest=Topo,ObsLon=W30,ObsLat=N20,Epoch=2005.0," + REF
+                + ",SpecOrigin=12");
+        SpecFrame b = make("System=WAVE,RestFreq=345,StdOfRest=LSRK," + REF);
+        String want = ChannelText.dump(a.convert(b, "").getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT));
+        int nthread = 2;
+        SpecFrame[][] copies = new SpecFrame[nthread][];
+        for (int i = 0; i < nthread; i++) {
+            copies[i] = new SpecFrame[] {(SpecFrame) a.copy(), (SpecFrame) b.copy()};
+        }
+        // MODERN-JAVA(19): try-with-resources on the ExecutorService
+        ExecutorService pool = Executors.newFixedThreadPool(nthread);
+        try {
+            List<Future<String>> results = new ArrayList<>();
+            for (int i = 0; i < nthread; i++) {
+                SpecFrame[] pair = copies[i];
+                results.add(pool.submit(() -> {
+                    String last = null;
+                    for (int r = 0; r < 50; r++) {
+                        String d = ChannelText.dump(
+                                pair[0].convert(pair[1], "").getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT));
+                        if (last != null && !last.equals(d)) {
+                            return "changed between repeats";
+                        }
+                        last = d;
+                    }
+                    return last;
+                }));
+            }
+            for (Future<String> f : results) {
+                assertEquals(want, f.get());
+            }
+        } finally {
+            pool.shutdown();
+            assertTrue(pool.awaitTermination(1, TimeUnit.MINUTES), "threads finished");
+        }
     }
 }

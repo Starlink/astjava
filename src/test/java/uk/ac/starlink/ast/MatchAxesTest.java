@@ -19,11 +19,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * {@code astMatchAxes( frm1, frm2, axes )} for every pair of a list of Frames).
  *
  * <p>The probe's Frames are numbered as its {@code make} function builds them. The cases whose
- * Frames this version can build run here: the SkyFrame (0), the SkyFrame with its axes swapped
- * (1), the one-axis plain Frame (3), the CmpFrame of a one-axis Frame and a SkyFrame with its axes
- * permuted (2, 3, 1) (7), the FrameSet whose current Frame is a SkyFrame (8) and the TimeFrame
- * (12). The cases using Frames that hold a SpecFrame (2, 4, 5, 6, 9, 11) or a Circle (10) are
- * outside this version.
+ * Frames this version can build run here: all but those using the Circle (10), a Region.
  *
  * <p>{@code frm1.matchAxes(frm2)} is called, as the probe calls {@code astMatchAxes}, so that a
  * FrameSet {@code frm1} gives its current Frame as C's FrameSet {@code MatchAxes} does.
@@ -43,8 +39,18 @@ class MatchAxesTest {
                 SkyFrame swapped = new SkyFrame();
                 swapped.permAxes(new int[] {2, 1});
                 return swapped;
+            case 2:
+                return new SpecFrame();
             case 3:
                 return new Frame(1);
+            case 4:
+                return new CmpFrame(new SkyFrame(), new SpecFrame());
+            case 5:
+                CmpFrame permuted = new CmpFrame(new SkyFrame(), new SpecFrame());
+                permuted.permAxes(new int[] {3, 2, 1});
+                return permuted;
+            case 6:
+                return new CmpFrame(new SpecFrame(), new SkyFrame());
             case 7:
                 CmpFrame cmp = new CmpFrame(new Frame(1), new SkyFrame());
                 cmp.permAxes(new int[] {2, 3, 1});
@@ -53,6 +59,12 @@ class MatchAxesTest {
                 FrameSet fs = new FrameSet(new Frame(2));
                 fs.addFrame(FrameSet.AST__BASE, new UnitMap(2), new SkyFrame());
                 return fs;
+            case 9:
+                FrameSet fs3 = new FrameSet(new Frame(3));
+                fs3.addFrame(FrameSet.AST__BASE, new UnitMap(3), new CmpFrame(new SpecFrame(), new SkyFrame()));
+                return fs3;
+            case 11:
+                return new CmpFrame(new CmpFrame(new SpecFrame(), new SkyFrame()), new Frame(1));
             case 12:
                 return new TimeFrame();
             default:
@@ -84,7 +96,7 @@ class MatchAxesTest {
                         + Arrays.toString(expected));
             }
         }
-        assertEquals(36, ran, "the cases with Frames this version builds");
+        assertEquals(144, ran, "the cases with Frames this version builds");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 
