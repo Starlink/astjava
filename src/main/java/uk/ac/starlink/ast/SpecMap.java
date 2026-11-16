@@ -873,6 +873,9 @@ public class SpecMap extends Mapping {
      * @return false, changing nothing, if {@code s} is not a change of rest frame
      */
     private static boolean frameChange(Step s, int np, double[] ra, double[] dec, double[] freq, boolean forward) {
+        if (!s.cvt.isFrameChange()) {
+            return false;
+        }
         double[] args = s.args;
         FrameDef def = new FrameDef();
         int sign;
@@ -918,7 +921,7 @@ public class SpecMap extends Mapping {
                 ifcorr = 2;
                 break;
             default:
-                return false;
+                throw Ast.err(AstException.AST__INTER, "FrameChange(SpecMap): unexpected conversion " + s.cvt + ".");
         }
         // The conversions to heliocentric have odd codes.
         sign = s.cvt.cCode % 2 == 1 ? -1 : 1;
