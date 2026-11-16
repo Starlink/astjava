@@ -1,22 +1,17 @@
 # Rows of fixtures/wcsconv/cases.txt that do not match C:
 # <row name> | <reason>
 # Rewritten by WcsconvTest with -Dast.writeDeferred=true.
-timj_fits-wcs | out-of-scope method FitsChan.write
 timj_fits-iraf | out-of-scope method FitsChan.write
 timj_fits-aips | out-of-scope method FitsChan.write
 timj_fits-pc | out-of-scope method FitsChan.write
-a20070718_fits-wcs | out-of-scope method FitsChan.write
+a20070718_fits-wcs | needs DSBSpecFrame
 dss_fits-dss_ast | encoding DSS
 dss_ast_dss | out-of-scope method FitsChan.write
-dss_ast_fits-wcs | out-of-scope method FitsChan.write
-degen1_fits-wcs | out-of-scope method FitsChan.write
-sip_fits-wcs | out-of-scope method FitsChan.write
-sip2_fits-wcs | out-of-scope method FitsChan.write
-sip-3d_fits-wcs | out-of-scope method FitsChan.write
-sip-3d-swap_fits-wcs | out-of-scope method FitsChan.write
-lsst_fits-wcs | out-of-scope method FitsChan.write
-lsst2_fits-wcs | out-of-scope method FitsChan.write
-longslit_fits-wcs | out-of-scope method FitsChan.write
+sip-3d_fits-wcs | needs SpecFrame
+sip-3d-swap_fits-wcs | needs SpecFrame
+lsst_fits-wcs | needs MathMap
+lsst2_fits-wcs | needs SplineMap
+longslit_fits-wcs | needs SpecFrame
 jan_fits-class_ast | encoding FITS-CLASS
 cobe_native | encoding FITS-AIPS
 origin_native | encoding FITS-PC
@@ -31,10 +26,9 @@ freq-log_native | needs SpecFrame
 freq-f2w_native | needs SpecFrame
 tnx-cheb_native | encoding FITS-IRAF
 grism_native | needs SpecFrame
-grism_fits-wcs | out-of-scope method FitsChan.write
+grism_fits-wcs | needs SpecFrame
 class-spec_native | encoding FITS-CLASS
 class-hel_native | encoding FITS-CLASS
-multi-wcs_fits-wcs | out-of-scope method FitsChan.write
 degen-wcsaxes_native | needs SpecFrame
 wave-w2f_native | needs SpecFrame
 vrad-v2f_native | needs SpecFrame
@@ -45,14 +39,11 @@ cube-reorder_native | needs SpecFrame
 velo-vel_native | needs SpecFrame
 vopt-wav_native | needs SpecFrame
 zopt-frq_native | needs SpecFrame
-cname_fits-wcs | out-of-scope method FitsChan.write
 fits-pc-unit_native | encoding FITS-PC
 iraf-longpole_native | encoding FITS-IRAF
 multi-wcs-spec_native | needs SpecFrame
-multi-wcs-dup_fits-wcs | out-of-scope method FitsChan.write
 freq-wav_native | needs SpecFrame
 wavn-frq_native | needs SpecFrame
-gappt_fits-wcs | out-of-scope method FitsChan.write
 zero-cdelt_native | needs SpecFrame
 alt-spectral_native | needs SpecFrame
 fits-pc-full_native | encoding FITS-PC
@@ -66,7 +57,6 @@ cd-old_native | encoding FITS-IRAF
 ssysobs_native | needs SpecFrame
 ener-vel_native | needs SpecFrame
 beta-frq_native | needs SpecFrame
-ukirt-dtai_fits-wcs | out-of-scope method FitsChan.write
 vrad-wav_native | needs SpecFrame
 projp-nopv0_native | encoding FITS-IRAF
 projp-pv0only_native | encoding FITS-IRAF
@@ -122,7 +112,7 @@ fk4-aips_fits-iraf | out-of-scope method FitsChan.write
 a20070718_fits-iraf | out-of-scope method FitsChan.write
 sfl-origin_fits-iraf | out-of-scope method FitsChan.write
 skyspec3d_native | needs SpecFrame
-skyspec3d_fits-wcs | out-of-scope method FitsChan.write
+skyspec3d_fits-wcs | needs SpecFrame
 skyspec3d_fits-aips | out-of-scope method FitsChan.write
 skyspec3d_fits-aips++ | out-of-scope method FitsChan.write
 skyspec3d_fits-iraf | out-of-scope method FitsChan.write
@@ -131,18 +121,15 @@ wave-1d_fits-iraf | out-of-scope method FitsChan.write
 skyspec3d_fits-pc | out-of-scope method FitsChan.write
 skyspec3d-class_native | needs SpecFrame
 skyspec3d-class_fits-class | out-of-scope method FitsChan.write
-offset-sky_fits-wcs | out-of-scope method FitsChan.write
-offset-sky-pole_fits-wcs | out-of-scope method FitsChan.write
-azel_fits-wcs | out-of-scope method FitsChan.write
+offset-sky_fits-wcs | needs MathMap
+offset-sky-pole_fits-wcs | needs MathMap
 vopt-f2w_native | needs SpecFrame
-vopt-f2w_fits-wcs | out-of-scope method FitsChan.write
+vopt-f2w_fits-wcs | needs SpecFrame
 wave-f2w_native | needs SpecFrame
-wave-f2w_fits-wcs | out-of-scope method FitsChan.write
+wave-f2w_fits-wcs | needs SpecFrame
 galactic-tan_fits-aips | out-of-scope method FitsChan.write
 galactic-tan_fits-aips++ | out-of-scope method FitsChan.write
 galactic-tan_fits-iraf | out-of-scope method FitsChan.write
 ecliptic-tan_fits-aips | out-of-scope method FitsChan.write
-tan-pv0_fits-wcs | out-of-scope method FitsChan.write
-date-z_fits-wcs | out-of-scope method FitsChan.write
 fits-pc-altgal_native | encoding FITS-PC
-fits-pc-altgal_fits-wcs | out-of-scope method FitsChan.write
+fits-pc-altgal_fits-wcs | encoding FITS-PC

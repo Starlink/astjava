@@ -473,13 +473,29 @@ class FitsChanNativeWriteTest {
         assertEquals(1, fc.getCard());
     }
 
-    /** Until the foreign encodings are written, the hook gives C's failure. */
+    /**
+     * A FrameSet of one Frame written FITS-WCS goes through the foreign hook, which describes the
+     * identity, and leaves the FitsChan at end-of-file (C probe {@code p7.c} of phase 3 Task 6).
+     */
     @Test
-    void foreignFrameSetWriteFailsForNow() {
+    void foreignFrameSetWriteGoesThroughTheHook() {
         FitsChan fc = new FitsChan();
         fc.setEncoding("FITS-WCS");
-        assertEquals(0, fc.write(new FrameSet(new Frame(2))));
-        assertEquals(0, fc.getNcard());
+        assertEquals(1, fc.write(new FrameSet(new Frame(2))));
+        assertEquals(9, fc.getNcard());
+        assertEquals(10, fc.getCard());
+        assertEquals(
+                padded(
+                        "WCSAXES =                    2 / Number of WCS axes",
+                        "CRPIX1  =                  1.0 / Reference pixel on axis 1",
+                        "CRPIX2  =                  1.0 / Reference pixel on axis 2",
+                        "CRVAL1  =                  1.0 / Value at ref. pixel on axis 1",
+                        "CRVAL2  =                  1.0 / Value at ref. pixel on axis 2",
+                        "CTYPE1  = 'x1      '           / Type of co-ordinate on axis 1", // codespell:ignore
+                        "CTYPE2  = 'x2      '           / Type of co-ordinate on axis 2", // codespell:ignore
+                        "CDELT1  =                  1.0 / Pixel size on axis 1",
+                        "CDELT2  =                  1.0 / Pixel size on axis 2"),
+                cards(fc));
     }
 
     private static AstObject readBack(FitsChan fc) {

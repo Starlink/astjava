@@ -1034,6 +1034,152 @@ final class FitsCardList {
     }
 
     /**
+     * C's {@code SetValue} as the writers of the foreign encodings call it, with the comment rules
+     * of C's {@code SetFits} and {@code astSetFits<X>}: a card with keyword {@code keyword} (the
+     * card after the current one, else the first, consumed or not) is replaced, and otherwise the
+     * card is inserted in front of the current card; the current card is the same card after
+     * either.
+     *
+     * <p>The comment of a string equal to the value is dropped. A card replaced keeps its comment
+     * when the new card has none, or when its value, converted to the type of the new value as C's
+     * {@code CnvValue} converts it (with {@code fitsRounding}), is the same as the new value: equal
+     * integers or logical values, floating values equal to C's {@code astEQUAL}, or strings that
+     * C's {@code Similar} finds alike.
+     *
+     * @throws AstException with status {@code AST__BDFTS} if a floating value is {@code AST__BAD},
+     *     as C's {@code SetValue} reports; {@code AST__FUNDEF} if the card replaced has an
+     *     undefined value, which C's {@code CnvValue} reports
+     */
+    void setValueAsWriter(String keyword, FitsCard.Value value, String comment, int fitsRounding) {
+        if (value.kind == FitsCard.Kind.FLOAT && value.d == AstObject.AST__BAD) {
+            throw Ast.err(
+                    AstException.AST__BDFTS,
+                    "astWrite(FitsChan): The required FITS keyword \"" + keyword + "\" is indeterminate.");
+        }
+        String com = comment == null || FitsCard.isBlank(comment) ? null : comment;
+        if (com != null && value.kind == FitsCard.Kind.STRING && com.equals(value.s)) {
+            com = null;
+        }
+        FitsCard card = new FitsCard(keyword.toUpperCase(Locale.ROOT), value, null);
+        if (markNew) {
+            card.flags.newWrite = true;
+            card.flags.newVersion = true;
+        }
+        int found = -1;
+        if (pos + 1 < list.size() && list.get(pos + 1).keyword.equalsIgnoreCase(card.keyword)) {
+            found = pos + 1;
+        } else {
+            for (int k = 0; k < list.size(); k++) {
+                if (list.get(k).keyword.equalsIgnoreCase(card.keyword)) {
+                    found = k;
+                    break;
+                }
+            }
+        }
+        if (found >= 0) {
+            FitsCard old = list.get(found);
+            FitsCardValue.Got got = FitsCardValue.cnvType(old.value, want(value.kind), fitsRounding, old.cName());
+            if (got != null && old.comment != null && sameValue(got, value)) {
+                com = null;
+            }
+            if (com == null) {
+                com = old.comment;
+            }
+            card.comment = com == null ? null : nullIfEmpty(FitsCard.trim(com));
+            list.set(found, card);
+        } else {
+            card.comment = com == null ? null : nullIfEmpty(FitsCard.trim(com));
+            int at = Math.min(pos, list.size());
+            list.add(at, card);
+            pos = at + 1;
+        }
+    }
+
+    /** The type C's {@code CnvValue} converts a card's value to, to compare it with {@code kind}. */
+    private static FitsCardValue.Want want(FitsCard.Kind kind) {
+        // MODERN-JAVA(21): switch expression
+        switch (kind) {
+            case INT:
+                return FitsCardValue.Want.INT;
+            case KINT:
+                return FitsCardValue.Want.KINT;
+            case FLOAT:
+                return FitsCardValue.Want.FLOAT;
+            case STRING:
+                return FitsCardValue.Want.STRING;
+            case LOGICAL:
+                return FitsCardValue.Want.LOGICAL;
+            case COMPLEX_FLOAT:
+                return FitsCardValue.Want.COMPLEXF;
+            case COMPLEX_INT:
+                return FitsCardValue.Want.COMPLEXI;
+            default:
+                throw Ast.err(AstException.AST__INTER, "SetValue(FitsChan): unexpected card type " + kind + ".");
+        }
+    }
+
+    /** Whether a value converted for comparison is the same as {@code value}, as C's {@code SetFits} compares them. */
+    private static boolean sameValue(FitsCardValue.Got got, FitsCard.Value value) {
+        // MODERN-JAVA(21): switch expression
+        switch (value.kind) {
+            case INT:
+            case KINT:
+                return got.i == value.i;
+            case FLOAT:
+                return MappingHelpers.astEqual(got.d, value.d);
+            case STRING:
+                return similar(got.s, value.s);
+            case LOGICAL:
+                return got.b == value.b;
+            case COMPLEX_FLOAT:
+                return MappingHelpers.astEqual(got.d, value.d) && MappingHelpers.astEqual(got.dIm, value.dIm);
+            case COMPLEX_INT:
+                return got.i == value.i && got.iIm == value.iIm;
+            default:
+                throw Ast.err(AstException.AST__INTER, "SetFits(FitsChan): unexpected card type " + value.kind + ".");
+        }
+    }
+
+    /**
+     * C's {@code Similar}: whether two strings are alike, ignoring case, leading and trailing
+     * blanks, and any blank after a blank. C compares the strings only up to the last character
+     * before the last that is not blank, so two strings that differ only in that character are
+     * alike (C-library quirk, kept). Two blank strings, for which C reads past the end of both, are
+     * alike.
+     */
+    static boolean similar(String str1, String str2) {
+        int ea = FitsCard.trimEnd(str1).length() - 1;
+        int eb = FitsCard.trimEnd(str2).length() - 1;
+        if (ea < 0 && eb < 0) {
+            return true;
+        }
+        int a = 0;
+        int b = 0;
+        boolean ss = true;
+        while (true) {
+            while (a < ea && str1.charAt(a) == ' ' && ss) {
+                a++;
+            }
+            while (b < eb && str2.charAt(b) == ' ' && ss) {
+                b++;
+            }
+            if ((a < ea && b == eb) || (a == ea && b < eb)) {
+                return false;
+            } else if (b == eb && a == ea) {
+                return true;
+            }
+            char ca = a < str1.length() ? str1.charAt(a) : '\0';
+            char cb = b < str2.length() ? str2.charAt(b) : '\0';
+            if (Character.toLowerCase(ca) != Character.toLowerCase(cb)) {
+                return false;
+            }
+            ss = ca == ' ';
+            a++;
+            b++;
+        }
+    }
+
+    /**
      * Parses header text, one card per line; a line that cannot be read as a card is left out. A
      * card whose keyword name holds an illegal character, or whose value cannot be typed, is
      * preceded by {@code ASTWARN} cards describing the problem.
@@ -1101,57 +1247,41 @@ final class FitsCardList {
     // WCS keywords
     // ------------------------------------------------------------------
 
-    private static boolean allDigits(String s) {
-        for (int k = 0; k < s.length(); k++) {
-            char c = s.charAt(k);
-            if (c < '0' || c > '9') {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static boolean allDigitsOr(String s, char extra) {
-        for (int k = 0; k < s.length(); k++) {
-            char c = s.charAt(k);
-            if ((c < '0' || c > '9') && c != extra) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static boolean isUpper(char c) {
-        return c >= 'A' && c <= 'Z';
-    }
-
-    private static final Set<String> FINDWCS_ALT = new HashSet<>(java.util.Arrays.asList(
-            "LONPOLE", "LATPOLE", "EQUINOX", "RADESYS", "RESTFRQ", "WCSNAME", "SPECSYS", "SSYSSRC", "ZSOURCE",
-            "VELOSYS", "MJD_AVG"));
-
-    private static final Set<String> FINDWCS_EXACT = new HashSet<>(java.util.Arrays.asList(
+    /** The templates of the keywords C's {@code FindWcs} recognises as describing WCS, in its order. */
+    private static final List<String> FINDWCS_TEMPLATES = java.util.Arrays.asList(
+            "CRVAL%d%0c",
+            "CRPIX%d%0c",
+            "CDELT%d%0c",
+            "CROTA%d",
+            "CTYPE%d%0c",
+            "CUNIT%d%0c",
+            "PC%3d%3d%0c",
+            "CD%3d%3d%0c",
+            "CD%1d_%1d%0c",
+            "PC%1d_%1d%0c",
             "LONGPOLE",
-            "LONPOLE",
-            "LATPOLE",
+            "LONPOLE%0c",
+            "LATPOLE%0c",
+            "PROJP%d",
+            "PV%d_%d%0c",
+            "PS%d_%d%0c",
             "EPOCH",
-            "EQUINOX",
+            "EQUINOX%0c",
             "MJD-OBS",
             "DATE-OBS",
             "TIMESYS",
             "RADECSYS",
-            "RADESYS",
-            "WCSNAME",
-            "SPECSYS",
-            "SSYSSRC",
-            "ZSOURCE",
-            "VELOSYS",
-            "RESTFRQ",
-            "MJD_AVG",
-            "OBSGEO-X",
-            "OBSGEO-Y",
-            "OBSGEO-Z",
+            "RADESYS%0c",
+            "C%1dVAL%d",
+            "C%1dPIX%d",
+            "C%1dELT%d",
+            "C%1dYPE%d",
+            "C%1dNIT%d",
             "CNPIX1",
             "CNPIX2",
+            "PPO%d",
+            "AMDX%d",
+            "AMDY%d",
             "XPIXELSZ",
             "YPIXELSZ",
             "PLTRAH",
@@ -1165,72 +1295,28 @@ final class FitsCardList {
             "PPO1",
             "PPO2",
             "PPO4",
-            "PPO5"));
+            "PPO5",
+            "WCSNAME%0c",
+            "SPECSYS%0c",
+            "SSYSSRC%0c",
+            "ZSOURCE%0c",
+            "VELOSYS%0c",
+            "RESTFRQ%0c",
+            "MJD_AVG%0c",
+            "OBSGEO-X",
+            "OBSGEO-Y",
+            "OBSGEO-Z");
 
     /**
-     * Whether a keyword is one of those C's {@code FindWcs} (fitschan.c:10904-10960) recognises as
-     * describing WCS, which places the cards a write adds and which {@code astPurgeWCS} removes.
+     * Whether a keyword is one of those C's {@code FindWcs} recognises as describing WCS, which
+     * places the cards a write adds and which {@code astPurgeWCS} removes: one matching a template
+     * of {@link #FINDWCS_TEMPLATES}, as C's {@code Match} matches it.
      */
     static boolean isFindWcsKeyword(String keyword) {
-        String kw = keyword.toUpperCase(Locale.ROOT);
-        String bare = kw;
-        if (!kw.isEmpty() && isUpper(kw.charAt(kw.length() - 1))) {
-            String stripped = kw.substring(0, kw.length() - 1);
-            if (FINDWCS_ALT.contains(stripped)) {
+        for (String template : FINDWCS_TEMPLATES) {
+            if (FitsMatch.matchKeyword(keyword, template, 0) != null) {
                 return true;
             }
-        }
-        if (FINDWCS_EXACT.contains(bare)) {
-            return true;
-        }
-        if (kw.length() >= 6) {
-            String prefix5 = kw.substring(0, 5);
-            if ("CRPIX".equals(prefix5)
-                    || "CRVAL".equals(prefix5)
-                    || "CDELT".equals(prefix5)
-                    || "CTYPE".equals(prefix5)
-                    || "CUNIT".equals(prefix5)) {
-                boolean ok = true;
-                for (int k = 5; k < kw.length(); k++) {
-                    char c = kw.charAt(k);
-                    if (!(c >= '0' && c <= '9') && !isUpper(c)) {
-                        ok = false;
-                        break;
-                    }
-                }
-                if (ok) {
-                    return true;
-                }
-            }
-            if (kw.startsWith("CROTA")) {
-                return true;
-            }
-        }
-        if ((kw.startsWith("CD") || kw.startsWith("PC")) && kw.length() >= 4) {
-            String rest = kw.substring(2);
-            if ((rest.indexOf('_') >= 0 && allDigitsOr(rest, '_')) || allDigits(rest)) {
-                return true;
-            }
-        }
-        if ((kw.startsWith("PV") || kw.startsWith("PS")) && kw.length() >= 4) {
-            String rest = kw.substring(2);
-            if (rest.indexOf('_') >= 0 && allDigitsOr(rest, '_')) {
-                return true;
-            }
-        }
-        if (kw.startsWith("PROJP") || kw.startsWith("AMDX") || kw.startsWith("AMDY")) {
-            return true;
-        }
-        if (kw.startsWith("PPO") && kw.length() >= 4 && allDigits(kw.substring(3))) {
-            return true;
-        }
-        if (kw.length() >= 5 && kw.charAt(0) == 'C' && kw.charAt(1) >= '0' && kw.charAt(1) <= '9') {
-            String suffix = kw.substring(2);
-            return suffix.startsWith("VAL")
-                    || suffix.startsWith("PIX")
-                    || suffix.startsWith("ELT")
-                    || suffix.startsWith("YPE")
-                    || suffix.startsWith("NIT");
         }
         return false;
     }

@@ -919,12 +919,12 @@ public class FitsChan extends Channel {
     }
 
     /**
-     * Writes {@code fs} with {@code enc}, an encoding other than NATIVE, from the current card, as
-     * fitschan.c {@code Write} does from reading the image dimensions on: false, C's failure, if
-     * the encoding cannot describe the FrameSet. The axis descriptions are made from the FrameSet
-     * ({@link FitsFsetToStore#fsetToStore}), raising their warnings, but no encoding writes them
-     * as cards, so the result is false. {@link #write} undoes whatever a write that gives false
-     * did to the cards, and leaves end-of-file current after one that gives true.
+     * Writes {@code fs} with {@code enc}, an encoding other than NATIVE, as fitschan.c {@code
+     * Write} does from reading the image dimensions on: false, C's failure, if the encoding cannot
+     * describe the FrameSet. The axis descriptions are made from the FrameSet ({@link
+     * FitsFsetToStore#fsetToStore}), raising their warnings, and written as cards by the encoding's
+     * writer ({@link #fitsFromStore}). {@link #write} undoes whatever a write that gives false did
+     * to the cards, and leaves end-of-file current after one that gives true.
      *
      * @throws UnsupportedOperationException where describing the FrameSet needs a class this
      *     library lacks
@@ -940,10 +940,32 @@ public class FitsChan extends Channel {
 
         // C's Write passes FsetToStore its method and class names in the wrong order, so the
         // method its warnings name is the class (C-library quirk, kept).
-        FitsFsetToStore.fsetToStore(this, fs, naxis, dim, enc, astClass(), "astWrite");
+        FitsPlaneStores store = FitsFsetToStore.fsetToStore(this, fs, naxis, dim, enc, astClass(), "astWrite");
+        return store != null && fitsFromStore(store, enc, "astWrite", astClass());
+    }
 
-        // No encoding other than NATIVE writes cards from the store.
-        return false;
+    /**
+     * C's {@code FitsFromStore}: puts the current card after the last card describing WCS ({@link
+     * FitsCardList#positionWriteCursor}, C's {@code FindWcs}), and writes the descriptions in
+     * {@code store} with the writer of {@code enc}. Only FITS-WCS has a writer here; for the other
+     * encodings nothing is written and the result is false.
+     */
+    private boolean fitsFromStore(FitsPlaneStores store, Encoding enc, String method, String cls) {
+        cardList.positionWriteCursor();
+        // MODERN-JAVA(21): switch expression
+        switch (enc) {
+            case FITS_WCS:
+                return FitsWcsWrite.wcsFromStore(this, store, method, cls);
+            case FITS_PC:
+            case FITS_IRAF:
+            case FITS_AIPS:
+            case FITS_AIPSPP:
+            case FITS_CLASS:
+            case DSS:
+                return false;
+            default:
+                throw Ast.err(AstException.AST__INTER, "astWrite(FitsChan): unexpected encoding " + enc + ".");
+        }
     }
 
     // ------------------------------------------------------------------

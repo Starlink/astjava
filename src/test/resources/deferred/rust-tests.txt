@@ -363,8 +363,6 @@ src/fitschan/spec_trans.rs::translates_cnxxx_to_alt_letter_form_for_fits_pc | ou
 src/fitschan/spec_trans.rs::cnxxx_zero_cdelt_falls_back_to_crval_or_one | out-of-scope method FitsChan.read(FITS-PC)
 src/fitschan/spec_trans.rs::translates_class_spectral_crval_and_specsys | out-of-scope method FitsChan.read(FITS-CLASS)
 src/fitschan/spec_trans.rs::rename_keyword_handles_float_values | out-of-scope method FitsChan.read(FITS-PC)
-src/fitschan/wcs_write/mod.rs::date_str_to_mjd_roundtrip_modern | out-of-scope method FitsChan.write
-src/fitschan/wcs_write/mod.rs::date_str_to_mjd_roundtrip_legacy | out-of-scope method FitsChan.write
 tests/test_fitschan_wcs.rs::read_spectral_header | SpecFrame (out of scope)
 tests/test_fitschan_wcs.rs::axes_swap_non_adjacent_celestial_axes | SpecFrame (out of scope)
 tests/test_fitschan_wcs.rs::jan_class_no_naxis_keyword | FITS-CLASS encoding (out-of-scope method FitsChan.read)

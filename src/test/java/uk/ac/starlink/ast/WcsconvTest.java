@@ -26,14 +26,15 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * -Dast.writeDeferred=true} to rewrite the list from what the rows give.
  *
  * <ul>
- *   <li>A row whose output is written with a FITS encoding or DSS needs {@code FitsChan.write}
- *       with that encoding, which does not write yet, and cannot run at all; there are {@value
- *       #WRITE_ROWS} of them, each listed as {@value #WRITE}.
- *   <li>A {@code native} row's output is the cards {@code FitsChan.write} gives with the NATIVE
- *       encoding, written as {@code wcsconverter.c} writes them: to the FitsChan the input was read
- *       from (or, if the input was read as a native dump, to a new FitsChan with the row's
- *       attributes), from its first card, the cards then listed from the first by {@code
- *       astFindFits} with the template {@code %f}.
+ *   <li>A row whose output is written with a FITS encoding other than FITS-WCS, or DSS, needs
+ *       {@code FitsChan.write} with that encoding, which does not write yet, and cannot run at all;
+ *       there are {@value #WRITE_ROWS} of them, each listed as {@value #WRITE}.
+ *   <li>A {@code native} or {@code fits-wcs} row's output is the cards {@code FitsChan.write}
+ *       gives with that encoding, written as {@code wcsconverter.c} writes them: to the FitsChan
+ *       the input was read from (or, if the input was read as a native dump, to a new FitsChan
+ *       with the row's attributes), from its first card, the cards then listed from the first by
+ *       {@code astFindFits} with the template {@code %f}. A write that stops at an out-of-scope
+ *       class gives that reason ({@code needs <Class>}).
  *   <li>An {@code ast} row's output is the Object's native text.
  * </ul>
  *
@@ -48,8 +49,8 @@ class WcsconvTest {
     /** The reason of a row whose output needs {@code FitsChan.write}. */
     static final String WRITE = "out-of-scope method FitsChan.write";
 
-    /** The number of rows whose output is written with a FITS encoding or DSS. */
-    static final int WRITE_ROWS = 85;
+    /** The number of rows whose output is written with a FITS encoding other than FITS-WCS, or DSS. */
+    static final int WRITE_ROWS = 59;
 
     /** One row of the manifest. */
     private static final class Row {
@@ -84,7 +85,9 @@ class WcsconvTest {
         }
 
         boolean needsWrite() {
-            return !"native".equalsIgnoreCase(encoding) && !"ast".equalsIgnoreCase(encoding);
+            return !"native".equalsIgnoreCase(encoding)
+                    && !"ast".equalsIgnoreCase(encoding)
+                    && !"fits-wcs".equalsIgnoreCase(encoding);
         }
     }
 
@@ -148,14 +151,15 @@ class WcsconvTest {
     }
 
     /**
-     * The cards {@code wcsconverter.c} writes for a {@code native} row: the Object written with the
-     * NATIVE encoding from the first card of the FitsChan it was read from, or of a new FitsChan
-     * with the row's attributes, and then every card from the first, as {@code astFindFits} with
-     * the template {@code %f} gives them, one per line.
+     * The cards {@code wcsconverter.c} writes for a {@code native} or {@code fits-wcs} row: the
+     * Object written with the row's encoding from the first card of the FitsChan it was read from,
+     * or of a new FitsChan with the row's attributes, and then every card from the first, as {@code
+     * astFindFits} with the template {@code %f} gives them, one per line.
      *
      * @throws AssertionError if the write fails, since C's succeeds
+     * @throws UnsupportedOperationException if the write needs a class this library lacks
      */
-    private static String nativeCards(Row row, Input in) {
+    private static String writtenCards(Row row, Input in) {
         FitsChan fc = in.fc;
         if (fc == null) {
             fc = new FitsChan();
@@ -163,7 +167,7 @@ class WcsconvTest {
                 fc.set(row.attrs);
             }
         }
-        fc.setEncoding("NATIVE");
+        fc.setEncoding(row.encoding);
         fc.clear("Card");
         if (fc.write(in.obj) != 1) {
             throw new AssertionError("C writes the Object read from " + row.input + ", but here the write fails");
@@ -222,7 +226,12 @@ class WcsconvTest {
             }
             throw new AssertionError("C reads " + row.input + ", but here the read fails: " + e.getMessage(), e);
         }
-        String got = "ast".equalsIgnoreCase(row.encoding) ? ChannelText.dump(in.obj) : nativeCards(row, in);
+        String got;
+        try {
+            got = "ast".equalsIgnoreCase(row.encoding) ? ChannelText.dump(in.obj) : writtenCards(row, in);
+        } catch (UnsupportedOperationException e) {
+            return FitsHeaders.outOfScope(e);
+        }
         String want = Fixtures.read(row.expected);
         if (!equivalent(row, got, want)) {
             throw new AssertionError("the texts differ:\n--- Java\n" + got + "--- C\n" + want);

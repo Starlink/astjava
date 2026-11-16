@@ -166,6 +166,11 @@ public final class CValues {
         return linesMatch(got, want, (a, b) -> ulpClose(a, b, maxUlps));
     }
 
+    /** {@link #nativeStringsEquivalent} with {@link #withinLibmRounding} as the tolerance on numbers. */
+    public static boolean nativeStringsWithinLibmRounding(String got, String want) {
+        return linesMatch(got, want, CValues::withinLibmRounding);
+    }
+
     /** {@link #nativeStringsEquivalent} with C's {@code astEQUAL} tolerance on numbers. */
     public static boolean nativeStringsAstEqual(String got, String want) {
         return linesMatch(got, want, CValues::astEqualClose);

@@ -1,16 +1,19 @@
 package uk.ac.starlink.ast;
 
 import uk.ac.starlink.ast.internal.erfa.Cal2jd;
+import uk.ac.starlink.ast.internal.erfa.Jd2cal;
 import uk.ac.starlink.ast.internal.erfa.Tf2d;
 import uk.ac.starlink.ast.internal.pal.Pal;
 
 /**
  * The Modified Julian Date of a FITS {@code DATE-OBS} string, as a FitsChan read uses it to supply
- * an MJD-OBS the header lacks.
+ * an MJD-OBS the header lacks, and the DATE-OBS string a FITS-WCS write gives an MJD-OBS.
  *
  * <p>Ported from the date helpers of Rust {@code fitschan/wcs_write/mod.rs} ({@code
  * date_str_to_mjd}, {@code parse_legacy_date}, {@code gregorian_to_mjd}); the strings accepted are
- * those of the {@code sscanf} patterns of C's {@code DateObs} (fitschan.c:8589).
+ * those of the {@code sscanf} patterns of C's {@code DateObs} (fitschan.c:8589). The string written
+ * follows C's {@code WcsFromStore}, which formats the date with {@code palDjcal}, {@code palDjcl}
+ * and {@code palDd2tf} where Rust works the calendar out itself.
  */
 final class FitsDates {
 
@@ -259,5 +262,44 @@ final class FitsDates {
             }
             return (int) value;
         }
+    }
+
+    /**
+     * The DATE-OBS string C's {@code WcsFromStore} writes for the MJD-OBS {@code mjd}: before 1999
+     * the old form {@code dd/mm/yy}, the day {@code palDjcal} gives with no rounding, the year less
+     * 1900 (or 2000 after 1999); from 1999 the form {@code ccyy-mm-ddThh:mm:ss.sss}, the time of day
+     * rounded to milliseconds by {@code palDd2tf}, which can give {@code 24:00:00.000}. Each field
+     * is written with C's {@code %2.2d} (or {@code %3.3d}, {@code %4.4d}): at least that many
+     * digits, after a minus sign for a negative value.
+     *
+     * @throws AstException with status {@code AST__INTER} if {@code mjd} is outside the range of
+     *     {@code palDjcl}, where C formats fields its calendar routine never set
+     */
+    static String mjdToDateStr(double mjd) {
+        // palCaldj( 99, 1, 1 ) is 1999 January 1.
+        double mjd99 = Pal.cldj(1999, 1, 1).djm;
+        // palDjcal and palDjcl both convert with eraJd2cal.
+        Jd2cal.Result ymd = Pal.djcl(mjd);
+        if (ymd == null) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    "WcsFromStore(FitsChan): AST internal error; MJD-OBS " + mjd + " has no calendar date.");
+        }
+        if (mjd < mjd99) {
+            return digits(ymd.id, 2) + "/" + digits(ymd.im, 2) + "/"
+                    + digits(ymd.iy - (ymd.iy > 1999 ? 2000 : 1900), 2);
+        }
+        int[] hmsf = Pal.dd2tf(3, ymd.fd).ihmsf;
+        return digits(ymd.iy, 4) + "-" + digits(ymd.im, 2) + "-" + digits(ymd.id, 2) + "T" + digits(hmsf[0], 2) + ":"
+                + digits(hmsf[1], 2) + ":" + digits(hmsf[2], 2) + "." + digits(hmsf[3], 3);
+    }
+
+    /** C's {@code %<n>.<n>d}: {@code v} with at least {@code n} digits, after a minus sign if negative. */
+    private static String digits(int v, int n) {
+        StringBuilder b = new StringBuilder(Integer.toString(Math.abs(v)));
+        while (b.length() < n) {
+            b.insert(0, '0');
+        }
+        return v < 0 ? "-" + b : b.toString();
     }
 }

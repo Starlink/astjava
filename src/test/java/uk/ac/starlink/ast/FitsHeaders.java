@@ -158,4 +158,67 @@ final class FitsHeaders {
         }
         return out;
     }
+
+    /**
+     * Every card of {@code fc} a read has not consumed, as C's probes list them: the FitsChan
+     * rewound, then {@code findFits} with the template {@code %f} until it finds no more.
+     */
+    static List<String> foundCards(FitsChan fc) {
+        fc.clear("Card");
+        List<String> out = new ArrayList<>();
+        String card;
+        while ((card = fc.findFits("%f", true)) != null) {
+            out.add(card);
+        }
+        return out;
+    }
+
+    /** The strings of a JSON array, in order. */
+    static List<String> strings(JsonNode node) {
+        List<String> out = new ArrayList<>();
+        for (JsonNode n : node) {
+            out.add(n.asText());
+        }
+        return out;
+    }
+
+    /**
+     * The largest difference, in units in the last place, of a number on a card written here from
+     * the number on C's card, as the {@code wcsconv} gate allows.
+     */
+    static final long CARD_ULPS = 4;
+
+    /**
+     * Whether the cards (or other lines) {@code got} are C's {@code want}: the same text, but for
+     * numbers within {@link #CARD_ULPS} of C's, written to the same width or a width the white
+     * space beside them absorbs.
+     */
+    static boolean cardsMatchC(List<String> got, List<String> want) {
+        return cardsMatchC(got, want, java.util.Collections.<String>emptySet());
+    }
+
+    /**
+     * {@link #cardsMatchC(List, List)}, but the numbers on the cards whose keywords are in {@code
+     * libm} need only be within {@link CValues#withinLibmRounding} of C's: those that a difference
+     * of the runtime's elementary functions (java.lang.Math) from C's libm reaches.
+     */
+    static boolean cardsMatchC(List<String> got, List<String> want, java.util.Set<String> libm) {
+        if (got.size() != want.size()) {
+            return false;
+        }
+        for (int i = 0; i < got.size(); i++) {
+            String g = got.get(i) + "\n";
+            String w = want.get(i) + "\n";
+            String key = want.get(i).length() >= 8
+                    ? want.get(i).substring(0, 8).trim()
+                    : want.get(i).trim();
+            boolean ok = libm.contains(key)
+                    ? CValues.nativeStringsWithinLibmRounding(g, w)
+                    : CValues.nativeStringsEquivalent(g, w, CARD_ULPS);
+            if (!ok) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

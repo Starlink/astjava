@@ -670,6 +670,38 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `fset_to_store` in `fitschan/fset_to_store/mod.rs` stores a Domain that is not empty only when there is no WCSNAME yet, and its store's `naxis` is the larger of the numbers of pixel and world axes.
 - Java: as C; the pixel axis count is `FitsPlaneStores.naxis`.
 
+### The comment of a card a write replaces
+
+- C: `SetValue` replaces a card with the keyword it writes, and `SetFits` keeps that card's comment when the new card has none or when the old value, converted to the type of the new one by `CnvValue`, is the same: equal integers, floating values equal to `astEQUAL` (whose floor is 1.0E-12), or strings `Similar` finds alike; a string's comment equal to its value is dropped (`fitschan.c` `SetValue`, `SetFits`, `MAKE_FSET`).
+  A probe keeps the comment of `CRPIX1 = 1 / old int comment` when `CRPIX1 = 1.0` is written.
+- Rust: `put_or_append` in `fitschan/card_list.rs` keeps the comment only when the two values have the same type and are similar, comparing floating values with a `DBL_MIN` floor and strings ignoring case and trailing blanks only.
+- Java: the writers of the foreign encodings follow C (`FitsCardList.setValueAsWriter`); the read's keyword translations keep the comparison they had.
+
+### `Similar` does not compare the last character
+
+- C: `Similar` compares two strings ignoring case and blanks up to, but not including, the last character that is not blank in either, so `ABCD` and `ABCX` are alike; `WcsFromStore` then keeps the old comment of a card it replaces with a value differing only there, and leaves out the WCSNAME of a one-axis description whose CTYPE1 differs from it only there (C probe) (`fitschan.c` `Similar`). **C quirk.**
+  Two blank strings make it read past the end of both.
+- Rust: `write_store_to_cards` in `fitschan/wcs_write/mod.rs` compares WCSNAME with CTYPE1 with `eq_ignore_ascii_case`.
+- Java: as C (`FitsCardList.similar`), two blank strings being alike.
+
+### Where FITS-WCS writes the SIP coefficients and their orders
+
+- C: `WcsFromStore` writes each version's SIP coefficients at the end of its loop over versions, after which `FindWcs` puts the current card after the last card describing WCS, which the SIP cards are not, so the next version's cards go in front of them; the coefficient keywords carry the version letter but `A_ORDER`, `B_ORDER`, `AP_ORDER` and `BP_ORDER` do not, and each order is the largest sum of powers of the coefficients written (`fitschan.c` `WcsFromStore`). **C quirk** (the order keywords).
+- Rust: `encode_wcs` writes the primary description's SIP block after the loop over planes, from the orders `fset_to_store` stores.
+- Java: as C.
+
+### IMAGFREQ, QV parameters and CNAME in `WcsFromStore`
+
+- C: IMAGFREQ is written, without a version letter, for any version that has one; once one axis's CTYPE ends `-TPN`, the projection parameters of every axis of that version are written with the prefix `QV`; CNAME is left out when it equals the CTYPE or its comment (`fitschan.c` `WcsFromStore`).
+- Rust: `write_store_to_cards` writes IMAGFREQ for the primary description only, chooses `QV` axis by axis, and writes no CNAME.
+- Java: as C.
+
+### The DATE-OBS of a FITS-WCS write
+
+- C: `WcsFromStore` formats DATE-OBS from MJD-OBS with `palDjcal` before 1999 and with `palDjcl` and `palDd2tf` (milliseconds) after, so a time of day that rounds up is written `T24:00:00.000` on the same day, and a year before 1900 as a negative two-digit year (`fitschan.c` `WcsFromStore`; C probe). **C quirk.**
+- Rust: `mjd_to_date_str` in `fitschan/wcs_write/mod.rs` works the date out with Meeus's algorithm and carries a rounded-up time into the next second.
+- Java: as C (`FitsDates.mjdToDateStr`).
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails
