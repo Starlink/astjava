@@ -782,14 +782,14 @@ final class FitsWcsRead {
         if (paxis[0] != 1) {
             sfrm.permAxes(new int[] {2, 1});
         }
-        double[] ref = celestial.refPos;
-        if (ref != null
-                && !celestial.refPosForced
+        double reflon = celestial.refLon;
+        double reflat = celestial.refLat;
+        if (!celestial.refPosForced
                 && !sfrm.testSkyRef(1)
-                && ref[0] != AstObject.AST__BAD
-                && ref[1] != AstObject.AST__BAD) {
-            sfrm.setSkyRef(1, ref[0]);
-            sfrm.setSkyRef(2, ref[1]);
+                && reflon != AstObject.AST__BAD
+                && reflat != AstObject.AST__BAD) {
+            sfrm.setSkyRef(1, reflon);
+            sfrm.setSkyRef(2, reflat);
             sfrm.setSkyRefIs("Ignored");
         }
         int[] axes = new int[naxes];
@@ -817,9 +817,9 @@ final class FitsWcsRead {
             }
         }
         result.permAxes(axes);
-        if (ref != null && celestial.refPosForced) {
-            sfrm.setSkyRef(1, ref[0]);
-            sfrm.setSkyRef(2, ref[1]);
+        if (celestial.refPosForced) {
+            sfrm.setSkyRef(1, reflon);
+            sfrm.setSkyRef(2, reflat);
             sfrm.setSkyRefIs("Ignored");
         }
         return result;

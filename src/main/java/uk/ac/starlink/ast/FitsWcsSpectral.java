@@ -175,11 +175,7 @@ final class FitsWcsSpectral {
 
         // The reference position, if there are celestial axes.
         if (celestial != null) {
-            double[] ref = celestial.refPos;
-            specfrm.setRefPos(
-                    celestial.frame,
-                    ref != null ? ref[0] : AstObject.AST__BAD,
-                    ref != null ? ref[1] : AstObject.AST__BAD);
+            specfrm.setRefPos(celestial.frame, celestial.refLon, celestial.refLat);
         }
 
         // The Unit: CUNIT, or the default unit of the system; also the Unit of the IWC axis.

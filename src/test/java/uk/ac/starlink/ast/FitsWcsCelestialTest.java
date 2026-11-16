@@ -175,7 +175,7 @@ class FitsWcsCelestialTest {
         store.axref[0] = 119.5;
         store.axref[1] = 30.5;
         FitsWcsCelestial.CelestialResult cel = buildCelestial(store);
-        assertArrayEquals(new double[] {119.5 * DD2R, 30.5 * DD2R}, cel.refPos);
+        assertArrayEquals(new double[] {119.5 * DD2R, 30.5 * DD2R}, new double[] {cel.refLon, cel.refLat});
         assertTrue(cel.refPosForced);
     }
 
@@ -188,7 +188,7 @@ class FitsWcsCelestialTest {
         store.cdelt[0] = -0.01;
         store.cdelt[1] = 0.01;
         FitsWcsCelestial.CelestialResult cel = buildCelestial(store);
-        assertEquals(120.0 * DD2R, cel.refPos[0]);
+        assertEquals(120.0 * DD2R, cel.refLon);
         assertFalse(cel.refPosForced);
     }
 
@@ -278,7 +278,7 @@ class FitsWcsCelestialTest {
         double[] p = forward(cel.mapping, 1.0, 2.0);
         assertEquals(1.0 * DD2R + 10.0 * DD2R, p[0], 1e-15);
         assertEquals(2.0 * DD2R + 20.0 * DD2R, p[1], 1e-15);
-        assertArrayEquals(new double[] {10.0 * DD2R, 20.0 * DD2R}, cel.refPos);
+        assertArrayEquals(new double[] {10.0 * DD2R, 20.0 * DD2R}, new double[] {cel.refLon, cel.refLat});
     }
 
     /** With latitude first, the SkyFrame's axes are swapped to match the Mapping's outputs. */

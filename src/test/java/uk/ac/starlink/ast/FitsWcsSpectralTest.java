@@ -486,4 +486,66 @@ class FitsWcsSpectralTest {
         UnsupportedOperationException e = assertThrows(UnsupportedOperationException.class, fc::read);
         assertTrue(e.getMessage().endsWith(" needs LutMap"), e.getMessage());
     }
+
+    /**
+     * A header with CRVAL1 but no CRVAL2: C's {@code WcsCelestial} returns the reference longitude
+     * and latitude separately, and {@code WcsSpectral} passes both to {@code astSetRefPos}, so the
+     * SpecFrame takes RefRA from CRVAL1 and leaves RefDec unset. C's values: RefRA 10:00:00.0,
+     * RefDec 0:00:00 (unset), the barycentric velocity 0 m/s converts to -8899.1984878203566 m/s
+     * LSRK, and a FITS-WCS write gives VELOSYS 28372.571560485387 m/s.
+     */
+    @Test
+    void oneCelestialReferenceValueSetsOneReferenceCoordinate() {
+        FitsChan fc = FitsHeaders.chan(
+                "NAXIS1  =                  100",
+                "NAXIS2  =                  100",
+                "NAXIS3  =                 1024",
+                "CTYPE1  = 'RA---TAN'",
+                "CTYPE2  = 'DEC--TAN'",
+                "CTYPE3  = 'VRAD    '",
+                "CRVAL1  =              150.000",
+                "CRVAL3  =                  0.0",
+                "CRPIX1  =               50.500",
+                "CRPIX2  =               50.500",
+                "CRPIX3  =              512.500",
+                "CDELT1  =        -0.00083333",
+                "CDELT2  =         0.00083333",
+                "CDELT3  =              1000.0",
+                "CUNIT1  = 'deg     '",
+                "CUNIT2  = 'deg     '",
+                "CUNIT3  = 'm/s     '",
+                "RADESYS = 'FK5     '",
+                "EQUINOX =               2000.0",
+                "RESTFRQ =       1.420405752E9",
+                "MJD-OBS =            52413.59",
+                "SSYSSRC =           'BARYCENT'",
+                "SPECSYS =           'BARYCENT'");
+        FrameSet fs = FitsHeaders.readFrameSet(fc);
+        Frame spec = fs.pickAxes(1, new int[] {3}, null);
+        assertInstanceOf(SpecFrame.class, spec);
+        assertEquals("10:00:00.0", spec.getC("RefRA"));
+        assertEquals("0:00:00", spec.getC("RefDec"));
+        assertTrue(spec.test("RefRA"));
+        assertFalse(spec.test("RefDec"));
+
+        Frame lsrk = (Frame) spec.copy();
+        lsrk.set("StdOfRest=LSRK");
+        double v = FitsHeaders.tran(spec.convert(lsrk, ""), new double[] {0.0}, true)[0];
+        assertEquals(-8899.198487820357, v, 8899.2 * 1e-12);
+
+        FitsChan out = new FitsChan();
+        out.setEncoding("FITS-WCS");
+        out.putFits("NAXIS1  = 100", false);
+        out.putFits("NAXIS2  = 100", false);
+        out.putFits("NAXIS3  = 1024", false);
+        assertEquals(1, out.write(fs));
+        out.clear("Card");
+        String velosys = out.findFits("VELOSYS", false);
+        assertTrue(
+                FitsHeaders.cardsMatchC(
+                        Arrays.asList(velosys),
+                        FitsHeaders.padded(
+                                "VELOSYS =   28372.571560485387 / [m/s] Topo. apparent velocity of rest frame")),
+                velosys);
+    }
 }
