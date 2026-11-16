@@ -1698,6 +1698,8 @@ public class SpecFrame extends Frame {
                 specmap.specAdd("ZOTOVL", null);
             } else if (system == AST__BETA) {
                 specmap.specAdd("BTTOVL", null);
+            } else if (system != AST__VREL) {
+                throw Ast.err(AstException.AST__INTER, "MakeSpecMapping(SpecFrame): unexpected System " + system + ".");
             }
             verifyAttrs(vmess, "RestFreq", "astMatch");
             specmap.specAdd("VLTOFR", new double[] {rf});
@@ -1725,6 +1727,8 @@ public class SpecFrame extends Frame {
                 specmap.specAdd("VLTOZO", null);
             } else if (system == AST__BETA) {
                 specmap.specAdd("VLTOBT", null);
+            } else if (system != AST__VREL) {
+                throw Ast.err(AstException.AST__INTER, "MakeSpecMapping(SpecFrame): unexpected System " + system + ".");
             }
         }
     }
