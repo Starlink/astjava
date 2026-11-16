@@ -421,6 +421,12 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: keeps it only if it is a SpecFrame, and ignores any other.
 - Java: refuses it with AST__LDERR, since a FluxFrame here holds only a SpecFrame.
 
+### The comment of a FluxFrame's SFCBRW units in a dump
+
+- C: `Dump` formats "Preferred units for <system label>" into a 50-character buffer (`fluxframe.c` `Dump`); for SFCBRW the comment is 55 characters, so it writes past the buffer (an AddressSanitizer stack-buffer-overflow, C probe). **C quirk.**
+- Rust: writes the whole comment.
+- Java: as Rust.
+
 ## FitsChan
 
 ### An equals sign in a keyword name is reported as an `astPutFits` error from every method
