@@ -820,7 +820,8 @@ public class Frame extends Mapping {
      * {@code astCleanAttribs}). Here {@code obj} is a plain Frame, the ancestor of every Frame
      * class that is not a FrameSet; the copy then has this Frame's Object, Mapping and Frame
      * attributes, except the ID, as C's copy has, and copies of its Axis objects and variants.
-     * A class with another Frame class as an ancestor overrides this for that ancestor.
+     * A class with another Frame class as an ancestor overrides this for that ancestor, and
+     * {@link CmpFrame} for every class of its family, as cmpframe.c's {@code Cast} does.
      *
      * @throws AstException with status {@code AST__INTER} if {@code obj} is not a plain Frame
      */

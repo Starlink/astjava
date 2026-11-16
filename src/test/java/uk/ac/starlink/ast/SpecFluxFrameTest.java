@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -697,5 +698,97 @@ class SpecFluxFrameTest {
         assertEquals("SpecFluxFrame", s.getC("Class"));
         CmpFrame cmp = s;
         assertEquals(2, cmp.getNaxes());
+    }
+
+    // ------------------------------------------------------------------
+    // Casting between CmpFrames and SpecFluxFrames (cmpframe.c Cast)
+    // ------------------------------------------------------------------
+
+    /**
+     * cmpframe.c {@code Cast} makes a copy of a CmpFrame as an instance of any class of the
+     * CmpFrame family ({@code astCastCopy}): a SpecFluxFrame cast into a CmpFrame is a plain
+     * CmpFrame holding copies of its components, and a CmpFrame cast into a SpecFluxFrame is a
+     * SpecFluxFrame holding copies of the CmpFrame's, whatever their classes.
+     */
+    @Test
+    void castWithinTheCmpFrameFamilyCopiesTheComponents() {
+        SpecFrame sf = new SpecFrame();
+        FluxFrame ff = new FluxFrame();
+        SpecFluxFrame s = new SpecFluxFrame(sf, ff);
+        s.setTitle("A title");
+        Frame asCmp = s.cast(new CmpFrame(new Frame(1), new Frame(1)));
+        assertEquals(CmpFrame.class, asCmp.getClass());
+        assertEquals("A title", asCmp.getTitle());
+        Frame[] parts = ((CmpFrame) asCmp).decompose();
+        assertInstanceOf(SpecFrame.class, parts[0]);
+        assertInstanceOf(FluxFrame.class, parts[1]);
+        assertNotSame(sf, parts[0]);
+        assertNotSame(ff, parts[1]);
+
+        Frame a = new Frame(1);
+        Frame b = new Frame(1);
+        CmpFrame cmp = new CmpFrame(a, b);
+        cmp.permAxes(new int[] {2, 1});
+        Frame asSff = cmp.cast(s);
+        assertEquals(SpecFluxFrame.class, asSff.getClass());
+        Frame[] sffParts = ((CmpFrame) asSff).decompose();
+        assertEquals(Frame.class, sffParts[0].getClass());
+        assertNotSame(a, sffParts[0]);
+        assertNotSame(b, sffParts[1]);
+        assertEquals(2, asSff.validateAxis(1, true, "test"));
+    }
+
+    /**
+     * A SpecFluxFrame and a CmpFrame that do not match: C casts the SpecFluxFrame template into a
+     * plain CmpFrame, which matches no better, and finds no conversion either way.
+     */
+    @Test
+    void unmatchedCmpFramesDoNotConvert() {
+        SpecFluxFrame s = new SpecFluxFrame(new SpecFrame(), new FluxFrame());
+        CmpFrame cube = new CmpFrame(new SkyFrame(), new SpecFrame());
+        assertNull(cube.convert(s, ""), "cube to SpecFluxFrame");
+        assertNull(s.convert(cube, ""), "SpecFluxFrame to cube");
+        CmpFrame sky1 = new CmpFrame(new SkyFrame(), new Frame(1));
+        assertNull(s.convert(sky1, ""), "SpecFluxFrame to sky1");
+        assertNull(sky1.convert(s, ""), "sky1 to SpecFluxFrame");
+        FrameSet fs = new FrameSet(new Frame(3));
+        fs.addFrame(FrameSet.AST__BASE, new UnitMap(3), cube);
+        assertNull(fs.findFrame(s, ""), "findFrame in a cube");
+    }
+
+    /**
+     * A FluxFrame whose System differs from a SpecFluxFrame's: the CmpFrame C's {@code PartMatch}
+     * gives is cast into a SpecFluxFrame, whose conversion {@code MakeSFMapping} builds with a
+     * RateMap. C converts both ways; from the SpecFluxFrame, (5000, 2) gives 239833965686.78632.
+     */
+    @Test
+    void fluxFrameToSpecFluxFrameNeedsRateMap() {
+        FluxFrame fw = flux(AstObject.AST__BAD, new SpecFrame(), "System=FLXDNW");
+        SpecFluxFrame s = new SpecFluxFrame(new SpecFrame(), flux(AstObject.AST__BAD, new SpecFrame(), ""));
+        assertNeeds("RateMap", fw, s, "FluxFrame to SpecFluxFrame");
+        assertNeeds("RateMap", s, fw, "SpecFluxFrame to FluxFrame");
+    }
+
+    /**
+     * A SpecFrame in another Domain and a SpecFluxFrame whose SpecFrame has SpecOrigin 0: the cast
+     * reaches {@code MakeSFMapping}, whose standardised SpecFrame ({@code GetSpecFrame}) cannot
+     * re-express the origin in frequency, and C reports AST__ATSER both ways. With SpecOrigin
+     * unset C finds no conversion.
+     */
+    @Test
+    void specFrameToSpecFluxFrameReachesMakeSFMapping() {
+        SpecFrame foo = new SpecFrame();
+        foo.setDomain("FOO");
+        SpecFrame origin = new SpecFrame();
+        origin.set("SpecOrigin=0");
+        SpecFluxFrame s = new SpecFluxFrame(origin, flux(AstObject.AST__BAD, new SpecFrame(), ""));
+        AstException e = assertThrows(AstException.class, () -> foo.convert(s, ""));
+        assertEquals(AstException.AST__ATSER, e.getStatus());
+        e = assertThrows(AstException.class, () -> s.convert(foo, ""));
+        assertEquals(AstException.AST__ATSER, e.getStatus());
+
+        SpecFluxFrame plain = new SpecFluxFrame(new SpecFrame(), flux(AstObject.AST__BAD, new SpecFrame(), ""));
+        assertNull(foo.convert(plain, ""));
+        assertNull(plain.convert(foo, ""));
     }
 }

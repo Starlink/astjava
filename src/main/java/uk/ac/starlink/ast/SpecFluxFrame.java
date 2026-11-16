@@ -12,8 +12,11 @@ package uk.ac.starlink.ast;
  * converted as the spectral positions they are densities in change, as well as with the flux
  * System and Unit. Where C converts between SpecFluxFrames whose SpecFrames or FluxFrames differ
  * it builds Mappings this library does not have (a RateMap, a MathMap and a TranMap), and such a
- * conversion throws {@link UnsupportedOperationException}; SpecFluxFrames with equal components,
- * and those C finds no conversion between, behave as in C.
+ * conversion throws {@link UnsupportedOperationException}. So does a conversion between a
+ * SpecFluxFrame and a FluxFrame or SpecFrame that do not match directly (a FluxFrame in another
+ * flux System, say): C then casts the CmpFrame its match gives into a SpecFluxFrame and converts
+ * between SpecFluxFrames. SpecFluxFrames with equal components, and those C finds no conversion
+ * between, behave as in C.
  *
  * <p>Ported from C {@code specfluxframe.c}, with Rust {@code frames/specfluxframe.rs}.
  */
@@ -28,6 +31,17 @@ public class SpecFluxFrame extends CmpFrame {
      */
     public SpecFluxFrame(SpecFrame frame1, FluxFrame frame2) {
         super(frame1, frame2);
+    }
+
+    /**
+     * Creates a SpecFluxFrame of any two Frames, marking them shared if {@code share}, for {@link
+     * CmpFrame#castCopy}: C's {@code astCastCopy} of a CmpFrame into a SpecFluxFrame keeps the
+     * CmpFrame's components whatever their classes. Such a SpecFluxFrame is used only as the
+     * template of a match against a SpecFluxFrame, which reads its axes and attributes, not its
+     * SpecFrame and FluxFrame.
+     */
+    SpecFluxFrame(Frame frame1, Frame frame2, boolean share) {
+        super(frame1, frame2, share);
     }
 
     /**
@@ -131,8 +145,8 @@ public class SpecFluxFrame extends CmpFrame {
         if (testTitle()) {
             return super.getTitle();
         }
-        String title = getFluxFrame(false).getLabel(1) + " versus "
-                + getSpecFrame(false).getLabel(1);
+        // C reads the Labels of the components as Frames, whatever their classes.
+        String title = secondFrame().getLabel(1) + " versus " + firstFrame().getLabel(1);
         return CScan.toUpper(title.charAt(0)) + title.substring(1);
     }
 

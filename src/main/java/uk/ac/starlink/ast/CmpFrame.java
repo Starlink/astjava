@@ -63,7 +63,7 @@ public class CmpFrame extends Frame {
     }
 
     /** Creates a CmpFrame, marking its components shared if {@code share} (C's {@code astInitCmpFrame}). */
-    private CmpFrame(Frame frame1, Frame frame2, boolean share) {
+    CmpFrame(Frame frame1, Frame frame2, boolean share) {
         super();
         this.frame1 = Objects.requireNonNull(frame1, "frame1");
         this.frame2 = Objects.requireNonNull(frame2, "frame2");
@@ -170,6 +170,19 @@ public class CmpFrame extends Frame {
         frame1 = (Frame) frame1.copy();
         frame2 = (Frame) frame2.copy();
         perm = perm.clone();
+    }
+
+    /**
+     * Takes the Object, Mapping, Frame and CmpFrame parts of {@code src}, as C's copy of a CmpFrame
+     * does: copies of the components and the permutation.
+     */
+    @Override
+    void castCopyFrom(AstObject src) {
+        super.castCopyFrom(src);
+        CmpFrame f = (CmpFrame) src;
+        frame1 = (Frame) f.frame1.copy();
+        frame2 = (Frame) f.frame2.copy();
+        perm = f.perm.clone();
     }
 
     // ------------------------------------------------------------------
@@ -764,14 +777,20 @@ public class CmpFrame extends Frame {
     // ------------------------------------------------------------------
 
     /**
-     * This CmpFrame cast into the class of another (C's {@code Cast}, cmpframe.c): for a CmpFrame
-     * class, as {@link Frame#cast} does; for any other, a plain Frame with this CmpFrame's axes and
-     * the attributes set on its components overlaid, itself cast into that class.
+     * This CmpFrame cast into the class of another (C's {@code Cast}, cmpframe.c): for a class of
+     * the CmpFrame family, whether an ancestor of this CmpFrame's class or a descendant, a copy of
+     * this CmpFrame as an instance of that class ({@link #castCopy}); for any other, a plain Frame
+     * with this CmpFrame's axes and the attributes set on its components overlaid, itself cast
+     * into that class.
      */
     @Override
     Frame cast(Frame obj) {
         if (obj instanceof CmpFrame) {
-            return super.cast(obj);
+            // C's astCastCopy into the object's own class is a copy, whose attributes are all valid.
+            if (obj.getClass() == getClass()) {
+                return (Frame) copy();
+            }
+            return castCopy(obj);
         }
         int naxes = getNaxes();
         Frame cfrm = new Frame(naxes);
@@ -780,6 +799,30 @@ public class CmpFrame extends Frame {
         }
         overlay(null, cfrm);
         return cfrm.cast(obj);
+    }
+
+    /**
+     * A deep copy of this CmpFrame as an instance of the class of {@code obj}, a class of the
+     * CmpFrame family, with the attributes that class does not allow cleared (C's {@code
+     * astCastCopy} followed by {@code astCleanAttribs}). As in C, the class need not be an
+     * ancestor: a CmpFrame cast into a SpecFluxFrame is a SpecFluxFrame holding copies of the
+     * CmpFrame's components, whatever their classes (cmpframe.c {@code Cast} calls {@code
+     * astCastCopy} for any {@code obj} that is a CmpFrame or one of its subclasses). Any other
+     * class is cast as by {@link Frame#castCopy}.
+     */
+    @Override
+    Frame castCopy(Frame obj) {
+        CmpFrame res;
+        if (obj.getClass() == CmpFrame.class) {
+            res = transientCmpFrame(frame1, frame2);
+        } else if (obj.getClass() == SpecFluxFrame.class) {
+            res = new SpecFluxFrame(frame1, frame2, false);
+        } else {
+            return super.castCopy(obj);
+        }
+        res.castCopyFrom(this);
+        res.cleanAttribs();
+        return res;
     }
 
     /**
