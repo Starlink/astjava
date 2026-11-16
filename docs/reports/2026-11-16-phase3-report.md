@@ -4,11 +4,11 @@
 
 Phase 3 ported FitsChan writing and the FITS encodings other than FITS-WCS on 15 and 16 November 2026, following the plan [`2026-11-15-pure-java-ast-phase3-fitschan-write.md`](../superpowers/plans/2026-11-15-pure-java-ast-phase3-fitschan-write.md).
 `FitsChan.write()` now writes FrameSets of this library's classes as FITS-WCS (with SIP distortion), NATIVE, FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++ and DSS cards, and refuses FITS-CLASS as C does; `FitsChan.read()` now reads FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++ and DSS.
-Of the 194 rows of C's FITS conversion regression table (`ast_tester/fixtures/wcsconv/cases.txt`), 115 now give C's cards, in C's order with C's comments and numbers within 4 units in the last place; at the start of the phase none did, since every row writes cards.
-Every one of the other 79 needs a class outside this library: SpecFrame (63), the FITS-CLASS read (6), MathMap (5), DSBSpecFrame (4) or SplineMap (1).
+Of the 194 rows of C's FITS conversion regression table (`ast_tester/fixtures/wcsconv/cases.txt`), 118 now give C's cards, in C's order with C's comments and numbers within 4 units in the last place; at the start of the phase none did, since every row writes cards.
+Every one of the other 76 needs a class outside this library: SpecFrame (63), the FITS-CLASS read (6), DSBSpecFrame (4), MathMap (2) or SplineMap (1).
 19 more headers of the transform oracle now read and transform as C's do, and six C-probe oracle suites of the Rust port were converted and pass.
 Porting found about 20 places where C reads or writes memory it does not own, dereferences a null pointer or recurses without end; they are recorded in [`docs/rust-c-differences.md`](../rust-c-differences.md), and listed below.
-The work added 8,280 lines of main code and 8,427 lines of tests; `mvn verify` passes with 2,813 tests on JDK 21, and the tests pass on the JDK 27 runtime.
+The work added 8,331 lines of main code and 8,654 lines of tests; `mvn verify` passes with 2,826 tests on JDK 21, and the tests pass on the JDK 27 runtime.
 
 ## What was ported
 
@@ -47,25 +47,26 @@ The [rulings](2026-11-16-phase3-rulings.md) give each with its reason and cost; 
   The plan's Review Focus item 4 put new cards before the card current when the write began; C puts them after the last card that describes WCS (`FindWcs`), or at the end when there is none, and the test asserts C's placement.
 - **The `-TAB` decision.**
   C decides whether an axis can be a table with classes this library has (separability and a known dimension) before it needs a FitsTable; that decision is ported (`FitsMapTab`), and only a write C would describe with `-TAB` throws `needs FitsTable`.
-- **A write that throws is undone.**
+- **A write that throws has its new cards removed.**
   C leaves the cards a write added when the write fails with an error, because its clean-up does nothing once the error status is set; Java removes them, as the Rust port does.
+  As in C, a card that the write replaced before failing is not brought back.
 
 ## Gates
 
 | Gate | Before | After |
 | --- | --- | --- |
-| `wcsconv/cases.txt` rows giving C's cards | 0 of 194 | 115 of 194 |
-| `wcsconv` rows by encoding (matching / total) | | NATIVE 66/107, FITS-WCS 14/26, FITS-AIPS 11/17, FITS-AIPS++ 12/18, FITS-IRAF 6/9, FITS-PC 4/5, DSS 1/1, AST 1/2, FITS-CLASS 0/9 |
+| `wcsconv/cases.txt` rows giving C's cards | 0 of 194 | 118 of 194 |
+| `wcsconv` rows by encoding (matching / total) | | NATIVE 66/107, FITS-WCS 17/26, FITS-AIPS 11/17, FITS-AIPS++ 12/18, FITS-IRAF 6/9, FITS-PC 4/5, DSS 1/1, AST 1/2, FITS-CLASS 0/9 |
 | `wcsconv` rows deferred as `out-of-scope method FitsChan.write` | 134 | 0 |
 | `wcsconv` rows deferred for an encoding | 28 | 6 (all reading FITS-CLASS) |
 | `headers.txt` entries (transform oracle) | 70 | 51: SpecFrame 45, FITS-CLASS 4, MathMap 2 |
 | `rust-tests.txt` entries | 399 | 376, after adding 13 entries for two Rust test files the list had missed |
 | `FitsChanCursorOracleTest` cases run | 147 | 247 |
 | `TranGridOracleTest` grids run | 14 | 19 |
-| Tests | 2,467 | 2,813 |
+| Tests | 2,467 | 2,826 |
 
 New C-probe oracle suites, converted from the Rust port's `cases.rs` with `CasesToJson`: `FitsChanEncodingsOracleTest` (every encoding column), `FitsChanSipokOracleTest`, `FitsChanSplitmapOracleTest`, `FitsChanAltNaxesOracleTest` and `FitsChanAltEpochOracleTest`, and the write cases of `SkyPoleOracleTest`; cases needing an absent class are listed in each and checked both ways.
-`FitsChanWriteTest` holds the Review Focus tests: a failed or Strict write leaves the cards, their order and the current card as they were; cards go where C puts them; every in-scope header of the transform oracle, read and written in each encoding that accepts it, reads back to transform as C's own round trip does (where C's round trip fails or differs, the test expects that); four threads writing copies of one FrameSet give identical cards.
+`FitsChanWriteTest` holds the Review Focus tests: a failed or Strict write leaves the cards, their order and the current card as they were, except that a card the write replaced before failing is lost, as in C; cards go where C puts them; every in-scope header of the transform oracle, read and written in each encoding that accepts it, reads back to transform as C's own round trip does (where C's round trip fails or differs, the test expects that); four threads writing copies of one FrameSet give identical cards.
 
 The native dumps that phase 2 reported as differing from C in the last bits without a known cause (`skyref`, `skyref-alt`, `tidy-pole`, `azel`) now give C's cards within 4 units in the last place.
 
@@ -82,6 +83,8 @@ Added; each runtime-Math entry was traced, with a debugger on C and replays in C
 | `FitsChanEncodingsOracleTest` DSS cases (7) | PLTRAS and PLTDECS within the effect of 4 ULP of CRVAL | CRVAL 1 to 2 ULP from C through `atan2` (forward SphMap, and `eraC2s` in `eraFk5hz` with Epoch set); the keywords hold 3600 times CRVAL's fractional part |
 | `TranGridOracleTest` `tan` grids (5) | Sampled positions within `ulp(π/2)`; the bit-for-bit hash not checked for them | at most 2.2e-16 rad: `atan2`, `sin` and `cos` 1 ULP apart in 472 of 682 pixels, at identical arguments |
 | `FitsChanCursorOracleTest` `alt_axes_offset{,_none}` | CDELT2 and CDELT2A within 1e-13 relative | 1 ULP, runtime Math |
+| `FitsChanCursorOracleTest` `sky_offset_system_rw` | CDELT1 and CDELT2 within 1e-13 relative, PC1_2 and PC2_1 within 1e-13 absolute (the PC diagonal is 1) | CDELT1 8 ULP, PC2_1 2.0e-15: identical fitted Mappings, whose SphMap and TAN WcsMap transforms differ first at equal inputs (traced with a debugger and per-component comparisons, not replayed), the slopes of the differences being the differences of the fitted gradients |
+| `FitsLogMapTest` | Logarithms and exponentials within 1 ULP of C's MathMap | `Math.exp(1)` is 1 ULP from libm |
 | `FitsChanWcsWriteTest` AZEL, Galactic and Supergalactic writes | CDELTn and PCi_j within 1e-14 absolute plus 1e-13 relative; other cards within 4 ULP | identical fitted Mappings; IWC computed from native latitudes near 90° amplify 1-ULP differences; the Galactic PC1_2 differs by 2.8e-15 against a limit of 1.3e-14 |
 | `FitsFsetToStoreTest` offset-sky description | Within 1e-14 rather than 4 ULP | the FrameSet read from the header already differs by 15 to 20 ULP, from the same runtime functions |
 | `FitsSipIntWorldTest` SIP_2D | CD within 1e-12 relative; CRPIX, the 32 coefficients and the samples exact | 1 to 3 ULP: the Rust oracle's copy of `SIPIntWorld` fits over an older box than current C; current C is checked end to end by the `sip` rows of `wcsconv` |
@@ -111,6 +114,7 @@ Java gives a defined result in every case: it treats an index past an array as a
 | `Similar` | Reads past both strings when both are blank, and ignores the last non-blank character, so `ABCD` and `ABCX` are alike (kept) | Probe |
 | `polymap.c` `MergeShift` | Reads the number of outputs with `astGetNin` (latent: its one caller passes a 2-by-2 PolyMap) | Reading |
 | `Write`, `FixNew` | A write that fails with an error leaves the cards it added and the current card where it failed | Reading |
+| `SetValue`, `FixNew` | A write that replaces a card with the keyword it stores and then fails loses that card (kept) | Probe |
 
 Kept as C has them, since they are defined: DATE-OBS written `T24:00:00.000` when the time of day rounds up, and years before 1900 as negative two-digit years; SIP `*_ORDER` and IMAGFREQ written without a version letter; `QV` used for every axis once one is TPN; FITS-AIPS++ `PROJPm` not read back; the `CardComm` comment and the `CmXXX` letter counting of the PC and IRAF translations; the method and class names exchanged in FsetToStore's warnings; the offset SkyFrame's FrameSet remapped twice by `AddVersion`.
 
@@ -120,10 +124,11 @@ To be completed after the whole-branch review.
 
 ## Gaps and risks
 
-- **Offset sky coordinates need MathMap.**
-  With an offset SkyFrame (SkyRefIs set), C also writes the absolute coordinates as an alternate description, and that description goes through `OtherAxes` to `LogAxis`, which builds a MathMap; so `write` throws `needs MathMap` for such FrameSets in every encoding (`offset-sky`, `offset-sky-pole`, `offset-sref`, `skyref`, `skyref-alt`), as does `lsst`.
-  This is the most visible gap for users who write what they read; porting MathMap removes it.
-- **Everything spectral needs SpecFrame**, which accounts for 63 of the 79 deferred `wcsconv` rows and 45 of the 51 deferred headers; reading FITS-CLASS needs SpecFrame and DSBSpecFrame.
+- **Logarithmic axes need MathMap.**
+  `LogAxis` tests an axis for the `-LOG` algorithm as C does, with an internal Mapping computing what C's MathMap computes, and `write` throws `needs MathMap` only where C would then describe the axis with `-LOG`, a description whose Mapping holds a MathMap.
+  C sometimes builds that description and then drops it, when `MakeIntWorld` cannot fit it: the absolute description of an offset SkyFrame in the cursor-oracle case `alt_axes_alt_offset`, and one FrameSet of the review's write fuzz, which C writes in no encoding and Java refuses in all seven.
+  With the test ported, offset sky coordinates (`offset-sky`, `offset-sky-pole`, `offset-sref`, `skyref`, `skyref-alt`), `lsst`, and non-celestial axes that are linear only within FitsTol are written as C writes them: the `offset-sky`, `offset-sky-pole` and `lsst` rows of `wcsconv` match, and the review's write fuzz, rerun, gives C's outcome and cards for all 735 writes that threw at `LogAxis` before, but for the seven above and 28 more that now reach a `-TAB` description with TabOK set and throw `needs FitsTable`.
+- **Everything spectral needs SpecFrame**, which accounts for 63 of the 76 deferred `wcsconv` rows and 45 of the 51 deferred headers; reading FITS-CLASS needs SpecFrame and DSBSpecFrame.
 - **Runtime-Math margins.**
   The Galactic PC1_2 comparison has a margin of about 4.6 times; another JDK or libm could use more of it.
   Only every 97th position of the `tan` grids is compared, because C's oracle holds only those samples and a hash.
