@@ -15,10 +15,6 @@ import org.junit.jupiter.api.Test;
  * Translates the unit tests of Rust {@code fitschan/wcs_read.rs} ({@code mod tests}), which build
  * FitsStores directly, and adds tests of the pieces of C's {@code FsetFromStore}, {@code WcsMapFrm}
  * and {@code WcsOthers} the read is made of.
- *
- * <p>{@code decode_1d_spectral}, {@code decode_3d_mixed} and {@code
- * build_pixel_to_world_handles_non_adjacent_celestial_axes} read spectral axes, which need
- * SpecFrame, and are listed in {@code deferred/rust-tests.txt}.
  */
 class FitsWcsReadTest {
 
@@ -72,12 +68,66 @@ class FitsWcsReadTest {
     }
 
     @Test
-    void spectralAxisNeedsSpecFrame() {
+    void decode1dSpectral() {
         FitsStore store = new FitsStore(1);
         store.ctype[0] = "FREQ";
+        store.crpix[0] = 1.0;
         store.crval[0] = 1.4e9;
-        UnsupportedOperationException e = assertThrows(UnsupportedOperationException.class, () -> decodeWcs(store));
-        assertTrue(e.getMessage().endsWith(" needs SpecFrame"), e.getMessage());
+        store.cdelt[0] = 1.0e6;
+        FrameSet fs = decodeWcs(store);
+        assertEquals(2, fs.getNframe());
+        assertEquals(1, fs.getFrame(FrameSet.AST__BASE).getNaxes());
+        assertEquals(1, fs.getFrame(FrameSet.AST__CURRENT).getNaxes());
+        // CRPIX maps to CRVAL.
+        assertEquals(1.4e9, FitsHeaders.tran(fs, new double[] {1.0}, true)[0], 1.0);
+    }
+
+    @Test
+    void decode3dMixed() {
+        FitsStore store = new FitsStore(3);
+        store.ctype[0] = "RA---TAN";
+        store.ctype[1] = "DEC--TAN";
+        store.ctype[2] = "FREQ";
+        store.crpix[0] = 128.0;
+        store.crpix[1] = 128.0;
+        store.crpix[2] = 1.0;
+        store.crval[0] = 180.0;
+        store.crval[1] = 45.0;
+        store.crval[2] = 1.4e9;
+        store.cdelt[0] = -0.001;
+        store.cdelt[1] = 0.001;
+        store.cdelt[2] = 1.0e6;
+        FrameSet fs = decodeWcs(store);
+        assertEquals(2, fs.getNframe());
+        assertEquals(3, fs.getFrame(FrameSet.AST__BASE).getNaxes());
+        assertEquals(3, fs.getFrame(FrameSet.AST__CURRENT).getNaxes());
+    }
+
+    @Test
+    void buildPixelToWorldHandlesNonAdjacentCelestialAxes() {
+        // FITS axes DEC, WAVE, RA: the celestial pair is separated by the spectral axis.
+        FitsStore store = new FitsStore(3);
+        store.ctype[0] = "DEC--TAN";
+        store.ctype[1] = "WAVE    ";
+        store.ctype[2] = "RA---TAN";
+        store.crval[0] = 22.0;
+        store.crval[1] = 5.0e-7;
+        store.crval[2] = 83.6;
+        store.crpix[0] = 50.5;
+        store.crpix[1] = 25.5;
+        store.crpix[2] = 50.5;
+        store.cdelt[0] = 2.78e-4;
+        store.cdelt[1] = 1.0e-10;
+        store.cdelt[2] = -2.78e-4;
+        store.cunit[1] = "m";
+        FrameSet fs = decodeWcs(store);
+        assertEquals(3, fs.getFrame(FrameSet.AST__BASE).getNaxes());
+        assertEquals(3, fs.getFrame(FrameSet.AST__CURRENT).getNaxes());
+        // At the reference pixel, axis 1 is the declination and axis 3 the right ascension.
+        double[] out = FitsHeaders.tran(fs, new double[] {50.5, 25.5, 50.5}, true);
+        assertEquals(22.0, Math.toDegrees(out[0]), 1e-9);
+        assertEquals(5.0e-7, out[1], 1e-20);
+        assertEquals(83.6, Math.toDegrees(out[2]), 1e-9);
     }
 
     @Test
@@ -129,14 +179,14 @@ class FitsWcsReadTest {
         store.ctype[1] = "Y";
         store.cname[1] = "Height";
         store.cunit[0] = "m";
-        Frame frame = FitsWcsRead.buildWorldFrame(store, null);
+        Frame frame = FitsWcsRead.buildWorld(store, null, ' ', new FitsWarnings()).frame;
         assertEquals("X", frame.getSymbol(1));
         assertEquals("X", frame.getLabel(1));
         assertEquals("Height", frame.getLabel(2));
         assertEquals("m", frame.getUnit(1));
         assertEquals("X-Y", frame.getDomain());
         store.wcsname = "Plane";
-        frame = FitsWcsRead.buildWorldFrame(store, null);
+        frame = FitsWcsRead.buildWorld(store, null, ' ', new FitsWarnings()).frame;
         assertEquals("PLANE", frame.getDomain());
         assertEquals("Plane coordinates", frame.getTitle());
     }

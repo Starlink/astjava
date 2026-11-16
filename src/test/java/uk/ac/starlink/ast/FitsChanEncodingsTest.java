@@ -1,6 +1,7 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import org.junit.jupiter.api.Test;
 
@@ -11,9 +12,9 @@ import org.junit.jupiter.api.Test;
  * {@code c2.c} beside the task report).
  *
  * <p>{@code read_dss_produces_frameset} is translated in {@link FitsEncDssTest}. Listed in {@code
- * deferred/rust-tests.txt}: {@code read_aips_spectral} (a spectral axis, SpecFrame), {@code
- * read_class_produces_frameset} (the FITS-CLASS read), {@code freq_log_builds_log_mapping}
- * (MathMap and SpecFrame) and {@code grism_builds_grism_mapping} (SpecFrame and GrismMap).
+ * deferred/rust-tests.txt}: {@code read_class_produces_frameset} (the FITS-CLASS read), {@code
+ * freq_log_builds_log_mapping} (a {@code -LOG} spectral axis, which C maps with a MathMap) and
+ * {@code grism_builds_grism_mapping} (a {@code -GRI} axis, which C maps with a GrismMap).
  */
 class FitsChanEncodingsTest {
 
@@ -92,5 +93,15 @@ class FitsChanEncodingsTest {
     @Test
     void dssFrameSetHasSky() {
         assertSky(read("wcsconv/expected/dss.dss", "DSS"), "FK5");
+    }
+
+    @Test
+    void readAipsSpectral() {
+        // A one-axis spectral header read with the FITS-AIPS encoding: the pixel Frame and the
+        // SpecFrame.
+        FrameSet fs = read("wcsconv/inputs/velo-aips.head", "FITS-AIPS");
+        assertEquals(2, fs.getNframe());
+        assertEquals(1, fs.getFrame(FrameSet.AST__CURRENT).getNaxes());
+        assertInstanceOf(SpecFrame.class, fs.getFrame(FrameSet.AST__CURRENT));
     }
 }

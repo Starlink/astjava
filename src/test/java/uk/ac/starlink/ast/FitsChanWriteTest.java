@@ -305,6 +305,53 @@ class FitsChanWriteTest {
             m.put(h, DIFFERS);
         }
         m.put("wcsconv/inputs/skyref.head", READ_FAILS);
+        // Headers with a spectral axis, whose write FitsFsetToStore refuses.
+        for (String h : Arrays.asList(
+                "wcsconv/inputs/alt-spectral.head",
+                "wcsconv/inputs/awav-a2f.head",
+                "wcsconv/inputs/axes-swap.head",
+                "wcsconv/inputs/beta-frq.head",
+                "wcsconv/inputs/cd-cross.head",
+                "wcsconv/inputs/class-ait.head",
+                "wcsconv/inputs/class-arc.head",
+                "wcsconv/inputs/class-gal.head",
+                "wcsconv/inputs/class-olddate.head",
+                "wcsconv/inputs/class-sfl.head",
+                "wcsconv/inputs/class-sin.head",
+                "wcsconv/inputs/crota-3d.head",
+                "wcsconv/inputs/cube-reorder.head",
+                "wcsconv/inputs/degen-wcsaxes.head",
+                "wcsconv/inputs/ener-vel.head",
+                "wcsconv/inputs/fits-pc-alt.head",
+                "wcsconv/inputs/fits-pc-unit.head",
+                "wcsconv/inputs/freq-f2w.head",
+                "wcsconv/inputs/freq-ghz-bary.head",
+                "wcsconv/inputs/freq-pixel3d.head",
+                "wcsconv/inputs/freq-wav.head",
+                "wcsconv/inputs/multi-wcs-spec.head",
+                "wcsconv/inputs/restfreq-ghz.head",
+                "wcsconv/inputs/restfreq-mhz.head",
+                "wcsconv/inputs/sip-3d-swap.head",
+                "wcsconv/inputs/sip-3d.head",
+                "wcsconv/inputs/skyspec3d-class.head",
+                "wcsconv/inputs/skyspec3d.head",
+                "wcsconv/inputs/ssysobs.head",
+                "wcsconv/inputs/velo-aips.head",
+                "wcsconv/inputs/velo-vel.head",
+                "wcsconv/inputs/vopt-f2w.head",
+                "wcsconv/inputs/vopt-geo.head",
+                "wcsconv/inputs/vopt-wav.head",
+                "wcsconv/inputs/vrad-lsrd.head",
+                "wcsconv/inputs/vrad-v2f.head",
+                "wcsconv/inputs/vrad-wav.head",
+                "wcsconv/inputs/wave-1d.head",
+                "wcsconv/inputs/wave-f2w.head",
+                "wcsconv/inputs/wave-w2f.head",
+                "wcsconv/inputs/wavn-frq.head",
+                "wcsconv/inputs/zero-cdelt.head",
+                "wcsconv/inputs/zopt-frq.head")) {
+            m.put(h, "needs SpecFrame");
+        }
         return Collections.unmodifiableMap(m);
     }
 
@@ -369,7 +416,7 @@ class FitsChanWriteTest {
      * recorded, within the section's tolerances, unless it is in {@link #NOT_ROUND_TRIPPED} with
      * the outcome it gives, which is checked. {@code headers.oracle} has no DSS header (C probe
      * {@code rt.c} of Task 9); {@code FitsEncDssTest.writtenAndReadBackAsC} round-trips C's DSS
-     * header. Its FITS-CLASS headers need SpecFrame.
+     * header. Its FITS-CLASS headers are not round-tripped here.
      */
     @Test
     void everyInScopeHeaderRoundTrips() {

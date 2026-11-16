@@ -25,8 +25,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * Mapping C simplified ({@code WcsMapFrm} returns {@code astSimplify} of it). Each case is compared
  * with C's whole dump.
  *
- * <p>The cases in {@link #EXCLUDED} have a spectral axis (SpecFrame) or a {@code -LOG} axis (which
- * C maps with a MathMap); each must still stop there.
+ * <p>The cases in {@link #EXCLUDED} have a {@code -LOG} axis (which C maps with a MathMap); each
+ * must still stop there.
  */
 class FitsChanReadChainOracleTest {
 
@@ -35,7 +35,6 @@ class FitsChanReadChainOracleTest {
 
     private static Map<String, String> exclusions() {
         Map<String, String> m = new LinkedHashMap<>();
-        m.put("spectral_and_linear", "needs SpecFrame");
         m.put("other_log", "needs MathMap");
         m.put("other_log_and_linear", "needs MathMap");
         return m;

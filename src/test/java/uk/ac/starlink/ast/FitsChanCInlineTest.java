@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.Fixtures;
@@ -26,8 +27,7 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * C probe of the pinned library gives ({@code c1.c} beside the task report): where C's test accepts
  * either of two outcomes, the one C gives.
  *
- * <p>Listed in {@code deferred/rust-tests.txt}: those that need a SpecFrame ({@code
- * alternate_axes_with_a_bad_set}, whose header has a VRAD axis, {@code non_linear_spectral_writes},
+ * <p>Listed in {@code deferred/rust-tests.txt}: those that write a SpecFrame ({@code non_linear_spectral_writes},
  * {@code spectral_systems_through_fits_wcs} and {@code log_spectral_axis_writes_freq_log}), and
  * {@code show_fits_succeeds} (jniast has no {@code showFits}).
  */
@@ -396,6 +396,37 @@ class FitsChanCInlineTest {
         assertEquals(244, fc.getNcard());
     }
 
+    /**
+     * 14-19: a header whose alternate description C is malformed fails to read unless
+     * IgnoreBadAlt is set, when it gives the other four Frames; with the BadAlt warning enabled
+     * the read warns once.
+     */
+    @Test
+    void alternateAxesWithABadSet() {
+        String alt = Fixtures.root().resolve("programs/testfitschan/alt.header").toString();
+        FitsChan fc = new FitsChan();
+        fc.setI("Clean", 0);
+        assertEquals(0, fc.getI("IgnoreBadAlt"), "Error 14");
+        fc.setC("SourceFile", alt);
+        fc.clear("Card");
+        AstException e = assertThrows(AstException.class, fc::read, "Error 15");
+        assertEquals(AstException.AST__BDFTS, e.getStatus(), "Error 15: " + e.getMessage());
+
+        fc.setI("IgnoreBadAlt", 1);
+        assertEquals(1, fc.getI("IgnoreBadAlt"), "Error 16");
+        fc.emptyFits();
+        fc.setC("SourceFile", alt);
+        fc.clear("Card");
+        assertEquals(4, FitsHeaders.readFrameSet(fc).getNframe(), "Error 18");
+
+        fc.emptyFits();
+        fc.setC("SourceFile", alt);
+        fc.setWarnings("BadAlt");
+        fc.clear("Card");
+        fc.read();
+        assertEquals(1, fc.warnings().mapSize(), "Error 19");
+    }
+
     /** The header of the AZEL test (630-633), without its MJD-OBS. */
     private static final String[] AZEL_SOURCE = {
         "SIMPLE  =                    T",
@@ -423,9 +454,37 @@ class FitsChanCInlineTest {
     /**
      * 630-633: an FK5 header with an observation date and place, changed to AZEL, writes {@code
      * AZ---TAN} as FITS-WCS (C puts the elevation axis first) and reads back.
+     *
+     * <p>The conversion to AZEL takes the LAST from C's tables of values already computed, which
+     * any earlier conversion for the same observer fills (as reading {@code alt.header} does), and
+     * the values expected are those of a C probe that started with empty tables. The tables are
+     * kept per thread, so the check runs in a new thread, whose tables are empty.
      */
     @Test
-    void azelWritesAsFitsWcs() {
+    void azelWritesAsFitsWcs() throws InterruptedException {
+        assertPassesOnFreshThread(FitsChanCInlineTest::azelWritesAsFitsWcsWithEmptyLastTables);
+    }
+
+    /** Runs {@code body} on a new thread, whose LAST tables are empty, and rethrows anything it throws. */
+    private static void assertPassesOnFreshThread(Runnable body) throws InterruptedException {
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        Thread t = new Thread(body, "fresh LAST table");
+        t.setUncaughtExceptionHandler((th, e) -> failure.set(e));
+        t.start();
+        t.join();
+        Throwable e = failure.get();
+        if (e instanceof Error) {
+            throw (Error) e;
+        }
+        if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
+        }
+        if (e != null) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private static void azelWritesAsFitsWcsWithEmptyLastTables() {
         FrameSet fs = readCards(AZEL_SOURCE);
         fs.setC("System", "AZEL");
         assertEquals(RT_OK, roundtrip(fs, "FITS-WCS", 1e-3, "CTYPE", "AZ---TAN"), "Error 630-633");

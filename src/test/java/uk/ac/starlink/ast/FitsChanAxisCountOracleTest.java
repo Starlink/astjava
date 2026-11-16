@@ -29,8 +29,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * gives a FrameSet, nothing or an error, Ncard after the read, the names of the cards left, the
  * number of axes of each Frame, and the current Frame's position for pixel (2, 3, 4, ...).
  *
- * <p>The cases in {@link #EXCLUDED} have a spectral axis, which needs SpecFrame; each must still
- * stop there.
+ * <p>The case in {@link #EXCLUDED} has a {@code -LOG} spectral axis, which C maps with a MathMap;
+ * it must still stop there.
  */
 class FitsChanAxisCountOracleTest {
 
@@ -39,16 +39,7 @@ class FitsChanAxisCountOracleTest {
 
     private static Map<String, String> exclusions() {
         Map<String, String> m = new LinkedHashMap<>();
-        for (String name : Arrays.asList(
-                "three_ctypes",
-                "wcsaxes3_npix2",
-                "alt_fewer_axes",
-                "spec_log_crval0",
-                "spec_unknown_code",
-                "spec_x2p_unknown_x",
-                "spec_log")) {
-            m.put(name, "needs SpecFrame");
-        }
+        m.put("spec_log", "needs MathMap");
         return m;
     }
 

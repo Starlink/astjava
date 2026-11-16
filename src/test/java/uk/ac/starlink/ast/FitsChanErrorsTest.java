@@ -28,7 +28,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * counterpart, since none of those is excluded.
  *
  * <p>A case naming a write encoding ({@code write_enc}) is checked by writing the FrameSet read to
- * that encoding, which must refuse it, and to FITS-WCS, which must accept it, as C does. A case whose read stops at something out of scope ({@code UnsupportedOperationException})
+ * that encoding, which must refuse it, and to FITS-WCS, which must accept it, as C does. A case
+ * whose read or write stops at something out of scope ({@code UnsupportedOperationException})
  * cannot be compared with C, and is in {@link #EXCLUDED} with the reason measured from the
  * exception; {@code port_gap_cases_still_differ} becomes {@code excludedCasesStillDiffer}, which
  * checks every excluded case still differs from C, for that reason where it is measured.
@@ -36,31 +37,23 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
 class FitsChanErrorsTest {
 
     /**
-     * Cases that do not match C, each with why: {@code needs <class>} where the read stops at an
-     * out-of-scope class, otherwise the gap the case exposes.
+     * Cases that do not match C, each with why: {@code needs <class>} where the read or write
+     * stops at an out-of-scope class, otherwise the gap the case exposes.
      */
     private static final Map<String, String> EXCLUDED = excludedCases();
 
     private static Map<String, String> excludedCases() {
         Map<String, String> m = new LinkedHashMap<>();
-        // A spectral CTYPE is reached after the celestial axes are decoded (C WcsMapFrm calls
-        // WcsSpectral after WcsCelestial), so these reads stop at the SpecFrame before C's error
-        // or warning is checked.
+        // These cases go on to write the spectral FrameSet read, which FitsFsetToStore refuses.
         for (String name : Arrays.asList(
-                "distortion-sip-on-axis3",
-                "noctype-missing",
-                "aips-reject-wave",
-                "aips++-reject-wave",
-                "aips-reject-topocent",
-                "aips++-reject-topocent",
-                "error-unknown-spectral-algorithm")) {
+                "aips-reject-wave", "aips++-reject-wave", "aips-reject-topocent", "aips++-reject-topocent")) {
             m.put(name, "needs SpecFrame");
         }
         return Collections.unmodifiableMap(m);
     }
 
     /** The number of cases run: every case of C's table but those excluded. */
-    private static final int RUNNABLE = 27;
+    private static final int RUNNABLE = 30;
 
     private static String text(JsonNode c, String field) {
         JsonNode v = c.get(field);
@@ -164,15 +157,20 @@ class FitsChanErrorsTest {
         if (writeEnc != null && obj != null) {
             FitsChan wfc = new FitsChan();
             wfc.setEncoding(writeEnc);
-            int nw = wfc.write(obj);
-            if (nw != 0) {
-                return "write to " + writeEnc + " returned " + nw + ", expected 0";
-            }
-            wfc.emptyFits();
-            wfc.setEncoding("FITS-WCS");
-            nw = wfc.write(obj);
-            if (nw != 1) {
-                return "write to FITS-WCS returned " + nw + ", expected 1";
+            try {
+                int nw = wfc.write(obj);
+                if (nw != 0) {
+                    return "write to " + writeEnc + " returned " + nw + ", expected 0";
+                }
+                wfc.emptyFits();
+                wfc.setEncoding("FITS-WCS");
+                nw = wfc.write(obj);
+                if (nw != 1) {
+                    return "write to FITS-WCS returned " + nw + ", expected 1";
+                }
+            } catch (UnsupportedOperationException e) {
+                String reason = Deferred.unavailableReason(e.getMessage());
+                return "write " + (reason == null ? "unavailable" : reason) + ": " + e.getMessage();
             }
         }
         return null;
@@ -229,7 +227,9 @@ class FitsChanErrorsTest {
             String err = check(c);
             if (err == null) {
                 problems.add(e.getKey() + " now matches C; remove it from EXCLUDED. Reason on record: " + e.getValue());
-            } else if (e.getValue().startsWith("needs ") && !err.startsWith("read " + e.getValue() + ":")) {
+            } else if (e.getValue().startsWith("needs ")
+                    && !err.startsWith("read " + e.getValue() + ":")
+                    && !err.startsWith("write " + e.getValue() + ":")) {
                 problems.add(e.getKey() + " is excluded as \"" + e.getValue() + "\" but gives: " + err);
             }
         }

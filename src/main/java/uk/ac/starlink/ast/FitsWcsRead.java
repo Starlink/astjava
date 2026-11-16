@@ -19,9 +19,9 @@ import java.util.List;
  * to intermediate world coordinate Mapping, then one Mapping over every axis for each class of
  * axis (celestial, spectral, the others) and any {@code -TAB} look-ups, all in series.
  *
- * <p>The Frames and Mappings of spectral axes (SpecFrame), of {@code -TAB} axes when TabOK is
- * above zero (LutMap) and of non-spectral {@code -LOG} axes (MathMap) are not available: a header
- * using them makes the read throw {@link UnsupportedOperationException}.
+ * <p>Spectral axes are described by {@link FitsWcsSpectral}. The Mappings of {@code -TAB} axes when
+ * TabOK is above zero (LutMap), of {@code -LOG} axes (MathMap) and of grism axes (GrismMap) are
+ * not available: a header using them makes the read throw {@link UnsupportedOperationException}.
  *
  * <p>Ported from Rust {@code fitschan/wcs_read.rs} and the FITS-WCS branch of {@code
  * fitschan/mod.rs}'s {@code read}.
@@ -50,8 +50,8 @@ final class FitsWcsRead {
      * when no FrameSet is made and Clean is not set, available again (C's {@code FixUsed}).
      *
      * @throws AstException as C's read reports it
-     * @throws UnsupportedOperationException if the header has a spectral axis, a {@code -TAB} axis
-     *     with TabOK above zero, or a non-spectral {@code -LOG} axis
+     * @throws UnsupportedOperationException if the header has a {@code -TAB} axis with TabOK above
+     *     zero, a {@code -LOG} axis with a non-zero CRVAL, or a {@code -GRI} or {@code -GRA} axis
      */
     static FrameSet read(FitsChan fc, FitsChan.Encoding encoding) {
         FitsCardList cards = fc.cards();
@@ -477,10 +477,10 @@ final class FitsWcsRead {
         Mapping map1 = FitsWcsMatrix.buildPixelToIwc(store, cards, warnings, cursors);
         FitsWcsCelestial.CelestialResult celestial = FitsWcsCelestial.buildCelestialWithDefB1950(
                 store, s, defB1950, readRfval(cards, store.naxis, s), warnings);
-        buildSpectral(store);
-        Frame frm = buildWorldFrame(store, celestial);
-        String[] iwcUnits = iwc ? iwcAxisUnits(store, celestial) : null;
-        Mapping ret = buildPixelToWorld(store, map1, celestial).simplify();
+        World world = buildWorld(store, celestial, s, warnings);
+        Frame frm = world.frame;
+        Mapping ret =
+                buildPixelToWorld(store, map1, celestial, world.spectralMap).simplify();
         frm.setIdent(String.valueOf(s));
         if (store.dut1 != null) {
             frm.setDut1(store.dut1 * SPD);
@@ -497,9 +497,9 @@ final class FitsWcsRead {
         Frame iwcfrm = new Frame(wcsaxes);
         iwcfrm.setTitle("FITS Intermediate World Coordinates");
         iwcfrm.setDomain("IWC" + s);
-        for (int i = 0; i < iwcUnits.length; i++) {
-            if (iwcUnits[i] != null) {
-                iwcfrm.setUnit(i + 1, iwcUnits[i]);
+        for (int i = 0; i < world.iwcUnits.length; i++) {
+            if (world.iwcUnits[i] != null) {
+                iwcfrm.setUnit(i + 1, world.iwcUnits[i]);
             }
         }
         FrameSet fs = new FrameSet(frm);
@@ -541,22 +541,6 @@ final class FitsWcsRead {
             if (ctype != null && ctype.length() > 4 && ctype.startsWith("-TAB", 4)) {
                 throw new UnsupportedOperationException(
                         "FitsChan: the -TAB axis " + (iaxis + 1) + " (CTYPE '" + ctype + "') needs LutMap");
-            }
-        }
-    }
-
-    /**
-     * C's {@code WcsSpectral} (fitschan.c:39913), which describes each axis whose CTYPE names a
-     * spectral system with a SpecFrame.
-     *
-     * @throws UnsupportedOperationException for the first such axis, since that needs SpecFrame
-     */
-    private static void buildSpectral(FitsStore store) {
-        for (int axis = 0; axis < store.naxis; axis++) {
-            String ctype = store.ctype[axis];
-            if (ctype != null && FitsStore.isSpectralCtype(ctype)) {
-                throw new UnsupportedOperationException(
-                        "FitsChan: the spectral axis " + (axis + 1) + " (CTYPE '" + ctype + "') needs SpecFrame");
             }
         }
     }
@@ -612,23 +596,6 @@ final class FitsWcsRead {
     }
 
     /**
-     * The units C gives the axes of the IWC Frame: degrees for the celestial axes ({@code
-     * WcsCelestial}, fitschan.c:36605-36606) and any CUNIT for the others ({@code WcsOthers},
-     * fitschan.c:39350-39353); a null element leaves the Unit unset.
-     */
-    private static String[] iwcAxisUnits(FitsStore store, FitsWcsCelestial.CelestialResult celestial) {
-        String[] units = new String[store.naxis];
-        for (int i = 0; i < store.naxis; i++) {
-            if (celestial != null && (celestial.lonAxis == i || celestial.latAxis == i)) {
-                units[i] = "deg";
-            } else {
-                units[i] = store.cunit[i];
-            }
-        }
-        return units;
-    }
-
-    /**
      * The pixel to world coordinate Mapping of an axis description, before simplification: as
      * C's {@code WcsMapFrm} builds it (fitschan.c:38335-38341), the following stages in series,
      * in their C shapes, each over every axis:
@@ -637,23 +604,19 @@ final class FitsWcsRead {
      *   <li>{@code map1}, pixel to IWC ({@code WcsIntWorld});
      *   <li>the celestial Mapping, or a UnitMap when there are no celestial axes ({@code
      *       WcsCelestial});
-     *   <li>one UnitMap per axis in parallel ({@code WcsSpectral}, which makes a UnitMap for each
-     *       axis that is not spectral, and no spectral axis reaches here);
-     *   <li>a UnitMap when every axis is celestial, and otherwise one Mapping per axis in
-     *       parallel: {@link #othersAxisMap} for an axis no other stage describes and a UnitMap for
-     *       the others ({@code WcsOthers}).
+     *   <li>{@code map3}, one Mapping per axis in parallel, a UnitMap for each axis that is not
+     *       spectral ({@code WcsSpectral});
+     *   <li>a UnitMap when the celestial and spectral stages describe every axis, and otherwise
+     *       one Mapping per axis in parallel: {@link #othersAxisMap} for an axis no other stage
+     *       describes and a UnitMap for the others ({@code WcsOthers}).
      * </ol>
      *
      * <p>No {@code -TAB} look-up Mapping reaches here (see {@link #tabMapping}).
      */
     private static Mapping buildPixelToWorld(
-            FitsStore store, Mapping map1, FitsWcsCelestial.CelestialResult celestial) {
+            FitsStore store, Mapping map1, FitsWcsCelestial.CelestialResult celestial, Mapping map3) {
         int naxis = store.naxis;
-        boolean[] claimed = new boolean[naxis];
-        if (celestial != null) {
-            claimed[celestial.lonAxis] = true;
-            claimed[celestial.latAxis] = true;
-        }
+        boolean[] claimed = claimedAxes(store, celestial);
         boolean otherAxis = false;
         for (boolean c : claimed) {
             if (!c) {
@@ -662,11 +625,6 @@ final class FitsWcsRead {
             }
         }
         Mapping map2 = celestial != null ? celestial.mapping : new UnitMap(naxis);
-        Mapping map3 = null;
-        for (int i = 0; i < naxis; i++) {
-            Mapping part = new UnitMap(1);
-            map3 = map3 == null ? part : new CmpMap(map3, part, false);
-        }
         Mapping map4;
         if (otherAxis) {
             map4 = null;
@@ -680,6 +638,20 @@ final class FitsWcsRead {
         Mapping map5 = new CmpMap(map1, map2, true);
         Mapping map6 = new CmpMap(map5, map3, true);
         return new CmpMap(map6, map4, true);
+    }
+
+    /**
+     * Which axes of {@code store} the celestial and spectral stages describe, leaving the others
+     * to {@code WcsOthers}, which finds them as the axes whose primary Frame still has the Domain
+     * {@code WcsMapFrm} gave the Frame it started from.
+     */
+    private static boolean[] claimedAxes(FitsStore store, FitsWcsCelestial.CelestialResult celestial) {
+        boolean[] claimed = FitsWcsSpectral.spectralAxes(store);
+        if (celestial != null) {
+            claimed[celestial.lonAxis] = true;
+            claimed[celestial.latAxis] = true;
+        }
+        return claimed;
     }
 
     /**
@@ -705,28 +677,50 @@ final class FitsWcsRead {
         return crval != 0.0 ? new ShiftMap(new double[] {crval}) : new UnitMap(1);
     }
 
+    /** The WCS Frame of an axis description, the units of its IWC Frame and its spectral Mapping. */
+    static final class World {
+        /** The WCS Frame. */
+        final Frame frame;
+
+        /** The Unit of each axis of the IWC Frame, or null to leave it unset. */
+        final String[] iwcUnits;
+
+        /** The Mapping of the spectral stage ({@code WcsSpectral}), over every axis. */
+        final Mapping spectralMap;
+
+        World(Frame frame, String[] iwcUnits, Mapping spectralMap) {
+            this.frame = frame;
+            this.iwcUnits = iwcUnits;
+            this.spectralMap = spectralMap;
+        }
+    }
+
     /**
-     * The WCS Frame of an axis description, as C's {@code WcsMapFrm} makes it from a Frame with
-     * an axis for each WCS axis, which {@code WcsCelestial} restructures to hold the SkyFrame of
-     * any celestial axes and {@code WcsOthers} completes for the other axes.
+     * The WCS Frame of axis description {@code s}, as C's {@code WcsMapFrm} makes it from a Frame
+     * with an axis for each WCS axis, which {@code WcsCelestial} restructures to hold the SkyFrame
+     * of any celestial axes, {@code WcsSpectral} to hold a SpecFrame for each spectral axis, and
+     * {@code WcsOthers} completes for the other axes; with the units those stages give the axes of
+     * the IWC Frame (degrees for the celestial axes, the spectral unit for a spectral axis, and
+     * any CUNIT for the others) and the Mapping of the spectral stage.
      *
      * <ul>
-     *   <li>With no celestial axes, a Frame whose axes carry the CTYPE, CNAME and CUNIT values,
-     *       its Domain made of the CTYPE values, and any WCSNAME as Domain and in the Title.
-     *   <li>With only celestial axes, the SkyFrame.
-     *   <li>Otherwise a CmpFrame of the other axes, picked from such a Frame, and the SkyFrame,
-     *       its axes permuted back to the FITS order; the WCSNAME names the CmpFrame.
+     *   <li>With no celestial or spectral axes, a Frame whose axes carry the CTYPE, CNAME and
+     *       CUNIT values, its Domain made of the CTYPE values, and any WCSNAME as Domain and in
+     *       the Title.
+     *   <li>With only celestial axes, the SkyFrame; with only one spectral axis, the SpecFrame.
+     *   <li>Otherwise CmpFrames of the other axes, picked from such a Frame, the SkyFrame and the
+     *       SpecFrames, their axes permuted back to the FITS order; the WCSNAME names the outer
+     *       CmpFrame when there are other axes.
      * </ul>
      *
      * <p>The SkyFrame takes the reference position as SkyRef (see {@link #wcsCelestialFrame}).
+     *
+     * @param warnings receives the warnings the spectral stage raises
      */
-    static Frame buildWorldFrame(FitsStore store, FitsWcsCelestial.CelestialResult celestial) {
+    static World buildWorld(
+            FitsStore store, FitsWcsCelestial.CelestialResult celestial, char s, FitsWarnings warnings) {
         int naxis = store.naxis;
-        boolean[] claimed = new boolean[naxis];
-        if (celestial != null) {
-            claimed[celestial.lonAxis] = true;
-            claimed[celestial.latAxis] = true;
-        }
+        boolean[] claimed = claimedAxes(store, celestial);
         int nother = 0;
         for (boolean c : claimed) {
             if (!c) {
@@ -742,17 +736,25 @@ final class FitsWcsRead {
                 others[j++] = i;
             }
         }
+        String[] iwcUnits = new String[naxis];
         // The Frame of every axis, carrying what WcsOthers sets on the axes it describes; the
-        // celestial stage replaces the axes it describes.
+        // celestial and spectral stages replace the axes they describe.
         Frame frame = seedLinearFrame(store, all, others);
         if (celestial != null) {
             frame = wcsCelestialFrame(frame, celestial, naxis);
+            iwcUnits[celestial.lonAxis] = "deg";
+            iwcUnits[celestial.latAxis] = "deg";
+        }
+        FitsWcsSpectral.Result spectral = FitsWcsSpectral.wcsSpectral(store, s, frame, iwcUnits, celestial, warnings);
+        frame = spectral.frame;
+        for (int axis : others) {
+            iwcUnits[axis] = store.cunit[axis];
         }
         // WcsOthers sets the WCSNAME only when it describes some axes.
         if (nother > 0) {
             applyWcsname(store, frame);
         }
-        return frame;
+        return new World(frame, iwcUnits, spectral.map);
     }
 
     /**

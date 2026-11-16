@@ -54,7 +54,7 @@ class FitsChanCursorOracleTest {
      * The number of cases run here: those that write no Object read, are not excluded, and whose reads
      * need only the encodings read here.
      */
-    private static final int RUNNABLE = 247;
+    private static final int RUNNABLE = 253;
 
     /** The number of cases whose reads reach the read of an encoding whose read is not available. */
     private static final int WAITING_FOR_ANOTHER_ENCODING = 2;
@@ -75,16 +75,9 @@ class FitsChanCursorOracleTest {
 
     private static Map<String, String> excludedCases() {
         Map<String, String> m = new LinkedHashMap<>();
-        // Headers with a spectral axis, whose FITS-WCS read builds a SpecFrame.
-        for (String name : Arrays.asList(
-                "dist_sip_axis3",
-                "dist_zpx_three",
-                "sao_three_ctypes",
-                "iwc_on_spectral",
-                "iwc_off_spectral",
-                "iwc_on_spectral_cunit",
-                "sao_three_ctypes_rw",
-                "fao_spec_order")) {
+        // Headers with a spectral axis, read and written again, whose write FitsFsetToStore
+        // refuses.
+        for (String name : Arrays.asList("sao_three_ctypes_rw", "fao_spec_order")) {
             m.put(name, "needs SpecFrame");
         }
         // The absolute description of the offset SkyFrame passes C's LogAxis test on its first

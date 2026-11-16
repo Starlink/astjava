@@ -30,14 +30,14 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * {@code oracle/fitschan_encodings.json}, made by {@code
  * tools/oracle_fixtures/fitschan_encodings_probe.c}.
  *
- * <p>Every encoding's column runs; C's FITS-CLASS writer refuses each FrameSet here, none having
- * the SpecFrame that encoding needs. A header whose read needs a class this library does not have
- * is in {@link #EXCLUDED} with the reason its read gives, measured, so the list is checked both
- * ways.
+ * <p>Every encoding's column runs. A header whose read or writes need a class this library does
+ * not have (a spectral FrameSet, whose write {@link FitsFsetToStore#makeFitsFrameSet} refuses,
+ * gives {@code needs SpecFrame}) is in {@link #EXCLUDED} with the reason they give, measured, so
+ * the list is checked both ways.
  */
 class FitsChanEncodingsOracleTest {
 
-    /** Headers whose read stops for want of a class, with the reason the read gives. */
+    /** Headers whose read or writes stop for want of a class, with the reason they give. */
     private static final Map<String, String> EXCLUDED = excludedCases();
 
     private static Map<String, String> excludedCases() {
@@ -164,10 +164,16 @@ class FitsChanEncodingsOracleTest {
         return new Written(ret, ncard, cards, names);
     }
 
-    /** The reason the read of {@code header} stops for want of a class, or null. */
-    private static String readNeeds(List<String> header) {
+    /**
+     * The reason the read of {@code header}, or one of the writes of {@code writes} (C's rows for
+     * the case), stops for want of a class, or null.
+     */
+    private static String needs(List<String> header, String epoch, JsonNode writes) {
         try {
             read(new FitsChan(), header, "");
+            for (JsonNode w : writes) {
+                written(header, epoch, w.get(0).asText());
+            }
             return null;
         } catch (UnsupportedOperationException e) {
             return FitsHeaders.outOfScope(e);
@@ -182,11 +188,12 @@ class FitsChanEncodingsOracleTest {
             String name = c.get(0).asText();
             List<String> header = FitsHeaders.strings(c.get(1));
             String epoch = c.get(2).asText();
-            String needs = readNeeds(header);
+            String needs = needs(header, epoch, c.get(3));
             String listed = EXCLUDED.get(name);
             if (needs != null || listed != null) {
                 if (needs == null || !needs.equals(listed)) {
-                    failed.add(name + ": the read gives \"" + needs + "\" but it is listed as \"" + listed + "\"");
+                    failed.add(name + ": the read and writes give \"" + needs + "\" but it is listed as \"" + listed
+                            + "\"");
                 }
                 continue;
             }

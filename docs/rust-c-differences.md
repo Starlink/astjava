@@ -877,6 +877,18 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `class_store_ok` in `fitschan/enc_class.rs` reads the NAXIS cards for the rotation and LONPOLE checks but neither moves the reference point nor transforms anything, so it writes the reference point unchanged and reports no error for four axes.
 - Java: as C (`FitsEncClass`), as far as C goes without a SpecFrame: every FrameSet of this library's classes is refused, as C refuses it, since only a SpecFrame gives SPECSYS.
 
+### Which CTYPE values `WcsSpectral` takes as spectral
+
+- C: `IsSpectral` compares the first four characters of the CTYPE, without trailing spaces, with the ten FITS-WCS paper III codes case by case, and accepts the axis only when the algorithm code after them is blank or starts with `-`; any other axis is left to `WcsOthers` as a linear axis (`fitschan.c` `IsSpectral`), so `freq` gives a plain Frame axis with Domain `FREQ`.
+- Rust: `parse_spectral_ctype` in `fitschan/wcs_spectral.rs` takes the first four characters through `SpecSystem::parse`, which ignores case and accepts the long System names, and does not check the algorithm code, so `freq` makes a SpecFrame and `FREQXYZW` fails with an unknown algorithm code.
+- Java: as C (`FitsWcsSpectral.spectralAxes`, `FitsStore.isSpectral`).
+
+### The order of the SpecFrame settings in `WcsSpectral`
+
+- C: sets System, the reference position, Unit (CUNIT, or the system's default unit, which is blank for ZOPT and BETA), Epoch, RestFreq (set to `AST__BAD` when there is neither RESTFRQ nor RESTWAV), ObsLat/ObsLon/ObsAlt, SourceVRF, SourceVel, StdOfRest and Label, in that order, and then calls `DSBSetUp` with the AXREF value, else the CRVAL value, which is `AST__BAD` when there is neither (`fitschan.c` `WcsSpectral`).
+- Rust: `build_spectral_axis` sets StdOfRest second, skips the Unit when it is blank, so a ZOPT or BETA axis with no CUNIT has no Unit set, and gives `dsb_set_up` an observation centre of 0 when there is neither AXREF nor CRVAL.
+- Java: as C (`FitsWcsSpectral`); C's blank Unit is set and recorded as the Unit used with the System.
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails
