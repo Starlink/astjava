@@ -87,15 +87,18 @@ class FitsChanCursorOracleTest {
                 "fao_spec_order")) {
             m.put(name, "needs SpecFrame");
         }
-        // Its transcript shows the FrameSet read. The rotation of the alternate description
-        // (fitschan.c WcsNative, three astMtrRot calls) takes the sine of 2 deg - pi/2, for which
-        // java.lang.Math gives -0x1.ffb0278bf0566p-1 and C's libm -0x1.ffb0278bf0567p-1 (measured
-        // on aarch64, JDK 21 and macOS libm), so the forward matrix element M2 is
-        // 0.9992386149554825 here and 0.99923861495548261 in C.
-        // The offset SkyFrame's absolute description has a SKY_ORIGIN Domain, which C's write tests
-        // for the -LOG algorithm with a MathMap (fitschan.c LogAxis).
-        m.put("sky_offset_system_rw", "needs MathMap");
+        // The absolute description of the offset SkyFrame passes C's LogAxis test on its first
+        // axis, so C builds the -LOG Mapping, which holds a MathMap; the description then fails
+        // MakeIntWorld and is not written (lldb probe s2 of the final review fixes).
         m.put("alt_axes_alt_offset", "needs MathMap");
+        // The Mapping C's FitLine fits for the offset coordinates, written without a projection,
+        // is the same as this library's (probe s1, dumps equal); of the 101 points of each grid
+        // axis, 81 and 67 differ, each first at a SphMap, SphMap inverse or TAN WcsMap inverse
+        // given equal inputs (the components whose sines, cosines and arctangents the replays for
+        // alt_axes_offset found 1 ULP from C's libm at equal arguments), and the slopes of the
+        // differences (2e-18) are the differences of the fitted gradients.
+        // runtimeMathCasesMatchCButForLicensedCards compares them.
+        m.put("sky_offset_system_rw", RUNTIME_MATH + " SphMap and TAN WcsMap transforms 1 ULP from C's libm");
         // The Mapping C's FitLine fits for the primary description is the same as this library's
         // (probe a1), but its SphMaps and inverse TAN WcsMap take sines, cosines and arctangents
         // where java.lang.Math differs from C's libm by 1 ULP at the same arguments (probes a2 and
@@ -103,6 +106,11 @@ class FitsChanCursorOracleTest {
         // compares them.
         m.put("alt_axes_offset", RUNTIME_MATH + " SphMap and TAN WcsMap transforms 1 ULP from C's libm");
         m.put("alt_axes_offset_none", RUNTIME_MATH + " SphMap and TAN WcsMap transforms 1 ULP from C's libm");
+        // Its transcript shows the FrameSet read. The rotation of the alternate description
+        // (fitschan.c WcsNative, three astMtrRot calls) takes the sine of 2 deg - pi/2, for which
+        // java.lang.Math gives -0x1.ffb0278bf0566p-1 and C's libm -0x1.ffb0278bf0567p-1 (measured
+        // on aarch64, JDK 21 and macOS libm), so the forward matrix element M2 is
+        // 0.9992386149554825 here and 0.99923861495548261 in C.
         m.put("iwc_on_alt", RUNTIME_MATH + " the sine of 2 deg - pi/2 differs from C's libm by 1 ULP");
         // With Full positive C also writes the unset RefCnt and Nobj of each Object part as comment
         // cards: counts of pointers to the Object and of Objects of its class, which this library
@@ -647,7 +655,8 @@ class FitsChanCursorOracleTest {
 
     /**
      * The cards of each case excluded for {@value #RUNTIME_MATH} whose values may differ from C's
-     * within libm rounding: a relative difference of at most {@link #LIBM_RTOL}.
+     * within libm rounding: a difference of at most {@link #LIBM_RTOL} relative to the value, or,
+     * for an element of the PC matrix, whose diagonal elements are 1, relative to 1.
      */
     private static final Map<String, List<String>> RUNTIME_MATH_CARDS = runtimeMathCards();
 
@@ -658,6 +667,7 @@ class FitsChanCursorOracleTest {
         Map<String, List<String>> m = new LinkedHashMap<>();
         m.put("alt_axes_offset", Arrays.asList("CDELT2", "CDELT2A"));
         m.put("alt_axes_offset_none", Arrays.asList("CDELT2"));
+        m.put("sky_offset_system_rw", Arrays.asList("CDELT1", "CDELT2", "PC1_2", "PC2_1"));
         return Collections.unmodifiableMap(m);
     }
 
@@ -697,12 +707,16 @@ class FitsChanCursorOracleTest {
         }
         int gs = got.indexOf(" /");
         int ws = want.indexOf(" /");
-        if (gs < 0 || ws < 0 || !got.substring(gs).equals(want.substring(ws))) {
+        // A value of another length moves the comment, so the padding after it differs.
+        if (gs < 0
+                || ws < 0
+                || !got.substring(gs).trim().equals(want.substring(ws).trim())) {
             return false;
         }
         double g = Double.parseDouble(got.substring(11, gs).trim());
         double w = Double.parseDouble(want.substring(11, ws).trim());
-        return Math.abs(g - w) <= LIBM_RTOL * Math.abs(w);
+        double scale = key.startsWith("PC") ? Math.max(Math.abs(w), 1.0) : Math.abs(w);
+        return Math.abs(g - w) <= LIBM_RTOL * scale;
     }
 
     /**

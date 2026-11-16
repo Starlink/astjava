@@ -16,9 +16,10 @@ import org.junit.jupiter.api.Test;
  * fitschan.c) that need no class this library lacks, and tests of the branches that reach one.
  * Expectations not from a Rust test are worked from C's code.
  *
- * <p>Not translated: {@code log_axis.rs} {@code linear_axis_is_not_log} and {@code
- * detects_log_axis_and_returns_inverse_mapping}, which build C's MathMap (tested here as the throw
- * {@code needs MathMap}), and {@code out_of_range_axis_returns_none}, a check C does not make.
+ * <p>{@code log_axis.rs} {@code detects_log_axis_and_returns_inverse_mapping} builds its
+ * logarithmic axis with a MathMap; here it is a PolyMap, and where C goes on to build the {@code
+ * -LOG} Mapping, which holds a MathMap, the translation expects the throw {@code needs MathMap}. Not
+ * translated: {@code out_of_range_axis_returns_none}, a check C does not make.
  */
 class FitsOtherAxesTest {
 
@@ -183,19 +184,77 @@ class FitsOtherAxesTest {
         return frameSet(pm, wcs);
     }
 
+    /**
+     * The PolyMap of the Taylor series to degree 20 of {@code sr exp(slope p)}, which is that
+     * function to within rounding for {@code slope p} up to 1.
+     */
+    private static PolyMap exponential(double sr, double slope) {
+        double[] coeffs = new double[21 * 3];
+        double term = sr;
+        for (int k = 0; k <= 20; k++) {
+            coeffs[3 * k] = term;
+            coeffs[3 * k + 1] = 1;
+            coeffs[3 * k + 2] = k;
+            term = term * slope / (k + 1);
+        }
+        PolyMap pm = new PolyMap(1, 1, 21, coeffs, 0, new double[0]);
+        pm.set("IterInverse=1");
+        return pm;
+    }
+
     @Test
-    void nonLinearAxisWithNonZeroCrvalNeedsMathMap() {
-        // C's LogAxis makes a MathMap for any CRVAL other than zero, before testing whether the
-        // axis is logarithmic.
+    void slightlyNonLinearAxisIsDescribedAsLinear() {
+        // C probe loglin.c: the logarithm of 10 + p + 1e-6 p^2 is not linear, so LogAxis returns
+        // NULL, and OtherAxes describes the axis as linear (C writes it, CRVAL1 = 60.0025).
+        FitsStore store = new FitsStore(1);
+        boolean[] axisDone = new boolean[1];
+        Mapping map = otherAxes(new FitsChan(), quadratic(10, 1, 1e-6), new double[] {100}, store, null, axisDone);
+        assertTrue(axisDone[0]);
+        assertEquals(60.0025, store.crval[0], 1e-12);
+        assertEquals("WORLD1", store.ctype[0]);
+        assertArrayEquals(new double[] {-57.0025}, map.tran1(1, new double[] {3}, true), 1e-12);
+        assertNull(FitsOtherAxes.logAxis(
+                quadratic(10, 1, 1e-6).getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT),
+                0,
+                1,
+                new double[] {1},
+                new double[] {100},
+                60.0025));
+    }
+
+    @Test
+    void logarithmicAxisNeedsMathMap() {
+        // C probe loglin.c: 10 exp(0.01 p) is written as WORL-LOG, whose Mapping holds a MathMap.
         UnsupportedOperationException e = assertThrows(
                 UnsupportedOperationException.class,
                 () -> otherAxes(
                         new FitsChan(),
-                        quadratic(10, 1, 0.01),
+                        frameSet(exponential(10, 0.01), new Frame(1)),
                         new double[] {100},
                         new FitsStore(1),
                         null,
                         new boolean[1]));
+        assertTrue(e.getMessage().endsWith("needs MathMap"), e.getMessage());
+    }
+
+    /** Rust {@code log_axis.rs} {@code linear_axis_is_not_log}. */
+    @Test
+    void linearAxisIsNotLog() {
+        assertNull(FitsOtherAxes.logAxis(
+                new ShiftMap(new double[] {10, 20}), 0, 2, new double[] {1, 1}, new double[] {100, 100}, 5.0));
+    }
+
+    /**
+     * Rust {@code log_axis.rs} {@code detects_log_axis_and_returns_inverse_mapping}, with axis 1
+     * {@code 2 exp(0.1 p)} from a PolyMap: the axis passes C's test, and the Mapping C then
+     * returns holds a MathMap.
+     */
+    @Test
+    void detectsLogAxis() {
+        Mapping map = new CmpMap(new UnitMap(1), exponential(2.0, 0.1), false);
+        UnsupportedOperationException e = assertThrows(
+                UnsupportedOperationException.class,
+                () -> FitsOtherAxes.logAxis(map, 1, 2, new double[] {1, 1}, new double[] {10, 10}, 2.0));
         assertTrue(e.getMessage().endsWith("needs MathMap"), e.getMessage());
     }
 

@@ -104,6 +104,24 @@ class FitsChanWriteTest {
     }
 
     @Test
+    void aSlightlyNonLinearAxisIsWrittenAsLinear() {
+        // The logarithm of 10 + p + 1e-6 p^2 is not linear, so C's LogAxis returns NULL, and the
+        // axis described as linear is within FitsTol of the FrameSet (C probe loglin.c).
+        FitsChan fc = FitsHeaders.chan("NAXIS1  = 100");
+        fc.setEncoding("FITS-WCS");
+        assertEquals(1, fc.write(quadratic(10, 1, 1e-6)));
+        List<String> want = Arrays.asList(
+                "NAXIS1  =                  100                                                  ",
+                "WCSAXES =                    1 / Number of WCS axes                             ",
+                "WCSNAME = 'WORLD   '           / Reference name for the coord. frame            ",
+                "CRPIX1  =                 50.0 / Reference pixel on axis 1                      ",
+                "CRVAL1  =              60.0025 / Value at ref. pixel on axis 1                  ",
+                "CTYPE1  = 'WORLD1  '           / Type of co-ordinate on axis 1                  ", // codespell:ignore
+                "CDELT1  =             1.000101 / Pixel size on axis 1                           ");
+        assertEquals(want, FitsHeaders.foundCards(fc));
+    }
+
+    @Test
     void strictWriteFailsAndLeavesTheCards() {
         // A FrameSet with an MJD-OBS written to a FitsChan holding TIMESYS = 'ET' raises a badval
         // warning, which Strict makes an error (C probe, FitsChanAstwarnTest).
@@ -206,16 +224,22 @@ class FitsChanWriteTest {
     /** The outcome of a header whose cards read back do not transform as C's read of the header. */
     private static final String DIFFERS = "the cards read back transform differently";
 
+    /** The outcome of a header whose cards the read rejects with {@code AST__BDFTS}. */
+    private static final String READ_FAILS = "the cards written do not read back";
+
     /**
      * The headers that do not round-trip, with their outcome, which C's gives too (C probes {@code
-     * p3.c} for FITS-WCS and {@code rt.c} for the other encodings, beside the task reports): C's
+     * p3.c} for FITS-WCS and {@code rt.c} for the other encodings, beside the task reports, and
+     * {@code rt7.c} and {@code rtc.c} of the final review fixes for the offset SkyFrames): C's
      * write returns 0 (for FITS-IRAF, a description with a LONPOLE or projection parameters, or a
      * TNX or ZPX projection read as TPN or ZPN), or C's cards read back give values where C's read
      * of the header gives BAD (the CAR headers whose longitude range the projection bounds, among
      * them the FITS-AIPS header cmap_3years_GP_D2) or other values (scp, at a point 1.3E-6 radians
-     * from the pole, where longitude changes fast), or C's write reaches {@code LogAxis}, which
-     * makes a MathMap, for the description of absolute coordinates of an offset SkyFrame whose
-     * Domain is not {@code SKY}.
+     * from the pole, where longitude changes fast; and the offset SkyFrames, whose offset
+     * coordinates C describes without a projection, with the absolute coordinates as an alternate
+     * description), or C's read of the cards written fails (skyref, whose alternate description,
+     * CTYPE1A {@code RA} and CTYPE2A {@code Dec}, C's read rejects as a longitude axis without a
+     * latitude axis).
      */
     private static final Map<String, String> NOT_ROUND_TRIPPED = notRoundTripped();
 
@@ -241,17 +265,14 @@ class FitsChanWriteTest {
                 "programs/joye_car_headers/cmap_3years_GP_D2.head",
                 "wcsconv/inputs/car1.head",
                 "wcsconv/inputs/car2.head",
-                "wcsconv/inputs/scp.head")) {
-            m.put(h, DIFFERS);
-        }
-        for (String h : Arrays.asList(
                 "wcsconv/inputs/offset-sky-pole.head",
                 "wcsconv/inputs/offset-sky.head",
                 "wcsconv/inputs/offset-sref.head",
-                "wcsconv/inputs/skyref-alt.head",
-                "wcsconv/inputs/skyref.head")) {
-            m.put(h, "needs MathMap");
+                "wcsconv/inputs/scp.head",
+                "wcsconv/inputs/skyref-alt.head")) {
+            m.put(h, DIFFERS);
         }
+        m.put("wcsconv/inputs/skyref.head", READ_FAILS);
         return Collections.unmodifiableMap(m);
     }
 
@@ -259,7 +280,7 @@ class FitsChanWriteTest {
      * What a header gives when its FrameSet is written with {@code encoding} into a new FitsChan
      * and read back: null if the FrameSet read back transforms the inputs of the header's forward
      * section to the outputs C recorded, within the section's tolerances, and otherwise {@link
-     * #WRITE_FAILS}, {@link #DIFFERS} or the class the write needs.
+     * #WRITE_FAILS}, {@link #DIFFERS}, {@link #READ_FAILS} or the class the write needs.
      */
     private static String roundTrip(
             OracleSection s,
@@ -277,7 +298,15 @@ class FitsChanWriteTest {
             return FitsHeaders.outOfScope(e);
         }
         out.clear("Card");
-        FrameSet back = FitsHeaders.readFrameSet(out);
+        FrameSet back;
+        try {
+            back = FitsHeaders.readFrameSet(out);
+        } catch (AstException e) {
+            if (e.getStatus() != AstException.AST__BDFTS) {
+                throw e;
+            }
+            return READ_FAILS;
+        }
         double[][] live = back.tranP(s.npoint(), s.nin, s.inputs(), true, s.nout);
         List<TransformOracleTest.AxisMiss> misses = new ArrayList<>();
         if (!overrides.goldenOff(s.path, true)) {

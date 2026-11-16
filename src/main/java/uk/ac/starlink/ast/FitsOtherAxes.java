@@ -9,8 +9,8 @@ package uk.ac.starlink.ast;
  * algorithm, or, when TabOK is positive, with the {@code -TAB} algorithm; ForceTab passes over the
  * first two. An axis none of them describes is given the linear description, which makes the
  * pixel to intermediate world Mapping non-linear, so that {@link FitsMakeIntWorld#makeIntWorld}
- * rejects it. The {@code -LOG} test needs a MathMap and the {@code -TAB} description a FitsTable,
- * neither of which this library has, so where C would make one an {@link
+ * rejects it. The {@code -LOG} description needs a MathMap and the {@code -TAB} description a
+ * FitsTable, neither of which this library has, so where C would make one an {@link
  * UnsupportedOperationException} is thrown.
  *
  * <p>Ported from Rust {@code fitschan/fset_to_store/other_axes.rs} and {@code log_axis.rs},
@@ -49,10 +49,10 @@ final class FitsOtherAxes {
      * @param method the calling method, for messages
      * @param cls the class of the object written, for messages
      * @return the Mapping from the current Frame to intermediate world coordinates
-     * @throws UnsupportedOperationException where C would test an axis for the {@code -LOG}
-     *     algorithm (an axis that is not linear, with a CRVAL other than zero, and ForceTab not
-     *     set), which needs MathMap, or describe one with the {@code -TAB} algorithm, which needs
-     *     FitsTable
+     * @throws UnsupportedOperationException where C would describe an axis with the {@code -LOG}
+     *     algorithm (an axis that is not linear but whose logarithm is, with a CRVAL other than
+     *     zero, and ForceTab not set), which needs MathMap, or with the {@code -TAB} algorithm,
+     *     which needs FitsTable
      */
     static Mapping otherAxes(
             FitsChan fc,
@@ -176,19 +176,23 @@ final class FitsOtherAxes {
      * output is logarithmic in the pixel coordinates over the box from {@code lbndP} to {@code
      * ubndP}, or null if it is not or {@code crval} is zero.
      *
-     * <p>C tests whether the logarithm of the output, which it computes with a MathMap, is linear;
-     * this library has no MathMap.
+     * <p>As C does, the output is logarithmic if its logarithm, computed by the MathMap C makes
+     * here ({@link FitsLogMap}), is linear by {@link FitsIsMapLinear#isMapLinear}.
      *
-     * @return null if {@code crval} is zero
-     * @throws UnsupportedOperationException for any other {@code crval}, where C makes the MathMap,
-     *     which needs MathMap
+     * @return null if {@code crval} is zero or the output is not logarithmic
+     * @throws UnsupportedOperationException if the output is logarithmic, where C makes the {@code
+     *     -LOG} Mapping, which holds that MathMap, so needs MathMap
      */
     static Mapping logAxis(Mapping map, int iax, int nwcs, double[] lbndP, double[] ubndP, double crval) {
         if (crval == 0.0) {
             return null;
         }
+        Mapping tmap0 = new CmpMap(map, addUnitMaps(new FitsLogMap(), iax, nwcs), true);
+        if (!FitsIsMapLinear.isMapLinear(tmap0, lbndP, ubndP, iax, null)) {
+            return null;
+        }
         throw new UnsupportedOperationException(
-                "LogAxis(FitsChan): testing world axis " + (iax + 1) + " for the -LOG algorithm needs MathMap");
+                "LogAxis(FitsChan): the -LOG description of world axis " + (iax + 1) + " needs MathMap");
     }
 
     /**

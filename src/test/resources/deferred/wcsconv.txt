@@ -4,7 +4,6 @@
 a20070718_fits-wcs | needs DSBSpecFrame
 sip-3d_fits-wcs | needs SpecFrame
 sip-3d-swap_fits-wcs | needs SpecFrame
-lsst_fits-wcs | needs MathMap
 lsst2_fits-wcs | needs SplineMap
 longslit_fits-wcs | needs SpecFrame
 jan_fits-class_ast | encoding FITS-CLASS
@@ -74,8 +73,6 @@ wave-1d_fits-iraf | needs SpecFrame
 skyspec3d_fits-pc | needs SpecFrame
 skyspec3d-class_native | needs SpecFrame
 skyspec3d-class_fits-class | needs SpecFrame
-offset-sky_fits-wcs | needs MathMap
-offset-sky-pole_fits-wcs | needs MathMap
 vopt-f2w_native | needs SpecFrame
 vopt-f2w_fits-wcs | needs SpecFrame
 wave-f2w_native | needs SpecFrame
