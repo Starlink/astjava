@@ -881,7 +881,28 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: when the image has three or more pixel axes and both celestial pixel axes span one pixel, `CLASSFromStore` transforms pixel (1, 1, 1) with the FrameSet written and stores the celestial result as CRVAL, with CRPIX 1, before its other checks; `astTranN` is given three coordinates whatever the number of pixel and world axes, so a FrameSet with four pixel axes makes the write fail with `AST__NCPIN`.
   It looks up the sizes of those pixel axes in `dim` at the indices of the celestial WCS axes (`fitschan.c` `CLASSFromStore`). **C quirk** (three coordinates for any FrameSet; WCS axis indices into the pixel dimensions).
 - Rust: `class_store_ok` in `fitschan/enc_class.rs` reads the NAXIS cards for the rotation and LONPOLE checks but neither moves the reference point nor transforms anything, so it writes the reference point unchanged and reports no error for four axes.
-- Java: as C (`FitsEncClass`), as far as C goes without a SpecFrame: every FrameSet of this library's classes is refused, as C refuses it, since only a SpecFrame gives SPECSYS.
+- Java: as C (`FitsEncClass`).
+
+### The cards `CLASSFromStore` writes
+
+- C: `CLASSFromStore` writes CRPIX, CRVAL and CTYPE of the first three axes, each loop stopping at a missing value or a `-TAB` axis, and then still writes CDELT, EQUINOX, DATE-OBS (and MJD-OBS over a card the header has), RESTFREQ, IMAGFREQ, OBJECT, LINE, the velocities and the azimuth and elevation before returning 0, leaving the cards for `Write` to remove.
+  Each CTYPE comment is the description's, if it has one.
+  EQUINOX is 1950 for FK4 and 2000 for FK5 when the description has a RADESYS and no equinox.
+  A description of one pixel axis, to which `MakeFitsFrameSet` added celestial axes, is written with NAXIS 3 and NAXIS2 and NAXIS3 of 1.
+  VELO-LSR, VLSR and DELTAV convert the spectral CRVAL and CRVAL plus CDELT, both in Hz, with a SpecFrame matched in the current Frame of the FrameSet written; AZIMUTH and ELEVATIO convert the celestial CRVAL with SkyFrames matched there, and are normalised with the AZEL template SkyFrame (`fitschan.c` `CLASSFromStore`).
+  The pinned C has the fixes the Rust repository's `docs/issues/c-library-quirks.md` lists as upstream aea3090b (a LONPOLE of +180 or -180 degrees is allowed and any other refused, as a66a0cb5) and 17416d33 (the spectral CDELT is scaled to Hz once).
+- Rust: `class_store_ok` in `fitschan/enc_class.rs` checks every value before `write_to_cards` writes any; `write_to_cards` gives every CTYPE the default comment, writes EQUINOX only when the description has one, and leaves NAXIS alone; `write_velocities_from_frameset` takes the frequencies from the cards written, finding the spectral axis by its CTYPE; `write_azel_from_frameset` finds the celestial axes by their CTYPE and normalises with the matched AZEL Frame.
+- Java: as C (`FitsEncClass`).
+
+### `ClassTrans`
+
+- C: `SpecTrans` calls `ClassTrans` for the primary description of a FITS-CLASS header after translating DATE-OBS and before the SAO, NCP, ATF and GLS translations.
+  It reports `AST__BDFTS` when there is neither RESTFRQ nor RESTFREQ, when the spectral CTYPE (of the one of the first three axes that is not celestial, axis 2 when there are none) is not FREQ, ignoring case and trailing spaces, and when that axis has no CRVAL.
+  It writes the CRVAL plus the rest frequency, SPECSYS `SOURCE`, SSYSSRC and ZSOURCE with no comment, and warns (`badval`) when there is no VELO-xxx keyword, assuming LSRK and a velocity of zero.
+  A blank projection code becomes `-GLS`, which the GLS translation does not change to `-SFL`, since it tests the projection code `SpecTrans` took before `ClassTrans` ran.
+  The reference frequency of the radio velocity is a variable set only when the spectral axis has a CTYPE; otherwise it is not initialised, and the recorded outputs of the wcsconv fixtures `class-spec.head` and `class-spec-hel.head`, whose one axis is not axis 2, encode 0 (`fitschan.c` `ClassTrans`). **C quirk** (an uninitialised variable).
+- Rust: `translate_class` in `fitschan/spec_trans.rs` runs after every other translation, and skips what C reports: no rest frequency, a spectral CTYPE other than FREQ (compared after trimming spaces at both ends) and a missing CRVAL; it gives the cards it writes comments.
+- Java: as C (`FitsSpecTrans`); the uninitialised value is 0, as Rust's.
 
 ### Which CTYPE values `WcsSpectral` takes as spectral
 

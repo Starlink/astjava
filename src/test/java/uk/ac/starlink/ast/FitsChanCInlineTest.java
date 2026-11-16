@@ -13,10 +13,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.Fixtures;
+import uk.ac.starlink.ast.testsupport.FreshThread;
 
 /**
  * Translation of Rust {@code tests/test_fitschan_c_inline.rs}: checks made inline in {@code main()}
@@ -462,26 +462,7 @@ class FitsChanCInlineTest {
      */
     @Test
     void azelWritesAsFitsWcs() throws InterruptedException {
-        assertPassesOnFreshThread(FitsChanCInlineTest::azelWritesAsFitsWcsWithEmptyLastTables);
-    }
-
-    /** Runs {@code body} on a new thread, whose LAST tables are empty, and rethrows anything it throws. */
-    private static void assertPassesOnFreshThread(Runnable body) throws InterruptedException {
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        Thread t = new Thread(body, "fresh LAST table");
-        t.setUncaughtExceptionHandler((th, e) -> failure.set(e));
-        t.start();
-        t.join();
-        Throwable e = failure.get();
-        if (e instanceof Error) {
-            throw (Error) e;
-        }
-        if (e instanceof RuntimeException) {
-            throw (RuntimeException) e;
-        }
-        if (e != null) {
-            throw new AssertionError(e);
-        }
+        FreshThread.assertPasses(FitsChanCInlineTest::azelWritesAsFitsWcsWithEmptyLastTables);
     }
 
     private static void azelWritesAsFitsWcsWithEmptyLastTables() {

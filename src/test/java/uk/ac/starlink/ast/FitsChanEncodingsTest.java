@@ -7,12 +7,12 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Translation of Rust {@code tests/test_fitschan_encodings.rs}: the encoding a FitsChan guesses for
- * a header of each encoding, and the FrameSets the FITS-IRAF, FITS-PC and DSS reads give. Each
+ * a header of each encoding, and the FrameSets the FITS-IRAF, FITS-PC, FITS-CLASS and DSS reads give. Each
  * fixture line is given to {@code putFits}, and the values expected are those C gives (probe
  * {@code c2.c} beside the task report).
  *
  * <p>{@code read_dss_produces_frameset} is translated in {@link FitsEncDssTest}. Listed in {@code
- * deferred/rust-tests.txt}: {@code read_class_produces_frameset} (the FITS-CLASS read), {@code
+ * deferred/rust-tests.txt}: {@code
  * freq_log_builds_log_mapping} (a {@code -LOG} spectral axis, which C maps with a MathMap) and
  * {@code grism_builds_grism_mapping} (a {@code -GRI} axis, which C maps with a GrismMap).
  */
@@ -71,6 +71,14 @@ class FitsChanEncodingsTest {
         FrameSet fs = read("wcsconv/inputs/serpens.head", "FITS-IRAF");
         assertEquals(2, fs.getNframe());
         assertEquals(2, fs.getFrame(FrameSet.AST__CURRENT).getNaxes());
+    }
+
+    @Test
+    void readClassProducesFrameSet() {
+        // A spectral axis and two celestial axes.
+        FrameSet fs = read("wcsconv/inputs/class-write.head", "FITS-CLASS");
+        assertEquals(2, fs.getNframe());
+        assertEquals(3, fs.getFrame(FrameSet.AST__CURRENT).getNaxes());
     }
 
     @Test

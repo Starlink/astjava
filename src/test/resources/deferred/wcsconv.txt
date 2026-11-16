@@ -2,21 +2,8 @@
 # <row name> | <reason>
 # Rewritten by WcsconvTest with -Dast.writeDeferred=true.
 lsst2_fits-wcs | needs SplineMap
-jan_fits-class_ast | encoding FITS-CLASS
 polco_native | needs MathMap
 polco2_native | needs MathMap
 freq-log_native | needs MathMap
 grism_native | needs GrismMap
 grism_fits-wcs | needs GrismMap
-class-spec_native | encoding FITS-CLASS
-class-hel_native | encoding FITS-CLASS
-class-noproj_native | encoding FITS-CLASS
-class-write_fits-class | encoding FITS-CLASS
-class-gal_fits-class | needs SpecFrame
-jan_fits-class-rt | encoding FITS-CLASS
-class-arc_fits-class | needs SpecFrame
-class-ait_fits-class | needs SpecFrame
-class-sin_fits-class | needs SpecFrame
-class-sfl_fits-class | needs SpecFrame
-class-olddate_fits-class | needs SpecFrame
-skyspec3d-class_fits-class | needs SpecFrame

@@ -1,56 +1,25 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
-import uk.ac.starlink.ast.testsupport.Deferred;
 
 /**
  * Translation of Rust {@code tests/test_dsbspecframe_read.rs}: a FITS-CLASS header with an IMAGFREQ
  * keyword describes its spectral axis with a DSBSpecFrame, whose IF, DSBCentre and SideBand C's
  * {@code DSBSetUp} (fitschan.c) sets. The values are those C gives reading the same fixtures and
  * picking the spectral axis ({@code astGetC} of DSBCentre, IF and SideBand).
- *
- * <p>A fixture whose read stops at something not available (the FITS-CLASS read, {@code encoding
- * FITS-CLASS}, or a class, {@code needs <Class>}) is listed with that reason in {@link
- * #UNAVAILABLE}, and the list is checked both ways: a listed fixture must stop with the reason
- * listed, and every other one must give C's values.
  */
 class DSBSpecFrameReadTest {
 
-    /** The fixtures whose read stops at something not available, with the reason. */
-    private static final Map<String, String> UNAVAILABLE = unavailableFixtures();
-
-    private static Map<String, String> unavailableFixtures() {
-        Map<String, String> m = new TreeMap<>();
-        m.put("class-write.head", "encoding FITS-CLASS");
-        m.put("jan.fits-class", "encoding FITS-CLASS");
-        return Collections.unmodifiableMap(m);
-    }
-
     /**
      * Checks the DSBSpecFrame read from the wcsconv fixture {@code name} with the FITS-CLASS
-     * encoding, on world axis {@code axis}, against C's values, unless the read stops at
-     * something not available, when the reason must be the one listed for it.
+     * encoding, on world axis {@code axis}, against C's values.
      */
     private static void assertDsb(String name, int axis, String sideBand, double ifGhz, double centre, double tol) {
         FitsChan fc = FitsHeaders.fixture("wcsconv/inputs/" + name);
         fc.setEncoding("FITS-CLASS");
-        FrameSet fs;
-        try {
-            fs = FitsHeaders.readFrameSet(fc);
-        } catch (UnsupportedOperationException e) {
-            String reason = Deferred.unavailableReason(e.getMessage());
-            assertNotNull(reason, e.getMessage());
-            assertEquals(UNAVAILABLE.get(name), reason, name);
-            return;
-        }
-        assertFalse(UNAVAILABLE.containsKey(name), name + " reads, though listed as " + UNAVAILABLE.get(name));
+        FrameSet fs = FitsHeaders.readFrameSet(fc);
         Frame dsb = fs.pickAxes(1, new int[] {axis}, null);
         assertEquals("DSBSpecFrame", dsb.astClass());
         assertEquals(sideBand, dsb.getC("SideBand"), "SideBand");

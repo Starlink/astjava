@@ -9,12 +9,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
+import uk.ac.starlink.ast.testsupport.FreshThread;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
 /**
@@ -31,9 +31,9 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * tools/oracle_fixtures/fitschan_encodings_probe.c}.
  *
  * <p>Every encoding's column runs. A write that stops for want of a class or an encoding this
- * library does not have (a FITS-CLASS write that {@link FitsEncClass#classFromStore} would accept
- * gives {@code needs SpecFrame}) is in {@link #EXCLUDED}, by header and encoding, with the reason
- * it gives, measured, so the list is checked both ways; the header's other writes are compared.
+ * library does not have would be in {@link #EXCLUDED}, by header and encoding, with the reason it
+ * gives, measured, so the list is checked both ways; the header's other writes are compared. No
+ * write stops so.
  */
 class FitsChanEncodingsOracleTest {
 
@@ -44,21 +44,7 @@ class FitsChanEncodingsOracleTest {
     private static final Map<String, String> EXCLUDED = excludedCases();
 
     private static Map<String, String> excludedCases() {
-        Map<String, String> m = new LinkedHashMap<>();
-        // C's CLASSFromStore accepts these descriptions and makes a SpecFrame to find the VELO-LSR
-        // value, which FitsEncClass refuses.
-        for (String name : Arrays.asList(
-                "freq_cube",
-                "class_cube",
-                "class_lonpole_180",
-                "class_new_epoch",
-                "source_zsource",
-                "topocent",
-                "velolsr_late",
-                "velolsr_dup")) {
-            m.put(name + " FITS-CLASS", "needs SpecFrame");
-        }
-        return Collections.unmodifiableMap(m);
+        return Collections.emptyMap();
     }
 
     /**
@@ -168,8 +154,20 @@ class FitsChanEncodingsOracleTest {
         return new Written(ret, ncard, cards, names);
     }
 
+    /**
+     * The probe makes every case's writes in order in one process, and the FITS-CLASS writes
+     * convert the reference point to azimuth and elevation with the LAST from SkyFrame's tables of values
+     * already computed, which the earlier cases' conversions fill; the tables are kept per thread,
+     * so the writes run in the probe's order on a new thread, whose tables are empty, as the
+     * probe's were.
+     */
     @Test
-    void writesMatchC() {
+    void writesMatchC() throws InterruptedException {
+        FreshThread.assertPasses(FitsChanEncodingsOracleTest::compareWrites);
+    }
+
+    /** Every case's writes, in the probe's order, compared with C's. */
+    private static void compareWrites() {
         List<String> failed = new ArrayList<>();
         int run = 0;
         for (JsonNode c : ProbeData.load("fitschan_encodings").get("CASES")) {

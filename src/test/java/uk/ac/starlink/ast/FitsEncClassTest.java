@@ -10,18 +10,18 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * C's {@code CLASSFromStore}, which writes FITS-CLASS cards, as far as this library reaches it:
- * the checks it makes before it writes, which refuse every FrameSet without a SpecFrame, since
- * only a SpecFrame gives the description a SPECSYS; and the tests of Rust {@code
- * fitschan/enc_class.rs} that need no SpecFrame.
+ * Translation of the unit tests of Rust {@code fitschan/enc_class.rs}: C's {@code ClassTrans},
+ * which translates a FITS-CLASS header for a read, and {@code CLASSFromStore}, which writes one.
  *
- * <p>Rust's {@code write_class_subtracts_restfreq} and {@code write_class_sfl_to_gls} write a
- * description holding SPECSYS and a rest frequency; C's {@code CLASSFromStore} then makes a
- * SpecFrame for the VELO-LSR card, so they are translated to that ({@link
- * #aDescriptionClassCanHoldNeedsSpecFrame}). The other reads of FITS-CLASS headers and {@code
- * round_trip_class} need C's {@code ClassTrans}, part of the FITS-CLASS read, which is not
- * available. The FrameSets with a FREQ axis but no SpecFrame are C probe {@code p2.c}'s (beside
- * the task report).
+ * <p>The reads translate the header as a FITS-CLASS read does ({@link FitsSpecTrans#specTrans})
+ * and make the description C's {@code WcsToStore} makes of it; Rust's {@code
+ * read_class_spatial_axes_unchanged}, {@code read_class_equinox_and_radesys} and {@code
+ * read_class_mjdobs} make it from the untranslated header, as Rust does. The writes give {@code
+ * CLASSFromStore} the FrameSet it takes the VELO-LSR and AZIMUTH values from: for Rust's writes, a
+ * FrameSet with a plain Frame, from which C finds neither. The values are those of C's arithmetic
+ * in {@code ClassTrans} and {@code CLASSFromStore}; the wcsconv FITS-CLASS rows compare whole
+ * headers with C's. The FrameSets with a FREQ axis but no SpecFrame are C probe {@code p2.c}'s
+ * (phase 3).
  */
 class FitsEncClassTest {
 
@@ -71,41 +71,237 @@ class FitsEncClassTest {
         assertEquals(52413.59, classStore().mjdobs);
     }
 
-    @Test
-    void aDescriptionClassCanHoldNeedsSpecFrame() {
-        // The descriptions of Rust's write_class_subtracts_restfreq (RA/DEC TAN) and
-        // write_class_sfl_to_gls (galactic SFL at the origin): every check of CLASSFromStore
-        // passes, and C then makes a SpecFrame to find the VELO-LSR value.
-        String[][] cases = {{"RA---TAN", "DEC--TAN", "40.738", "62.933"}, {"GLON-SFL", "GLAT-SFL", "0.0", "0.0"}};
-        for (String[] c : cases) {
-            FitsPlaneStores stores = new FitsPlaneStores(3);
-            FitsStore store = stores.version(' ', 3);
-            store.ctype[0] = "FREQ";
-            store.crval[0] = 0.110201354300e12;
-            store.crpix[0] = 512.5;
-            store.cdelt[0] = 39062.5;
-            store.ctype[1] = c[0];
-            store.crval[1] = Double.parseDouble(c[2]);
-            store.crpix[1] = 0.5;
-            store.cdelt[1] = -0.01;
-            store.ctype[2] = c[1];
-            store.crval[2] = Double.parseDouble(c[3]);
-            store.crpix[2] = 0.5;
-            store.cdelt[2] = 0.01;
-            store.restfrq = 0.110201354300e12;
-            store.radesys = "FK5";
-            store.equinox = 2000.0;
-            store.specsys = "SOURCE";
-            store.cunit[0] = "Hz";
-            FrameSet fs = new FrameSet(new Frame(3));
-            double[] dim = {AstObject.AST__BAD, AstObject.AST__BAD, AstObject.AST__BAD};
-            UnsupportedOperationException e = assertThrows(
-                    UnsupportedOperationException.class,
-                    () -> FitsEncClass.classFromStore(new FitsChan(), stores, fs, dim, "astWrite", "FitsChan"));
-            assertTrue(e.getMessage().endsWith("needs SpecFrame"), e.getMessage());
-            store.specsys = null;
-            assertFalse(FitsEncClass.classFromStore(new FitsChan(), stores, fs, dim, "astWrite", "FitsChan"), c[0]);
+    /**
+     * The primary description C's {@code WcsToStore} makes of {@code header} translated as a
+     * FITS-CLASS read translates it.
+     */
+    private static FitsStore translated(String header) {
+        FitsCardList trans = FitsSpecTrans.specTrans(
+                FitsCardList.fromHeader(header),
+                FitsChan.Encoding.FITS_CLASS,
+                new FitsSpecTrans.TransAttrs(),
+                new FitsSpecTrans.TransWarnings(),
+                new FitsWarnings());
+        return FitsWcsKeywords.extractWcsKeywordsWithAlts(trans).primary;
+    }
+
+    /** {@link #CLASS_HEADER} with its spatial and velocity cards replaced as {@code edits} gives. */
+    private static String classHeader(String... edits) {
+        String h = CLASS_HEADER;
+        for (int i = 0; i < edits.length; i += 2) {
+            h = h.replace(edits[i], edits[i + 1]);
         }
+        return h;
+    }
+
+    @Test
+    void readClassOffsetFrequency() {
+        // CRVAL1 is 0, an offset from RESTFREQ, so the frequency is RESTFREQ.
+        assertEquals(0.110201354300e12, translated(CLASS_HEADER).crval[0], 1.0);
+    }
+
+    @Test
+    void readClassWithNonzeroOffset() {
+        FitsStore store = translated(classHeader(
+                "CRVAL1  =  0.000000000000E+000",
+                "CRVAL1  =  1.000000000000E+006",
+                "RADESYS = 'FK5     '\nEQUINOX =               2000.0\nSPECSYS = 'SOURCE  '\n",
+                "",
+                "MJD-OBS =            52413.59\n",
+                ""));
+        assertEquals(0.110201354300e12 + 1.0e6, store.crval[0], 1.0);
+    }
+
+    @Test
+    void readClassGlsToSfl() {
+        FitsStore store = translated(classHeader("RA---TAN", "GLON-GLS", "DEC--TAN", "GLAT-GLS"));
+        assertEquals("GLON-SFL", store.ctype[1]);
+        assertEquals("GLAT-SFL", store.ctype[2]);
+    }
+
+    @Test
+    void readClassSsyssrcFromVeloLsr() {
+        FitsStore store = translated(CLASS_HEADER);
+        assertEquals("SOURCE", store.specsys);
+        assertEquals("LSRK", store.ssyssrc);
+    }
+
+    @Test
+    void readClassSsyssrcFromVeloHel() {
+        FitsStore store = translated(classHeader("VELO-LSR", "VELO-HEL", "SPECSYS = 'SOURCE  '\n", ""));
+        assertEquals("SOURCE", store.specsys);
+        assertEquals("BARYCENT", store.ssyssrc);
+    }
+
+    /**
+     * The description of Rust's {@code write_class_subtracts_restfreq} and {@code
+     * write_class_sfl_to_gls}: a FREQ axis at the rest frequency and celestial axes {@code lontype}
+     * and {@code lattype} with reference point ({@code lon}, {@code lat}).
+     */
+    private static FitsPlaneStores writeStores(String lontype, String lattype, double lon, double lat) {
+        FitsPlaneStores stores = new FitsPlaneStores(3);
+        FitsStore store = stores.version(' ', 3);
+        store.ctype[0] = "FREQ";
+        store.crval[0] = 0.110201354300e12;
+        store.crpix[0] = 512.5;
+        store.cdelt[0] = 39062.5;
+        store.ctype[1] = lontype;
+        store.crval[1] = lon;
+        store.crpix[1] = 0.5;
+        store.cdelt[1] = -0.01;
+        store.ctype[2] = lattype;
+        store.crval[2] = lat;
+        store.crpix[2] = 0.5;
+        store.cdelt[2] = 0.01;
+        store.restfrq = 0.110201354300e12;
+        store.specsys = "SOURCE";
+        store.cunit[0] = "Hz";
+        return stores;
+    }
+
+    /** The image dimensions of a FitsChan without NAXISi cards. */
+    private static double[] unknownDims() {
+        return new double[] {AstObject.AST__BAD, AstObject.AST__BAD, AstObject.AST__BAD};
+    }
+
+    @Test
+    void writeClassSubtractsRestfreq() {
+        FitsPlaneStores stores = writeStores("RA---TAN", "DEC--TAN", 40.738, 62.933);
+        stores.get(' ').radesys = "FK5";
+        stores.get(' ').equinox = 2000.0;
+        FitsChan fc = new FitsChan();
+        assertTrue(FitsEncClass.classFromStore(
+                fc, stores, new FrameSet(new Frame(3)), unknownDims(), "astWrite", "FitsChan"));
+        assertEquals(0.0, fc.getFitsF("CRVAL1"), 1.0);
+        assertEquals(40.738, fc.getFitsF("CRVAL2"), 1e-10);
+    }
+
+    @Test
+    void writeClassSflToGls() {
+        // An SFL projection at the origin, the only one FITS-CLASS can hold, is written with the
+        // older code GLS.
+        FitsChan fc = new FitsChan();
+        assertTrue(FitsEncClass.classFromStore(
+                fc,
+                writeStores("GLON-SFL", "GLAT-SFL", 0.0, 0.0),
+                new FrameSet(new Frame(3)),
+                unknownDims(),
+                "astWrite",
+                "FitsChan"));
+        assertEquals("GLON-GLS", fc.getFitsS("CTYPE2"));
+        assertEquals("GLAT-GLS", fc.getFitsS("CTYPE3"));
+    }
+
+    @Test
+    void aDescriptionWithoutSpecsysIsRefused() {
+        FitsPlaneStores stores = writeStores("RA---TAN", "DEC--TAN", 40.738, 62.933);
+        stores.get(' ').specsys = null;
+        assertFalse(FitsEncClass.classFromStore(
+                new FitsChan(), stores, new FrameSet(new Frame(3)), unknownDims(), "astWrite", "FitsChan"));
+    }
+
+    /** A FitsPlaneStores whose primary description has the values of {@code st} CLASSFromStore uses. */
+    private static FitsPlaneStores storesOf(FitsStore st) {
+        FitsPlaneStores stores = new FitsPlaneStores(3);
+        FitsStore out = stores.version(' ', 3);
+        for (int i = 0; i < 3; i++) {
+            out.ctype[i] = st.ctype[i];
+            out.crval[i] = st.crval[i];
+            out.crpix[i] = st.crpix[i];
+            out.cdelt[i] = st.cdelt[i];
+            out.cunit[i] = st.cunit[i];
+        }
+        out.specsys = st.specsys;
+        out.restfrq = st.restfrq;
+        out.radesys = st.radesys;
+        out.equinox = st.equinox;
+        out.mjdobs = st.mjdobs;
+        return stores;
+    }
+
+    @Test
+    void roundTripClass() {
+        // Read, written and read again, both reads translated as a FITS-CLASS read is. The header
+        // gives no CUNIT1; a description made from a FrameSet has the SpecFrame's unit, which
+        // FITS-CLASS needs.
+        FitsStore store = translated(CLASS_HEADER);
+        store.cunit[0] = "Hz";
+        FitsChan fc = new FitsChan();
+        assertTrue(FitsEncClass.classFromStore(
+                fc, storesOf(store), new FrameSet(new Frame(3)), unknownDims(), "astWrite", "FitsChan"));
+        FitsStore store2 = translated(String.join("\n", FitsHeaders.foundCards(fc)) + "\n");
+        assertEquals(store.crval[0], store2.crval[0], 1.0);
+        assertEquals(store.crval[1], store2.crval[1], 1e-10);
+    }
+
+    @Test
+    void spectralCdeltIsScaledToHertzOnce() {
+        // CLASSFromStore converts the spectral CRVAL and CDELT of a description in kHz to Hz once,
+        // for the cards and for the VELO-LSR and DELTAV values, so a description in kHz is written
+        // as the same description in Hz is (the fix the pinned C has as 17416d33). The FrameSet,
+        // read from CLASS_HEADER, gives the SpecFrame the velocities are found with.
+        FitsChan in = FitsChan.fromHeader(CLASS_HEADER);
+        in.setEncoding("FITS-CLASS");
+        FrameSet fs = FitsHeaders.readFrameSet(in);
+        List<List<String>> written = new java.util.ArrayList<>();
+        for (String unit : new String[] {"Hz", "kHz"}) {
+            double f = "Hz".equals(unit) ? 1.0 : 1.0e3;
+            FitsPlaneStores stores = writeStores("RA---TAN", "DEC--TAN", 40.738, 62.933);
+            FitsStore st = stores.get(' ');
+            st.crval[0] = 1.1e11 / f;
+            st.cdelt[0] = 39062.5 / f;
+            st.cunit[0] = unit;
+            FitsChan fc = new FitsChan();
+            assertTrue(FitsEncClass.classFromStore(fc, stores, fs, unknownDims(), "astWrite", "FitsChan"), unit);
+            written.add(FitsHeaders.foundCards(fc));
+        }
+        assertEquals(written.get(0), written.get(1));
+        assertTrue(written.get(0).stream().anyMatch(c -> c.startsWith("DELTAV")), String.join("\n", written.get(0)));
+    }
+
+    @Test
+    void aSpectrumWithAReferencePositionIsWrittenAsACube() {
+        // The one-axis FITS-CLASS header class-spec.head, read, given RefRA and RefDec, and
+        // written back as FITS-CLASS: MakeFitsFrameSet adds celestial axes at the reference
+        // position, and CLASSFromStore writes the description as an image of three axes, setting
+        // NAXIS to 3 and putting NAXIS2 and NAXIS3 of 1 after NAXIS1. The cards are C's (C probe
+        // write_set_probe of the task report: astRead, astSet, astWrite to the same FitsChan).
+        FitsChan fc = FitsHeaders.fixture("wcsconv/inputs/class-spec.head");
+        fc.setEncoding("FITS-CLASS");
+        FrameSet fs = FitsHeaders.readFrameSet(fc);
+        fs.set("RefRA=10:00:00,RefDec=20:00:00");
+        assertEquals(1, fc.write(fs));
+        List<String> want = FitsHeaders.padded(
+                "SIMPLE  =                    T / Fits standard",
+                "BITPIX  =                  -32 / Bits per pixel",
+                "NAXIS   =                    3 / Number of dimensions",
+                "NAXIS1  =                 1024 / Spectral axis",
+                "CTYPE1  = 'FREQ    '           / spectral axis is frequency",
+                "CRVAL1  =  -110201350647.34827 / Value at ref. pixel on axis 1",
+                "CDELT1  =   19531.672938506857 / Pixel size",
+                "CRPIX1  =                579.0 / Reference pixel on axis 1",
+                "NAXIS2  =                    1",
+                "NAXIS3  =                    1",
+                "LINE    = '13co10  '           / Line name",
+                "RESTFREQ=       110201354300.0 / Rest frequency",
+                "VELO-LSR=   299792438.17278373 / [m/s] Reference velocity",
+                "CRPIX2  =                  1.0 / Reference pixel on axis 2",
+                "CRPIX3  =                  1.0 / Reference pixel on axis 3",
+                "CRVAL2  =                150.0 / Value at ref. pixel on axis 2",
+                "CRVAL3  =                 20.0 / Value at ref. pixel on axis 3",
+                "CTYPE2  = 'RA---TAN'           / Type of co-ordinate on axis 2", // codespell:ignore
+                "CTYPE3  = 'DEC--TAN'           / Type of co-ordinate on axis 3", // codespell:ignore
+                "CDELT2  = -0.017453292519943295 / Pixel size",
+                "CDELT3  = 0.017453292519943295 / Pixel size",
+                "EQUINOX =               2000.0 / Epoch of reference equinox",
+                "DATE-OBS= '2000-01-01T11:58:55.816' / Date of observation",
+                "OBJECT  = '        '",
+                "VLSR    =   299792438.17278373 / [m/s] Reference velocity",
+                "DELTAV  =  -106.31700652837753 / [m/s] Velocity resolution",
+                "IMAGFREQ=    97250382992.51059 / [Hz] Image frequency",
+                "END");
+        List<String> got = FitsHeaders.foundCards(fc);
+        assertTrue(FitsHeaders.cardsMatchC(got, want), "--- Java\n" + String.join("\n", got));
     }
 
     /**

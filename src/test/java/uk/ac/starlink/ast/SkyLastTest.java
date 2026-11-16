@@ -8,9 +8,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
+import uk.ac.starlink.ast.testsupport.FreshThread;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
 /**
@@ -24,25 +24,6 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * with an empty table as the probe's process did.
  */
 class SkyLastTest {
-
-    /** Runs {@code body} on a new thread and rethrows anything it throws. */
-    private static void assertPassesOnFreshThread(Runnable body) throws InterruptedException {
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        Thread t = new Thread(body, "fresh LAST table");
-        t.setUncaughtExceptionHandler((th, e) -> failure.set(e));
-        t.start();
-        t.join();
-        Throwable e = failure.get();
-        if (e instanceof Error) {
-            throw (Error) e;
-        }
-        if (e instanceof RuntimeException) {
-            throw (RuntimeException) e;
-        }
-        if (e != null) {
-            throw new AssertionError(e);
-        }
-    }
 
     private static SkyFrame sky(String system, double epoch, double obslon) {
         SkyFrame f = new SkyFrame();
@@ -95,7 +76,7 @@ class SkyLastTest {
 
     @Test
     void cachedLastFollowsTheCLibrary() throws InterruptedException {
-        assertPassesOnFreshThread(SkyLastTest::cachedLastSteps);
+        FreshThread.assertPasses(SkyLastTest::cachedLastSteps);
     }
 
     private static void cachedLastSteps() {
@@ -178,7 +159,7 @@ class SkyLastTest {
      */
     @Test
     void aFramesetMemberKeepsItsCachedLast() throws InterruptedException {
-        assertPassesOnFreshThread(SkyLastTest::framesetMemberSteps);
+        FreshThread.assertPasses(SkyLastTest::framesetMemberSteps);
     }
 
     private static void framesetMemberSteps() {

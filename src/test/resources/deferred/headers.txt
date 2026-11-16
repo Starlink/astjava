@@ -1,10 +1,6 @@
 # Fixtures of fixtures/oracle/headers.oracle whose sections do not all match C:
 # <path relative to ast_tester/fixtures> | <reason>
 # Rewritten by TransformOracleTest with -Dast.writeDeferred=true.
-wcsconv/inputs/class-noproj.head | encoding FITS-CLASS
-wcsconv/inputs/class-spec-hel.head | encoding FITS-CLASS
-wcsconv/inputs/class-spec.head | encoding FITS-CLASS
-wcsconv/inputs/class-write.head | encoding FITS-CLASS
 wcsconv/inputs/freq-log.head | needs MathMap
 wcsconv/inputs/grism.head | needs GrismMap
 wcsconv/inputs/polco.head | needs MathMap

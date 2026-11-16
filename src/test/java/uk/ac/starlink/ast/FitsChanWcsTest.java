@@ -15,9 +15,6 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  *
  * <p>The values the Rust test copies from {@code fixtures/oracle/headers.oracle} are read from that
  * file here, with the Rust test's tolerances.
- *
- * <p>Listed in {@code deferred/rust-tests.txt}: {@code jan_class_no_naxis_keyword} and {@code
- * class_noproj_builds_sfl} (the FITS-CLASS encoding).
  */
 class FitsChanWcsTest {
 
@@ -115,6 +112,13 @@ class FitsChanWcsTest {
     }
 
     @Test
+    void janClassNoNaxisKeyword() {
+        // jan.fits-class has CTYPE1 RA, CTYPE2 DEC and CTYPE3 FREQ but no NAXIS: the FITS-CLASS
+        // read takes the axis count from the CRPIX indices.
+        assertEquals(3, readFixture("jan.fits-class").getNin());
+    }
+
+    @Test
     void sipReadDefaultRefitsInverseViaPolytran() {
         // With SipReplace at its default, C replaces the inverse by an astPolyTran fit over three
         // times the image area (fitschan.c:29857-29862), which on this header is good to about
@@ -185,6 +189,27 @@ class FitsChanWcsTest {
                         name + " inverse row " + row + " axis " + (k + 1) + ": got " + got[k] + ", C gives " + want[k]);
             }
         }
+    }
+
+    @Test
+    void classNoprojBuildsSfl() {
+        // class-noproj.head is a FITS-CLASS header whose celestial CTYPEs have no projection code,
+        // which C's ClassTrans makes -GLS. Forward rows 1, 4, 2 and 6 (pixel 1, 512.5, 1024 and
+        // 256.75 on the spectral axis) with Rust's tolerances: 1e-3 Hz on the spectral axis and
+        // 1e-9 radians on the celestial axes; inverse rows 4 and 1 to 1e-6 pixels.
+        FrameSet fs = readFixture("class-noproj.head");
+        OracleSection fwd = FitsHeaders.headersOracle("wcsconv/inputs/class-noproj.head", true);
+        for (int row : new int[] {1, 4, 2, 6}) {
+            double[] got = FitsHeaders.tran(fs, FitsHeaders.oracleIn(fwd, row), true);
+            double[] want = FitsHeaders.oracleOut(fwd, row);
+            for (int k = 0; k < want.length; k++) {
+                double tol = Math.max(k == 0 ? 1e-3 : 1e-9, Math.abs(want[k]) * 1e-12);
+                assertTrue(
+                        Math.abs(got[k] - want[k]) <= tol,
+                        "forward row " + row + " axis " + (k + 1) + ": got " + got[k] + ", C gives " + want[k]);
+            }
+        }
+        checkInverseRows("class-noproj.head", new int[] {4, 1}, 1e-6);
     }
 
     @Test
