@@ -201,6 +201,16 @@ public class CmpFrame extends Frame {
         return new Mapping[] {frame1, frame2};
     }
 
+    /** The first component Frame, the CmpFrame's own (C's {@code frame1}). */
+    final Frame firstFrame() {
+        return frame1;
+    }
+
+    /** The second component Frame, the CmpFrame's own (C's {@code frame2}). */
+    final Frame secondFrame() {
+        return frame2;
+    }
+
     /** The component Frame holding internal axis {@code internal}, numbered from 1. */
     private Frame component(int internal) {
         return internal <= frame1.getNaxes() ? frame1 : frame2;
@@ -342,7 +352,7 @@ public class CmpFrame extends Frame {
     }
 
     /** C's {@code PermAxes} (cmpframe.c), given the permutation numbered from 0. */
-    private void permAxes0(int[] perm0) {
+    void permAxes0(int[] perm0) {
         checkPerm(perm0, "astPermAxes");
         int naxes = getNaxes();
         int[] old = perm.clone();

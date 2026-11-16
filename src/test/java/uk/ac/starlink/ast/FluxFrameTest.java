@@ -29,9 +29,9 @@ import org.junit.jupiter.api.Test;
  *
  * <p>{@code test_fluxframe_equal_same}, {@code test_fluxframe_equal_different_system} and {@code
  * test_fluxframe_equal_different_specval_is_equal} test {@code astEqual}, which this library does
- * not have; the SpecFluxFrame tests of {@code test_fluxframe.rs} need SpecFluxFrame. All are listed
- * in {@code deferred/rust-tests.txt}. {@code system_from_unit_matches_the_c_library} is in {@link
- * FluxUnitSystemOracleTest}.
+ * not have, and are listed in {@code deferred/rust-tests.txt}. The SpecFluxFrame tests of {@code
+ * test_fluxframe.rs} are in {@link SpecFluxFrameTest}, and {@code
+ * system_from_unit_matches_the_c_library} is in {@link FluxUnitSystemOracleTest}.
  */
 class FluxFrameTest {
 
@@ -549,7 +549,7 @@ class FluxFrameTest {
         FluxFrame jy = flux(AstObject.AST__BAD, "Unit=Jy");
         FluxFrame log = flux(AstObject.AST__BAD, "Unit=log(W/m^2/Hz)");
         UnsupportedOperationException e = assertThrows(UnsupportedOperationException.class, () -> jy.convert(log, ""));
-        assertTrue(e.getMessage().startsWith("This conversion of units needs a MathMap"), e.getMessage());
+        assertTrue(e.getMessage().endsWith("needs MathMap"), e.getMessage());
     }
 
     // ------------------------------------------------------------------

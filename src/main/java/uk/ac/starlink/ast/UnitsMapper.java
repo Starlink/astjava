@@ -52,8 +52,8 @@ final class UnitsMapper {
                             + "' (internal AST programming error).");
         }
         String invexp = UnitsToExpr.makeExp(inv, UnitsToExpr.MATHMAP, true);
-        throw new UnsupportedOperationException("This conversion of units needs a MathMap, which is not available"
-                + " (forward \"output_units=" + fwdexp + "\", inverse \"input_units=" + invexp + "\").");
+        throw new UnsupportedOperationException("This conversion of units (forward \"output_units=" + fwdexp
+                + "\", inverse \"input_units=" + invexp + "\") needs MathMap");
     }
 
     /**

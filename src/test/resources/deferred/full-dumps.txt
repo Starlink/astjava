@@ -361,7 +361,6 @@ simplify/unitnormmap_winmap_fwd_merge.simp | needs UnitNormMap
 simplify/unitnormmap_winmap_inv_refused.map | needs UnitNormMap
 simplify/unitnormmap_winmap_inv_refused.simp | needs UnitNormMap
 simplify/xph_inverse_cancel.map | needs XphMap
-specfluxframe_swapped.native | needs SpecFluxFrame
 wcsconv/framesets/freq-log-head.ast | needs MathMap
 wcsconv/framesets/grism-head.ast | needs GrismMap
 wcsconv/framesets/polco-head.ast | needs MathMap

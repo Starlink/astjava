@@ -427,6 +427,18 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: writes the whole comment.
 - Java: as Rust.
 
+### A SpecFluxFrame dump whose components are not a SpecFrame and a FluxFrame
+
+- C: `astLoadSpecFluxFrame` loads the CmpFrame and keeps whatever Frames `FrameA` and `FrameB` hold, which `GetSpecFrame` and `GetFluxFrame` (specfluxframe.c) later cast to a SpecFrame and a FluxFrame.
+- Rust: refuses them with AST__LDERR.
+- Java: as Rust.
+
+### The default Title of a SpecFluxFrame
+
+- C: `GetTitle` (specfluxframe.c) formats "<flux Label> versus <spectral Label>" with `sprintf` into a static 101-character buffer, so Labels longer than 92 characters between them write past it (read from the code, not probed). **C quirk.**
+- Rust: gives the whole Title.
+- Java: as Rust.
+
 ## FitsChan
 
 ### An equals sign in a keyword name is reported as an `astPutFits` error from every method
