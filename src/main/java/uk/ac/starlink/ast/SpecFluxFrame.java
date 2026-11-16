@@ -10,10 +10,10 @@ package uk.ac.starlink.ast;
  * is the FluxFrame's Label, then {@code versus} and the SpecFrame's Label (as {@code Flux density
  * versus Frequency}), and that when it is aligned with another SpecFluxFrame the flux values are
  * converted as the spectral positions they are densities in change, as well as with the flux
- * System and Unit. Converting between SpecFluxFrames whose SpecFrames or FluxFrames differ needs
- * Mappings this library does not have (a RateMap, a MathMap and a TranMap), and throws {@link
- * UnsupportedOperationException}; SpecFluxFrames with equal components convert as C converts
- * them.
+ * System and Unit. Where C converts between SpecFluxFrames whose SpecFrames or FluxFrames differ
+ * it builds Mappings this library does not have (a RateMap, a MathMap and a TranMap), and such a
+ * conversion throws {@link UnsupportedOperationException}; SpecFluxFrames with equal components,
+ * and those C finds no conversion between, behave as in C.
  *
  * <p>Ported from C {@code specfluxframe.c}, with Rust {@code frames/specfluxframe.rs}.
  */
@@ -232,7 +232,7 @@ public class SpecFluxFrame extends CmpFrame {
      *     would make that TranMap, or if comparing them needs a Mapping this library does not
      *     have
      */
-    static Mapping makeSFMapping(SpecFluxFrame target, SpecFluxFrame result) {
+    private static Mapping makeSFMapping(SpecFluxFrame target, SpecFluxFrame result) {
         boolean same = astEqual(target.getSpecFrame(false), result.getSpecFrame(false))
                 && astEqual(target.getFluxFrame(false), result.getFluxFrame(false));
         if (same) {
