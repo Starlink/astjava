@@ -187,6 +187,37 @@ final class CScan {
         return i;
     }
 
+    /** Whether a value holds a character that is not white space, as C's {@code "%*s"} needs. */
+    static boolean hasWord(String value) {
+        for (int i = 0; i < value.length(); i++) {
+            if (!isCSpace(value.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * C's {@code sscanf( value, " %lg %n%*s %n" )} reading all of the value: a number, then one
+     * word after white space. Gives the number and the index of the word, or null.
+     */
+    static double[] numberThenWord(String value) {
+        int n = value.length();
+        Num num = strtod(value, skipSpace(value, 0));
+        if (num == null) {
+            return null;
+        }
+        int off = skipSpace(value, num.end);
+        int i = off;
+        while (i < n && !isCSpace(value.charAt(i))) {
+            i++;
+        }
+        if (i == off) {
+            return null;
+        }
+        return skipSpace(value, i) == n ? new double[] {num.value, off} : null;
+    }
+
     /**
      * {@code sscanf(s, " %lf %n")} consuming the whole string: the value, or null if the string is
      * not one number with optional surrounding white space.

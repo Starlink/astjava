@@ -32,20 +32,20 @@ simplify/cap_cmpperm_resume.map | needs MathMap
 simplify/cap_cmpperm_resume.simp | needs MathMap
 simplify/cap_cmpperm_resume_inv.map | needs MathMap
 simplify/cap_cmpperm_resume_inv.simp | needs MathMap
-simplify/cap_interval_01.map | needs Box, Interval, NullRegion, PointSet, Prism, SpecFrame
-simplify/cap_interval_01.simp | needs Box, Interval, PointSet, SpecFrame
+simplify/cap_interval_01.map | needs Box, Interval, NullRegion, PointSet, Prism
+simplify/cap_interval_01.simp | needs Box, Interval, PointSet
 simplify/cap_lutmap_01.map | needs LutMap, MathMap
 simplify/cap_lutmap_01.simp | needs MathMap
 simplify/cap_mathmap_01.map | needs MathMap
 simplify/cap_matrixmap_04.map | needs ChebyMap
 simplify/cap_normmap_cmpframe.map | needs NormMap
 simplify/cap_normmap_cmpframe.simp | needs NormMap
-simplify/cap_permmap_01.map | needs NormMap, SpecFrame
-simplify/cap_permmap_01.simp | needs NormMap, SpecFrame
-simplify/cap_pointlist_01.map | needs Box, PointList, PointSet, Prism, SpecFrame
-simplify/cap_pointlist_01.simp | needs Box, PointList, PointSet, Prism, SpecFrame
-simplify/cap_pointlist_02.map | needs Interval, PointList, PointSet, Prism, SpecFrame
-simplify/cap_pointlist_02.simp | needs PointList, PointSet, SpecFrame
+simplify/cap_permmap_01.map | needs NormMap
+simplify/cap_permmap_01.simp | needs NormMap
+simplify/cap_pointlist_01.map | needs Box, PointList, PointSet, Prism
+simplify/cap_pointlist_01.simp | needs Box, PointList, PointSet, Prism
+simplify/cap_pointlist_02.map | needs Interval, PointList, PointSet, Prism
+simplify/cap_pointlist_02.simp | needs PointList, PointSet
 simplify/cap_poly_bend_allowed.map | needs Box, MathMap, PointSet, Polygon
 simplify/cap_poly_bend_allowed.simp | needs Box, MathMap, PointSet, Polygon
 simplify/cap_poly_bent_edges.map | needs Box, MathMap, PointSet, Polygon
@@ -54,8 +54,8 @@ simplify/cap_poly_unc_frame.map | needs Box, PointSet, Polygon
 simplify/cap_poly_unc_frame.simp | needs Box, PointSet, Polygon
 simplify/cap_restricted_component_flags.map | needs MathMap
 simplify/cap_restricted_component_flags.simp | needs MathMap
-simplify/cap_slamap_02.map | needs Box, PointSet, SpecFrame
-simplify/cap_slamap_02.simp | needs Box, PointSet, Polygon, Prism, SpecFrame
+simplify/cap_slamap_02.map | needs Box, PointSet
+simplify/cap_slamap_02.simp | needs Box, PointSet, Polygon, Prism
 simplify/cap_slamap_07.map | needs Box, Circle, CmpRegion, PointSet
 simplify/cap_slamap_07.simp | needs NullRegion
 simplify/cap_specmap_02.map | needs LutMap
@@ -63,14 +63,14 @@ simplify/cap_specmap_02.simp | needs LutMap
 simplify/cap_specmap_09.map | needs LutMap
 simplify/cap_specmap_14.map | needs MathMap
 simplify/cap_specmap_14.simp | needs MathMap
-simplify/cap_timemap_02.map | needs Box, Interval, PointSet, SpecFrame, StcResourceProfile
-simplify/cap_timemap_02.simp | needs Box, Interval, PointSet, SpecFrame, StcResourceProfile
+simplify/cap_timemap_02.map | needs Box, Interval, PointSet, StcResourceProfile
+simplify/cap_timemap_02.simp | needs Box, Interval, PointSet, StcResourceProfile
 simplify/cap_unitnormmap_01.map | needs UnitNormMap
 simplify/cap_unitnormmap_01.simp | needs UnitNormMap
 simplify/cap_xphmap_01.map | needs XphMap
 simplify/cap_xphmap_02.map | needs XphMap
 simplify/cap_xphmap_02.simp | needs XphMap
-simplify/cap_zoommap_04.map | needs Box, MathMap, PointList, PointSet, SpecFrame
+simplify/cap_zoommap_04.map | needs Box, MathMap, PointList, PointSet
 simplify/cap_zoommap_04.simp | needs Box, PointList, PointSet
 simplify/cefit_circle_conformal.map | needs Circle, PointSet
 simplify/cefit_circle_conformal.simp | needs Circle, PointSet
@@ -374,69 +374,21 @@ simplify/unitnormmap_winmap_inv_refused.map | needs UnitNormMap
 simplify/unitnormmap_winmap_inv_refused.simp | needs UnitNormMap
 simplify/xph_inverse_cancel.map | needs XphMap
 wcsconv/framesets/a20070718_00010_02_cube-ast.ast | needs DSBSpecFrame
-wcsconv/framesets/alt-spectral-head.ast | needs SpecFrame
-wcsconv/framesets/awav-a2f-head.ast | needs SpecFrame
-wcsconv/framesets/axes-swap-head.ast | needs SpecFrame
-wcsconv/framesets/beta-frq-head.ast | needs SpecFrame
-wcsconv/framesets/cd-cross-head.ast | needs SpecFrame
-wcsconv/framesets/class-ait-head.ast | needs SpecFrame
-wcsconv/framesets/class-arc-head.ast | needs SpecFrame
-wcsconv/framesets/class-gal-head.ast | needs SpecFrame
 wcsconv/framesets/class-noproj-head.ast | needs DSBSpecFrame
-wcsconv/framesets/class-olddate-head.ast | needs SpecFrame
-wcsconv/framesets/class-sfl-head.ast | needs SpecFrame
-wcsconv/framesets/class-sin-head.ast | needs SpecFrame
 wcsconv/framesets/class-spec-head.ast | needs DSBSpecFrame
 wcsconv/framesets/class-spec-hel-head.ast | needs DSBSpecFrame
 wcsconv/framesets/class-write-head.ast | needs DSBSpecFrame
-wcsconv/framesets/crota-3d-head.ast | needs SpecFrame
-wcsconv/framesets/cube-reorder-head.ast | needs SpecFrame
-wcsconv/framesets/degen-wcsaxes-head.ast | needs SpecFrame
-wcsconv/framesets/ener-vel-head.ast | needs SpecFrame
-wcsconv/framesets/fits-pc-alt-head.ast | needs SpecFrame
-wcsconv/framesets/fits-pc-unit-head.ast | needs SpecFrame
-wcsconv/framesets/freq-f2w-head.ast | needs SpecFrame
-wcsconv/framesets/freq-ghz-bary-head.ast | needs SpecFrame
-wcsconv/framesets/freq-log-head.ast | needs MathMap, SpecFrame
-wcsconv/framesets/freq-pixel3d-head.ast | needs SpecFrame
-wcsconv/framesets/freq-wav-head.ast | needs SpecFrame
-wcsconv/framesets/grism-head.ast | needs GrismMap, SpecFrame
+wcsconv/framesets/freq-log-head.ast | needs MathMap
+wcsconv/framesets/grism-head.ast | needs GrismMap
 wcsconv/framesets/jan-fits-class.ast | needs DSBSpecFrame
-wcsconv/framesets/longslit-fits-pc.ast | needs SpecFrame
-wcsconv/framesets/multi-wcs-spec-head.ast | needs SpecFrame
 wcsconv/framesets/polco-head.ast | needs MathMap
 wcsconv/framesets/polco2-head.ast | needs MathMap
-wcsconv/framesets/restfreq-ghz-head.ast | needs SpecFrame
-wcsconv/framesets/restfreq-mhz-head.ast | needs SpecFrame
-wcsconv/framesets/sip-3d-head.ast | needs SpecFrame
-wcsconv/framesets/sip-3d-swap-head.ast | needs SpecFrame
-wcsconv/framesets/skyspec3d-class-head.ast | needs SpecFrame
-wcsconv/framesets/skyspec3d-head.ast | needs SpecFrame
-wcsconv/framesets/specflux-head.ast | needs SpecFrame
-wcsconv/framesets/ssysobs-head.ast | needs SpecFrame
-wcsconv/framesets/velo-aips-head.ast | needs SpecFrame
-wcsconv/framesets/velo-vel-head.ast | needs SpecFrame
-wcsconv/framesets/vopt-f2w-head.ast | needs SpecFrame
-wcsconv/framesets/vopt-geo-head.ast | needs SpecFrame
-wcsconv/framesets/vopt-wav-head.ast | needs SpecFrame
-wcsconv/framesets/vrad-lsrd-head.ast | needs SpecFrame
-wcsconv/framesets/vrad-v2f-head.ast | needs SpecFrame
-wcsconv/framesets/vrad-wav-head.ast | needs SpecFrame
-wcsconv/framesets/wave-1d-head.ast | needs SpecFrame
-wcsconv/framesets/wave-f2w-head.ast | needs SpecFrame
-wcsconv/framesets/wave-w2f-head.ast | needs SpecFrame
-wcsconv/framesets/wavn-frq-head.ast | needs SpecFrame
-wcsconv/framesets/zero-cdelt-head.ast | needs SpecFrame
-wcsconv/framesets/zopt-frq-head.ast | needs SpecFrame
 programs/testcmpmap/splittest1.ast | needs LutMap
 programs/testfitschan/sparse.ast | needs DSBSpecFrame, LutMap
 programs/testmocchan/backcompat_json.ast | needs MocChan
 programs/testmocchan/backcompat_string.ast | needs MocChan
 programs/testplot3d/plot3d-test1.ast | needs DSBSpecFrame
-programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, PointList, PointSet, Prism, SpecFrame
+programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, PointList, PointSet, Prism
 serialisation/c_dssmap.ast | needs DssMap
-serialisation/cmpframe.ast | needs SpecFrame
-serialisation/frameset_skyspec.ast | needs SpecFrame
 serialisation/jan-dsb.ast | needs DSBSpecFrame
 serialisation/region_in_cmpframe.ast | needs Box, PointSet
-serialisation/specframe.ast | needs SpecFrame

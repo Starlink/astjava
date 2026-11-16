@@ -9,7 +9,6 @@ longslit_fits-wcs | needs SpecFrame
 jan_fits-class_ast | encoding FITS-CLASS
 polco_native | needs MathMap
 polco2_native | needs MathMap
-specflux_native | needs SpecFrame
 freq-log_native | needs SpecFrame
 freq-f2w_native | needs SpecFrame
 grism_native | needs SpecFrame

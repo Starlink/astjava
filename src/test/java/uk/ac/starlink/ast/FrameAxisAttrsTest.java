@@ -18,11 +18,11 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * one attribute on the first or last axis of an object of each class and reads every attribute of
  * every axis back).
  *
- * <p>The cases for a plain Frame, a SkyFrame, a TimeFrame, a FrameSet holding a SkyFrame (with
- * those of its current Frame, "inner1") and PlainCmpFrame, a CmpFrame of a one-axis and a two-axis
- * plain Frame (with those of its components, "inner1" and "inner2"), run here. The probe's
- * CmpFrame holds a SpecFrame, and its cases, like those of SpecFrame, DSBSpecFrame, FluxFrame,
- * SpecFluxFrame and Circle, are outside the first phase.
+ * <p>The cases for a plain Frame, a SkyFrame, a SpecFrame, a TimeFrame, a FrameSet holding a
+ * SkyFrame (with those of its current Frame, "inner1"), the probe's CmpFrame of a SkyFrame and a
+ * SpecFrame, and PlainCmpFrame, a CmpFrame of a one-axis and a two-axis plain Frame (each with
+ * those of its components, "inner1" and "inner2"), run here. Those of DSBSpecFrame, FluxFrame,
+ * SpecFluxFrame and Circle are out of scope.
  *
  * <p>Digits of an axis is set, read and tested through the attribute string ({@code
  * "Digits(n)"}), as the probe does: for a CmpFrame that goes to the component holding the axis
@@ -32,7 +32,7 @@ class FrameAxisAttrsTest {
 
     /** The classes whose cases run. */
     private static final List<String> CLASSES =
-            Arrays.asList("Frame", "SkyFrame", "TimeFrame", "FrameSet", "PlainCmpFrame");
+            Arrays.asList("Frame", "SkyFrame", "SpecFrame", "TimeFrame", "FrameSet", "CmpFrame", "PlainCmpFrame");
 
     private static SkyFrame icrs() {
         SkyFrame f = new SkyFrame();
@@ -46,10 +46,14 @@ class FrameAxisAttrsTest {
                 return new Frame(2);
             case "SkyFrame":
                 return icrs();
+            case "SpecFrame":
+                return new SpecFrame();
             case "TimeFrame":
                 return new TimeFrame();
             case "FrameSet":
                 return new FrameSet(icrs());
+            case "CmpFrame":
+                return new CmpFrame(icrs(), new SpecFrame());
             case "PlainCmpFrame":
                 return new CmpFrame(new Frame(1), new Frame(2));
             default:
@@ -65,10 +69,10 @@ class FrameAxisAttrsTest {
         if ("FrameSet".equals(cls) && "inner1".equals(whose)) {
             return ((FrameSet) f).getFrame(FrameSet.AST__CURRENT);
         }
-        if ("PlainCmpFrame".equals(cls) && "inner1".equals(whose)) {
+        if (f instanceof CmpFrame && "inner1".equals(whose)) {
             return ((CmpFrame) f).decompose()[0];
         }
-        if ("PlainCmpFrame".equals(cls) && "inner2".equals(whose)) {
+        if (f instanceof CmpFrame && "inner2".equals(whose)) {
             return ((CmpFrame) f).decompose()[1];
         }
         throw new IllegalStateException("a " + cls + " has no Frame " + whose);
@@ -192,8 +196,7 @@ class FrameAxisAttrsTest {
                 failures.add(cls + " \"" + setting + "\" " + whose + " " + attr + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(
-                2096, run, "the Frame, SkyFrame, TimeFrame, FrameSet and PlainCmpFrame cases the C probe recorded");
+        assertEquals(2096 + 80 + 864, run, "the cases of the in-scope classes the C probe recorded");
         assertTrue(failures.isEmpty(), failures.size() + " cases differ:\n" + String.join("\n", failures));
     }
 

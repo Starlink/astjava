@@ -367,6 +367,12 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: raises an error.
 - Java: as C.
 
+### SpecFrame Overlay onto a Frame of another class
+
+- **C quirk**: when the template has its System set, `Overlay` (specframe.c) clears the System and AlignSystem of a copy of the template and overlays the copy; when that changes the copy's System, `ClearSystem` also clears the copy's Title, Label and Symbol, and its Unit unless one was used with the default System, so none of those is overlaid either.
+- Rust: `specframe_overlay` overlays the template itself through `frame_overlay`, which transfers the System only to a result of the template's class, so the Title, Label, Symbol and Unit are overlaid.
+- Java: as C.
+
 ## FitsChan
 
 ### An equals sign in a keyword name is reported as an `astPutFits` error from every method

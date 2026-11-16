@@ -29,10 +29,10 @@ import uk.ac.starlink.ast.internal.pal.Pal;
 public class SpecMap extends Mapping {
 
     /** The speed of light in metres per second, C's {@code AST__C}. */
-    private static final double AST__C = 2.99792458E8;
+    static final double AST__C = 2.99792458E8;
 
     /** Planck's constant in Joule seconds, C's {@code AST__H}. */
-    private static final double AST__H = 6.6260755E-34;
+    static final double AST__H = 6.6260755E-34;
 
     /** The astronomical unit in metres that specmap.c converts au/s to m/s with. */
     private static final double AU = 149.597870E9;

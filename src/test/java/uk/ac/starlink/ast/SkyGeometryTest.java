@@ -19,10 +19,9 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * {@code astIntersect} on a default SkyFrame and on one with its axes swapped, including bad
  * inputs and the degenerate cases C reports as bad.
  *
- * <p>Of {@code cmp_frame_resolve_matches_the_c_library} and {@code
- * cmp_frame_resolve_points_matches_the_c_library}, the cases of kind 1, a CmpFrame of a one-axis
- * Frame and a SkyFrame, run here; those of kind 0, a CmpFrame of a SkyFrame and a SpecFrame, need
- * a SpecFrame, outside the first phase.
+ * <p>{@code cmp_frame_resolve_matches_the_c_library} and {@code
+ * cmp_frame_resolve_points_matches_the_c_library} run their cases of kind 0, a CmpFrame of a
+ * SkyFrame and a SpecFrame, and of kind 1, a CmpFrame of a one-axis Frame and a SkyFrame.
  */
 class SkyGeometryTest {
 
@@ -93,14 +92,12 @@ class SkyGeometryTest {
     }
 
     /**
-     * The probe's CmpFrame of kind 1, a one-axis Frame and a SkyFrame, with axes 1 and 3 swapped
-     * when {@code permuted}; null for kind 0, which holds a SpecFrame.
+     * The probe's CmpFrame of kind 0, a SkyFrame and a SpecFrame, or of kind 1, a one-axis Frame
+     * and a SkyFrame, with axes 1 and 3 swapped when {@code permuted}.
      */
     private static CmpFrame cmp(int kind, boolean permuted) {
-        if (kind == 0) {
-            return null;
-        }
-        CmpFrame f = new CmpFrame(new Frame(1), new SkyFrame());
+        CmpFrame f =
+                kind == 0 ? new CmpFrame(new SkyFrame(), new SpecFrame()) : new CmpFrame(new Frame(1), new SkyFrame());
         if (permuted) {
             f.permAxes(new int[] {3, 2, 1});
         }
@@ -124,9 +121,6 @@ class SkyGeometryTest {
         int ran = 0;
         for (JsonNode c : ProbeData.load("sky_geometry").get("CMP_RESOLVE_CASES")) {
             CmpFrame f = cmp(c.get(0).asInt(), c.get(1).asBoolean());
-            if (f == null) {
-                continue;
-            }
             ran++;
             double[] p4 = new double[3];
             double[] d = f.resolve(point(c.get(2)), point(c.get(3)), point(c.get(4)), p4);
@@ -138,7 +132,7 @@ class SkyGeometryTest {
                         describeCmp(c, 3) + ": got " + Arrays.toString(got) + ", C gives " + Arrays.toString(want));
             }
         }
-        assertEquals(8, ran, "the cases of kind 1");
+        assertEquals(16, ran, "the cases of kinds 0 and 1");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 
@@ -148,9 +142,6 @@ class SkyGeometryTest {
         int ran = 0;
         for (JsonNode c : ProbeData.load("sky_geometry").get("CMP_RESOLVE_POINTS_CASES")) {
             CmpFrame f = cmp(c.get(0).asInt(), c.get(1).asBoolean());
-            if (f == null) {
-                continue;
-            }
             ran++;
             JsonNode pts = c.get(4);
             int npoint = pts.size();
@@ -173,7 +164,7 @@ class SkyGeometryTest {
                 }
             }
         }
-        assertEquals(4, ran, "the cases of kind 1");
+        assertEquals(8, ran, "the cases of kinds 0 and 1");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

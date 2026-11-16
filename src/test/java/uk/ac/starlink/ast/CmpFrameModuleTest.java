@@ -26,9 +26,6 @@ import uk.ac.starlink.ast.internal.pal.Pal;
  * {@code GoodPerm}'s permutation arrays holding axis indices from 0, as C passes them (Rust passes
  * them from 1). Where C's {@code ComponentMatch} fills only the first entries of an axis list (one
  * per result axis), only those are compared.
- *
- * <p>The three {@code overlay_template_*} tests overlay a CmpFrame holding a SpecFrame and are
- * deferred.
  */
 class CmpFrameModuleTest {
 
@@ -552,5 +549,64 @@ class CmpFrameModuleTest {
         assertEquals(cmp.getNaxes(), copy.getNaxes());
         assertEquals(cmp.getEpochMjd(), copy.getEpochMjd());
         assertEquals(cmp.getDomain(), copy.getDomain());
+    }
+
+    // ------------------------------------------------------------------
+    // Overlay (cmpframe.c Overlay)
+    // ------------------------------------------------------------------
+
+    private static SkyFrame skySystem(String system) {
+        SkyFrame f = new SkyFrame();
+        f.setSystem(system);
+        return f;
+    }
+
+    private static SpecFrame freq() {
+        SpecFrame f = new SpecFrame();
+        f.setSystem("FREQ");
+        return f;
+    }
+
+    /**
+     * A CmpFrame template whose components line up with those of a CmpFrame result overlays each
+     * component onto the corresponding one: the SkyFrame takes the template SkyFrame's System and
+     * Title.
+     */
+    @Test
+    void overlayTemplateCleanPartitionCopiesSkyFrameSystem() {
+        SkyFrame skyTemplate = skySystem("GALACTIC");
+        skyTemplate.setTitle("custom-galactic");
+        CmpFrame template = new CmpFrame(skyTemplate, freq());
+        CmpFrame result = new CmpFrame(skySystem("FK5"), freq());
+        template.overlay(new int[] {0, 1, 2}, result);
+        SkyFrame resultSky = assertInstanceOf(SkyFrame.class, result.decompose()[0]);
+        assertEquals("GALACTIC", resultSky.getSystem());
+        assertEquals("custom-galactic", resultSky.getTitle());
+    }
+
+    /**
+     * A CmpFrame template overlaid onto a Frame that is not a CmpFrame overlays each component onto
+     * the whole result, with the axes of the other component marked as none (cmpframe.c {@code
+     * Overlay}).
+     */
+    @Test
+    void overlayTemplateFallbackNonCmpFrameResult() {
+        CmpFrame template = new CmpFrame(skySystem("GALACTIC"), freq());
+        Frame result = new Frame(template.getNaxes());
+        template.overlay(new int[] {0, 1, 2}, result);
+        assertEquals(template.getNaxes(), result.getNaxes());
+    }
+
+    /**
+     * A permuted template whose axes cross the components of the result is overlaid axis by axis
+     * rather than component by component.
+     */
+    @Test
+    void overlayTemplateFallsThroughWhenPartitionUnclean() {
+        CmpFrame template = new CmpFrame(skySystem("GALACTIC"), freq());
+        template.permAxes(new int[] {1, 3, 2});
+        CmpFrame result = new CmpFrame(skySystem("FK5"), freq());
+        template.overlay(new int[] {0, 1, 2}, result);
+        assertEquals(3, result.getNaxes());
     }
 }

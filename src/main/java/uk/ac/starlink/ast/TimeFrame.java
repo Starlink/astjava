@@ -1895,47 +1895,6 @@ public class TimeFrame extends Frame {
         return s;
     }
 
-    /** Whether a value holds a character that is not white space, as C's {@code "%*s"} needs. */
-    private static boolean hasWord(String value) {
-        for (int i = 0; i < value.length(); i++) {
-            if (!CScan.isCSpace(value.charAt(i))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * C's {@code sscanf( value, " %lg %n%*s %n" )} reading all of the value: a number, then one
-     * word after white space. Gives the number and the index of the word, or null.
-     */
-    private static double[] numberThenWord(String value) {
-        int i = 0;
-        int n = value.length();
-        while (i < n && CScan.isCSpace(value.charAt(i))) {
-            i++;
-        }
-        CScan.Num num = CScan.strtod(value, i);
-        if (num == null) {
-            return null;
-        }
-        i = num.end;
-        while (i < n && CScan.isCSpace(value.charAt(i))) {
-            i++;
-        }
-        int off = i;
-        while (i < n && !CScan.isCSpace(value.charAt(i))) {
-            i++;
-        }
-        if (i == off) {
-            return null;
-        }
-        while (i < n && CScan.isCSpace(value.charAt(i))) {
-            i++;
-        }
-        return i == n ? new double[] {num.value, off} : null;
-    }
-
     /** Sets the TimeOrigin from a date, converted to the System (C's {@code SetAttrib}). */
     private void setTimeOriginDate(String value) {
         double mjd;
@@ -1968,16 +1927,16 @@ public class TimeFrame extends Frame {
                         "astSetAttrib(" + astClass() + "): Invalid time scale description \"" + value + "\".");
             }
             setAlignTimeScaleValue(ts);
-        } else if ("clocklat".equals(attrib) && hasWord(value)) {
+        } else if ("clocklat".equals(attrib) && CScan.hasWord(value)) {
             setAttrib("obslat", value);
-        } else if ("clocklon".equals(attrib) && hasWord(value)) {
+        } else if ("clocklon".equals(attrib) && CScan.hasWord(value)) {
             setAttrib("obslon", value);
         } else if ("ltoffset".equals(attrib) && dval != null) {
             setLtOffset(dval);
         } else if ("timeorigin".equals(attrib) && dval != null) {
             setTimeOriginValue(toUnits(getUnit(1), dval, "astSetTimeOrigin"));
-        } else if ("timeorigin".equals(attrib) && numberThenWord(value) != null) {
-            double[] nw = numberThenWord(value);
+        } else if ("timeorigin".equals(attrib) && CScan.numberThenWord(value) != null) {
+            double[] nw = CScan.numberThenWord(value);
             double origin;
             try {
                 origin = toUnits(value.substring((int) nw[1]), nw[0], "astSetTimeOrigin");

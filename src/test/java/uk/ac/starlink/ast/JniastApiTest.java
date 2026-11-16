@@ -56,6 +56,7 @@ class JniastApiTest {
             "SkyAxis",
             "SkyFrame",
             "SlaMap",
+            "SpecFrame",
             "SpecMap",
             "SphMap",
             "TimeFrame",

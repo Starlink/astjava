@@ -11,15 +11,15 @@ import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
 /**
- * Translation of Rust {@code tests/test_spec_use_defs.rs}: what UseDefs=0 changes in a TimeFrame,
- * checked against C ({@code oracle/spec_use_defs.json}, from {@code
+ * Translation of Rust {@code tests/test_spec_use_defs.rs}: what UseDefs=0 changes in a TimeFrame
+ * and in a SpecFrame's Title, checked against C ({@code oracle/spec_use_defs.json}, from {@code
  * tools/oracle_fixtures/spec_use_defs_probe.c}). Picking the axis of a TimeFrame whose TimeScale
  * is not set is refused with {@code AST__NOVAL} when UseDefs is false (timeframe.c {@code
- * SubFrame} and {@code VerifyAttrs}); finding a TimeFrame in one is not.
+ * SubFrame} and {@code VerifyAttrs}); finding a TimeFrame in one is not. A SpecFrame's default
+ * Title leaves out a RestFreq that has not been set (specframe.c {@code GetTitle}).
  *
  * <p>The TimeFrame cases of {@code conversions_match_the_c_library} run here; its SpecFrame and
- * DSBSpecFrame cases, and {@code titles_match_the_c_library}, need a SpecFrame, outside the first
- * phase.
+ * DSBSpecFrame cases convert between SpecFrames, which this class does not yet test.
  */
 class SpecUseDefsTest {
 
@@ -52,6 +52,32 @@ class SpecUseDefsTest {
             return e.getStatus() == AstException.AST__NOVAL ? "Err:Noval" : "Err:other";
         }
         return Double.toString(map.tran1(1, new double[] {230.0}, true)[0]);
+    }
+
+    /** The probe's {@code make} for a SpecFrame: the comma-separated settings applied in order. */
+    private static SpecFrame makeSpec(String settings) {
+        SpecFrame f = new SpecFrame();
+        if (!settings.isEmpty()) {
+            f.set(settings);
+        }
+        return f;
+    }
+
+    @Test
+    void titlesMatchTheCLibrary() {
+        List<String> failures = new ArrayList<>();
+        int ran = 0;
+        for (JsonNode c : ProbeData.load("spec_use_defs").get("TITLES")) {
+            ran++;
+            String settings = c.get(0).asText();
+            String want = c.get(1).asText();
+            String got = makeSpec(settings).getTitle();
+            if (!got.equals(want)) {
+                failures.add("[" + settings + "]: got \"" + got + "\", C gives \"" + want + "\"");
+            }
+        }
+        assertEquals(5, ran, "the cases the C probe recorded");
+        assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 
     @Test

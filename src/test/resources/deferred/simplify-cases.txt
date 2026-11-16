@@ -95,23 +95,23 @@ switchmap_inverse_cancel_distinct_selectors | needs MathMap, SwitchMap
 cap_cmpmap_01 | needs MathMap, RateMap, TranMap
 cap_cmpmap_02 | needs MathMap
 cap_cmpmap_04 | needs MathMap, RateMap, TranMap
-cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism, SpecFrame
+cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism
 cap_lutmap_01 | needs LutMap, MathMap
 cap_mathmap_01 | needs MathMap
 cap_matrixmap_04 | needs ChebyMap
-cap_permmap_01 | needs NormMap, SpecFrame
-cap_pointlist_01 | needs Box, PointList, PointSet, Prism, SpecFrame
-cap_pointlist_02 | needs Interval, PointList, PointSet, Prism, SpecFrame
-cap_slamap_02 | needs Box, PointSet, Polygon, Prism, SpecFrame
+cap_permmap_01 | needs NormMap
+cap_pointlist_01 | needs Box, PointList, PointSet, Prism
+cap_pointlist_02 | needs Interval, PointList, PointSet, Prism
+cap_slamap_02 | needs Box, PointSet, Polygon, Prism
 cap_slamap_07 | needs Box, Circle, CmpRegion, NullRegion, PointSet
 cap_specmap_02 | needs LutMap
 cap_specmap_09 | needs LutMap
 cap_specmap_14 | needs MathMap
-cap_timemap_02 | needs Box, Interval, PointSet, SpecFrame, StcResourceProfile
+cap_timemap_02 | needs Box, Interval, PointSet, StcResourceProfile
 cap_unitnormmap_01 | needs UnitNormMap
 cap_xphmap_01 | needs XphMap
 cap_xphmap_02 | needs XphMap
-cap_zoommap_04 | needs Box, MathMap, PointList, PointSet, SpecFrame
+cap_zoommap_04 | needs Box, MathMap, PointList, PointSet
 neg_tranmap_adjacent_no_merge | needs MathMap, TranMap
 neg_lut_constant | needs LutMap
 neg_math_lone | needs MathMap
