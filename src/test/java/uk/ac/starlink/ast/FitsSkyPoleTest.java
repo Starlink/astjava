@@ -130,8 +130,8 @@ class FitsSkyPoleTest {
         if (want.isNull()) {
             assertNull(got, name);
         } else {
-            // C writes the value to 15 significant digits.
-            assertEquals(want.asDouble(), got, 1e-9, name);
+            // C writes the value to 15 significant digits, and a pole angle is at most 180.
+            assertEquals(want.asDouble(), got, 1e-12, name);
         }
     }
 

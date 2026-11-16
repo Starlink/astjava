@@ -661,7 +661,7 @@ class FitsChanCursorOracleTest {
     private static final Map<String, List<String>> RUNTIME_MATH_CARDS = runtimeMathCards();
 
     /** The relative difference of a value computed with java.lang.Math from C's libm value. */
-    private static final double LIBM_RTOL = 1.0e-13;
+    private static final double LIBM_RTOL = 1.0e-14;
 
     private static Map<String, List<String>> runtimeMathCards() {
         Map<String, List<String>> m = new LinkedHashMap<>();
