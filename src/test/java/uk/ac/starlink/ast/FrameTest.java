@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Test;
  *
  * <p>The parts for a plain Frame, a SkyFrame, a SpecFrame, a TimeFrame, a CmpFrame and a FrameSet
  * holding a SkyFrame are translated here; of {@code
- * spectral_time_and_flux_frames_normalise_the_unit_they_report}, the SpecFrame and TimeFrame
- * parts. The FluxFrame, DSBSpecFrame and Circle parts need classes outside this library so far.
+ * spectral_time_and_flux_frames_normalise_the_unit_they_report}, the SpecFrame, DSBSpecFrame and
+ * TimeFrame parts. The FluxFrame and Circle parts need classes outside this library so far.
  */
 class FrameTest {
 
@@ -60,7 +60,7 @@ class FrameTest {
         assertEquals(timeFrame.getUnit(1), timeFrame.getNormUnit(1), "NormUnit(1) of a default TimeFrame");
     }
 
-    /** A SpecFrame and a TimeFrame normalise the Unit they report, their defaults included. */
+    /** A SpecFrame, a DSBSpecFrame and a TimeFrame normalise the Unit they report, their defaults included. */
     @Test
     void spectralTimeAndFluxFramesNormaliseTheUnitTheyReport() {
         SpecFrame freq = new SpecFrame();
@@ -71,6 +71,9 @@ class FrameTest {
         SpecFrame wavn = new SpecFrame();
         wavn.setSystem("WAVN");
         assertEquals("m**-1", wavn.getNormUnit(1));
+        DSBSpecFrame wave = new DSBSpecFrame();
+        wave.setSystem("WAVE");
+        assertEquals("Angstrom", wave.getNormUnit(1));
 
         TimeFrame time = new TimeFrame();
         time.setSystem("MJD");

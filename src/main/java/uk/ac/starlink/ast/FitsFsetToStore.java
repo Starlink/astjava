@@ -239,12 +239,13 @@ final class FitsFsetToStore {
      * there is none, the Unit is set to the internal units (to degrees for internal radians,
      * converted by a ZoomMap).
      *
-     * <p>C's other changes are for a SpecFrame, which this library lacks: one with a celestial
-     * reference point gains celestial axes, or has the reference point made that of the celestial
-     * axes; and for FITS-CLASS {@code AddEncodingFrame} adds a Frame for the SpecFrame and
-     * SkyFrame.
+     * <p>C's other changes are for a SpecFrame: one with a celestial reference point gains
+     * celestial axes, or has the reference point made that of the celestial axes; and for
+     * FITS-CLASS {@code AddEncodingFrame} adds a Frame for the SpecFrame and SkyFrame. Spectral
+     * axes are not yet written, so a world Frame with a SpecFrame axis is refused.
      *
      * @return the FrameSet, or null if the world Frame holds axes of two SkyFrames
+     * @throws UnsupportedOperationException if the world Frame has a SpecFrame axis
      */
     // C compares the pointers astPrimaryFrame returns: whether two axes are in the same SkyFrame.
     @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
@@ -254,6 +255,12 @@ final class FitsFsetToStore {
         Frame wcsfrm = (Frame) fset.getFrame(iwcs).copy();
         Mapping map = (Mapping) fset.getMapping(ipix, iwcs).copy();
         int nwcs = wcsfrm.getNaxes();
+        for (int iax = 0; iax < nwcs; iax++) {
+            if (wcsfrm.primaryFrame(iax + 1, new int[1]) instanceof SpecFrame) {
+                throw new UnsupportedOperationException(method + "(" + cls + "): the spectral axis " + (iax + 1)
+                        + " of the Frame written needs SpecFrame");
+            }
+        }
 
         // The SkyFrame of the world Frame, which must be its only one, and the Mapping from the
         // internal units of each axis to its Unit.
@@ -456,9 +463,9 @@ final class FitsFsetToStore {
     }
 
     /**
-     * C's {@code SpectralAxes} for a FrameSet of this library, which holds no SpecFrame: no axis is
-     * spectral, nothing is stored, and the Mapping from world to intermediate world coordinates
-     * is a UnitMap passing every axis of the current Frame.
+     * C's {@code SpectralAxes} for a FrameSet with no SpecFrame axis ({@link #makeFitsFrameSet}
+     * refuses one): no axis is spectral, nothing is stored, and the Mapping from world to
+     * intermediate world coordinates is a UnitMap passing every axis of the current Frame.
      */
     static Mapping spectralAxes(FrameSet fs) {
         return new UnitMap(fs.getNout());

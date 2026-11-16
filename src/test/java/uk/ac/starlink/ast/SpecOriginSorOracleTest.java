@@ -21,15 +21,30 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * SpecOrigin is set, and the result's own origin is used instead (specframe.c {@code
  * MakeSpecMapping}).
  *
- * <p>The probe's DSBSpecFrame cases are left to the DSBSpecFrame tests.
+ * <p>The probe's DSBSpecFrames are in the lower sideband with AlignSideBand set and an IF of 4
+ * GHz, and their DSBCentre is the value converted.
  */
 class SpecOriginSorOracleTest {
 
-    /** The probe's Frame: a SpecFrame with its settings, reference position and SpecOrigin. */
-    private static SpecFrame build(String system, boolean offset, JsonNode origin) {
-        SpecFrame f = new SpecFrame();
-        f.set(system + ",StdOfRest=LSRK,Epoch=2005.0");
+    /**
+     * The probe's Frame: a SpecFrame, or a DSBSpecFrame with its DSBCentre, with its settings,
+     * reference position and SpecOrigin.
+     */
+    private static SpecFrame build(String cls, String system, boolean offset, JsonNode origin, double value) {
+        SpecFrame f;
+        if ("DSBSpecFrame".equals(cls)) {
+            f = new DSBSpecFrame();
+            f.set(system + ",StdOfRest=LSRK,Epoch=2005.0,IF=4,SideBand=LSB,AlignSideBand=1");
+        } else if ("SpecFrame".equals(cls)) {
+            f = new SpecFrame();
+            f.set(system + ",StdOfRest=LSRK,Epoch=2005.0");
+        } else {
+            throw new IllegalArgumentException("unexpected class " + cls);
+        }
         f.setRefPos(null, 2.6, 0.35);
+        if (f instanceof DSBSpecFrame) {
+            f.setD("DSBCentre", value);
+        }
         f.setI("AlignSpecOffset", offset ? 1 : 0);
         if (!origin.isNull()) {
             f.setD("SpecOrigin", ProbeData.toDouble(origin));
@@ -91,25 +106,23 @@ class SpecOriginSorOracleTest {
         List<String> failures = new ArrayList<>();
         int ran = 0;
         for (JsonNode c : ProbeData.load("spec_origin_sor").get("CASES")) {
-            if (!"SpecFrame".equals(c.get(0).asText())) {
-                continue;
-            }
             ran++;
+            String cls = c.get(0).asText();
             String system = c.get(1).asText();
             boolean offset = c.get(2).asBoolean();
             JsonNode origin = c.get(3);
             double value = ProbeData.toDouble(c.get(4));
-            SpecFrame f = build(system, offset, origin);
+            SpecFrame f = build(cls, system, offset, origin, value);
             String gotSet = setHelio(f);
             String gotConv = convert(f, origin, value);
             String wantSet = want(c.get(5));
             String wantConv = want(c.get(6));
             if (!same(gotSet, wantSet) || !same(gotConv, wantConv)) {
-                failures.add("[" + system + "] offset=" + offset + " origin=" + origin + ": got (" + gotSet + ", "
-                        + gotConv + "), C gives (" + wantSet + ", " + wantConv + ")");
+                failures.add(cls + " [" + system + "] offset=" + offset + " origin=" + origin + ": got (" + gotSet
+                        + ", " + gotConv + "), C gives (" + wantSet + ", " + wantConv + ")");
             }
         }
-        assertEquals(8, ran, "the SpecFrame cases");
+        assertEquals(16, ran, "the cases the C probe recorded");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 }

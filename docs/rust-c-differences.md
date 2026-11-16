@@ -373,6 +373,22 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `specframe_overlay` overlays the template itself through `frame_overlay`, which transfers the System only to a result of the template's class, so the Title, Label, Symbol and Unit are overlaid.
 - Java: as C.
 
+### Aligning DSBSpecFrames in sidebands sets the target's SideBand
+
+- **C quirk**: to find the observed sideband of the target and of the result, `SubFrame` (dsbspecframe.c) reads the SideBand, sets it to `observed` and sets it back with `astSetSideBand`, so after a conversion with AlignSideBand set on both DSBSpecFrames (or one restoring a FrameSet's integrity) the target's SideBand is set, to the value it had.
+  `Match` then calls the target's `SubFrame` a second time when the target axis belongs to a DSBSpecFrame, although the parent `Match` has made the same call, so the result of the second call is a copy of a target whose SideBand is set.
+- Rust: `DSBSpecFrame::sub_frame` takes the observed sidebands from the sign of the IF without changing either Frame, and `match_template` makes the call once.
+- Java: as C.
+
+### DSBSpecFrame settings and errors
+
+- **C quirk**: `SetAttrib` (dsbspecframe.c) takes any setting that holds the text `dsbcentre=` for a DSBCentre setting, so `Title=dsbcentre=3` fails with AST__ATTIN.
+  `GetLO` reads the DSBCentre for the second line of its AST__ATTIN message after reporting the first, when the getter gives its default, so the message always says the DSBCentre is 3e+10 Hz.
+  Its AST__NOVAL and AST__ATTIN messages name `astGetImagFreq` whichever method calls it, and `ToLSBMapping` and `ToUSBMapping` find the Mapping to topocentric frequency before checking the IF and DSBCentre.
+  The loader refuses a SideBand other than `USB`, `LSB` or `LO`, in that case, with AST__ATTIN.
+- Rust: has no string attribute layer for a DSBSpecFrame; its `lo_freq` message gives the DSBCentre held, `verify_attrs` names `astMatch`, the sideband Mappings check the attributes first, and `from_node` reads the SideBand in any case and ignores one it does not know.
+- Java: as C.
+
 ## FitsChan
 
 ### An equals sign in a keyword name is reported as an `astPutFits` error from every method

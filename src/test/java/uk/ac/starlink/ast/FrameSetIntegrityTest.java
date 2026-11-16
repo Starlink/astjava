@@ -23,11 +23,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * RestoreIntegrity}): it converts the recorded state of the current Frame to its new state with
  * {@code astConvert}, and reports {@code AST__ILOST} when no conversion exists.
  *
- * <p>The probe's FluxFrame, SpecFluxFrame and DSBSpecFrame cases need classes this version does not
- * have and are skipped.
+ * <p>The probe's FluxFrame and SpecFluxFrame cases need classes this version does not have and are
+ * skipped.
  * Every value is compared within libm rounding, which is no wider than the Rust test's comparison.
- * {@code unit_change_leaves_mappings_alone} reads a FrameSet holding a DSBSpecFrame, a LutMap and
- * a SpecMap and is deferred.
+ * {@code unit_change_leaves_mappings_alone} reads a FrameSet holding a LutMap and is deferred.
  */
 class FrameSetIntegrityTest {
 
@@ -40,7 +39,7 @@ class FrameSetIntegrityTest {
     private static final double REF_DEC = 0.5235987755982988;
 
     /** The prefixes of the cases that need a class this version does not have. */
-    private static final List<String> SKIPPED_PREFIXES = Arrays.asList("flux_", "specflux_", "dsb_");
+    private static final List<String> SKIPPED_PREFIXES = Arrays.asList("flux_", "specflux_");
 
     private static boolean skipped(String name) {
         for (String p : SKIPPED_PREFIXES) {
@@ -107,6 +106,10 @@ class FrameSetIntegrityTest {
                 SkyFrame p = sky("System=ICRS");
                 p.permAxes(new int[] {2, 1});
                 return p;
+            case "dsb_usb":
+                DSBSpecFrame d = new DSBSpecFrame();
+                d.set("System=FREQ,Unit=GHz,DSBCentre=230.0,IF=4.0,SideBand=LSB");
+                return d;
             case "time_jd":
             case "time_utc":
             case "time_origin":
@@ -153,6 +156,8 @@ class FrameSetIntegrityTest {
                 return new String[][] {{"TimeScale", "UTC"}};
             case "time_origin":
                 return new String[][] {{"TimeOrigin", "55000.0"}};
+            case "dsb_usb":
+                return new String[][] {{"SideBand", "USB"}};
             default:
                 throw new IllegalArgumentException("no case " + name);
         }
@@ -166,7 +171,7 @@ class FrameSetIntegrityTest {
         if (name.startsWith("time_")) {
             return new double[][] {{0.25, 1.75}};
         }
-        if (name.startsWith("spec_")) {
+        if (name.startsWith("spec_") || name.startsWith("dsb_")) {
             return new double[][] {{230.0, 345.0}};
         }
         if (name.startsWith("cmp_")) {
@@ -239,7 +244,7 @@ class FrameSetIntegrityTest {
                 failures.add(failure);
             }
         }
-        assertEquals(18, checked, "the cases with classes this version has");
+        assertEquals(19, checked, "the cases with classes this version has");
         assertTrue(
                 failures.isEmpty(),
                 failures.size() + " of " + checked + " cases differ from C:\n" + String.join("\n", failures));

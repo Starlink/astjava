@@ -16,16 +16,23 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * tools/oracle_fixtures/spec_use_defs_probe.c}). Picking the axis of a TimeFrame whose TimeScale
  * is not set is refused with {@code AST__NOVAL} when UseDefs is false (timeframe.c {@code
  * SubFrame} and {@code VerifyAttrs}); finding a TimeFrame in one is not. A SpecFrame's default
- * Title leaves out a RestFreq that has not been set (specframe.c {@code GetTitle}).
- *
- * <p>The TimeFrame and SpecFrame cases of {@code conversions_match_the_c_library} run here; its
- * DSBSpecFrame cases are left to the DSBSpecFrame tests.
+ * Title leaves out a RestFreq that has not been set (specframe.c {@code GetTitle}). A change of
+ * sideband between DSBSpecFrames needs their IF and DSBCentre set (dsbspecframe.c {@code GetLO}).
  */
 class SpecUseDefsTest {
 
-    /** The probe's {@code make}: a TimeFrame or SpecFrame with the settings applied. */
+    /** The probe's {@code make}: a TimeFrame, SpecFrame or DSBSpecFrame with the settings applied. */
     private static Frame make(String cls, String settings) {
-        Frame f = "TimeFrame".equals(cls) ? new TimeFrame() : new SpecFrame();
+        Frame f;
+        if ("TimeFrame".equals(cls)) {
+            f = new TimeFrame();
+        } else if ("SpecFrame".equals(cls)) {
+            f = new SpecFrame();
+        } else if ("DSBSpecFrame".equals(cls)) {
+            f = new DSBSpecFrame();
+        } else {
+            throw new IllegalArgumentException("unexpected class " + cls);
+        }
         if (!settings.isEmpty()) {
             f.set(settings);
         }
@@ -86,9 +93,6 @@ class SpecUseDefsTest {
         int ran = 0;
         for (JsonNode c : ProbeData.load("spec_use_defs").get("CONVERSIONS")) {
             String cls = c.get(0).asText();
-            if ("DSBSpecFrame".equals(cls)) {
-                continue;
-            }
             ran++;
             String target = c.get(1).asText();
             String template = c.get(2).asText();
@@ -111,7 +115,7 @@ class SpecUseDefsTest {
                 failures.add(cls + " [" + target + "] -> [" + template + "]: got " + got + ", C gives " + want);
             }
         }
-        assertEquals(23, ran, "the TimeFrame and SpecFrame cases");
+        assertEquals(28, ran, "the cases the C probe recorded");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 }

@@ -10,24 +10,23 @@ import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
 /**
- * Translation of Rust {@code tests/test_class_attrs.rs}: the class attributes of TimeFrame and
- * SpecFrame checked
- * against C ({@code oracle/class_attrs.json}, from {@code
+ * Translation of Rust {@code tests/test_class_attrs.rs}: the class attributes of TimeFrame,
+ * SpecFrame and DSBSpecFrame checked against C ({@code oracle/class_attrs.json}, from {@code
  * tools/oracle_fixtures/class_attrs_probe.c}). The probe applies each {@code ;}-separated setting
  * to a default object of the class with {@code astSet}, reads every attribute back with {@code
  * astGetC}, {@code astGetI} or {@code astGetD} and its {@code astTest} result, and dumps the
  * object; {@link #make} and {@link #mismatch} do the same through the Java API.
  *
- * <p>The probe's DSBSpecFrame and FluxFrame cases are skipped (out of scope), and the tests {@code
- * dsb_centre_with_no_topocentric_frequency_is_rejected} and {@code flux_frame_domain_is_cleaned}
- * are listed in {@code deferred/rust-tests.txt}; {@code spec_frame_domain_is_cleaned} is in {@link
- * SpecFrameTest}.
+ * <p>The probe's FluxFrame cases are skipped (out of scope), and the test {@code
+ * flux_frame_domain_is_cleaned} is listed in {@code deferred/rust-tests.txt}; {@code
+ * spec_frame_domain_is_cleaned} is in {@link SpecFrameTest} and {@code
+ * dsb_centre_with_no_topocentric_frequency_is_rejected} in {@link DSBSpecFrameTest}.
  */
 class ClassAttrsTest {
 
     /** Whether the probe's class is one this library provides. */
     private static boolean inScope(String cls) {
-        return "TimeFrame".equals(cls) || "SpecFrame".equals(cls);
+        return "TimeFrame".equals(cls) || "SpecFrame".equals(cls) || "DSBSpecFrame".equals(cls);
     }
 
     /** A default object of {@code cls} with each {@code ;}-separated setting applied, as the probe does. */
@@ -37,6 +36,8 @@ class ClassAttrsTest {
             f = new TimeFrame();
         } else if ("SpecFrame".equals(cls)) {
             f = new SpecFrame();
+        } else if ("DSBSpecFrame".equals(cls)) {
+            f = new DSBSpecFrame();
         } else {
             throw new IllegalArgumentException("unexpected class " + cls);
         }
@@ -136,7 +137,7 @@ class ClassAttrsTest {
                 failures.add(what + ": " + e.getMessage());
             }
         }
-        assertEquals(165 + 442, run, "the in-scope cases the C probe recorded");
+        assertEquals(165 + 442 + 132, run, "the in-scope cases the C probe recorded");
         assertTrue(
                 failures.isEmpty(), failures.size() + " of " + run + " cases differ:\n" + String.join("\n", failures));
     }
@@ -165,7 +166,7 @@ class ClassAttrsTest {
                         + "--- C\n" + expected);
             }
         }
-        assertEquals(15 + 26, run, "the in-scope dumps the C probe recorded");
+        assertEquals(15 + 26 + 11, run, "the in-scope dumps the C probe recorded");
         assertTrue(
                 failures.isEmpty(), failures.size() + " of " + run + " dumps differ:\n" + String.join("\n", failures));
     }

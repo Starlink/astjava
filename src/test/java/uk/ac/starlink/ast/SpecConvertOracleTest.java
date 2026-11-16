@@ -21,8 +21,9 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * frequencies, and with different RestFreqs, standards of rest, an Epoch and a reference position
  * on the two sides. Two named cases cover the units check at the end of {@code MakeSpecMapping}.
  *
- * <p>The probe's named cases {@code dsb_*}, {@code spec_vrad_to_dsb} and {@code dsb_found_in_cube}
- * convert DSBSpecFrames and are left to the DSBSpecFrame tests.
+ * <p>The named cases {@code dsb_*}, {@code spec_vrad_to_dsb} and {@code dsb_found_in_cube} convert
+ * DSBSpecFrames, which a DSBSpecFrame template aligns as a SpecFrame unless both have AlignSideBand
+ * set (dsbspecframe.c {@code Match} and {@code SubFrame}), the last in a (sky, DSBSpecFrame) cube.
  */
 class SpecConvertOracleTest {
 
@@ -42,6 +43,47 @@ class SpecConvertOracleTest {
             f.setRefPos(null, REF_RA, REF_DEC);
         }
         return f;
+    }
+
+    /**
+     * The probe's DSBSpecFrame: the SideBand and AlignSideBand given to its constructor, then
+     * FREQ in GHz, RestFreq 230.5 GHz, DSBCentre 230 GHz and IF 4 GHz.
+     */
+    private static DSBSpecFrame dsb(String sideBand, boolean align) {
+        DSBSpecFrame f = new DSBSpecFrame();
+        f.set("SideBand=" + sideBand + (align ? ",AlignSideBand=1" : ""));
+        f.set("System=FREQ,Unit=GHz,RestFreq=230.5,DSBCentre=230.0,IF=4.0");
+        return f;
+    }
+
+    /** The probe's DSBSpecFrame in the lower sideband with System VRAD. */
+    private static DSBSpecFrame dsbVrad() {
+        DSBSpecFrame v = dsb("LSB", false);
+        v.set("System=VRAD");
+        return v;
+    }
+
+    /** The probe's SpecFrame: VRAD with RestFreq 230.5 GHz. */
+    private static SpecFrame specVrad() {
+        SpecFrame s = new SpecFrame();
+        s.set("System=VRAD,RestFreq=230.5");
+        return s;
+    }
+
+    /**
+     * The probe's {@code dsb_found_in_cube}: a DSBSpecFrame template in VRAD found in a (sky,
+     * DSBSpecFrame) cube, and two cube positions transformed to it; null when it is not found.
+     */
+    private static double[] foundInCube() {
+        CmpFrame cube = new CmpFrame(new SkyFrame(), dsb("LSB", false));
+        DSBSpecFrame t = (DSBSpecFrame) dsbVrad().copy();
+        t.set("MaxAxes=3");
+        FrameSet fs = cube.findFrame(t, "");
+        if (fs == null) {
+            return null;
+        }
+        double[][] out = fs.tranP(2, 3, new double[][] {{1.0, 2.0}, {0.5, 0.6}, {230.0, 345.0}}, true, 1);
+        return new double[] {out[0][0], out[0][1]};
     }
 
     /**
@@ -69,7 +111,7 @@ class SpecConvertOracleTest {
         throw new IllegalArgumentException(sys);
     }
 
-    /** The probe's case {@code name}, or null for a case left to the DSBSpecFrame tests. */
+    /** The probe's case {@code name}. */
     private static Outcome run(JsonNode consts, String name) {
         try {
             if (name.startsWith("c")) {
@@ -92,8 +134,20 @@ class SpecConvertOracleTest {
                     b.setC("Unit", "units_same_bad".equals(name) ? "Jy" : "W");
                     return Outcome.of(convert(a, b, freq));
                 }
+                case "dsb_freq_to_vrad":
+                    return Outcome.of(convert(dsb("LSB", false), dsbVrad(), freq));
+                case "dsb_lsb_to_usb":
+                    return Outcome.of(convert(dsb("LSB", false), dsb("USB", false), freq));
+                case "dsb_lsb_to_usb_aligned":
+                    return Outcome.of(convert(dsb("LSB", true), dsb("USB", true), freq));
+                case "dsb_to_spec_vrad":
+                    return Outcome.of(convert(dsb("LSB", false), specVrad(), freq));
+                case "spec_vrad_to_dsb":
+                    return Outcome.of(convert(specVrad(), dsb("LSB", false), pointsOf(consts, "VRAD")));
+                case "dsb_found_in_cube":
+                    return Outcome.of(foundInCube());
                 default:
-                    return null;
+                    throw new IllegalArgumentException("no case " + name);
             }
         } catch (AstException e) {
             return Outcome.error(e);
@@ -150,16 +204,13 @@ class SpecConvertOracleTest {
         for (JsonNode c : consts.get("CASES")) {
             String name = c.get(0).asText();
             Outcome got = run(consts, name);
-            if (got == null) {
-                continue;
-            }
             ran++;
             Outcome want = Outcome.want(c.get(1));
             if (!got.matches(want)) {
                 failures.add(name + ": got " + got.text + ", C gives " + want.text);
             }
         }
-        assertEquals(202, ran, "the SpecFrame cases");
+        assertEquals(208, ran, "the cases the C probe recorded");
         assertTrue(failures.isEmpty(), failures.size() + " cases differ from C:\n" + String.join("\n", failures));
     }
 

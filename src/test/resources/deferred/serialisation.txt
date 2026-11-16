@@ -373,22 +373,14 @@ simplify/unitnormmap_winmap_fwd_merge.simp | needs UnitNormMap
 simplify/unitnormmap_winmap_inv_refused.map | needs UnitNormMap
 simplify/unitnormmap_winmap_inv_refused.simp | needs UnitNormMap
 simplify/xph_inverse_cancel.map | needs XphMap
-wcsconv/framesets/a20070718_00010_02_cube-ast.ast | needs DSBSpecFrame
-wcsconv/framesets/class-noproj-head.ast | needs DSBSpecFrame
-wcsconv/framesets/class-spec-head.ast | needs DSBSpecFrame
-wcsconv/framesets/class-spec-hel-head.ast | needs DSBSpecFrame
-wcsconv/framesets/class-write-head.ast | needs DSBSpecFrame
 wcsconv/framesets/freq-log-head.ast | needs MathMap
 wcsconv/framesets/grism-head.ast | needs GrismMap
-wcsconv/framesets/jan-fits-class.ast | needs DSBSpecFrame
 wcsconv/framesets/polco-head.ast | needs MathMap
 wcsconv/framesets/polco2-head.ast | needs MathMap
 programs/testcmpmap/splittest1.ast | needs LutMap
-programs/testfitschan/sparse.ast | needs DSBSpecFrame, LutMap
+programs/testfitschan/sparse.ast | needs LutMap
 programs/testmocchan/backcompat_json.ast | needs MocChan
 programs/testmocchan/backcompat_string.ast | needs MocChan
-programs/testplot3d/plot3d-test1.ast | needs DSBSpecFrame
 programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, PointList, PointSet, Prism
 serialisation/c_dssmap.ast | needs DssMap
-serialisation/jan-dsb.ast | needs DSBSpecFrame
 serialisation/region_in_cmpframe.ast | needs Box, PointSet

@@ -18,11 +18,11 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * one attribute on the first or last axis of an object of each class and reads every attribute of
  * every axis back).
  *
- * <p>The cases for a plain Frame, a SkyFrame, a SpecFrame, a TimeFrame, a FrameSet holding a
+ * <p>The cases for a plain Frame, a SkyFrame, a SpecFrame, a DSBSpecFrame, a TimeFrame, a FrameSet holding a
  * SkyFrame (with those of its current Frame, "inner1"), the probe's CmpFrame of a SkyFrame and a
  * SpecFrame, and PlainCmpFrame, a CmpFrame of a one-axis and a two-axis plain Frame (each with
- * those of its components, "inner1" and "inner2"), run here. Those of DSBSpecFrame, FluxFrame,
- * SpecFluxFrame and Circle are out of scope.
+ * those of its components, "inner1" and "inner2"), run here. Those of FluxFrame, SpecFluxFrame
+ * and Circle are out of scope.
  *
  * <p>Digits of an axis is set, read and tested through the attribute string ({@code
  * "Digits(n)"}), as the probe does: for a CmpFrame that goes to the component holding the axis
@@ -31,8 +31,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
 class FrameAxisAttrsTest {
 
     /** The classes whose cases run. */
-    private static final List<String> CLASSES =
-            Arrays.asList("Frame", "SkyFrame", "SpecFrame", "TimeFrame", "FrameSet", "CmpFrame", "PlainCmpFrame");
+    private static final List<String> CLASSES = Arrays.asList(
+            "Frame", "SkyFrame", "SpecFrame", "DSBSpecFrame", "TimeFrame", "FrameSet", "CmpFrame", "PlainCmpFrame");
 
     private static SkyFrame icrs() {
         SkyFrame f = new SkyFrame();
@@ -48,6 +48,8 @@ class FrameAxisAttrsTest {
                 return icrs();
             case "SpecFrame":
                 return new SpecFrame();
+            case "DSBSpecFrame":
+                return new DSBSpecFrame();
             case "TimeFrame":
                 return new TimeFrame();
             case "FrameSet":
@@ -196,7 +198,7 @@ class FrameAxisAttrsTest {
                 failures.add(cls + " \"" + setting + "\" " + whose + " " + attr + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(2096 + 80 + 864, run, "the cases of the in-scope classes the C probe recorded");
+        assertEquals(2096 + 80 + 80 + 864, run, "the cases of the in-scope classes the C probe recorded");
         assertTrue(failures.isEmpty(), failures.size() + " cases differ:\n" + String.join("\n", failures));
     }
 

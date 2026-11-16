@@ -35,8 +35,6 @@ class SectionLoadTest {
 
     private static Map<String, String> outOfScope() {
         Map<String, String> m = new LinkedHashMap<>();
-        m.put("dsb_sideband_in_spec", "DSBSpecFrame");
-        m.put("dsb_sideband_placed", "DSBSpecFrame");
         m.put("circle_negate_in_class", "Circle");
         m.put("circle_negate_placed", "Circle");
         m.put("circle_ident_in_region", "Circle");
@@ -114,7 +112,7 @@ class SectionLoadTest {
                 }
             }
         }
-        assertEquals(24, run, "cases run");
+        assertEquals(26, run, "cases run");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 }

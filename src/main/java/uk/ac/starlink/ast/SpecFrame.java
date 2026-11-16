@@ -310,6 +310,41 @@ public class SpecFrame extends Frame {
         usedUnits = usedUnits.clone();
     }
 
+    /**
+     * A deep copy of this SpecFrame, of a subclass, as an instance of the class of {@code obj} (C's
+     * {@code astCastCopy} followed by {@code astCleanAttribs}): a SpecFrame with this Frame's
+     * Object, Mapping, Frame and SpecFrame attributes, or a plain Frame as {@link Frame#castCopy}
+     * gives it.
+     */
+    @Override
+    Frame castCopy(Frame obj) {
+        if (obj.getClass() != SpecFrame.class) {
+            return super.castCopy(obj);
+        }
+        SpecFrame spec = new SpecFrame();
+        spec.castCopyFrom(this);
+        spec.cleanAttribs();
+        return spec;
+    }
+
+    /** Takes the Object, Mapping, Frame and SpecFrame parts of {@code src}, as C's copy of a SpecFrame does. */
+    @Override
+    void castCopyFrom(AstObject src) {
+        super.castCopyFrom(src);
+        SpecFrame f = (SpecFrame) src;
+        alignStdOfRest = f.alignStdOfRest;
+        refDecRadians = f.refDecRadians;
+        refRaRadians = f.refRaRadians;
+        restFreq = f.restFreq;
+        sourceVel = f.sourceVel;
+        sourceVrfCode = f.sourceVrfCode;
+        sourceSys = f.sourceSys;
+        stdOfRest = f.stdOfRest;
+        usedUnits = f.usedUnits.clone();
+        specOrigin = f.specOrigin;
+        alignSpecOffset = f.alignSpecOffset;
+    }
+
     // ------------------------------------------------------------------
     // Systems and standards of rest
     // ------------------------------------------------------------------

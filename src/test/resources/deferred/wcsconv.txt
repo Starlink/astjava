@@ -1,7 +1,7 @@
 # Rows of fixtures/wcsconv/cases.txt that do not match C:
 # <row name> | <reason>
 # Rewritten by WcsconvTest with -Dast.writeDeferred=true.
-a20070718_fits-wcs | needs DSBSpecFrame
+a20070718_fits-wcs | needs SpecFrame
 sip-3d_fits-wcs | needs SpecFrame
 sip-3d-swap_fits-wcs | needs SpecFrame
 lsst2_fits-wcs | needs SplineMap
@@ -41,8 +41,8 @@ crota-3d_native | needs SpecFrame
 axes-swap_native | needs SpecFrame
 cd-cross_native | needs SpecFrame
 class-noproj_native | encoding FITS-CLASS
-a20070718_fits-aips | needs DSBSpecFrame
-a20070718_fits-aips++ | needs DSBSpecFrame
+a20070718_fits-aips | needs SpecFrame
+a20070718_fits-aips++ | needs SpecFrame
 freq-ghz-bary_fits-aips | needs SpecFrame
 freq-ghz-bary_fits-aips++ | needs SpecFrame
 vopt-geo_fits-aips | needs SpecFrame
@@ -62,7 +62,7 @@ class-sin_native | needs SpecFrame
 class-sin_fits-class | needs SpecFrame
 class-sfl_fits-class | needs SpecFrame
 class-olddate_fits-class | needs SpecFrame
-a20070718_fits-iraf | needs DSBSpecFrame
+a20070718_fits-iraf | needs SpecFrame
 skyspec3d_native | needs SpecFrame
 skyspec3d_fits-wcs | needs SpecFrame
 skyspec3d_fits-aips | needs SpecFrame
