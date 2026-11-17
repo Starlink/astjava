@@ -540,6 +540,7 @@ final class FitsWcsRead {
         if (fc.getTabOK() <= 0) {
             return;
         }
+        // store.naxis is C's wcsaxes here: WCSAXES, or the number of pixel axes without it.
         for (int iaxis = 0; iaxis < store.naxis; iaxis++) {
             String ctype = store.ctype[iaxis];
             if (ctype != null && ctype.length() > 4 && ctype.startsWith("-TAB", 4)) {

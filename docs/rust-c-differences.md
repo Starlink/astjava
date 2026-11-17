@@ -330,10 +330,13 @@ The entries are grouped by area, in the order the Java classes were ported.
 
 ### A CmpMap comparison changes a shared component's Invert attribute
 
-- **C quirk**: `Equal` (`cmpmap.c`), without its expanded lists, saves the Invert attribute of the two components it compares, sets each to the value its list gives, and restores them in the same order; when the two are the same object, the value saved second is the one set first, so the object is left with the second list's value.
-  `Simplify` (`cmpmap.c`) compares CmpMaps this way, so simplifying `simplify/brad.map` leaves its WcsMap, which the simplified CmpMap shares, with Invert set to 0 (traced in the pinned library); `brad.simp` records it so.
-- Rust: compares owned copies.
-- Java: the simplification compares Mappings by identity and native text (`astEqual` is not ported), so the WcsMap keeps its Invert attribute and the `brad` row of `simplify/cases.txt` differs from C in that one line; the transformations agree.
+- **C quirk**: `Equal` (`cmpmap.c`), without its expanded lists, saves the Invert attribute of the two components it compares, sets each to the value its list gives, compares, and restores them in the same order.
+  When the two components are the same object, the value it saves for the second is the one it has just set for the first, so the object is left with the first (`this`) list's value instead of its own.
+  `Simplify` (`cmpmap.c`) compares CmpMaps this way, so simplifying `simplify/brad.map` changes the Invert attribute of its WcsMap, which the simplified CmpMap shares, from 1 to 0 (traced in the pinned library), and `brad.simp` records 0.
+  A CmpMap applies each component with the Invert value it recorded when made (`cmpmap.c` `Transform`), so neither the original Mapping nor the simplified one transforms differently: brad.map and brad.simp give the same values in C and in Java.
+  The change is seen by anything that uses the WcsMap on its own afterwards, and in dumps.
+- Rust: compares owned copies, so nothing changes.
+- Java: the simplification compares Mappings by identity and native text (`astEqual` is not ported), so the WcsMap keeps its Invert attribute of 1, which is the right one; the `brad` row of `simplify/cases.txt` differs from C in that one line of the dump.
 
 ## Units
 

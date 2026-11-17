@@ -570,6 +570,8 @@ public class LutMap extends Mapping {
     @Override
     void transformInto(double[][] in, int npoint, boolean forward, double[][] out) {
         validateTransformInto(in, npoint, forward, out);
+        // Where C tests an input for AST__BAD, isBad also takes NaN and the infinities to be bad,
+        // the library's rule for values that are not finite.
         if (effectiveForward(forward)) {
             forwardInto(in[0], npoint, out[0]);
         } else {
