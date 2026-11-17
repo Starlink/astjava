@@ -1067,6 +1067,12 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: as C.
 - Java: as C (`FitsSpectralAxes`, `FitsIsMapLinear`, `FitsFsetToStore.addVersion`).
 
+### The MathMap of `LogAxis`
+
+- C: `LogAxis` makes the MathMap `logs=log(s)`, inverse `s=exp(logs)`, with SimpFI and SimpIF set, tests the axis with it and puts the same MathMap in the `-LOG` Mapping it returns; it tests neither the axis index nor whether the reference value is finite (`fitschan.c` `LogAxis`).
+- Rust: `log_axis` in `fitschan/fset_to_store/log_axis.rs` makes the MathMap without SimpFI and SimpIF, and returns `None` for an axis index out of range or a reference value that is not finite.
+- Java: as C (`FitsOtherAxes.logAxis`).
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails

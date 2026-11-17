@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,19 +29,13 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * gives a FrameSet, nothing or an error, Ncard after the read, the names of the cards left, the
  * number of axes of each Frame, and the current Frame's position for pixel (2, 3, 4, ...).
  *
- * <p>The case in {@link #EXCLUDED} has a {@code -LOG} spectral axis, which C maps with a MathMap;
- * it must still stop there.
+ * <p>A case that needs a class this library lacks would be listed in {@link #EXCLUDED}, and must
+ * still stop there; none does.
  */
 class FitsChanAxisCountOracleTest {
 
     /** The cases that cannot be read, with the reason the read gives. */
-    private static final Map<String, String> EXCLUDED = exclusions();
-
-    private static Map<String, String> exclusions() {
-        Map<String, String> m = new LinkedHashMap<>();
-        m.put("spec_log", "needs MathMap");
-        return m;
-    }
+    private static final Map<String, String> EXCLUDED = Collections.emptyMap();
 
     /** What the port gives for {@code header}, in the form C's transcript is compared in. */
     private static String read(String[] header) {

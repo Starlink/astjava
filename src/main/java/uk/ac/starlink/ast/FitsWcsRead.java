@@ -19,10 +19,10 @@ import java.util.List;
  * to intermediate world coordinate Mapping, then one Mapping over every axis for each class of
  * axis (celestial, spectral, the others) and any {@code -TAB} look-ups, all in series.
  *
- * <p>Spectral axes are described by {@link FitsWcsSpectral}. The Mappings of {@code -LOG} axes
- * (MathMap) and of grism axes (GrismMap) are not available: a header using them makes the read
- * throw {@link UnsupportedOperationException}. A {@code -TAB} axis when TabOK is above zero needs
- * a table, which a FitsChan here holds only when read from a dump (see {@link #tabMapping}).
+ * <p>Spectral axes are described by {@link FitsWcsSpectral}. The Mapping of grism axes (GrismMap)
+ * is not available: a header using one makes the read throw {@link
+ * UnsupportedOperationException}. A {@code -TAB} axis when TabOK is above zero needs a table,
+ * which a FitsChan here holds only when read from a dump (see {@link #tabMapping}).
  *
  * <p>Ported from Rust {@code fitschan/wcs_read.rs} and the FITS-WCS branch of {@code
  * fitschan/mod.rs}'s {@code read}.
@@ -689,25 +689,18 @@ final class FitsWcsRead {
     }
 
     /**
-     * The IWC to WCS Mapping C's {@code WcsOthers} makes for an axis no other stage describes
-     * (fitschan.c:39355-39368): {@code LogWcs} for a CTYPE ending in {@code -LOG}, and otherwise
-     * {@code LinearWcs}, a ShiftMap adding CRVAL, or a UnitMap when CRVAL is zero or absent. A
-     * {@code -LOG} axis with a zero CRVAL has no logarithmic form, and {@code WcsOthers} gives it
-     * a UnitMap.
-     *
-     * @throws UnsupportedOperationException for a {@code -LOG} axis with a non-zero CRVAL, whose
-     *     Mapping needs MathMap
+     * The IWC to WCS Mapping C's {@code WcsOthers} makes for an axis no other stage describes:
+     * {@code LogWcs} ({@link FitsWcsSpectral#logWcs}) for a CTYPE ending in {@code -LOG}, or a
+     * UnitMap when CRVAL is zero, which has no logarithmic form; and otherwise {@code LinearWcs},
+     * a ShiftMap adding CRVAL, or a UnitMap when CRVAL is zero or absent.
      */
     private static Mapping othersAxisMap(FitsStore store, int axis) {
-        double crval = store.crval[axis] != null ? store.crval[axis] : 0.0;
         String ctype = store.ctype[axis] != null ? store.ctype[axis] : "AXIS" + (axis + 1);
         if (ctype.length() > 3 && ctype.endsWith("-LOG")) {
-            if (crval != 0.0) {
-                throw new UnsupportedOperationException(
-                        "FitsChan: the logarithmic axis " + (axis + 1) + " (CTYPE '" + ctype + "') needs MathMap");
-            }
-            return new UnitMap(1);
+            Mapping map1 = FitsWcsSpectral.logWcs(store, axis);
+            return map1 != null ? map1 : new UnitMap(1);
         }
+        double crval = store.crval[axis] != null ? store.crval[axis] : 0.0;
         return crval != 0.0 ? new ShiftMap(new double[] {crval}) : new UnitMap(1);
     }
 

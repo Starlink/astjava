@@ -245,13 +245,20 @@ class FitsWcsReadTest {
         assertEquals(83.6, Math.toDegrees(out[2]), 1e-9);
     }
 
+    /**
+     * fitschan.c WcsOthers maps an axis whose CTYPE ends in "-LOG" with LogWcs's MathMap {@code
+     * s=Sr*exp(w/Sr)}, Sr the CRVAL; with CRPIX 0 and CDELT 1 the intermediate world coordinate is
+     * the pixel coordinate.
+     */
     @Test
-    void logAxisNeedsMathMap() {
+    void logAxisIsExponentialInTheIntermediateWorldCoordinate() {
         FitsStore store = new FitsStore(1);
         store.ctype[0] = "X-LOG";
         store.crval[0] = 2.0;
-        UnsupportedOperationException e = assertThrows(UnsupportedOperationException.class, () -> decodeWcs(store));
-        assertTrue(e.getMessage().endsWith(" needs MathMap"), e.getMessage());
+        FrameSet fs = decodeWcs(store);
+        double[] out = FitsHeaders.tran(fs, new double[] {3.0}, true);
+        assertEquals(2.0 * Math.exp(1.5), out[0], 1e-15);
+        assertEquals(3.0, FitsHeaders.tran(fs, out, false)[0], 1e-14);
     }
 
     @Test

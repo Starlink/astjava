@@ -15,11 +15,10 @@ import uk.ac.starlink.ast.internal.pal.Pal;
  *
  * <p>C tries the {@code -X2P} and grism algorithms by setting the System and Unit of the axis
  * through the FrameSet, which remaps the current Frame, and setting them back, so the FrameSet is
- * remapped as C remaps it. The {@code -LOG} description holds a MathMap and the {@code -TAB}
- * description a FitsTable, which this library does not have; where C makes one, an {@link
- * UnsupportedOperationException} is thrown. C's grism algorithm extracts a GrismMap from the
- * pixel to wavelength Mapping; a FrameSet of this library's classes holds none, so it finds none,
- * as C finds none in such a FrameSet.
+ * remapped as C remaps it. The {@code -TAB} description holds a FitsTable, which this library
+ * does not have; where C makes one, an {@link UnsupportedOperationException} is thrown. C's grism
+ * algorithm extracts a GrismMap from the pixel to wavelength Mapping; a FrameSet of this
+ * library's classes holds none, so it finds none, as C finds none in such a FrameSet.
  *
  * <p>Ported from Rust {@code fitschan/fset_to_store/spectral_axes.rs}, following fitschan.c, whose
  * structure is kept where Rust's follows from its ownership rules: the FrameSet is changed in place
@@ -68,8 +67,8 @@ final class FitsSpectralAxes {
      * @param method the calling method, for messages
      * @param cls the class of the object written, for messages
      * @return the Mapping from the current Frame to intermediate world coordinates
-     * @throws UnsupportedOperationException where C describes an axis with the {@code -LOG}
-     *     algorithm, which needs MathMap, or with the {@code -TAB} algorithm, which needs FitsTable
+     * @throws UnsupportedOperationException where C describes an axis with the {@code -TAB}
+     *     algorithm, which needs FitsTable
      */
     static Mapping spectralAxes(
             FitsChan fc,

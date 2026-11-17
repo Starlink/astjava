@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
  * spectral headers through a FitsChan compared with what C's {@code astRead} gives for the same
  * cards (the SpecFrame's attributes as {@code astGetC} formats them, the pixel to world transform,
  * and the error status and messages), including the read half of the plan's Review Focus 5: a
- * spectral axis whose Mapping needs a class that is not available ({@code -LOG} through MathMap,
- * {@code -GRI} through GrismMap) fails with {@code needs <Class>}. A {@code -TAB} axis with TabOK
+ * spectral axis whose Mapping needs a class that is not available ({@code -GRI} through
+ * GrismMap) fails with {@code needs <Class>}. A {@code -TAB} axis with TabOK
  * set fails as in C, since the FitsChan holds no table.
  */
 class FitsWcsSpectralTest {
@@ -453,13 +453,18 @@ class FitsWcsSpectralTest {
     // Review Focus 5, read half: spectral axes needing absent classes
     // ------------------------------------------------------------------
 
-    /** C maps a {@code -LOG} spectral axis with a non-zero CRVAL with a MathMap (C's LogWcs). */
+    /**
+     * C maps a {@code -LOG} spectral axis with a non-zero CRVAL with LogWcs's MathMap {@code
+     * s=Sr*exp(w/Sr)}, Sr the CRVAL, written with C's {@code %.17g}.
+     */
     @Test
-    void logSpectralAxisNeedsMathMap() {
-        UnsupportedOperationException e = assertThrows(
-                UnsupportedOperationException.class,
-                () -> oneAxis("CTYPE1  = 'FREQ-LOG'", "CRVAL1  = 1.4E9").read());
-        assertTrue(e.getMessage().endsWith(" needs MathMap"), e.getMessage());
+    void logSpectralAxisIsAMathMap() {
+        FrameSet fs =
+                (FrameSet) oneAxis("CTYPE1  = 'FREQ-LOG'", "CRVAL1  = 1.4E9").read();
+        String dump = ChannelText.dump(fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT));
+        assertTrue(dump.contains("Fwd1 = \"s=1400000000*exp(w/1400000000)\""), dump);
+        assertTrue(dump.contains("Inv1 = \"w=1400000000*log(s/1400000000)\""), dump);
+        assertTrue(dump.contains("SimpFI = 1") && dump.contains("SimpIF = 1"), dump);
     }
 
     /** C maps a {@code -GRI} axis with a GrismMap once the SpecFrame converts to wavelength. */

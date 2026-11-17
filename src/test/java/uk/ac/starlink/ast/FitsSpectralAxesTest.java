@@ -25,9 +25,7 @@ import org.junit.jupiter.api.Test;
  *
  * <p>The Rust tests' expectations are checked against the cards C writes for the same FrameSets.
  * {@code x2p_cascade_picks_freq_for_wavelength_axis} builds its axis with a MathMap; here the
- * frequency axis is set to wavelength through the FrameSet, as {@code testfitschan.c} does. {@code
- * nonlinear_unit_is_cleared} sets the Unit {@code log(Hz)}, whose conversion to the default Unit is
- * the MathMap C builds, so it expects {@code needs MathMap}. Listed in {@code
+ * frequency axis is set to wavelength through the FrameSet, as {@code testfitschan.c} does. Listed in {@code
  * deferred/rust-tests.txt}: {@code try_grism_cascade_emits_gri_pv_and_chain} (GrismMap).
  */
 class FitsSpectralAxesTest {
@@ -597,17 +595,21 @@ class FitsSpectralAxesTest {
     }
 
     @Test
-    void nonlinearUnitNeedsMathMap() {
-        // The conversion from log(Hz) to the default Unit is the MathMap C builds.
-        UnsupportedOperationException e = assertThrows(
-                UnsupportedOperationException.class,
-                () -> spectralAxes(
-                        twoAxis(spec("System=FREQ,Unit(1)=log(Hz)"), null),
-                        new double[] {100, 100},
-                        new FitsStore(2),
-                        new double[] {BAD, 9.0},
-                        new boolean[2]));
-        assertTrue(e.getMessage().endsWith("needs MathMap"), e.getMessage());
+    void nonlinearUnitIsCleared() {
+        // The conversion from log(Hz) to the default Unit is not linear, so C clears the Unit:
+        // CUNIT is the default, GHz, and the CRVAL of 9 (log10 of 1 GHz in Hz) is converted to it.
+        // The axis, linear in log(Hz), is exponential in GHz, and is written with -LOG (as C
+        // writes the axis of C probe fitslog_probe case write_log_unit).
+        FitsStore store = new FitsStore(2);
+        spectralAxes(
+                twoAxis(spec("System=FREQ,Unit(1)=log(Hz)"), null),
+                new double[] {100, 100},
+                store,
+                new double[] {BAD, 9.0},
+                new boolean[2]);
+        assertEquals("GHz", store.cunit[1]);
+        assertEquals(1.0, store.crval[1], 1e-9);
+        assertEquals("FREQ-LOG", store.ctype[1]);
     }
 
     @Test
@@ -740,13 +742,23 @@ class FitsSpectralAxesTest {
         assertEquals(-200.0, sf.getSourceVel(), 1e-9);
     }
 
+    /** C's cards for an exponential frequency axis (C probe {@code fitslog_probe}, case {@code write_freq_exp}). */
+    private static final String[] C_LOG = {
+        "wrote 1",
+        "NAXIS   =                    1",
+        "NAXIS1  =                  100",
+        "CRPIX1  =                 52.0 / Reference pixel on axis 1",
+        "CRVAL1  =   1.4747260395187105 / Value at ref. pixel on axis 1",
+        "CTYPE1  = 'FREQ-LOG'           / Type of co-ordinate on axis 1", // codespell:ignore
+        "CDELT1  = 0.0014747260395187112 / Pixel size on axis 1",
+        "CUNIT1  = 'GHz     '           / Units for axis 1",
+        "SPECSYS = 'HELIOCEN'           / Standard of rest for spectral axis",
+        "VELOSYS =   29336.889452278185 / [m/s] Topo. apparent velocity of rest frame",
+    };
+
     @Test
-    void logarithmicAxisNeedsMathMap() {
-        // C probe case log: C writes FREQ-LOG, whose Mapping holds a MathMap.
-        UnsupportedOperationException e = assertThrows(
-                UnsupportedOperationException.class,
-                () -> written(oneAxis(spec("System=FREQ"), exponential(1.4, 0.001)), "", 100, 0));
-        assertTrue(e.getMessage().endsWith("needs MathMap"), e.getMessage());
+    void logarithmicAxisIsWrittenAsLog() {
+        assertWritesAsC(C_LOG, oneAxis(spec("System=FREQ"), exponential(1.4, 0.001)), "", 100, 0);
     }
 
     @Test

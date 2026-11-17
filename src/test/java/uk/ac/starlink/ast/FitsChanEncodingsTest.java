@@ -12,9 +12,8 @@ import org.junit.jupiter.api.Test;
  * {@code c2.c} beside the task report).
  *
  * <p>{@code read_dss_produces_frameset} is translated in {@link FitsEncDssTest}. Listed in {@code
- * deferred/rust-tests.txt}: {@code
- * freq_log_builds_log_mapping} (a {@code -LOG} spectral axis, which C maps with a MathMap) and
- * {@code grism_builds_grism_mapping} (a {@code -GRI} axis, which C maps with a GrismMap).
+ * deferred/rust-tests.txt}: {@code grism_builds_grism_mapping} (a {@code -GRI} axis, which C maps
+ * with a GrismMap).
  */
 class FitsChanEncodingsTest {
 
@@ -111,5 +110,72 @@ class FitsChanEncodingsTest {
         assertEquals(2, fs.getNframe());
         assertEquals(1, fs.getFrame(FrameSet.AST__CURRENT).getNaxes());
         assertInstanceOf(SpecFrame.class, fs.getFrame(FrameSet.AST__CURRENT));
+    }
+
+    /**
+     * A {@code FREQ-LOG} header read with FITS-WCS maps pixel to frequency through C's {@code
+     * LogWcs} MathMap: the inverse transformation gives the pixel coordinates C gives for the same
+     * frequencies (the oracle {@code headers.oracle}, section {@code freq-log.head}).
+     */
+    @Test
+    void freqLogBuildsLogMapping() {
+        FrameSet fs = FitsHeaders.readFrameSet(FitsHeaders.fixture("wcsconv/inputs/freq-log.head"));
+        double[] sInputs = {
+            1420399999.4884999,
+            1420400000.5115,
+            1420399999.4884999,
+            1420400000.0,
+            1420400000.0,
+            1420399999.74425,
+            1420400000.25575,
+            1420399999.616375,
+            1420400000.127875,
+            1420399999.8721251,
+            1420400000.383625,
+            1420399999.5524375,
+            1420400000.0639377,
+            1420399999.8081875,
+            1420400000.3196874,
+            1420399999.6803126,
+            1420400000.1918123,
+            1420399999.9360623,
+            1420400000.4475627,
+            1420399999.5204687,
+            1420400000.0319688,
+            1420399999.7762187,
+            1420400000.2877188,
+            1420399999.6483438,
+        };
+        double[] expectedPixels = {
+            0.9998384814760453,
+            1023.999845942171,
+            0.9998384814760453,
+            512.5,
+            512.5,
+            256.75007695984095,
+            768.24992299411,
+            128.87495772641466,
+            640.3751191988895,
+            384.62519618175503,
+            896.125042169975,
+            64.9375558014628,
+            576.4375596008838,
+            320.6874788761586,
+            832.1874825834816,
+            192.8126750406453,
+            704.3123634018605,
+            448.5622827001597,
+            960.0626017535905,
+            32.968775989868405,
+            544.4687798008017,
+            288.7186990703203,
+            800.2187027891555,
+            160.84373753585044,
+        };
+        double[] got = fs.tran1(sInputs.length, sInputs, false);
+        for (int i = 0; i < sInputs.length; i++) {
+            double tol = 1e-9 + 1e-9 * Math.abs(expectedPixels[i]);
+            assertEquals(expectedPixels[i], got[i], tol, "point " + i + ": S=" + sInputs[i]);
+        }
     }
 }

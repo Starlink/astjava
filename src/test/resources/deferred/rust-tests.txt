@@ -299,10 +299,8 @@ tests/test_serialisation.rs::round_trip_pointlist | PointList (Region, out of sc
 tests/test_serialisation.rs::round_trip_cmpregion | CmpRegion and Circle (Region, out of scope)
 tests/test_serialisation.rs::round_trip_prism | Prism, Circle and Interval (Region, out of scope)
 tests/test_serialisation.rs::round_trip_negated_circle | Circle (Region, out of scope)
-tests/test_fitschan_read.rs::log_suffix_is_stripped_from_the_domain_and_symbol | FITS -LOG algorithm (out-of-scope method)
 tests/test_fitschan_read.rs::unset_system_still_leaves_system_unset | Rust-only API (SkyFrame::unset_system)
 tests/test_fitschan_c_inline.rs::show_fits_succeeds | astShowFits (out-of-scope method; jniast has no showFits)
-tests/test_fitschan_c_inline.rs::log_spectral_axis_writes_freq_log | FITS -LOG algorithm (out-of-scope method)
 tests/test_fitschan_wcs_write.rs::grism_interference_order_survives_a_round_trip | GrismMap (out of scope)
 tests/test_fitschan_wcs_write.rs::a_non_linear_grism_axis_writes_a_header_that_reads_back | GrismMap (out of scope)
 src/fitschan/fset_to_store/spectral_axes.rs::try_grism_cascade_emits_gri_pv_and_chain | GrismMap (out of scope)
@@ -310,5 +308,9 @@ tests/test_fitschan_wcs_write.rs::a_splinemap_frameset_writes_nothing_at_a_tight
 tests/test_fitschan_wcs_write.rs::the_as_fits_wcs_wrapping_of_a_splinemap_frameset_also_writes_nothing | SplineMap (out of scope)
 tests/test_fitschan_wcs_write.rs::alternate_descriptions_are_withheld_when_the_primary_cannot_be_written | SplineMap (out of scope)
 tests/test_fitschan_wcs_write.rs::a_splinemap_frameset_writes_a_complete_header_at_the_default_fits_tol | SplineMap (out of scope)
-tests/test_fitschan_encodings.rs::freq_log_builds_log_mapping | FITS -LOG algorithm (out-of-scope method)
 tests/test_fitschan_encodings.rs::grism_builds_grism_mapping | GrismMap (out of scope)
+tests/test_fitschan_tab.rs::tab_spectrum | needs FitsTable
+tests/test_fitschan_tab.rs::check_tab | needs FitsTable
+tests/test_fitschan_tab.rs::check_tab_sparse | needs FitsTable
+tests/test_fitschan_tab.rs::check_tab2 | needs FitsTable
+tests/test_fitschan_tab.rs::strict_sweep_error_asks_no_table_source | needs FitsTable

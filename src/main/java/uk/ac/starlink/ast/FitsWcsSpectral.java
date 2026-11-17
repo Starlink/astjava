@@ -13,9 +13,9 @@ import uk.ac.starlink.ast.internal.pal.Pal;
  * RESTFRQ or RESTWAV, the observer's position from OBSGEO-X/Y/Z, the source velocity from SSYSSRC
  * and ZSOURCE, its standard of rest from SPECSYS and its Label from CNAME, in C's order. The
  * Mapping depends on the algorithm code: a linear axis adds CRVAL, a {@code -X2P} axis (C's {@code
- * NonLinSpecWcs}) is linear in the system X and converted to the axis's own system, and the
- * {@code -LOG} and {@code -GRI}/{@code -GRA} axes need MathMap and GrismMap, which are not
- * available.
+ * NonLinSpecWcs}) is linear in the system X and converted to the axis's own system, a {@code
+ * -LOG} axis is exponential in the intermediate world coordinate (C's {@code LogWcs}), and the
+ * {@code -GRI}/{@code -GRA} axes need GrismMap, which is not available.
  *
  * <p>Ported from Rust {@code fitschan/wcs_spectral.rs}, following C's {@code WcsSpectral}, {@code
  * NonLinSpecWcs}, {@code GrismSpecWcs}, {@code LogWcs} and {@code DSBSetUp} (fitschan.c) where
@@ -28,6 +28,9 @@ final class FitsWcsSpectral {
 
     /** The class C's read reports errors for. */
     private static final String CLASS = "FitsChan";
+
+    /** {@code AST__DBL_DIG}, the significant digits with which C writes a constant into a function. */
+    private static final int DBL_DIG = 17;
 
     private FitsWcsSpectral() {}
 
@@ -73,9 +76,8 @@ final class FitsWcsSpectral {
      *     spectral, and the Frame
      * @throws AstException with status {@code AST__BDFTS} for an algorithm code that cannot be
      *     implemented, as C reports it, or as the attribute settings report a bad keyword value
-     * @throws UnsupportedOperationException for a {@code -LOG} axis with a non-zero CRVAL, whose
-     *     Mapping needs MathMap, or a {@code -GRI} or {@code -GRA} axis, whose Mapping needs
-     *     GrismMap
+     * @throws UnsupportedOperationException for a {@code -GRI} or {@code -GRA} axis, whose Mapping
+     *     needs GrismMap
      */
     static Result wcsSpectral(
             FitsStore store,
@@ -98,7 +100,7 @@ final class FitsWcsSpectral {
                 if (algcode.isEmpty()) {
                     map1 = linearWcs(store, i);
                 } else if ("-LOG".equals(algcode)) {
-                    map1 = logWcs(store, i, ctype);
+                    map1 = logWcs(store, i);
                 } else if (algcode.charAt(0) == '-' && algcode.length() > 2 && algcode.charAt(2) == '2') {
                     map1 = nonLinSpecWcs(algcode, store, i, specfrm, warnings);
                 } else if ("-GRI".equals(algcode) || "-GRA".equals(algcode)) {
@@ -318,20 +320,23 @@ final class FitsWcsSpectral {
     }
 
     /**
-     * C's {@code LogWcs} (fitschan.c:20904) for a spectral axis: a MathMap {@code S = Sr*exp(w/Sr)}
-     * with {@code Sr} the CRVAL, or null when CRVAL is zero or absent, which has no logarithmic
-     * form.
+     * C's {@code LogWcs} (fitschan.c): the Mapping from the intermediate world coordinate {@code w}
+     * of axis {@code i} to the logarithmic axis {@code S = Sr*exp(w/Sr)}, with {@code Sr} the
+     * CRVAL; a MathMap with the functions {@code s=Sr*exp(w/Sr)} and {@code w=Sr*log(s/Sr)},
+     * {@code Sr} written with C's {@code %.17g} ({@code AST__DBL_DIG}), and SimpFI and SimpIF set.
      *
-     * @throws UnsupportedOperationException when CRVAL is not zero, since the MathMap is not
-     *     available
+     * @return the MathMap, or null when CRVAL is zero or absent, which has no logarithmic form
      */
-    private static Mapping logWcs(FitsStore store, int i, String ctype) {
+    static Mapping logWcs(FitsStore store, int i) {
         double crv = store.crval[i] != null ? store.crval[i] : 0.0;
-        if (crv != 0.0) {
-            throw new UnsupportedOperationException(
-                    "FitsChan: the -LOG spectral axis " + (i + 1) + " (CTYPE '" + ctype + "') needs MathMap");
+        if (crv == 0.0) {
+            return null;
         }
-        return null;
+        String sr = CFormat.format("%." + DBL_DIG + "g", crv);
+        MathMap ret = new MathMap(
+                1, 1, new String[] {"s=" + sr + "*exp(w/" + sr + ")"}, new String[] {"w=" + sr + "*log(s/" + sr + ")"});
+        ret.set("simpfi=1,simpif=1");
+        return ret;
     }
 
     /**

@@ -1,5 +1,6 @@
 package uk.ac.starlink.ast.testsupport;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,26 +22,24 @@ public final class ProbeOutput {
 
     /**
      * The cases of {@code probes/<name>.out}, in order, each mapped to its text, every line ending
-     * with a newline.
+     * with a newline. Where there is no such file the output is the string {@code output} of
+     * {@code probes/<name>.json}, the form an output takes when it holds words of C's, such as
+     * attribute names, that the spelling check of text files would reject.
      *
-     * @throws IllegalStateException if there is no such file, or a case name appears twice
+     * @throws IllegalStateException if there is neither file, or a case name appears twice
      */
     public static Map<String, String> load(String name) {
-        String res = "/probes/" + name + ".out";
-        String text;
-        try (InputStream in = ProbeOutput.class.getResourceAsStream(res)) {
-            if (in == null) {
-                throw new IllegalStateException("No probe output " + res);
+        String text = resource("/probes/" + name + ".out");
+        if (text == null) {
+            String json = resource("/probes/" + name + ".json");
+            if (json == null) {
+                throw new IllegalStateException("No probe output /probes/" + name + ".out or .json");
             }
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            byte[] buf = new byte[8192];
-            int n;
-            while ((n = in.read(buf)) > 0) {
-                bytes.write(buf, 0, n);
+            try {
+                text = new ObjectMapper().readTree(json).get("output").asText();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-            text = new String(bytes.toByteArray(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
         Map<String, String> cases = new LinkedHashMap<>();
         String current = null;
@@ -64,6 +63,24 @@ public final class ProbeOutput {
             put(cases, current, sb.toString());
         }
         return cases;
+    }
+
+    /** The text of the resource {@code res}, or null if there is none. */
+    private static String resource(String res) {
+        try (InputStream in = ProbeOutput.class.getResourceAsStream(res)) {
+            if (in == null) {
+                return null;
+            }
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                bytes.write(buf, 0, n);
+            }
+            return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private static void put(Map<String, String> cases, String name, String body) {

@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,20 +25,13 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * Mapping C simplified ({@code WcsMapFrm} returns {@code astSimplify} of it). Each case is compared
  * with C's whole dump.
  *
- * <p>The cases in {@link #EXCLUDED} have a {@code -LOG} axis (which C maps with a MathMap); each
- * must still stop there.
+ * <p>A case that needs a class this library lacks would be listed in {@link #EXCLUDED}, and must
+ * still stop there; none does.
  */
 class FitsChanReadChainOracleTest {
 
     /** The cases that cannot be read, with the reason the read gives. */
-    private static final Map<String, String> EXCLUDED = exclusions();
-
-    private static Map<String, String> exclusions() {
-        Map<String, String> m = new LinkedHashMap<>();
-        m.put("other_log", "needs MathMap");
-        m.put("other_log_and_linear", "needs MathMap");
-        return m;
-    }
+    private static final Map<String, String> EXCLUDED = Collections.emptyMap();
 
     /** The first mismatch between the port's read of {@code header} and C's dump {@code want}, or null. */
     private static String compare(String[] header, String want) {

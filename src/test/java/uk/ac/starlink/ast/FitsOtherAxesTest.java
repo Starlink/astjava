@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -16,10 +17,7 @@ import org.junit.jupiter.api.Test;
  * fitschan.c) that need no class this library lacks, and tests of the branches that reach one.
  * Expectations not from a Rust test are worked from C's code.
  *
- * <p>{@code log_axis.rs} {@code detects_log_axis_and_returns_inverse_mapping} builds its
- * logarithmic axis with a MathMap; here it is a PolyMap, and where C goes on to build the {@code
- * -LOG} Mapping, which holds a MathMap, the translation expects the throw {@code needs MathMap}. Not
- * translated: {@code out_of_range_axis_returns_none}, a check C does not make.
+ * <p>Not translated: {@code out_of_range_axis_returns_none}, a check C does not make.
  */
 class FitsOtherAxesTest {
 
@@ -223,18 +221,22 @@ class FitsOtherAxesTest {
     }
 
     @Test
-    void logarithmicAxisNeedsMathMap() {
-        // C probe loglin.c: 10 exp(0.01 p) is written as WORL-LOG, whose Mapping holds a MathMap.
-        UnsupportedOperationException e = assertThrows(
-                UnsupportedOperationException.class,
-                () -> otherAxes(
-                        new FitsChan(),
-                        frameSet(exponential(10, 0.01), new Frame(1)),
-                        new double[] {100},
-                        new FitsStore(1),
-                        null,
-                        new boolean[1]));
-        assertTrue(e.getMessage().endsWith("needs MathMap"), e.getMessage());
+    void logarithmicAxisIsDescribedWithLog() {
+        // C probe fitslog_probe case write_other_exp: 10 exp(0.01 p) is written as WORL-LOG with
+        // CRVAL1 the world value at the centre pixel, 50.
+        Frame world = new Frame(1);
+        world.setDomain("WORLD");
+        FitsStore store = new FitsStore(1);
+        boolean[] axisDone = new boolean[1];
+        Mapping map = otherAxes(
+                new FitsChan(), frameSet(exponential(10, 0.01), world), new double[] {100}, store, null, axisDone);
+        assertTrue(axisDone[0]);
+        assertEquals("WORL-LOG", store.ctype[0]);
+        assertEquals(16.48721270700128, store.crval[0], 1e-12);
+        // LogAxis's Mapping w = Sr log(S/Sr), Sr the CRVAL.
+        double sr = store.crval[0];
+        assertEquals(0.0, map.tran1(1, new double[] {sr}, true)[0], 1e-14);
+        assertEquals(sr * 0.1, map.tran1(1, new double[] {sr * Math.exp(0.1)}, true)[0], 1e-13);
     }
 
     /** Rust {@code log_axis.rs} {@code linear_axis_is_not_log}. */
@@ -245,17 +247,24 @@ class FitsOtherAxesTest {
     }
 
     /**
-     * Rust {@code log_axis.rs} {@code detects_log_axis_and_returns_inverse_mapping}, with axis 1
-     * {@code 2 exp(0.1 p)} from a PolyMap: the axis passes C's test, and the Mapping C then
-     * returns holds a MathMap.
+     * Rust {@code log_axis.rs} {@code detects_log_axis_and_returns_inverse_mapping}: axis 1 is
+     * {@code 2 exp(0.1 p)}, and the Mapping returned is {@code w = 2 log(S/2)} on it, a UnitMap on
+     * axis 0.
      */
     @Test
-    void detectsLogAxis() {
-        Mapping map = new CmpMap(new UnitMap(1), exponential(2.0, 0.1), false);
-        UnsupportedOperationException e = assertThrows(
-                UnsupportedOperationException.class,
-                () -> FitsOtherAxes.logAxis(map, 1, 2, new double[] {1, 1}, new double[] {10, 10}, 2.0));
-        assertTrue(e.getMessage().endsWith("needs MathMap"), e.getMessage());
+    void detectsLogAxisAndReturnsInverseMapping() {
+        double sr = 2.0;
+        double slope = 0.1;
+        MathMap m = new MathMap(2, 2, new String[] {"s0=x1", "s1=" + sr + "*exp(" + slope + "*x2)"}, new String[] {
+            "x1=s0", "x2=log(s1/" + sr + ")/" + slope
+        });
+        Mapping mapping = FitsOtherAxes.logAxis(m, 1, 2, new double[] {1, 1}, new double[] {10, 10}, sr);
+        assertNotNull(mapping);
+        assertEquals(2, mapping.getNin());
+        assertEquals(2, mapping.getNout());
+        double[][] out = mapping.transform(new double[][] {{3.0}, {sr * Math.exp(slope * 10.0)}}, 1, true);
+        assertEquals(3.0, out[0][0], 1e-9);
+        assertEquals(2.0, out[1][0], 1e-6);
     }
 
     @Test

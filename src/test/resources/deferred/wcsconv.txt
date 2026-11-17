@@ -2,6 +2,5 @@
 # <row name> | <reason>
 # Rewritten by WcsconvTest with -Dast.writeDeferred=true.
 lsst2_fits-wcs | needs SplineMap
-freq-log_native | needs MathMap
 grism_native | needs GrismMap
 grism_fits-wcs | needs GrismMap
