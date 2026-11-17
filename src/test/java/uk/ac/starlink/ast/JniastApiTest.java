@@ -66,6 +66,7 @@ class JniastApiTest {
             "SphMap",
             "TimeFrame",
             "TimeMap",
+            "TranMap",
             "UinterpCalculator",
             "Ukern1Calculator",
             "UnitMap",

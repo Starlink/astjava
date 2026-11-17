@@ -1,6 +1,8 @@
 package uk.ac.starlink.ast;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -10,8 +12,7 @@ import org.junit.jupiter.api.Test;
  * its TranForward and TranInverse attributes, in its current orientation, a CmpMap combining its
  * components'.
  *
- * <p>{@code chebymap_forward_only_has_no_inverse} and {@code tranmap_needs_both_directions} need
- * classes outside the first phase.
+ * <p>{@code chebymap_forward_only_has_no_inverse} needs a class not yet ported.
  */
 class TranDefinednessTest {
 
@@ -120,5 +121,16 @@ class TranDefinednessTest {
         CmpMap cmp = new CmpMap(new ZoomMap(2, 2.0), new ZoomMap(2, 0.5), true);
         assertTrue(cmp.getTranForward());
         assertTrue(cmp.getTranInverse());
+    }
+
+    /**
+     * A TranMap's forward transformation is its first Mapping's forward one and its inverse its
+     * second Mapping's inverse one, so C refuses a second Mapping with no inverse (tranmap.c {@code
+     * astInitTranMap}, AST__INTRD) rather than making a TranMap without one.
+     */
+    @Test
+    void tranmapNeedsBothDirections() {
+        AstException e = assertThrows(AstException.class, () -> new TranMap(new ZoomMap(1, 2.0), fwdOnlyPolymap()));
+        assertEquals(AstException.AST__INTRD, e.getStatus());
     }
 }

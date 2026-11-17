@@ -8,10 +8,7 @@ grism_inverse_cancel | needs GrismMap
 grism_zoom_merge | needs GrismMap
 spline_inverse_cancel | needs SplineMap
 ratemap_inverse_cancel | needs RateMap
-tranmap_equal_components | needs TranMap
 intramap_inverse_cancel | needs IntraMap
-tranmap_invert_normalize | needs TranMap
-tranmap_component_simplify | needs TranMap
 ratemap_simplify_interior | needs RateMap
 normmap_basic_frame_to_unit | needs NormMap
 normmap_inverse_cancel | needs NormMap
@@ -23,11 +20,6 @@ pcd_unit_series_merge | needs PcdMap
 pcd_zoom_swap_cancel | needs PcdMap
 switchmap_invert_normalize | needs SwitchMap
 switchmap_internal_simplify | needs SwitchMap
-tranmap_adjacent_merge | needs TranMap
-tranmap_adjacent_merge_inverse_order | needs TranMap
-tranmap_adjacent_merge_nonsquare | needs TranMap
-tranmap_invert_in_list | needs TranMap
-tranmap_equal_components_in_list | needs TranMap
 selectormap_inverse_cancel | needs Box, PointSet, SelectorMap
 switchmap_inverse_cancel | needs SwitchMap
 pcd_perm_swap_cancel | needs PcdMap
@@ -36,7 +28,6 @@ pcd_inverted_zoom_swap | needs PcdMap
 neg_grism_same_direction | needs GrismMap
 neg_pcd_parallel | needs PcdMap
 neg_pcd_nonpcd_neighbour | needs PcdMap
-neg_tranmap_unequal_components | needs TranMap
 neg_spline_same_direction | needs SplineMap
 neg_normmap_parallel | needs NormMap
 neg_ratemap_nonratemap_neighbour | needs RateMap
@@ -48,8 +39,6 @@ neg_grism_inv_then_zoom | needs GrismMap
 neg_grism_fwd_then_nonzoom | needs GrismMap
 neg_spline_parallel | needs SplineMap
 neg_spline_nonspline_neighbour | needs SplineMap
-neg_tranmap_parallel | needs TranMap
-neg_tranmap_nontranmap_neighbour | needs TranMap
 neg_pcd_nonswappable_between | needs PcdMap
 neg_normmap_nonnorm_neighbour | needs NormMap
 neg_grism_zoom_before_fwd | needs GrismMap
@@ -72,8 +61,8 @@ dssmap_winmap_absorb | needs DssMap
 dssmap_zoom_no_merge | needs DssMap
 neg_box_asymmetric_2d | needs Box, PointSet
 switchmap_inverse_cancel_distinct_selectors | needs SwitchMap
-cap_cmpmap_01 | needs RateMap, TranMap
-cap_cmpmap_04 | needs RateMap, TranMap
+cap_cmpmap_01 | needs RateMap
+cap_cmpmap_04 | needs RateMap
 cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism
 cap_matrixmap_04 | needs ChebyMap
 cap_permmap_01 | needs NormMap
@@ -86,13 +75,11 @@ cap_unitnormmap_01 | needs UnitNormMap
 cap_xphmap_01 | needs XphMap
 cap_xphmap_02 | needs XphMap
 cap_zoommap_04 | needs Box, PointList, PointSet
-neg_tranmap_adjacent_no_merge | needs TranMap
 neg_pcd_zoom_no_target | needs PcdMap
 neg_ratemap_lower_nonrate | needs RateMap
 neg_ratemap_same_invert | needs RateMap
 neg_ratemap_diff_indices | needs RateMap
 neg_ratemap_diff_inner | needs RateMap
-neg_tranmap_oneway | needs TranMap
 pcd_search_blocked | needs PcdMap
 neg_normmap_diff_frame | needs NormMap
 neg_normmap_inv_diff_frame | needs NormMap
@@ -169,7 +156,6 @@ pcd_inverse_cancel_tail | needs PcdMap
 nullregion_merge_tail | needs NullRegion
 grism_inverse_cancel_tail | needs GrismMap
 intra_invfwd_cancel_tail | needs IntraMap
-tranmap_merge_tail | needs TranMap
 interval_remapped_simplify | needs Interval, PointSet
 interval_halfinf_simplify | needs Interval, PointSet
 unit_parallel_invert_pcd | needs PcdMap

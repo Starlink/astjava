@@ -59,7 +59,7 @@ final class Simplifier {
      * the records of simplification, which change as a simplification goes on. C compares with
      * {@code astEqual}, which this library does not have; equal descriptions give equal Mappings.
      */
-    private static String guardKey(Mapping m) {
+    static String guardKey(Mapping m) {
         StringBuilder sb = new StringBuilder();
         for (String line : Channel.text(m, false, 0).split("\n", -1)) {
             if (!line.trim().startsWith("IsSimp =")) {

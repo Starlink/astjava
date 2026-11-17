@@ -18,8 +18,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * range with {@code AST__AXIIN}; the others give no split. A split is compared by its outputs and
  * its dump, byte for byte.
  *
- * <p>The WcsMap cases are run; the NormMap, RateMap and TranMap cases, and with them {@code
- * issimp_component_exclusions_still_differ}, need classes outside the first phase.
+ * <p>The WcsMap and TranMap cases are run; the NormMap and RateMap cases, and with them {@code
+ * issimp_component_exclusions_still_differ}, need classes not yet ported. Rust compares {@code
+ * tranmap_full_permuted} without its {@code IsSimp} cards, for one card C writes on a component and
+ * the port does not; here its dump matches C's whole.
  */
 class MapSplitOracleTest {
 
@@ -49,7 +51,9 @@ class MapSplitOracleTest {
             return new CmpMap(new ZoomMap(1, 2.0), new ShiftMap(new double[] {1.0, 2.0}), false);
         } else if (name.startsWith("wcsmap_")) {
             return new WcsMap(3, WcsMap.AST__TAN, 1, 2);
-        } else if (name.startsWith("normmap_") || name.startsWith("ratemap_") || name.startsWith("tranmap_")) {
+        } else if (name.startsWith("tranmap_")) {
+            return new TranMap(new ZoomMap(3, 2.0), new ZoomMap(3, 2.0));
+        } else if (name.startsWith("normmap_") || name.startsWith("ratemap_")) {
             return null;
         }
         throw new IllegalArgumentException("no Java construction for case " + name);
@@ -113,6 +117,6 @@ class MapSplitOracleTest {
             ran++;
         }
         assertTrue(failures.isEmpty(), String.join("\n", failures));
-        assertEquals(48, ran, "cases run");
+        assertEquals(54, ran, "cases run");
     }
 }

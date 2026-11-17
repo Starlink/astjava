@@ -121,6 +121,12 @@ class NativeRoundTripTest {
     }
 
     @Test
+    void roundTripTranmap() {
+        TranMap m = new TranMap(new ZoomMap(2, 2.0), new ShiftMap(new double[] {0.5, 0.5}));
+        assertDoubleRoundTrip(m, "TranMap");
+    }
+
+    @Test
     void roundTripPermmap() {
         PermMap m = new PermMap(3, new int[] {2, -1, 1}, 2, new int[] {3, 1}, new double[] {7.5});
         m.setInvert(true);

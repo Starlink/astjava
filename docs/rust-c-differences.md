@@ -195,7 +195,7 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: refuses it at construction.
 - Java: as C.
 
-### A CmpMap dump with a missing or non-Mapping component
+### A CmpMap or TranMap dump with a missing or non-Mapping component
 
 - C: leaves a NULL component.
 - Rust: raises AST__LDERR.
@@ -407,6 +407,40 @@ The entries are grouped by area, in the order the Java classes were ported.
 
 - C: `Simplify` (cmpmap.c) clears the flag that lets a restricted simplification use a Mapping on each component it joins into a new CmpMap; those components are shared with the input, so the input's components lose the flag too (probe case `simplify_input_after`, from `simplify/cap_restricted_component_flags.map`).
 - Rust: copies the components, so the input keeps the flag.
+- Java: as C.
+
+### A TranMap whose equal components were inverted when it was made
+
+- **C quirk**: `MapMerge` (`tranmap.c`) replaces a TranMap whose first component, in series with the inverse of its second, simplifies to a UnitMap with a copy of the first component.
+  The copy keeps the Invert value recorded when the TranMap was made, but the list entry it replaces stays applied forward, and the list's value is the one the result is given.
+  A TranMap of two equal Mappings that were inverted when it was made therefore becomes the first Mapping not inverted, which transforms the other way (probe `src/test/resources/probes/tranmap_probe.c`, cases `simp_equal_inverted_mathmaps` and `simp_equal_inverted_lutmaps`).
+  Two inverted ZoomMaps do not show it, because each simplifies on its own to a ZoomMap of the reciprocal factor first (case `simp_equal_inverted_components`).
+- Rust: applies the copy inverted, so the transformation is kept.
+- Java: as C.
+
+### Comparing two TranMaps
+
+- C: `Equal` (`tranmap.c`) sets each component to the Invert value its TranMap recorded and compares the components with `astEqual`, the `Equal` of their class.
+- Rust: compares them with each class's `equal`.
+- Java: compares them by identity or by their native descriptions without the `IsSimp` item, as the simplifier compares Mappings, since `astEqual` is not ported for every class.
+  The library itself never compares two TranMaps, since CmpMap `Equal` is not ported either; the probe's `equal` case gives C's results.
+
+### The directions of a loaded TranMap
+
+- C: `astLoadTranMap` leaves TranForward and TranInverse to the Mapping part of the dump (`Fwd` and `Inv`, which a TranMap never writes, so both are defined).
+- Rust: recomputes them from the components and the recorded Invert values.
+- Java: as C.
+
+### The series flag of a decomposed TranMap
+
+- C: `Decompose` (`tranmap.c`) does not set the series flag, which its documentation gives as zero for a TranMap; the probe's `decompose` case gets back the value it set beforehand, and jniast's `decompose` passes an uninitialised one.
+- Rust: its `Decomposition` has no series flag.
+- Java: false.
+
+### The split of a TranMap of all its inputs, permuted
+
+- C: the base `MapSplit` (`mapping.c`) simplifies a PermMap and the TranMap in series; the TranMap's equal components make it a ZoomMap, which `astSimplify` records as simplified, so its dump has `IsSimp = 1` (oracle `map_split.json`, case `tranmap_full_permuted`).
+- Rust: dumps the ZoomMap without that item, and its oracle test compares the case without `IsSimp` items.
 - Java: as C.
 
 ## Units

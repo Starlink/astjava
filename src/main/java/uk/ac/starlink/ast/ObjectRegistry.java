@@ -76,6 +76,8 @@ final class ObjectRegistry {
                 return TimeFrame::new;
             case "TimeMap":
                 return TimeMap::new;
+            case "TranMap":
+                return TranMap::new;
             case "UnitMap":
                 return UnitMap::new;
             case "WcsMap":

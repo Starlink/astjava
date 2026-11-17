@@ -1,0 +1,922 @@
+== dump_plain
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- read back
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- transformations
+fwd 6 -> 12
+inv 6 -> 2
+-- transformations read back
+fwd 6 -> 12
+inv 6 -> 2
+== dump_inva
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- read back
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- transformations
+fwd 6 -> 3
+inv 6 -> 2
+-- transformations read back
+fwd 6 -> 3
+inv 6 -> 2
+== dump_invb
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- read back
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- transformations
+fwd 6 -> 12
+inv 6 -> 18
+-- transformations read back
+fwd 6 -> 12
+inv 6 -> 18
+== dump_both_inverted
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- read back
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- transformations
+fwd 6 -> 3
+inv 6 -> 18
+-- transformations read back
+fwd 6 -> 3
+inv 6 -> 18
+== dump_tranmap_inverted
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+    Invert = 1 	# Mapping inverted
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- read back
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+    Invert = 1 	# Mapping inverted
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- transformations
+fwd 6 -> 2
+inv 6 -> 12
+-- transformations read back
+fwd 6 -> 2
+inv 6 -> 12
+== dump_components_inverted_after
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- read back
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- transformations
+fwd 6 -> 12
+inv 6 -> 2
+-- transformations read back
+fwd 6 -> 12
+inv 6 -> 2
+== dump_lutmap_mathmap
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+          Start = 1 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+    MapB = 	# Mapping for inverse transformation
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=x*x" 	# Forward function 1
+          Inv1 = "x=sqrt(y)" 	# Inverse function 1
+       End MathMap
+ End TranMap
+-- read back
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+          Start = 1 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+    MapB = 	# Mapping for inverse transformation
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=x*x" 	# Forward function 1
+          Inv1 = "x=sqrt(y)" 	# Inverse function 1
+       End MathMap
+ End TranMap
+-- transformations
+fwd 2.5 -> 2.5
+inv 2.5 -> 1.5811388300841898
+-- transformations read back
+fwd 2.5 -> 2.5
+inv 2.5 -> 1.5811388300841898
+== dump_lutmap_mathmap_inverted
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# Mapping for forward transformation
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=x*x" 	# Forward function 1
+          Inv1 = "x=sqrt(y)" 	# Inverse function 1
+       End MathMap
+    MapB = 	# Mapping for inverse transformation
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+          Start = 1 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+ End TranMap
+-- read back
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# Mapping for forward transformation
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=x*x" 	# Forward function 1
+          Inv1 = "x=sqrt(y)" 	# Inverse function 1
+       End MathMap
+    MapB = 	# Mapping for inverse transformation
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+          Start = 1 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+ End TranMap
+-- transformations
+fwd 2.5 -> 1.5811388300841898
+inv 2.5 -> 2.5
+-- transformations read back
+fwd 2.5 -> 1.5811388300841898
+inv 2.5 -> 2.5
+== simp_plain
+class TranMap
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 3 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- transformations
+fwd 6 -> 12
+inv 6 -> 2
+-- transformations simplified
+fwd 6 -> 12
+inv 6 -> 2
+== simp_inverted
+class TranMap
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 0.33333333333333331 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 0.5 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- transformations
+fwd 6 -> 2
+inv 6 -> 12
+-- transformations simplified
+fwd 6 -> 2
+inv 6 -> 12
+== simp_equal
+class ZoomMap
+ Begin ZoomMap 	# Zoom about the origin
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Zoom = 2 	# Zoom factor
+ End ZoomMap
+-- transformations
+fwd 6 -> 12
+inv 6 -> 3
+-- transformations simplified
+fwd 6 -> 12
+inv 6 -> 3
+== simp_equal_inverted_components
+class ZoomMap
+ Begin ZoomMap 	# Zoom about the origin
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Zoom = 0.5 	# Zoom factor
+ End ZoomMap
+-- transformations
+fwd 6 -> 3
+inv 6 -> 12
+-- transformations simplified
+fwd 6 -> 3
+inv 6 -> 12
+== simp_equal_inverted_tranmap
+class ZoomMap
+ Begin ZoomMap 	# Zoom about the origin
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Zoom = 0.5 	# Zoom factor
+ End ZoomMap
+-- transformations
+fwd 6 -> 3
+inv 6 -> 12
+-- transformations simplified
+fwd 6 -> 3
+inv 6 -> 12
+== simp_same_object
+class TranMap
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- transformations
+fwd 6 -> 12
+inv 6 -> 3
+-- transformations simplified
+fwd 6 -> 12
+inv 6 -> 3
+== simp_equal_lutmaps
+class LutMap
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 5 	# Number of lookup table elements
+    Start = 1 	# Input value at first element
+#   Incr = 1 	# Input value increment between elements
+    LutInt = 0 	# Interpolation method
+    L1 = 0 	# Lookup table elements...
+    L2 = 1
+    L3 = 4
+    L4 = 9
+    L5 = 16
+ End LutMap
+-- transformations
+fwd 2.5 -> 2.5
+inv 2.5 -> 2.5
+-- transformations simplified
+fwd 2.5 -> 2.5
+inv 2.5 -> 2.5
+== simp_equal_mathmaps
+class MathMap
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "y=x*x" 	# Forward function 1
+    Inv1 = "x=sqrt(y)" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+-- transformations
+fwd 2.5 -> 6.25
+inv 2.5 -> 1.5811388300841898
+-- transformations simplified
+fwd 2.5 -> 6.25
+inv 2.5 -> 1.5811388300841898
+== simp_equal_inverted_mathmaps
+class MathMap
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "y=x*x" 	# Forward function 1
+    Inv1 = "x=sqrt(y)" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+-- transformations
+fwd 2.5 -> 1.5811388300841898
+inv 2.5 -> 6.25
+-- transformations simplified
+fwd 2.5 -> 6.25
+inv 2.5 -> 1.5811388300841898
+== simp_equal_inverted_lutmaps
+class LutMap
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 5 	# Number of lookup table elements
+    Start = 1 	# Input value at first element
+#   Incr = 1 	# Input value increment between elements
+    LutInt = 0 	# Interpolation method
+    L1 = 0 	# Lookup table elements...
+    L2 = 1
+    L3 = 4
+    L4 = 9
+    L5 = 16
+ End LutMap
+-- transformations
+fwd 2.5 -> 2.5
+inv 2.5 -> 2.5
+-- transformations simplified
+fwd 2.5 -> 2.5
+inv 2.5 -> 2.5
+== simp_unequal_mathmaps
+class TranMap
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=x*x" 	# Forward function 1
+          Inv1 = "x=sqrt(y)" 	# Inverse function 1
+       End MathMap
+    MapB = 	# Mapping for inverse transformation
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=x*x" 	# Forward function 1
+          Inv1 = "x=sqrt(y)" 	# Inverse function 1
+       End MathMap
+ End TranMap
+-- transformations
+fwd 2.5 -> 6.25
+inv 2.5 -> 1.5811388300841898
+-- transformations simplified
+fwd 2.5 -> 6.25
+inv 2.5 -> 1.5811388300841898
+== simp_lutmap_beside_its_inverse
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin TranMap 	# Compound Transformation Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          MapA = 	# Mapping for forward transformation
+             Begin LutMap 	# Map 1-d coordinates using a lookup table
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Nlut = 5 	# Number of lookup table elements
+                Start = 1 	# Input value at first element
+#               Incr = 1 	# Input value increment between elements
+                LutInt = 0 	# Interpolation method
+                L1 = 0 	# Lookup table elements...
+                L2 = 1
+                L3 = 4
+                L4 = 9
+                L5 = 16
+             End LutMap
+          MapB = 	# Mapping for inverse transformation
+             Begin ZoomMap 	# Zoom about the origin
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Zoom = 3 	# Zoom factor
+             End ZoomMap
+       End TranMap
+    MapB = 	# Second component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+          Start = 1 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+ End CmpMap
+-- transformations
+fwd 2.5 -> 2.5
+inv 2.5 -> 0.83333333333333326
+-- transformations simplified
+fwd 2.5 -> 2.5
+inv 2.5 -> 0.83333333333333326
+== simp_beside_zoommap
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin TranMap 	# Compound Transformation Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          MapA = 	# Mapping for forward transformation
+             Begin ZoomMap 	# Zoom about the origin
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Zoom = 2 	# Zoom factor
+             End ZoomMap
+          MapB = 	# Mapping for inverse transformation
+             Begin ZoomMap 	# Zoom about the origin
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Zoom = 3 	# Zoom factor
+             End ZoomMap
+       End TranMap
+    MapB = 	# Second component Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 4 	# Zoom factor
+       End ZoomMap
+ End CmpMap
+-- transformations
+fwd 6 -> 48
+inv 6 -> 0.5
+-- transformations simplified
+fwd 6 -> 48
+inv 6 -> 0.5
+== simp_pair_second_inverted
+class TranMap
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 0.2857142857142857 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 0.59999999999999998 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- transformations
+fwd 6 -> 1.7142857142857142
+inv 6 -> 10
+-- transformations simplified
+fwd 6 -> 1.7142857142857142
+inv 6 -> 10
+== simp_pair_inverted_series
+class TranMap
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 0.047619047619047616 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 0.10000000000000001 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- transformations
+fwd 6 -> 0.2857142857142857
+inv 6 -> 60
+-- transformations simplified
+fwd 6 -> 0.2857142857142857
+inv 6 -> 60
+== simp_pair_parallel
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Series = 0 	# Component Mappings applied in parallel
+    MapA = 	# First component Mapping
+       Begin TranMap 	# Compound Transformation Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          MapA = 	# Mapping for forward transformation
+             Begin ZoomMap 	# Zoom about the origin
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Zoom = 2 	# Zoom factor
+             End ZoomMap
+          MapB = 	# Mapping for inverse transformation
+             Begin ZoomMap 	# Zoom about the origin
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Zoom = 3 	# Zoom factor
+             End ZoomMap
+       End TranMap
+    MapB = 	# Second component Mapping
+       Begin TranMap 	# Compound Transformation Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          MapA = 	# Mapping for forward transformation
+             Begin ZoomMap 	# Zoom about the origin
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Zoom = 5 	# Zoom factor
+             End ZoomMap
+          MapB = 	# Mapping for inverse transformation
+             Begin ZoomMap 	# Zoom about the origin
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Zoom = 7 	# Zoom factor
+             End ZoomMap
+       End TranMap
+ End CmpMap
+-- transformations
+-- transformations simplified
+== simp_pair_shared_tranmap
+class TranMap
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# Mapping for forward transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 4 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 9 	# Zoom factor
+       End ZoomMap
+ End TranMap
+-- transformations
+fwd 6 -> 24
+inv 6 -> 0.66666666666666663
+-- transformations simplified
+fwd 6 -> 24
+inv 6 -> 0.66666666666666663
+== rates
+fwd 1 1 2
+fwd 1 2 0
+fwd 2 1 0
+fwd 2 2 2
+inv 1 1 2
+inv 1 2 0
+inv 2 1 0
+inv 2 2 2
+zoom fwd 2
+zoom inv 0.33333333333333331
+mathmap fwd 6
+== equal
+same_components 1
+different_components 0
+inverted_vs_swapped 1
+swapped_vs_inverted 1
+not_a_tranmap 0
+inverted_vs_plain 0
+component_inverted_after 1
+== decompose
+forward ZoomMap ShiftMap series 7 inverts 0 1
+inverted ShiftMap ZoomMap series 7 inverts 0 1
+== split_shiftmaps
+outputs 2
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# Mapping for forward transformation
+       Begin ShiftMap 	# Shift each coordinate axis
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 20 	# Shift for axis 1
+       End ShiftMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ShiftMap 	# Shift each coordinate axis
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = -20 	# Shift for axis 1
+       End ShiftMap
+ End TranMap
+== split_inverted
+outputs 3 1
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 2 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# Mapping for forward transformation
+       Begin ShiftMap 	# Shift each coordinate axis
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = -30 	# Shift for axis 1
+          Sft2 = -10 	# Shift for axis 2
+       End ShiftMap
+    MapB = 	# Mapping for inverse transformation
+       Begin ShiftMap 	# Shift each coordinate axis
+          Nin = 2 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 30 	# Shift for axis 1
+          Sft2 = 10 	# Shift for axis 2
+       End ShiftMap
+ End TranMap
+== split_mismatched
+split none
+== error_no_forward
+!! AST: Error in routine zoom at line 98 in file tranmap_probe.c.
+!  astInitTranMap(TranMap): The first supplied Mapping is not able to transform coordinates in the forward direction.
+status 233933418
+== error_no_inverse
+!! AST: Error in routine zoom at line 98 in file tranmap_probe.c.
+!  astInitTranMap(TranMap): The second supplied Mapping is not able to transform coordinates in the inverse direction.
+status 233933418
+== error_nin
+!! AST: Error in routine zoom at line 98 in file tranmap_probe.c.
+!  astInitTranMap(TranMap): The number of output coordinates per point (1) for the first Mapping supplied does not match the number of output coordinates (2) for the second Mapping.
+status 233933402
+== error_nout
+!! AST: Error in routine zoom at line 98 in file tranmap_probe.c.
+!  astInitTranMap(TranMap): The number of output coordinates per point (1) for the first Mapping supplied does not match the number of output coordinates (2) for the second Mapping.
+status 233933402

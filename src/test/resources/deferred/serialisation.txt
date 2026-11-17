@@ -20,10 +20,10 @@ simplify/cap_box_permmap_null_first.map | needs Box, PointSet
 simplify/cap_box_permmap_null_first.simp | needs NullRegion
 simplify/cap_cheby_consolidate.map | needs ChebyMap
 simplify/cap_cheby_consolidate.simp | needs ChebyMap
-simplify/cap_cmpmap_01.map | needs RateMap, TranMap
-simplify/cap_cmpmap_01.simp | needs RateMap, TranMap
-simplify/cap_cmpmap_04.map | needs RateMap, TranMap
-simplify/cap_cmpmap_04.simp | needs RateMap, TranMap
+simplify/cap_cmpmap_01.map | needs RateMap
+simplify/cap_cmpmap_01.simp | needs RateMap
+simplify/cap_cmpmap_04.map | needs RateMap
+simplify/cap_cmpmap_04.simp | needs RateMap
 simplify/cap_interval_01.map | needs Box, Interval, NullRegion, PointSet, Prism
 simplify/cap_interval_01.simp | needs Box, Interval, PointSet
 simplify/cap_matrixmap_04.map | needs ChebyMap
@@ -172,11 +172,6 @@ simplify/neg_switchmap_not_equal.map | needs SwitchMap
 simplify/neg_switchmap_parallel.map | needs SwitchMap
 simplify/neg_switchmap_series.map | needs SwitchMap
 simplify/neg_switchmap_series_lower.map | needs SwitchMap
-simplify/neg_tranmap_adjacent_no_merge.map | needs TranMap
-simplify/neg_tranmap_nontranmap_neighbour.map | needs TranMap
-simplify/neg_tranmap_oneway.map | needs TranMap
-simplify/neg_tranmap_parallel.map | needs TranMap
-simplify/neg_tranmap_unequal_components.map | needs TranMap
 simplify/neg_unit_parallel_forward.map | needs PcdMap
 simplify/neg_unitnormmap_flanked.map | needs UnitNormMap
 simplify/neg_unitnormmap_fwd_shift.map | needs UnitNormMap
@@ -272,22 +267,6 @@ simplify/switchmap_invert_normalize.map | needs SwitchMap
 simplify/switchmap_invert_normalize.simp | needs SwitchMap
 simplify/switchmap_invonly_simplify.map | needs SwitchMap
 simplify/switchmap_invonly_simplify.simp | needs SwitchMap
-simplify/tranmap_adjacent_merge.map | needs TranMap
-simplify/tranmap_adjacent_merge.simp | needs TranMap
-simplify/tranmap_adjacent_merge_inverse_order.map | needs TranMap
-simplify/tranmap_adjacent_merge_inverse_order.simp | needs TranMap
-simplify/tranmap_adjacent_merge_nonsquare.map | needs TranMap
-simplify/tranmap_adjacent_merge_nonsquare.simp | needs TranMap
-simplify/tranmap_component_simplify.map | needs TranMap
-simplify/tranmap_component_simplify.simp | needs TranMap
-simplify/tranmap_equal_components.map | needs TranMap
-simplify/tranmap_equal_components_in_list.map | needs TranMap
-simplify/tranmap_invert_in_list.map | needs TranMap
-simplify/tranmap_invert_in_list.simp | needs TranMap
-simplify/tranmap_invert_normalize.map | needs TranMap
-simplify/tranmap_invert_normalize.simp | needs TranMap
-simplify/tranmap_merge_tail.map | needs TranMap
-simplify/tranmap_merge_tail.simp | needs TranMap
 simplify/unit_parallel_invert_pcd.map | needs PcdMap
 simplify/unit_parallel_invert_pcd.simp | needs PcdMap
 simplify/unitnormmap_diff_centre_to_shift.map | needs UnitNormMap

@@ -18,8 +18,7 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * package-private {@code mapSplit(int[])}, C's protected {@code astMapSplit} with zero-based
  * indices, and Rust's public {@code map_split} is jniast's {@code mapSplit(int[], int[])}.
  *
- * <p>The {@code normmap_*}, {@code tranmap_*} and {@code ratemap_*} tests need classes not yet
- * ported.
+ * <p>The {@code normmap_*} and {@code ratemap_*} tests need classes not yet ported.
  */
 class MapSplitTest {
 
@@ -708,5 +707,26 @@ class MapSplitTest {
         assertEquals(y[0], y2[0], "Error 11");
         assertEquals(y[1], y2[1], "Error 12");
         assertEquals(y[3], y2[2], "Error 13");
+    }
+
+    // ------------------------------------------------------------------
+    // TranMap: mirrors tranmap.c MapSplit
+    // ------------------------------------------------------------------
+
+    /**
+     * A TranMap of two ShiftMaps, the second inverted, splits on input 1 into the shift of that
+     * axis for both directions.
+     */
+    @Test
+    void tranmapSplitPicksPerAxis() {
+        ShiftMap fwd = new ShiftMap(new double[] {10.0, 20.0, 30.0});
+        ShiftMap inv = new ShiftMap(new double[] {-10.0, -20.0, -30.0});
+        inv.invert();
+        TranMap tm = new TranMap(fwd, inv);
+        MapSplit s = split(tm, 1);
+        assertNotNull(s);
+        assertArrayEquals(new int[] {1}, s.outputs);
+        assertEquals(1, s.map.getNin());
+        assertEquals(25.0, fwdPoint(s.map, 5.0)[0], 1e-12);
     }
 }
