@@ -12,33 +12,33 @@ class NativeClassesTest {
     private static final String DUMP = " Begin FrameSet \t# Set of inter-related coordinate systems\n"
             + " IsA Object\n"
             + "    Frm1 = \t# Frame number 1\n"
-            + "       Begin GrismMap \t# Grism Mapping\n"
+            + "       Begin XphMap \t# Xph Mapping\n"
             + "          Ax1 = \n"
             + "             Begin SplineMap\n"
             + "             End SplineMap\n"
-            + "       End GrismMap\n"
+            + "       End XphMap\n"
             + "    Map2 = \n"
             + "       Begin CmpMap\n"
             + "          MapA = \n"
             + "             Begin ZoomMap\n"
             + "             End ZoomMap\n"
             + "          MapB = \n"
-            + "             Begin GrismMap\n"
-            + "             End GrismMap\n"
+            + "             Begin XphMap\n"
+            + "             End XphMap\n"
             + "       End CmpMap\n"
             + " End FrameSet\n";
 
     @Test
     void listsTheBegunClassesInOrder() {
         assertEquals(
-                Arrays.asList("FrameSet", "GrismMap", "SplineMap", "CmpMap", "ZoomMap", "GrismMap"),
+                Arrays.asList("FrameSet", "XphMap", "SplineMap", "CmpMap", "ZoomMap", "XphMap"),
                 NativeClasses.begun(DUMP));
     }
 
     @Test
     void missingClassesAreSortedWithoutRepeats() {
-        assertEquals(Arrays.asList("GrismMap", "SplineMap"), NativeClasses.missing(DUMP));
-        assertEquals("needs GrismMap, SplineMap", NativeClasses.needs(DUMP));
+        assertEquals(Arrays.asList("SplineMap", "XphMap"), NativeClasses.missing(DUMP));
+        assertEquals("needs SplineMap, XphMap", NativeClasses.needs(DUMP));
     }
 
     @Test

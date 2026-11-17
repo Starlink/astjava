@@ -16,9 +16,9 @@ import uk.ac.starlink.ast.internal.pal.Pal;
  * <p>C tries the {@code -X2P} and grism algorithms by setting the System and Unit of the axis
  * through the FrameSet, which remaps the current Frame, and setting them back, so the FrameSet is
  * remapped as C remaps it. The {@code -TAB} description holds a FitsTable, which this library
- * does not have; where C makes one, an {@link UnsupportedOperationException} is thrown. C's grism
- * algorithm extracts a GrismMap from the pixel to wavelength Mapping; a FrameSet of this
- * library's classes holds none, so it finds none, as C finds none in such a FrameSet.
+ * does not have; where C makes one, an {@link UnsupportedOperationException} is thrown. The grism
+ * algorithm extracts the GrismMap from the end of the pixel to wavelength Mapping ({@link
+ * #extractGrismMap}).
  *
  * <p>Ported from Rust {@code fitschan/fset_to_store/spectral_axes.rs}, following fitschan.c, whose
  * structure is kept where Rust's follows from its ownership rules: the FrameSet is changed in place
@@ -27,6 +27,9 @@ import uk.ac.starlink.ast.internal.pal.Pal;
 final class FitsSpectralAxes {
 
     private static final double AST__BAD = AstObject.AST__BAD;
+
+    /** C's {@code AST__DR2D}: radians to degrees. */
+    private static final double AST__DR2D = 57.29577951308232;
 
     /** The speed of light in m/s, C's {@code AST__C}. */
     private static final double AST__C = 2.99792458E8;
@@ -211,12 +214,52 @@ final class FitsSpectralAxes {
                     }
                 }
 
-                // The grism algorithm, tried with the axis as vacuum and as air wavelength in m.
-                // C looks for a GrismMap producing the axis in the simplified pixel to wavelength
-                // Mapping (ExtractGrismMap); a FrameSet of this library's classes holds none.
+                // The grism algorithm, tried with the axis as vacuum and as air wavelength in m:
+                // the simplified pixel to wavelength Mapping must end in a GrismMap producing the
+                // axis (simplifying merges a ZoomMap that follows it into it), the rest of it
+                // linear on the axis.
                 for (int ix = 0; ix < 2 && ctype == null; ix++) {
                     fs.setC(systemAttr, ix == 0 ? "WAVE" : "AWAV");
                     fs.setC(unitAttr, "m");
+                    Mapping wmap = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)
+                            .simplify();
+                    Mapping[] sansGrism = new Mapping[1];
+                    GrismMap gmap = extractGrismMap(wmap, iax, sansGrism);
+                    if (gmap != null && FitsIsMapLinear.isMapLinear(sansGrism[0], lbndP, ubndP, iax, null)) {
+                        // The reference wavelength in m, and the wavelength SpecFrame.
+                        double wcrval = gmap.getGrismWaveRValue();
+                        SpecFrame tfrm1 = (SpecFrame) specfrm.copy();
+                        fs.setC(systemAttr, origSystem);
+                        fs.setC(unitAttr, linUnit);
+                        FrameSet tfs1 = specfrm.convert(tfrm1, "");
+                        if (tfs1 != null) {
+                            Mapping tmap3 = tfs1.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+                            crval = tmap3.tran1(1, new double[] {wcrval}, false)[0];
+
+                            // From S to wavelength to the grism parameter: its value and rate
+                            // of change with S at the reference point.
+                            gmap.invert();
+                            Mapping tmap4 = new CmpMap(tmap3, gmap, true);
+                            double gval = tmap4.tran1(1, new double[] {crval}, true)[0];
+                            double dgbyds = tmap4.rate(new double[] {crval}, 1, 1);
+
+                            // FITS-WCS paper III makes dS/dw unity at the reference point, so
+                            // the grism parameter is dgbyds * w + gval.
+                            Mapping tmap6 = new CmpMap(new ZoomMap(1, dgbyds), new ShiftMap(new double[] {gval}), true);
+                            tmap6.invert();
+                            axmap = FitsOtherAxes.addUnitMaps(new CmpMap(tmap4, tmap6, true), iax, nwcs);
+                            ctype = withCode(origSystem, ix == 0 ? "-GRI" : "-GRA");
+
+                            // The parameters that differ from FITS-WCS paper III's defaults.
+                            storeGrismPv(store, fitsI, 0, gmap.getGrismGValue(), 0.0, 1.0);
+                            storeGrismPv(store, fitsI, 1, gmap.getGrismMValue(), 0.0, 1.0);
+                            storeGrismPv(store, fitsI, 2, gmap.getGrismAlphaValue(), 0.0, AST__DR2D);
+                            storeGrismPv(store, fitsI, 3, gmap.getGrismNRValue(), 1.0, 1.0);
+                            storeGrismPv(store, fitsI, 4, gmap.getGrismNRPValue(), 0.0, 1.0);
+                            storeGrismPv(store, fitsI, 5, gmap.getGrismEpsValue(), 0.0, AST__DR2D);
+                            storeGrismPv(store, fitsI, 6, gmap.getGrismThetaValue(), 0.0, AST__DR2D);
+                        }
+                    }
                     fs.setC(systemAttr, origSystem);
                     fs.setC(unitAttr, linUnit);
                 }
@@ -328,6 +371,75 @@ final class FitsSpectralAxes {
         }
 
         return ret != null ? ret.simplify() : new UnitMap(nwcs);
+    }
+
+    /**
+     * Sets PVi_m of the zero-based FITS axis {@code fitsI} to {@code value * scale}, unless {@code
+     * value} is {@code dflt}, FITS-WCS paper III's default for the grism parameter, as C's {@code
+     * SpectralAxes} does.
+     */
+    private static void storeGrismPv(FitsStore store, int fitsI, int m, double value, double dflt, double scale) {
+        if (value != dflt) {
+            store.setPv(fitsI, m, value * scale);
+        }
+    }
+
+    /**
+     * C's {@code ExtractGrismMap} (fitschan.c): the GrismMap, not inverted, that produces output
+     * {@code iax} (zero-based) of {@code map} directly, its output not changed by any Mapping
+     * after it; or null if there is none. A GrismMap is found in {@code map} itself or, within a
+     * CmpMap, in the second component of a series CmpMap or the component of a parallel CmpMap
+     * producing the output, each component set for the duration to the Invert value it had when
+     * the CmpMap was made, as C sets it, and set back to the value it had afterwards. The GrismMap
+     * is shared, not copied, as C clones it.
+     *
+     * @param newMap receives the Mapping {@code map} is with the GrismMap replaced by a UnitMap,
+     *     sharing its other parts, or null if there is no GrismMap
+     */
+    static GrismMap extractGrismMap(Mapping map, int iax, Mapping[] newMap) {
+        GrismMap ret = null;
+        newMap[0] = null;
+        if (map instanceof GrismMap) {
+            if (!map.getInvert()) {
+                ret = (GrismMap) map;
+                ret.markShared();
+                newMap[0] = new UnitMap(1);
+            }
+        } else if (map instanceof CmpMap) {
+            boolean[] series = new boolean[1];
+            boolean[] inverts = new boolean[2];
+            Mapping[] parts = map.decompose(series, inverts);
+            Mapping mapa = parts[0];
+            Mapping mapb = parts[1];
+            boolean oldInva = mapa.getInvert();
+            boolean oldInvb = mapb.getInvert();
+            mapa.setInvert(inverts[0]);
+            mapb.setInvert(inverts[1]);
+            try {
+                Mapping[] newMapa = {null};
+                Mapping[] newMapb = {null};
+                if (series[0]) {
+                    ret = extractGrismMap(mapb, iax, newMapb);
+                    newMapa[0] = mapa;
+                } else {
+                    int na = mapa.getNout();
+                    if (iax < na) {
+                        ret = extractGrismMap(mapa, iax, newMapa);
+                        newMapb[0] = mapb;
+                    } else {
+                        ret = extractGrismMap(mapb, iax - na, newMapb);
+                        newMapa[0] = mapa;
+                    }
+                }
+                if (ret != null) {
+                    newMap[0] = new CmpMap(newMapa[0], newMapb[0], series[0]);
+                }
+            } finally {
+                mapa.setInvert(oldInva);
+                mapb.setInvert(oldInvb);
+            }
+        }
+        return ret;
     }
 
     /**

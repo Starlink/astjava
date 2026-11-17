@@ -4,5 +4,4 @@
 programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, PointList, PointSet, Prism
 serialisation/c_dssmap.ast | needs DssMap
 serialisation/region_in_cmpframe.ast | needs Box, PointSet
-wcsconv/framesets/grism-head.ast | needs GrismMap
 wcsconv/inputs/lsst2.ast | needs SplineMap

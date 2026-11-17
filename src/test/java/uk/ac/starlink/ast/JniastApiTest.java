@@ -48,6 +48,7 @@ class JniastApiTest {
             "FluxFrame",
             "Frame",
             "FrameSet",
+            "GrismMap",
             "KeyMap",
             "LutMap",
             "Mapping",

@@ -198,6 +198,21 @@ class NanProtocolTest {
         assertNanProtocolMatchesTransform(map, fromRows(rows), 32, true, 1e-14);
     }
 
+    @Test
+    void nanProtocolGrismmap() {
+        // Realistic-ish grism parameters.
+        GrismMap map = new GrismMap();
+        map.set("GrismNR=1.5,GrismNRP=0.0,GrismWaveR=5000.0E-10,GrismAlpha=0.0,GrismG=1.0E7,GrismM=1,"
+                + "GrismEps=1.0,GrismTheta=0.0");
+        double[][] rows = new double[32][];
+        for (int i = 0; i < 32; i++) {
+            rows[i] = new double[] {i * 0.001};
+        }
+        rows[5][0] = BAD;
+        rows[12][0] = Double.NaN;
+        assertNanProtocolMatchesTransform(map, fromRows(rows), 32, true, 1e-14);
+    }
+
     /** The simplified FrameSet read from {@code lsst.ast}. */
     private static Mapping loadLsst() {
         return LsstOracleTest.loadLsst().simplify();

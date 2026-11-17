@@ -14,8 +14,8 @@ import uk.ac.starlink.ast.internal.pal.Pal;
  * and ZSOURCE, its standard of rest from SPECSYS and its Label from CNAME, in C's order. The
  * Mapping depends on the algorithm code: a linear axis adds CRVAL, a {@code -X2P} axis (C's {@code
  * NonLinSpecWcs}) is linear in the system X and converted to the axis's own system, a {@code
- * -LOG} axis is exponential in the intermediate world coordinate (C's {@code LogWcs}), and the
- * {@code -GRI}/{@code -GRA} axes need GrismMap, which is not available.
+ * -LOG} axis is exponential in the intermediate world coordinate (C's {@code LogWcs}), and a
+ * {@code -GRI} or {@code -GRA} axis is described by a GrismMap (C's {@code GrismSpecWcs}).
  *
  * <p>Ported from Rust {@code fitschan/wcs_spectral.rs}, following C's {@code WcsSpectral}, {@code
  * NonLinSpecWcs}, {@code GrismSpecWcs}, {@code LogWcs} and {@code DSBSetUp} (fitschan.c) where
@@ -28,6 +28,9 @@ final class FitsWcsSpectral {
 
     /** The class C's read reports errors for. */
     private static final String CLASS = "FitsChan";
+
+    /** C's {@code AST__DD2R}: degrees to radians. */
+    private static final double AST__DD2R = 0.017453292519943295;
 
     /** {@code AST__DBL_DIG}, the significant digits with which C writes a constant into a function. */
     private static final int DBL_DIG = 17;
@@ -76,8 +79,6 @@ final class FitsWcsSpectral {
      *     spectral, and the Frame
      * @throws AstException with status {@code AST__BDFTS} for an algorithm code that cannot be
      *     implemented, as C reports it, or as the attribute settings report a bad keyword value
-     * @throws UnsupportedOperationException for a {@code -GRI} or {@code -GRA} axis, whose Mapping
-     *     needs GrismMap
      */
     static Result wcsSpectral(
             FitsStore store,
@@ -104,7 +105,7 @@ final class FitsWcsSpectral {
                 } else if (algcode.charAt(0) == '-' && algcode.length() > 2 && algcode.charAt(2) == '2') {
                     map1 = nonLinSpecWcs(algcode, store, i, specfrm, warnings);
                 } else if ("-GRI".equals(algcode) || "-GRA".equals(algcode)) {
-                    map1 = grismSpecWcs(algcode, i, specfrm, ctype);
+                    map1 = grismSpecWcs(algcode, store, i, specfrm);
                 } else {
                     // An algorithm code C does not know, which it reports below.
                     map1 = null;
@@ -441,14 +442,19 @@ final class FitsWcsSpectral {
 
     /**
      * C's {@code GrismSpecWcs} (fitschan.c:14424) for a {@code -GRI} (vacuum) or {@code -GRA} (air
-     * wavelength) axis: the Mapping is built from the conversion of the SpecFrame to wavelength in
-     * metres and a GrismMap.
+     * wavelength) axis {@code i}: the Mapping from the intermediate world coordinate {@code w} to
+     * the axis's system S. A GrismMap takes its GrismG, GrismM (rounded to the nearest integer),
+     * GrismAlpha, GrismNR, GrismNRP, GrismEps and GrismTheta from PVi_0 to PVi_6 (the angles in
+     * degrees), each absent one taking the default FITS-WCS paper III gives it, and its GrismWaveR
+     * from CRVAL (zero when absent) converted to the wavelength in metres. Inverted, after the
+     * conversion from S to that wavelength, it gives the grism parameter of S; {@code w} is the
+     * grism parameter less its value at CRVAL, divided by its rate of change with S there, so that
+     * S changes at unit rate with {@code w} at the reference point.
      *
-     * @return null when there is no conversion from the SpecFrame to wavelength
-     * @throws UnsupportedOperationException when there is one, since the GrismMap is not
-     *     available
+     * @return null when the SpecFrame does not convert to the wavelength, or the rate of change is
+     *     bad or zero
      */
-    private static Mapping grismSpecWcs(String algcode, int i, SpecFrame specfrm, String ctype) {
+    private static Mapping grismSpecWcs(String algcode, FitsStore store, int i, SpecFrame specfrm) {
         SpecFrame wfrm = (SpecFrame) specfrm.copy();
         wfrm.setSystemValue("-GRI".equals(algcode) ? SpecFrame.AST__WAVELEN : SpecFrame.AST__AIRWAVE);
         wfrm.setUnit(1, "m");
@@ -456,7 +462,43 @@ final class FitsWcsSpectral {
         if (fs == null) {
             return null;
         }
-        throw new UnsupportedOperationException(
-                "FitsChan: the " + algcode + " spectral axis " + (i + 1) + " (CTYPE '" + ctype + "') needs GrismMap");
+        Mapping smap = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        double crv = store.crval[i] != null ? store.crval[i] : 0.0;
+        double wcrv = smap.tran1(1, new double[] {crv}, true)[0];
+
+        GrismMap gmap = new GrismMap();
+        Double pv = pvItem(store, i, 0);
+        gmap.setGrismGValue(pv != null ? pv : 0.0);
+        pv = pvItem(store, i, 1);
+        gmap.setGrismMValue(pv != null ? (int) FitsMakeIntWorld.roundHalfAway(pv) : 0);
+        pv = pvItem(store, i, 2);
+        gmap.setGrismAlphaValue(pv != null ? pv * AST__DD2R : 0.0);
+        pv = pvItem(store, i, 3);
+        gmap.setGrismNRValue(pv != null ? pv : 1.0);
+        pv = pvItem(store, i, 4);
+        gmap.setGrismNRPValue(pv != null ? pv : 0.0);
+        pv = pvItem(store, i, 5);
+        gmap.setGrismEpsValue(pv != null ? pv * AST__DD2R : 0.0);
+        pv = pvItem(store, i, 6);
+        gmap.setGrismThetaValue(pv != null ? pv * AST__DD2R : 0.0);
+        gmap.setGrismWaveRValue(wcrv);
+
+        // From S to wavelength to the grism parameter.
+        gmap.invert();
+        Mapping map1 = new CmpMap(smap, gmap, true);
+        double gcrv = gmap.tran1(1, new double[] {wcrv}, true)[0];
+        double dg = map1.rate(new double[] {crv}, 1, 1);
+        if (dg == AstObject.AST__BAD || dg == 0.0) {
+            return null;
+        }
+        // From w to the grism parameter, then back to S.
+        Mapping map2 = new CmpMap(new ZoomMap(1, dg), new ShiftMap(new double[] {gcrv}), true);
+        map1.invert();
+        return new CmpMap(map2, map1, true);
+    }
+
+    /** C's {@code GetItem( &(store->pv), i, m, ... )}: PVi_m of the zero-based axis {@code i}, or null. */
+    private static Double pvItem(FitsStore store, int i, int m) {
+        return m < store.pv[i].length ? store.pv[i][m] : null;
     }
 }

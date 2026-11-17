@@ -15,10 +15,9 @@ import org.junit.jupiter.api.Test;
  * fitschan/wcs_spectral.rs} ({@code mod tests}), which build FitsStores directly, and reads of
  * spectral headers through a FitsChan compared with what C's {@code astRead} gives for the same
  * cards (the SpecFrame's attributes as {@code astGetC} formats them, the pixel to world transform,
- * and the error status and messages), including the read half of the plan's Review Focus 5: a
- * spectral axis whose Mapping needs a class that is not available ({@code -GRI} through
- * GrismMap) fails with {@code needs <Class>}. A {@code -TAB} axis with TabOK
- * set fails as in C, since the FitsChan holds no table.
+ * and the error status and messages). Grism axes ({@code -GRI} and {@code -GRA}) are read as the
+ * C probe {@code probes/grismmap_probe.c} reads them. A {@code -TAB} axis with TabOK set fails as
+ * in C, since the FitsChan holds no table.
  */
 class FitsWcsSpectralTest {
 
@@ -467,20 +466,139 @@ class FitsWcsSpectralTest {
         assertTrue(dump.contains("SimpFI = 1") && dump.contains("SimpIF = 1"), dump);
     }
 
-    /** C maps a {@code -GRI} axis with a GrismMap once the SpecFrame converts to wavelength. */
+    /** The cases of the C probe {@code probes/grismmap_probe.c}. */
+    private static final java.util.Map<String, String> GRISM_PROBE =
+            uk.ac.starlink.ast.testsupport.ProbeOutput.load("grismmap_probe");
+
+    /**
+     * What the probe's {@code fitsrw} prints for the read of {@code cards} with FITS-WCS: the
+     * class read, pixels 1, 50 and 100 transformed forward and back, and the simplified Mapping.
+     */
+    private static String grismRead(String... cards) {
+        FitsChan fc = FitsHeaders.chan(cards);
+        fc.setEncoding("FITS-WCS");
+        FrameSet fs = (FrameSet) fc.read();
+        double[] pix = {1.0, 50.0, 100.0};
+        double[] w = fs.tran1(3, pix, true);
+        double[] back = fs.tran1(3, w, false);
+        StringBuilder sb = new StringBuilder("read ").append(fs.astClass()).append('\n');
+        for (int i = 0; i < 3; i++) {
+            sb.append("pixel ")
+                    .append(CFormat.format("%.17g", pix[i]))
+                    .append(" -> ")
+                    .append(CFormat.format("%.17g", w[i]))
+                    .append(" -> ")
+                    .append(CFormat.format("%.17g", back[i]))
+                    .append('\n');
+        }
+        return sb.append(ChannelText.dump(
+                        fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT).simplify()))
+                .toString();
+    }
+
+    /** The read part of the probe case {@code name}, up to what the write gives. */
+    private static String grismProbeRead(String name) {
+        String text = GRISM_PROBE.get(name);
+        return text.substring(0, text.indexOf("-- written"));
+    }
+
+    private static void assertGrismRead(String name, String got) {
+        String want = grismProbeRead(name);
+        if (!FitsChanWcsWriteTest.grismMatchesC(got, want)) {
+            assertEquals(want, got, name);
+        }
+    }
+
+    /**
+     * C maps a {@code -GRI} or {@code -GRA} axis with an inverted GrismMap, whose attributes come
+     * from PVi_0 to PVi_6, following a WinMap from the intermediate world coordinate to the grism
+     * parameter; the transformations are C's (probe {@code probes/grismmap_probe.c}, within the
+     * tolerance {@link FitsChanWcsWriteTest#grismMatchesC} explains).
+     */
     @Test
-    void grismAxisNeedsGrismMap() {
-        for (String ctype : new String[] {"WAVE-GRI", "WAVE-GRA"}) {
-            UnsupportedOperationException e = assertThrows(
-                    UnsupportedOperationException.class,
-                    () -> oneAxis(
-                                    "CTYPE1  = '" + ctype + "'",
-                                    "CRVAL1  = 5.0E-7",
-                                    "CDELT1  = 1.0E-10",
-                                    "PV1_0   = 3.0E5",
-                                    "PV1_1   = 1")
-                            .read());
-            assertTrue(e.getMessage().endsWith(" needs GrismMap"), e.getMessage());
+    void grismAxesAreReadAsC() {
+        assertGrismRead(
+                "fits_gri_FITS-WCS",
+                grismRead(
+                        "CTYPE1  = 'WAVE-GRI'",
+                        "CRVAL1  =            5.0E-7",
+                        "CRPIX1  =                1.0",
+                        "CDELT1  =            1.0E-9",
+                        "CUNIT1  = 'm       '",
+                        "PV1_0   =            9.0E5",
+                        "PV1_1   =                1.0",
+                        "PV1_2   =                0.0",
+                        "PV1_3   =                1.0",
+                        "PV1_4   =                0.0",
+                        "PV1_5   =                0.0",
+                        "PV1_6   =                0.0"));
+        assertGrismRead(
+                "fits_gra_FITS-WCS",
+                grismRead(
+                        "CTYPE1  = 'AWAV-GRA'",
+                        "CRVAL1  =            5.0E-7",
+                        "CRPIX1  =               10.0",
+                        "CDELT1  =            1.0E-9",
+                        "CUNIT1  = 'm       '",
+                        "PV1_0   =            6.0E5",
+                        "PV1_1   =               -2.0",
+                        "PV1_2   =               10.0",
+                        "PV1_3   =                1.5",
+                        "PV1_4   =             -100.0",
+                        "PV1_5   =                2.0",
+                        "PV1_6   =                3.0"));
+        assertGrismRead(
+                "fits_gri_half_order",
+                grismRead(
+                        "CTYPE1  = 'WAVE-GRI'",
+                        "CRVAL1  =            5.0E-7",
+                        "CRPIX1  =                1.0",
+                        "CDELT1  =            1.0E-9",
+                        "CUNIT1  = 'm       '",
+                        "PV1_0   =            9.0E5",
+                        "PV1_1   =                1.5"));
+    }
+
+    /**
+     * C cannot implement a grism axis whose SpecFrame does not convert to wavelength, or whose
+     * order, rounded half away from zero, puts the reference ray outside the grism, so the rate at
+     * the reference point is bad.
+     */
+    @Test
+    void unusableGrismAxesAreRefusedAsC() {
+        String[][] cases = {
+            {
+                "fits_vrad_gri",
+                "CTYPE1  = 'VRAD-GRI'",
+                "CRVAL1  =              100.0",
+                "CRPIX1  =                1.0",
+                "CDELT1  =                1.0",
+                "PV1_0   =            9.0E5",
+                "PV1_1   =                1.0"
+            },
+            {
+                "fits_gri_negative_half_order",
+                "CTYPE1  = 'WAVE-GRI'",
+                "CRVAL1  =            5.0E-7",
+                "CRPIX1  =                1.0",
+                "CDELT1  =            1.0E-9",
+                "CUNIT1  = 'm       '",
+                "PV1_0   =            9.0E5",
+                "PV1_1   =               -2.5"
+            }
+        };
+        for (String[] c : cases) {
+            FitsChan fc = FitsHeaders.chan(Arrays.copyOfRange(c, 1, c.length));
+            fc.setEncoding("FITS-WCS");
+            fc.clear("Card");
+            AstException e = assertThrows(AstException.class, fc::read, c[0]);
+            StringBuilder sb = new StringBuilder();
+            for (String line : e.getMsgText().split("\n", -1)) {
+                sb.append("!  ").append(line).append('\n');
+            }
+            sb.append("status ").append(e.getStatus()).append('\n');
+            String want = GRISM_PROBE.get(c[0]).replaceAll("(?m)^.*AST: Error in routine.*\n", "");
+            assertEquals(want, sb.toString(), c[0]);
         }
     }
 

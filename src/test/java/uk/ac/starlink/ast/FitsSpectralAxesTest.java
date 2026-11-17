@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -25,8 +26,11 @@ import org.junit.jupiter.api.Test;
  *
  * <p>The Rust tests' expectations are checked against the cards C writes for the same FrameSets.
  * {@code x2p_cascade_picks_freq_for_wavelength_axis} builds its axis with a MathMap; here the
- * frequency axis is set to wavelength through the FrameSet, as {@code testfitschan.c} does. Listed in {@code
- * deferred/rust-tests.txt}: {@code try_grism_cascade_emits_gri_pv_and_chain} (GrismMap).
+ * frequency axis is set to wavelength through the FrameSet, as {@code testfitschan.c} does. Rust's
+ * {@code try_grism_cascade_emits_gri_pv_and_chain} calls a helper this library does not have;
+ * here the whole of {@code SpectralAxes} describes its axis, through a grism non-linear enough
+ * that the linear, {@code -X2P} and {@code -LOG} algorithms fail first. The unit tests of Rust
+ * {@code fitschan/fset_to_store/grism.rs} test {@link FitsSpectralAxes#extractGrismMap}.
  */
 class FitsSpectralAxesTest {
 
@@ -831,5 +835,125 @@ class FitsSpectralAxesTest {
             assertEquals(fits[i], FitsSpectralAxes.getFitsSor(ast[i]));
         }
         assertNull(FitsSpectralAxes.getFitsSor("lsrk"));
+    }
+
+    // ------------------------------------------------------------------
+    // spectral_axes.rs: try_grism_cascade_emits_gri_pv_and_chain
+    // ------------------------------------------------------------------
+
+    /** A GrismMap of a grating of 9e5 rulings per metre, first order, about 5e-7 m. */
+    private static GrismMap grating() {
+        GrismMap g = new GrismMap();
+        g.set("GrismG=9.0E5,GrismM=1,GrismWaveR=5.0E-7");
+        return g;
+    }
+
+    /**
+     * A wavelength axis whose Mapping from pixels ends in a GrismMap is described with the {@code
+     * -GRI} algorithm: CRVAL is the GrismMap's reference wavelength and PVi_0 and PVi_1 its
+     * GrismG and GrismM, as C writes them for the same axis alone (probe {@code
+     * probes/grismmap_probe.c}, case {@code write_shift_zoom_grism}).
+     */
+    @Test
+    void tryGrismCascadeEmitsGriPvAndChain() {
+        GrismMap g = grating();
+        Mapping chain1d =
+                new CmpMap(new CmpMap(new ShiftMap(new double[] {-50.0}), new ZoomMap(1, 0.002), true), g, true);
+        Mapping chain2d = new CmpMap(new UnitMap(1), chain1d, false);
+        FitsStore store = new FitsStore(2);
+        boolean[] axisDone = new boolean[2];
+        Mapping axmap = spectralAxes(
+                twoAxis(spec("System=WAVE,Unit=m"), chain2d), new double[] {100, 100}, store, null, axisDone);
+        assertTrue(axisDone[1]);
+        assertEquals("WAVE-GRI", store.ctype[1]);
+        assertEquals(2, axmap.getNin());
+        assertEquals(2, axmap.getNout());
+        assertEquals(g.getGrismWaveR(), store.crval[1], 1e-9);
+        assertEquals(9.0e5, store.pv[1][0]);
+        assertEquals(1.0, store.pv[1][1]);
+        for (int m = 2; m < store.pv[1].length; m++) {
+            assertNull(store.pv[1][m], "PV2_" + m + " is the default and is not stored");
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // fitschan/fset_to_store/grism.rs: ExtractGrismMap
+    // ------------------------------------------------------------------
+
+    @Test
+    void leafGrismExtracted() {
+        GrismMap g = new GrismMap();
+        Mapping[] replacement = new Mapping[1];
+        GrismMap extracted = FitsSpectralAxes.extractGrismMap(g, 0, replacement);
+        assertInstanceOf(UnitMap.class, replacement[0]);
+        assertEquals(1, replacement[0].getNin());
+        assertEquals(1, replacement[0].getNout());
+        // C clones the GrismMap: the one extracted is the one given.
+        assertSame(g, extracted, "the GrismMap is shared, as C clones it");
+    }
+
+    @Test
+    void invertedGrismNotExtracted() {
+        GrismMap g = new GrismMap();
+        g.invert();
+        Mapping[] replacement = new Mapping[1];
+        assertNull(FitsSpectralAxes.extractGrismMap(g, 0, replacement));
+        assertNull(replacement[0]);
+    }
+
+    @Test
+    void shiftThenGrismInSeriesExtracts() {
+        GrismMap g = new GrismMap();
+        CmpMap chain = new CmpMap(new ShiftMap(new double[] {3.5}), g, true);
+        Mapping[] replacement = new Mapping[1];
+        GrismMap extracted = FitsSpectralAxes.extractGrismMap(chain, 0, replacement);
+        assertSame(g, extracted, "the GrismMap at the end is extracted");
+        assertEquals(1, replacement[0].getNin());
+        assertEquals(1, replacement[0].getNout());
+        assertEquals(4.5, replacement[0].tran1(1, new double[] {1.0}, true)[0]);
+    }
+
+    /** The output of a GrismMap followed by a ShiftMap is changed after it, so it is not extracted. */
+    @Test
+    void grismThenShiftInSeriesDoesNotExtract() {
+        CmpMap chain = new CmpMap(new GrismMap(), new ShiftMap(new double[] {3.5}), true);
+        assertNull(FitsSpectralAxes.extractGrismMap(chain, 0, new Mapping[1]));
+    }
+
+    @Test
+    void parallelGrismOnAxisOneExtracts() {
+        GrismMap g = new GrismMap();
+        CmpMap chain = new CmpMap(new UnitMap(1), g, false);
+        Mapping[] replacement = new Mapping[1];
+        GrismMap extracted = FitsSpectralAxes.extractGrismMap(chain, 1, replacement);
+        assertSame(g, extracted, "the GrismMap producing output 1 is extracted");
+        assertEquals(2, replacement[0].getNin());
+        assertEquals(2, replacement[0].getNout());
+    }
+
+    @Test
+    void parallelGrismWrongAxisDoesNotExtract() {
+        CmpMap chain = new CmpMap(new UnitMap(1), new GrismMap(), false);
+        assertNull(FitsSpectralAxes.extractGrismMap(chain, 0, new Mapping[1]));
+    }
+
+    @Test
+    void noGrismAnywhereReturnsNone() {
+        CmpMap chain = new CmpMap(new ShiftMap(new double[] {1.0}), new UnitMap(1), true);
+        assertNull(FitsSpectralAxes.extractGrismMap(chain, 0, new Mapping[1]));
+    }
+
+    /**
+     * Each component is set, for the search, to the Invert value it had when the CmpMap was made,
+     * as C sets it: a GrismMap inverted after it was combined is still found, and is left with the
+     * Invert value it had.
+     */
+    @Test
+    void aComponentIsSearchedAsItWasCombined() {
+        GrismMap g = new GrismMap();
+        CmpMap chain = new CmpMap(new ShiftMap(new double[] {1.0}), g, true);
+        g.invert();
+        assertSame(g, FitsSpectralAxes.extractGrismMap(chain, 0, new Mapping[1]));
+        assertTrue(g.getInvert());
     }
 }

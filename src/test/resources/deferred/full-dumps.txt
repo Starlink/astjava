@@ -81,12 +81,6 @@ simplify/dssmap_winmap_absorb.map | needs DssMap
 simplify/dssmap_winmap_absorb.simp | needs DssMap
 simplify/dssmap_zoom_no_merge.map | needs DssMap
 simplify/dssmap_zoom_no_merge.simp | needs DssMap
-simplify/grism_inverse_cancel_tail.map | needs GrismMap
-simplify/grism_inverse_cancel.map | needs GrismMap
-simplify/grism_zoom_inv_merge.map | needs GrismMap
-simplify/grism_zoom_inv_merge.simp | needs GrismMap
-simplify/grism_zoom_merge.map | needs GrismMap
-simplify/grism_zoom_merge.simp | needs GrismMap
 simplify/interval_halfinf_simplify.map | needs Interval, PointSet
 simplify/interval_nullregion_merge.map | needs Interval, NullRegion, PointSet
 simplify/interval_nullregion_merge.simp | needs Interval, PointSet
@@ -114,13 +108,6 @@ simplify/neg_box_unc_mismatch.map | needs Box, PointSet
 simplify/neg_cheby_quadratic_no_reduce.map | needs ChebyMap
 simplify/neg_chebymap_standalone.map | needs ChebyMap
 simplify/neg_circle_cmpframe_sky_second.map | needs Circle, PointSet
-simplify/neg_grism_different_attrs.map | needs GrismMap
-simplify/neg_grism_fwd_then_nonzoom.map | needs GrismMap
-simplify/neg_grism_inv_then_zoom.map | needs GrismMap
-simplify/neg_grism_nonzoom_before_inv.map | needs GrismMap
-simplify/neg_grism_parallel.map | needs GrismMap
-simplify/neg_grism_same_direction.map | needs GrismMap
-simplify/neg_grism_zoom_before_fwd.map | needs GrismMap
 simplify/neg_interval_parallel_nonregion.map | needs Interval, PointSet
 simplify/neg_interval_series.map | needs Interval, PointSet
 simplify/neg_interval_unbounded_pointlist.map | needs Interval, PointList, PointSet
@@ -261,5 +248,4 @@ simplify/unitnormmap_winmap_fwd_merge.simp | needs UnitNormMap
 simplify/unitnormmap_winmap_inv_refused.map | needs UnitNormMap
 simplify/unitnormmap_winmap_inv_refused.simp | needs UnitNormMap
 simplify/xph_inverse_cancel.map | needs XphMap
-wcsconv/framesets/grism-head.ast | needs GrismMap
 wcsconv/inputs/lsst2.ast | needs SplineMap

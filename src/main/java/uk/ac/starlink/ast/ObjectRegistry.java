@@ -44,6 +44,8 @@ final class ObjectRegistry {
                 return Frame::new;
             case "FrameSet":
                 return FrameSet::new;
+            case "GrismMap":
+                return GrismMap::new;
             case "KeyMap":
                 return KeyMap::new;
             case "LutMap":

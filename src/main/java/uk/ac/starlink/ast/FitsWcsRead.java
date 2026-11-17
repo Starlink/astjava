@@ -19,9 +19,8 @@ import java.util.List;
  * to intermediate world coordinate Mapping, then one Mapping over every axis for each class of
  * axis (celestial, spectral, the others) and any {@code -TAB} look-ups, all in series.
  *
- * <p>Spectral axes are described by {@link FitsWcsSpectral}. The Mapping of grism axes (GrismMap)
- * is not available: a header using one makes the read throw {@link
- * UnsupportedOperationException}. A {@code -TAB} axis when TabOK is above zero needs a table,
+ * <p>Spectral axes are described by {@link FitsWcsSpectral}, grism axes with a GrismMap. A {@code
+ * -TAB} axis when TabOK is above zero needs a table,
  * which a FitsChan here holds only when read from a dump (see {@link #tabMapping}).
  *
  * <p>Ported from Rust {@code fitschan/wcs_read.rs} and the FITS-WCS branch of {@code

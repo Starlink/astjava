@@ -472,6 +472,29 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: compares the factors in use, and, for different Invert attributes, their product with 1.
 - Java: as C.
 
+### The attributes of a new GrismMap
+
+- C: `astGrismMap` leaves all eight attributes unset, so a new GrismMap's dump writes each as a comment holding its default; each can be tested and cleared, and setting `AST__BAD` (`INT_MAX` for GrismM) leaves it unset (`grismmap.c`).
+  The setters discard the records of simplification only when the value changes, and the loader re-applies each value read through them, so a dumped `IsSimp` card survives a read (probe `src/test/resources/probes/grismmap_probe.c`, case `dump_simplified`).
+- Rust: `GrismMap::new` sets all eight attributes, and only `default_map` leaves them unset; there are no test or clear methods, the setters given the unset values acting as a clear.
+  Its loader keeps the `IsSimp` card as C's does, though `docs/issues/c-library-quirks.md` ("The `IsSimp` card does not survive being read back") counts GrismMap among the classes whose loaders discard it.
+- Java: as C; jniast's constructor makes a GrismMap with no attribute set.
+
+### Comparing two GrismMaps
+
+- **C quirk**: `Equal` (`grismmap.c`) compares the attributes as stored, `AST__BAD` (or `INT_MAX` for GrismM) when unset, so a GrismMap with no attribute set does not equal one with each attribute set to its default, though the two transform alike (probe `src/test/resources/probes/grismmap_probe.c`, case `equal`, `default_vs_set_to_defaults`).
+- Rust: compares the values in use.
+- Java: as C.
+
+### Merging a GrismMap with a ZoomMap whose own Invert attribute is set
+
+- **C quirk**: `CanMerge` (`grismmap.c`) merges a GrismMap applied forward with a following ZoomMap, and a GrismMap applied inverted with a preceding one, scaling GrismG, GrismNRP and GrismWaveR by the ZoomMap's factor.
+  It takes the factor as the Zoom attribute, or its reciprocal when the ZoomMap's own Invert attribute differs from (following) or equals (preceding) the Invert value the simplification applies it with, so the factor is the right one only while the ZoomMap's own Invert attribute is unset or zero.
+  A GrismMap followed by a ZoomMap of factor 2 that was inverted before the two were combined therefore merges into a GrismMap for wavelengths scaled by 2 rather than by 1/2, and so does a ZoomMap inverted after the CmpMap was made, on either side: the simplified Mapping does not transform as the original (probe `src/test/resources/probes/grismmap_probe.c`, cases `inverted_zoom_after_forward`, `zoom_inverted_after_combining` and `zoom_inverted_after_combining_before`).
+  A ZoomMap inverted before it is combined that precedes the GrismMap is merged correctly, because the ZoomMap's own merge, which comes first, replaces it with a ZoomMap that is not inverted (case `inverted_zoom_before_inverted`).
+- Rust: `grism_zoom_merge_at` in `mappings/simplify.rs` holds every Mapping of the list with its Invert attribute unset and takes the factor from the list's Invert value alone, so it merges these pairs correctly.
+- Java: as C.
+
 ## Units
 
 Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follows C in each.
@@ -1122,7 +1145,6 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: `SpectralAxes` tries each System of the `-X2P` algorithm (FREQ, WAVE, AWAV and VELO, the axis's own System among them) and of the grism algorithm (WAVE and AWAV in m) by setting it, and clearing or setting the Unit, through the FrameSet being written, which remaps its current Frame, and sets the original System and the linear Unit back after each, so the FrameSet's Mapping goes through each conversion and back, and a Unit that was not set is left set; it gives `IsMapTab1D` no unit (`fitschan.c` `SpectralAxes`).
 - Rust: `try_x2p_cascade` and `try_grism_cascade` in `fitschan/fset_to_store/spectral_axes.rs` convert clones of the SpecFrame and join the conversion to the pixel to world Mapping themselves, leaving the FrameSet unchanged; they skip the axis's own System, and pass to the next System when the reference value or the rate does not convert; `is_map_tab_1d` is given the linear Unit.
 - Java: as C (`FitsSpectralAxes`).
-  A FrameSet of this library's classes holds no GrismMap, so C's grism algorithm finds none, and only the attribute changes are made.
 
 ### The keywords `SpectralAxes` stores
 

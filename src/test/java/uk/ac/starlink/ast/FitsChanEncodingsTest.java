@@ -11,9 +11,7 @@ import org.junit.jupiter.api.Test;
  * fixture line is given to {@code putFits}, and the values expected are those C gives (probe
  * {@code c2.c} beside the task report).
  *
- * <p>{@code read_dss_produces_frameset} is translated in {@link FitsEncDssTest}. Listed in {@code
- * deferred/rust-tests.txt}: {@code grism_builds_grism_mapping} (a {@code -GRI} axis, which C maps
- * with a GrismMap).
+ * <p>{@code read_dss_produces_frameset} is translated in {@link FitsEncDssTest}.
  */
 class FitsChanEncodingsTest {
 
@@ -176,6 +174,25 @@ class FitsChanEncodingsTest {
         for (int i = 0; i < sInputs.length; i++) {
             double tol = 1e-9 + 1e-9 * Math.abs(expectedPixels[i]);
             assertEquals(expectedPixels[i], got[i], tol, "point " + i + ": S=" + sInputs[i]);
+        }
+    }
+
+    /**
+     * The {@code -GRI} axis of {@code wcsconv/inputs/grism.head} is read with a GrismMap, and the
+     * FrameSet's inverse gives C's pixel coordinates for C's wavelengths, every row of the section
+     * {@code [grism.head nin=1 nout=1 dir=inverse]} of {@code headers.oracle}.
+     */
+    @Test
+    void grismBuildsGrismMapping() {
+        String rel = "wcsconv/inputs/grism.head";
+        FrameSet fs = FitsHeaders.readFrameSet(FitsHeaders.fixture(rel));
+        uk.ac.starlink.ast.testsupport.OracleSection inv = FitsHeaders.headersOracle(rel, false);
+        for (int row = 1; row <= inv.npoint(); row++) {
+            double s = FitsHeaders.oracleIn(inv, row)[0];
+            double expected = FitsHeaders.oracleOut(inv, row)[0];
+            double got = fs.tran1(1, new double[] {s}, false)[0];
+            double tol = 1e-9 + 1e-9 * Math.abs(expected);
+            assertEquals(expected, got, tol, "row " + row + ": S=" + s);
         }
     }
 }

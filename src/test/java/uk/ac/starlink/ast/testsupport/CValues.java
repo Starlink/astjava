@@ -176,6 +176,14 @@ public final class CValues {
         return linesMatch(got, want, (a, b) -> Math.abs(a - b) <= atol);
     }
 
+    /**
+     * {@link #nativeStringsEquivalent} with a relative tolerance {@code rtol} on numbers: each
+     * within {@code rtol} of the larger of the two in magnitude.
+     */
+    public static boolean nativeStringsWithinRelative(String got, String want, double rtol) {
+        return linesMatch(got, want, (a, b) -> Math.abs(a - b) <= rtol * Math.max(Math.abs(a), Math.abs(b)));
+    }
+
     /** {@link #nativeStringsEquivalent} with C's {@code astEQUAL} tolerance on numbers. */
     public static boolean nativeStringsAstEqual(String got, String want) {
         return linesMatch(got, want, CValues::astEqualClose);

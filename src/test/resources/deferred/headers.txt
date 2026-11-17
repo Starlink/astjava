@@ -1,4 +1,3 @@
 # Fixtures of fixtures/oracle/headers.oracle whose sections do not all match C:
 # <path relative to ast_tester/fixtures> | <reason>
 # Rewritten by TransformOracleTest with -Dast.writeDeferred=true.
-wcsconv/inputs/grism.head | needs GrismMap
