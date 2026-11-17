@@ -18,14 +18,21 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * astGetC}, {@code astGetI} or {@code astGetD} and its {@code astTest} result; for a FrameSet it
  * also reads the current Frame ("inner"). {@link #make} and {@link #mismatch} do the same.
  *
- * <p>The probe's SpecFluxFrame cases are skipped (that class is not yet ported), as are its
- * Circle cases (Region, out of scope).
+ * <p>The probe's Circle cases are skipped (Region, out of scope).
  */
 class FrameClassAttrsTest {
 
     /** The probe's classes this library provides. */
     private static final List<String> IN_SCOPE = Arrays.asList(
-            "Frame", "SkyFrame", "SpecFrame", "DSBSpecFrame", "TimeFrame", "FluxFrame", "CmpFrame", "FrameSet");
+            "Frame",
+            "SkyFrame",
+            "SpecFrame",
+            "DSBSpecFrame",
+            "TimeFrame",
+            "FluxFrame",
+            "SpecFluxFrame",
+            "CmpFrame",
+            "FrameSet");
 
     /** The object the probe builds for {@code cls}. */
     private static Frame make(String cls) {
@@ -42,6 +49,8 @@ class FrameClassAttrsTest {
                 return new TimeFrame();
             case "FluxFrame":
                 return new FluxFrame(AstObject.AST__BAD, null);
+            case "SpecFluxFrame":
+                return new SpecFluxFrame(new SpecFrame(), new FluxFrame(AstObject.AST__BAD, null));
             case "CmpFrame":
                 return new CmpFrame(new SkyFrame(), new SpecFrame());
             case "FrameSet":
@@ -53,14 +62,15 @@ class FrameClassAttrsTest {
 
     /**
      * The Frame whose attributes show the effect of a setting on {@code f}: a FrameSet's current
-     * Frame, or a CmpFrame's first component (its SkyFrame, the primary Frame of axis 1).
+     * Frame, or a CmpFrame's first component (for the probe's CmpFrame its SkyFrame, the primary
+     * Frame of axis 1; for a SpecFluxFrame its SpecFrame).
      */
     private static Frame inner(String cls, Frame f) {
         if ("FrameSet".equals(cls)) {
             return ((FrameSet) f).getFrame(FrameSet.AST__CURRENT);
         }
-        if ("CmpFrame".equals(cls)) {
-            return f.primaryFrame(1, new int[1]);
+        if ("CmpFrame".equals(cls) || "SpecFluxFrame".equals(cls)) {
+            return ((CmpFrame) f).decompose()[0];
         }
         return null;
     }
@@ -143,7 +153,7 @@ class FrameClassAttrsTest {
                 failures.add(what + ": " + e.getMessage());
             }
         }
-        assertEquals(6 * 256 + 2 * 512, run, "the in-scope cases the C probe recorded");
+        assertEquals(6 * 256 + 3 * 512, run, "the in-scope cases the C probe recorded");
         assertTrue(
                 failures.isEmpty(), failures.size() + " of " + run + " cases differ:\n" + String.join("\n", failures));
     }

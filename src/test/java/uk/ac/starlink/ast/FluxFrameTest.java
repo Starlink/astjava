@@ -29,9 +29,8 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * the constructor.
  *
  * <p>{@code test_fluxframe_equal_same}, {@code test_fluxframe_equal_different_system} and {@code
- * test_fluxframe_equal_different_specval_is_equal} test {@code astEqual}, which this library does
- * not have, and are listed in {@code deferred/rust-tests.txt}. The SpecFluxFrame tests of {@code
- * test_fluxframe.rs} are in {@link SpecFluxFrameTest}, and {@code
+ * test_fluxframe_equal_different_specval_is_equal} call {@link AstObject#astEqual}. The
+ * SpecFluxFrame tests of {@code test_fluxframe.rs} are in {@link SpecFluxFrameTest}, and {@code
  * system_from_unit_matches_the_c_library} is in {@link FluxUnitSystemOracleTest}.
  */
 class FluxFrameTest {

@@ -10,13 +10,9 @@ package uk.ac.starlink.ast;
  * is the FluxFrame's Label, then {@code versus} and the SpecFrame's Label (as {@code Flux density
  * versus Frequency}), and that when it is aligned with another SpecFluxFrame the flux values are
  * converted as the spectral positions they are densities in change, as well as with the flux
- * System and Unit. Where C converts between SpecFluxFrames whose SpecFrames or FluxFrames differ
- * it builds Mappings this library does not have (a RateMap, a MathMap and a TranMap), and such a
- * conversion throws {@link UnsupportedOperationException}. So does a conversion between a
- * SpecFluxFrame and a FluxFrame or SpecFrame that do not match directly (a FluxFrame in another
- * flux System, say): C then casts the CmpFrame its match gives into a SpecFluxFrame and converts
- * between SpecFluxFrames. SpecFluxFrames with equal components, and those C finds no conversion
- * between, behave as in C.
+ * System and Unit. A conversion between a SpecFluxFrame and a FluxFrame or SpecFrame that do not
+ * match directly (a FluxFrame in another flux System, say) is made as in C, which casts the
+ * CmpFrame its match gives into a SpecFluxFrame and converts between SpecFluxFrames.
  *
  * <p>Ported from C {@code specfluxframe.c}, with Rust {@code frames/specfluxframe.rs}.
  */
@@ -237,14 +233,13 @@ public class SpecFluxFrame extends CmpFrame {
     /**
      * The Mapping from {@code target} to {@code result}, ignoring their axis permutations, or null
      * if there is none (C's {@code MakeSFMapping}). If their SpecFrames are equal and their
-     * FluxFrames are equal it is a UnitMap. Otherwise C makes a chain of Mappings whose middle
-     * part, the conversion between the standardised Frames ({@link #makeMap3}), is a TranMap
-     * holding a RateMap and MathMaps; it is made only if the target's values convert to the
-     * standardised Frames ({@link #makeMap2}).
-     *
-     * @throws UnsupportedOperationException if the SpecFrames or FluxFrames are not equal and C
-     *     would make that TranMap, or if comparing them needs a Mapping this library does not
-     *     have
+     * FluxFrames are equal it is a UnitMap. Otherwise it is the simplified series of five
+     * Mappings: a PermMap giving the flux value, the spectral value and a copy of the spectral
+     * value; the conversion of the target's values to its standardised Frames ({@link
+     * #makeMap2}); the conversion between the standardised Frames, with the copy converted between
+     * the original SpecFrames ({@link #makeMap3}); the inverse of the result's {@link #makeMap2};
+     * and the inverse of the first PermMap. There is no Mapping if any of the three conversions
+     * cannot be made.
      */
     private static Mapping makeSFMapping(SpecFluxFrame target, SpecFluxFrame result) {
         boolean same = target.getSpecFrame(false).astEqual(result.getSpecFrame(false))
@@ -252,11 +247,26 @@ public class SpecFluxFrame extends CmpFrame {
         if (same) {
             return new UnitMap(2);
         }
-        if (target.makeMap2() != null) {
-            makeMap3(target, result);
+        PermMap map1 = PermMap.fromInternal(2, new int[] {2, 0}, 3, new int[] {1, 0, 0}, null);
+        Mapping map2 = target.makeMap2();
+        Mapping map3 = map2 != null ? makeMap3(target, result) : null;
+        Mapping map4 = null;
+        if (map3 != null) {
+            map4 = result.makeMap2();
+            if (map4 != null) {
+                map4.invert();
+            }
         }
-        // makeMap3 throws where C would make its TranMap; otherwise C makes no conversion either.
-        return null;
+        if (map4 == null) {
+            return null;
+        }
+        Mapping map5 = (Mapping) map1.copy();
+        map5.invert();
+        Mapping tmap1 = new CmpMap(map1, map2, true);
+        Mapping tmap2 = new CmpMap(tmap1, map3, true);
+        Mapping tmap3 = new CmpMap(tmap2, map4, true);
+        Mapping tmap4 = new CmpMap(tmap3, map5, true);
+        return tmap4.simplify();
     }
 
     /**
@@ -276,54 +286,84 @@ public class SpecFluxFrame extends CmpFrame {
             return null;
         }
         Mapping ax2Map = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
-        Mapping tmap = CmpMap.transientCmpMap(ax1Map, ax2Map, false);
-        return CmpMap.transientCmpMap(tmap, new UnitMap(1), false);
+        Mapping tmap = new CmpMap(ax1Map, ax2Map, false);
+        return new CmpMap(tmap, new UnitMap(1), false);
     }
 
     /**
      * The conversion of flux and spectral values between the standardised Frames of {@code target}
-     * and {@code result}, as far as this library can follow C's {@code MakeMap3}. C makes a TranMap
-     * of the Mappings {@link #makeMapF} and {@link #makeMapI} give, each of which throws where C
-     * would build its RateMap, and looks for the conversion between the SpecFrames themselves; if
-     * neither standardised SpecFrame converts to the other, C makes no Mapping.
-     *
-     * @throws UnsupportedOperationException if the standardised SpecFrames convert
+     * and {@code result}, in parallel with the conversion of the third value, a spectral value,
+     * between their original SpecFrames, or null if either cannot be made (C's {@code MakeMap3}).
+     * The first is a TranMap whose forward transformation is {@link #makeMapF}'s and whose inverse
+     * is {@link #makeMapI}'s.
      */
-    private static void makeMap3(SpecFluxFrame target, SpecFluxFrame result) {
+    private static Mapping makeMap3(SpecFluxFrame target, SpecFluxFrame result) {
         // C makes the standardised FluxFrames as well, though MakeMapF and MakeMapI do not use them.
         target.getFluxFrame(true);
         SpecFrame sf1 = target.getSpecFrame(true);
         result.getFluxFrame(true);
         SpecFrame sf2 = result.getSpecFrame(true);
-        makeMapF(sf1, sf2);
-        makeMapI(sf1, sf2);
-        target.getSpecFrame(false).convert(result.getSpecFrame(false), "");
+        Mapping fmap = makeMapF(sf1, sf2);
+        Mapping imap = makeMapI(sf1, sf2);
+        Mapping mapa = fmap != null && imap != null ? new TranMap(fmap, imap) : null;
+        FrameSet fs = target.getSpecFrame(false).convert(result.getSpecFrame(false), "");
+        Mapping mapb = fs != null ? fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT) : null;
+        return mapa != null && mapb != null ? new CmpMap(mapa, mapb, false) : null;
     }
 
     /**
-     * The forward part of C's flux conversion ({@code MakeMapF}): if the standardised SpecFrame
-     * {@code x1} converts to {@code x2}, C builds a RateMap of that conversion to scale the flux,
-     * and a MathMap dividing by it, which this library does not have.
-     *
-     * @throws UnsupportedOperationException if {@code x1} converts to {@code x2}
+     * The forward part of the conversion between standardised Frames (C's {@code MakeMapF}): a
+     * Mapping from (v1, x1) to (v2, x2), the flux value and spectral value in the standardised
+     * Frames, which divides the flux value by the absolute rate of change of {@code x2} with
+     * respect to {@code x1} (a RateMap of the conversion between the SpecFrames), or null if
+     * {@code x1} does not convert to {@code x2}.
      */
-    private static void makeMapF(SpecFrame x1, SpecFrame x2) {
-        if (x1.convert(x2, "") != null) {
-            throw new UnsupportedOperationException(
-                    "MakeMapF(SpecFluxFrame): the conversion of flux values between SpecFluxFrames needs RateMap");
+    private static Mapping makeMapF(SpecFrame x1, SpecFrame x2) {
+        FrameSet fs = x1.convert(x2, "");
+        if (fs == null) {
+            return null;
         }
+        Mapping m = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        RateMap rate = new RateMap(m, 0, 0, true);
+        MathMap div = new MathMap(2, 1, new String[] {"out=in0/abs(in1)"}, new String[] {"in0", "in1"});
+        UnitMap unit = new UnitMap(1);
+        PermMap perm = PermMap.fromInternal(2, new int[] {0, 2}, 3, new int[] {0, 1, 1}, null);
+        // (v1, x1) to (v1, dx2/dx1), to v2; with x1 to x2 beside it; after the PermMap giving
+        // (v1, x1, x1) from (v1, x1).
+        CmpMap cmap1 = new CmpMap(unit, rate, false);
+        CmpMap cmap2 = new CmpMap(cmap1, div, true);
+        CmpMap cmap3 = new CmpMap(cmap2, m, false);
+        return new CmpMap(perm, cmap3, true);
     }
 
     /**
-     * The inverse part of C's flux conversion ({@code MakeMapI}): as {@link #makeMapF}, with a
-     * MathMap multiplying by the rate.
-     *
-     * @throws UnsupportedOperationException if {@code x1} converts to {@code x2}
+     * The inverse part of the conversion between standardised Frames (C's {@code MakeMapI}): a
+     * Mapping whose inverse transformation goes from (v2, x2) to (v1, x1), multiplying the flux
+     * value by the absolute rate of change of {@code x2} with respect to {@code x1}, or null if
+     * {@code x1} does not convert to {@code x2}. The RateMap shares the conversion between the
+     * SpecFrames, which is then inverted: the RateMap uses the conversion as it was when the
+     * RateMap was made.
      */
-    private static void makeMapI(SpecFrame x1, SpecFrame x2) {
-        if (x1.convert(x2, "") != null) {
-            throw new UnsupportedOperationException(
-                    "MakeMapI(SpecFluxFrame): the conversion of flux values between SpecFluxFrames needs RateMap");
+    private static Mapping makeMapI(SpecFrame x1, SpecFrame x2) {
+        FrameSet fs = x1.convert(x2, "");
+        if (fs == null) {
+            return null;
         }
+        Mapping m = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        RateMap rate = new RateMap(m, 0, 0, true);
+        m.invert();
+        MathMap mult = new MathMap(2, 1, new String[] {"out=in0*abs(in1)"}, new String[] {"in0", "in1"});
+        UnitMap unit = new UnitMap(1);
+        PermMap perm = PermMap.fromInternal(2, new int[] {0, 2}, 3, new int[] {0, 1, 1}, null);
+        // (v2, x1) to (v2, dx2/dx1), to v1; with x1 copied beside it; after the PermMap giving
+        // (v2, x1, x1) from (v2, x1); after (v2, x2) to (v2, x1).
+        CmpMap cmap1 = new CmpMap(unit, rate, false);
+        CmpMap cmap2 = new CmpMap(cmap1, mult, true);
+        CmpMap cmap3 = new CmpMap(cmap2, unit, false);
+        CmpMap cmap4 = new CmpMap(perm, cmap3, true);
+        CmpMap cmap5 = new CmpMap(unit, m, false);
+        CmpMap ret = new CmpMap(cmap5, cmap4, true);
+        ret.invert();
+        return ret;
     }
 }

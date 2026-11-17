@@ -1,6 +1,8 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -20,11 +22,35 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  *
  * <p>The NormMap cases need a class not yet ported. Rust compares {@code tranmap_full_permuted}
  * and {@code ratemap_full_permuted} without their {@code IsSimp} cards, for one card C writes on a
- * component and the port does not, and its {@code issimp_component_exclusions_still_differ} checks
- * that they still differ; here their dumps match C's whole, so nothing is excluded and that test
- * has nothing to check.
+ * component and the port does not. Here a case whose dump differs from C's only in those cards is
+ * listed in {@link #ISSIMP_COMPONENT_EXCLUDED}, and {@code
+ * issimpComponentExclusionsStillDiffer} fails when it matches; their dumps match C's whole, so
+ * the list is empty.
  */
 class MapSplitOracleTest {
+
+    /** The cases compared without their {@code IsSimp} cards, with the reason. */
+    private static final String[][] ISSIMP_COMPONENT_EXCLUDED = {};
+
+    private static boolean excluded(String name) {
+        for (String[] e : ISSIMP_COMPONENT_EXCLUDED) {
+            if (e[0].equals(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** {@code dump} without its {@code IsSimp} lines. */
+    private static String withoutIsSimp(String dump) {
+        StringBuilder sb = new StringBuilder();
+        for (String line : dump.split("\n", -1)) {
+            if (!line.trim().startsWith("IsSimp")) {
+                sb.append(line).append('\n');
+            }
+        }
+        return sb.toString();
+    }
 
     private static Mapping inverted(Mapping m) {
         m.invert();
@@ -114,12 +140,36 @@ class MapSplitOracleTest {
             int[] inputs = ints(c.get(1));
             String got = outcome(map, inputs);
             String want = want(c.get(2));
-            if (!got.equals(want)) {
+            boolean differs = excluded(name) ? !withoutIsSimp(got).equals(withoutIsSimp(want)) : !got.equals(want);
+            if (differs) {
                 failures.add(name + " " + Arrays.toString(inputs) + ":\n" + got + "\nC:\n" + want);
             }
             ran++;
         }
         assertTrue(failures.isEmpty(), String.join("\n", failures));
         assertEquals(60, ran, "cases run");
+    }
+
+    /**
+     * Rust's {@code issimp_component_exclusions_still_differ}: every case in {@link
+     * #ISSIMP_COMPONENT_EXCLUDED} is a split in C whose dump still differs from C's; one that
+     * matches has to leave the list.
+     */
+    @Test
+    void issimpComponentExclusionsStillDiffer() {
+        for (String[] e : ISSIMP_COMPONENT_EXCLUDED) {
+            JsonNode found = null;
+            for (JsonNode c : ProbeData.load("map_split").get("CASES")) {
+                if (c.get(0).asText().equals(e[0])) {
+                    found = c;
+                }
+            }
+            assertNotNull(found, "no case " + e[0]);
+            assertEquals("Split", found.get(2).get("variant").asText(), e[0] + " is not a split in C");
+            assertNotEquals(
+                    want(found.get(2)),
+                    outcome(mapping(e[0]), ints(found.get(1))),
+                    e[0] + " now matches C; remove it from ISSIMP_COMPONENT_EXCLUDED (" + e[1] + ")");
+        }
     }
 }

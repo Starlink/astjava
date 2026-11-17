@@ -460,7 +460,7 @@ The entries are grouped by area, in the order the Java classes were ported.
 
 ### Cancelling a RateMap with its inverse
 
-- **C quirk**: `MapMerge` (`ratemap.c`) replaces a RateMap and a neighbouring RateMap of the same indices and an equal Mapping, applied in series the other way, with two UnitMaps, so that a series CmpMap of the two, which defines neither direction (a RateMap's inverse transformation is not its rate's inverse), simplifies to a UnitMap that defines both.
+- **C quirk**: `MapMerge` (`ratemap.c`) replaces a RateMap and a neighbouring RateMap of the same indices and an equal Mapping, applied in series the other way, with two UnitMaps, so that a series CmpMap of the two, which defines neither direction (a RateMap defines only one direction, so the pair defines neither), simplifies to a UnitMap that defines both.
   For a Mapping of two inputs the RateMap followed by its inverse becomes a UnitMap of two axes, and the inverse followed by the RateMap a UnitMap of one (probe cases `cancel_two_inputs_upper` and `cancel_two_inputs_lower`).
 - Rust: as C.
 - Java: as C.
@@ -627,7 +627,7 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: `Cast` (cmpframe.c) copies a CmpFrame or SpecFluxFrame as an instance of any class of the CmpFrame family, a subclass included (`astCastCopy`), so a SpecFluxFrame template that matches no CmpFrame is cast into a plain CmpFrame and matched again, and a plain CmpFrame template that matches no SpecFluxFrame (the CmpFrame `ConvertX` gets from matching a SpecFluxFrame against a FluxFrame or SpecFrame) is cast into a SpecFluxFrame holding copies of its components, whose `Match` reaches `MakeSFMapping`.
   **C quirk**: `Cast` compares the classes through CmpFrame's own `class_vtab`, which is initialised only when a plain CmpFrame is first made, so in a process that has made SpecFluxFrames but no CmpFrame a SpecFluxFrame match that fails dereferences null in `astClassCompare` (probed: SIGSEGV converting a SpecFluxFrame whose SpecFrame has Domain `FOO` to a default one).
 - Rust: SpecFluxFrame has no `cast`, and `CmpFrame::cast` in `frames/cmpframe.rs` copies a CmpFrame only into a CmpFrame, so neither becomes the other and these conversions find nothing.
-- Java: as C once a CmpFrame has been made: a FluxFrame or SpecFrame that does not match a SpecFluxFrame directly converts through `MakeSFMapping`, so it throws `needs RateMap` (or C's error, such as AST__ATSER from `GetSpecFrame`).
+- Java: as C once a CmpFrame has been made: a FluxFrame or SpecFrame that does not match a SpecFluxFrame directly converts through `MakeSFMapping` (or gives C's error, such as AST__ATSER from `GetSpecFrame`).
 
 ## FitsChan
 

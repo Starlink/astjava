@@ -11,7 +11,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
  * Translation of Rust {@code tests/test_specflux.rs} (ported from C's {@code
@@ -20,19 +23,20 @@ import org.junit.jupiter.api.Test;
  * defaults, conversions, matching and dumps.
  *
  * <p>A conversion between two SpecFluxFrames whose SpecFrames and FluxFrames are not each equal
- * (C's {@code astEqual}) is built by C's {@code MakeSFMapping} with a RateMap, a MathMap and a
- * TranMap ({@code MakeMapF} and {@code MakeMapI}, specfluxframe.c); such a conversion throws,
- * naming the first absent class C builds, RateMap, built by {@code MakeMapF}. Each such test
- * gives C's converted value in its Javadoc. Equal components convert through a UnitMap, and
- * SpecFluxFrames whose SpecFrames do not convert do not convert at all; both work here as in C.
+ * (C's {@code astEqual}) is built by C's {@code MakeSFMapping} with a RateMap, MathMaps and a
+ * TranMap ({@code MakeMapF} and {@code MakeMapI}, specfluxframe.c). Each such conversion is
+ * checked against the C probe {@code probes/specflux_probe.c}: the class and dump of the
+ * simplified Mapping {@code astConvert} gives, and the transformation of a point forwards and of
+ * the result back. Equal components convert through a UnitMap, and SpecFluxFrames whose
+ * SpecFrames do not convert do not convert at all.
  *
- * <p>The expected values are C's: testspecflux.c's, and those of a probe built against the pinned
- * C library that makes SpecFluxFrames with {@code astSpecFluxFrame( astSpecFrame( ... ),
+ * <p>The other expected values are C's: testspecflux.c's, and those of a probe built against the
+ * pinned C library that makes SpecFluxFrames with {@code astSpecFluxFrame( astSpecFrame( ... ),
  * astFluxFrame( specval, NULL, ... ), "" )} and prints {@code astGetC}, {@code astFormat}, {@code
  * astUnformat}, {@code astDistance}, the class of the simplified Mapping {@code astConvert}, {@code
  * astFindFrame} or {@code astPickAxes} gives with the values it transforms, and {@code astShow}.
- * C's {@code astEqual} is not part of this library: where C or Rust compare SpecFluxFrames, the
- * test checks the conversion C's {@code Equal} (frame.c) makes, which must simplify to a UnitMap.
+ * Where Rust compares SpecFluxFrames for equality the test checks the conversion C's {@code Equal}
+ * (frame.c) makes, which must simplify to a UnitMap, or calls {@link AstObject#astEqual}.
  * Rust tests that call {@code match_template} and {@code sub_frame} call the package-private
  * {@link Frame#match} and {@link Frame#subFrame}; Rust's {@code pick_axes_snapshot} is {@link
  * Frame#pickAxes} here, whose classes are C's.
@@ -81,11 +85,50 @@ class SpecFluxFrameTest {
         return new double[] {out[0][0], out[1][0]};
     }
 
-    /** Asserts that converting {@code from} to {@code to} throws, naming {@code cls} as needed. */
-    private static void assertNeeds(String cls, Frame from, Frame to, String what) {
-        UnsupportedOperationException e =
-                assertThrows(UnsupportedOperationException.class, () -> from.convert(to, ""), what);
-        assertTrue(e.getMessage().endsWith("needs " + cls), what + ": " + e.getMessage());
+    private static final Map<String, String> PROBE = ProbeOutput.load("specflux_probe");
+
+    /**
+     * What the probe prints for the conversion from {@code from} to {@code to}, searching {@code
+     * domains}: the class and dump of the simplified Mapping, then the transformation of the point
+     * (x, y), or (x) for a one-dimensional {@code from}, forwards by the FrameSet {@code convert}
+     * gives, and of the result back.
+     */
+    private static String converted(Frame from, Frame to, String domains, double x, double y) {
+        FrameSet fs = from.convert(to, domains);
+        if (fs == null) {
+            return "no conversion\n";
+        }
+        Mapping s = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT).simplify();
+        int nin = fs.getNin();
+        int nout = fs.getNout();
+        double[] in = Arrays.copyOf(new double[] {x, y}, nin);
+        double[] out = fs.tranN(1, nin, in, true, nout);
+        double[] back = fs.tranN(1, nout, out, false, nin);
+        return "class " + s.astClass() + "\n" + ChannelText.dump(s) + "-- transformations\n" + tranLine("fwd", in, out)
+                + tranLine("inv", out, back);
+    }
+
+    private static String tranLine(String label, double[] in, double[] out) {
+        StringBuilder sb = new StringBuilder(label);
+        for (double v : in) {
+            sb.append(' ').append(CFormat.format("%.17g", v));
+        }
+        sb.append(" ->");
+        for (double v : out) {
+            sb.append(' ').append(CFormat.format("%.17g", v));
+        }
+        return sb.append('\n').toString();
+    }
+
+    /** Asserts that the conversion from {@code from} to {@code to} is the probe's case {@code name}. */
+    private static void assertConverts(String name, Frame from, Frame to, double x, double y) {
+        assertConverts(name, from, to, "", x, y);
+    }
+
+    private static void assertConverts(String name, Frame from, Frame to, String domains, double x, double y) {
+        String want = PROBE.get(name);
+        assertNotNull(want, "no probe case " + name);
+        assertEquals(want, converted(from, to, domains, x, y), name);
     }
 
     // ------------------------------------------------------------------
@@ -117,11 +160,11 @@ class SpecFluxFrameTest {
     }
 
     /**
-     * testspecflux.c Errors 6B, 6C, 7 and 8 ({@code flux_density_converts_to_per_wavelength}). C
-     * converts (2, 1) to (2, 1.33425638e-26) within 1e-32 (Errors 9 and 10).
+     * testspecflux.c Errors 6B to 10 ({@code flux_density_converts_to_per_wavelength}): (2, 1)
+     * converts to (2, 1.33425638e-26).
      */
     @Test
-    void fluxDensityToPerWavelengthNeedsRateMap() {
+    void fluxDensityConvertsToPerWavelength() {
         SpecFrame sf = ghz();
         SpecFluxFrame sff = jansky(sf);
         FluxFrame ff2 = flux(123.1, sf, "System=flxdnw");
@@ -129,46 +172,44 @@ class SpecFluxFrameTest {
         assertEquals("FLXDNW", ff2.getC("System"), "Error 6C");
         SpecFluxFrame sff2 = new SpecFluxFrame(sf, ff2);
         assertEquals("SpecFluxFrame", sff2.getC("Class"), "Error 7");
-        assertNeeds("RateMap", sff, sff2, "Error 8");
+        assertConverts("error8", sff, sff2, 2.0, 1.0);
     }
 
     /**
-     * testspecflux.c Errors 11 and 14 ({@code conversion_follows_permuted_axes}). C converts with
-     * the flux on the first result axis (Errors 12, 13), and then from permuted axes too (Errors
-     * 15, 16).
+     * testspecflux.c Errors 11 to 16 ({@code conversion_follows_permuted_axes}): the flux is on the
+     * first result axis, and then on the first axis of both.
      */
     @Test
-    void permutedAxesNeedRateMap() {
+    void conversionFollowsPermutedAxes() {
         SpecFrame sf = ghz();
         SpecFluxFrame sff = jansky(sf);
         SpecFluxFrame sff2 = new SpecFluxFrame(sf, flux(123.1, sf, "System=flxdnw"));
         sff2.permAxes(new int[] {2, 1});
-        assertNeeds("RateMap", sff, sff2, "Error 11");
+        assertConverts("error11", sff, sff2, 2.0, 1.0);
         sff.permAxes(new int[] {2, 1});
-        assertNeeds("RateMap", sff, sff2, "Error 14");
+        assertConverts("error14", sff, sff2, 1.0, 2.0);
     }
 
     /**
-     * testspecflux.c Errors 17 and 18 ({@code logarithmic_flux_units_convert}). C converts (2, 1)
-     * to (2, -24.8747607) and back (Errors 19 to 22); the conversion of the flux values needs a
-     * RateMap ({@code MakeMapF}).
+     * testspecflux.c Errors 17 to 22 ({@code logarithmic_flux_units_convert}): (2, 1) converts to
+     * (2, -24.8747607) and back.
      */
     @Test
-    void logarithmicFluxUnitsNeedRateMap() {
+    void logarithmicFluxUnitsConvert() {
         SpecFrame sf = ghz();
         SpecFluxFrame csff = (SpecFluxFrame) jansky(sf).copy();
         FluxFrame ff2 = flux(AstObject.AST__BAD, null, "Unit=log(W/m2/nm)");
         assertEquals("FLXDNW", ff2.getC("System"), "Error 17");
         SpecFluxFrame sff2 = new SpecFluxFrame(sf, ff2);
-        assertNeeds("RateMap", csff, sff2, "Error 18");
+        assertConverts("error18", csff, sff2, 2.0, 1.0);
     }
 
     /**
-     * testspecflux.c Errors 23 to 25 ({@code surface_brightness_converts}). C converts (2, 1) to
-     * (2, -21.3585154) and back (Errors 26 to 29).
+     * testspecflux.c Errors 23 to 29 ({@code surface_brightness_converts}): (2, 1) converts to (2,
+     * -21.3585154) and back.
      */
     @Test
-    void surfaceBrightnessNeedsRateMap() {
+    void surfaceBrightnessConverts() {
         FluxFrame ff2 = flux(AstObject.AST__BAD, null, "Unit=log(W/m2/nm/sr)");
         assertEquals("SFCBRW", ff2.getC("System"), "Error 23");
         SpecFluxFrame sff2 = new SpecFluxFrame(ghz(), ff2);
@@ -176,14 +217,14 @@ class SpecFluxFrameTest {
         FluxFrame ff = flux(123.0, sf, "Unit=Jy/deg**2");
         assertEquals("SFCBR", ff.getC("System"), "Error 24");
         SpecFluxFrame sff = new SpecFluxFrame(sf, ff);
-        assertNeeds("RateMap", sff, sff2, "Error 25");
+        assertConverts("error25", sff, sff2, 2.0, 1.0);
     }
 
     /**
      * testspecflux.c Errors 30 to 32 ({@code equal_when_and_only_when_the_components_are}): C's
      * {@code Equal} converts the second Frame to the first. SpecFluxFrames sharing equal
      * components, and a copy, convert through a UnitMap ({@code astEqual} 1); with a FLXDNW
-     * FluxFrame C's conversion is a CmpMap ({@code astEqual} 0), which needs a RateMap here.
+     * FluxFrame the conversion is a CmpMap ({@code astEqual} 0).
      */
     @Test
     void equalWhenAndOnlyWhenTheComponentsAre() {
@@ -197,7 +238,11 @@ class SpecFluxFrameTest {
         SpecFluxFrame ed = new SpecFluxFrame(esf, eff2);
         assertInstanceOf(UnitMap.class, conversion(eb, ea), "Error 30");
         assertInstanceOf(UnitMap.class, conversion(ec, ea), "Error 31");
-        assertNeeds("RateMap", ed, ea, "Error 32");
+        assertTrue(ea.astEqual(eb), "Error 30");
+        assertTrue(ea.astEqual(ec), "Error 31");
+        assertFalse(ea.astEqual(ed), "Error 32");
+        assertEquals("1 1 0\n", PROBE.get("equal"));
+        assertConverts("error32", ed, ea, 1.4e9, 1.0e-26);
     }
 
     // ------------------------------------------------------------------
@@ -303,12 +348,14 @@ class SpecFluxFrameTest {
 
     /**
      * Rust's {@code test_specfluxframe_not_equal_different_spec} and {@code
-     * test_specfluxframe_convert_different_spec_system_converts}: C converts a frequency to a
-     * wavelength SpecFluxFrame through a CmpMap, (1.4e9, 1e-26) to (2.1413747000000005, 1e-26).
+     * test_specfluxframe_convert_different_spec_system_converts}: a frequency SpecFluxFrame
+     * converts to a wavelength one through a CmpMap, (1.4e9, 1e-26) to (2.1413747000000005, 1e-26).
      */
     @Test
-    void differentSpectralSystemsNeedRateMap() {
-        assertNeeds("RateMap", plain(), sff("System=WAVE", AstObject.AST__BAD, "System=FLXDN"), "FREQ to WAVE");
+    void differentSpectralSystemsConvert() {
+        SpecFluxFrame wave = sff("System=WAVE", AstObject.AST__BAD, "System=FLXDN");
+        assertFalse(plain().astEqual(wave));
+        assertConverts("freq_to_wave", plain(), wave, 1.4e9, 1.0e-26);
     }
 
     /** Rust's {@code test_specfluxframe_convert_same}. */
@@ -387,32 +434,32 @@ class SpecFluxFrameTest {
      * testspecflux.c Errors 8 to 10, with the SpecVal set rather than defaulted.
      */
     @Test
-    void jyToFluxDenWNeedsRateMap() {
+    void jyToFluxDenW() {
         SpecFrame sf = ghz();
         FluxFrame ff = flux(AstObject.AST__BAD, sf, "System=FLXDN,Unit=Jy,SpecVal=123.0");
         SpecFluxFrame sff = new SpecFluxFrame(sf, ff);
         FluxFrame ff2 = flux(AstObject.AST__BAD, sf, "System=FLXDNW,SpecVal=123.1");
         SpecFluxFrame sff2 = new SpecFluxFrame(sf, ff2);
-        assertNeeds("RateMap", sff, sff2, "Jy to FLXDNW");
+        assertConverts("jy_to_fluxdenw", sff, sff2, 2.0, 1.0);
     }
 
     /** Rust's {@code test_specflux_log_units}: as testspecflux.c Errors 18 to 20. */
     @Test
-    void logUnitsNeedRateMap() {
+    void logUnits() {
         SpecFrame sf = ghz();
         SpecFluxFrame sff = new SpecFluxFrame(sf, flux(AstObject.AST__BAD, sf, "System=FLXDN,Unit=Jy,SpecVal=123.0"));
         SpecFluxFrame sff2 = new SpecFluxFrame(sf, flux(AstObject.AST__BAD, sf, "System=FLXDNW,Unit=log(W/m2/nm)"));
-        assertNeeds("RateMap", sff, sff2, "Jy to log(W/m2/nm)");
+        assertConverts("log_units", sff, sff2, 2.0, 1.0);
     }
 
     /** Rust's {@code test_specflux_surface_brightness}: as testspecflux.c Errors 25 to 27. */
     @Test
-    void surfaceBrightnessLogUnitsNeedRateMap() {
+    void surfaceBrightnessLogUnits() {
         SpecFrame sf = ghz();
         SpecFluxFrame sff =
                 new SpecFluxFrame(sf, flux(AstObject.AST__BAD, sf, "System=SFCBR,Unit=Jy/deg**2,SpecVal=123.0"));
         SpecFluxFrame sff2 = new SpecFluxFrame(sf, flux(AstObject.AST__BAD, sf, "System=SFCBRW,Unit=log(W/m2/nm/sr)"));
-        assertNeeds("RateMap", sff, sff2, "Jy/deg**2 to log(W/m2/nm/sr)");
+        assertConverts("surface_brightness", sff, sff2, 2.0, 1.0);
     }
 
     // ------------------------------------------------------------------
@@ -647,7 +694,7 @@ class SpecFluxFrameTest {
 
     /**
      * SpecFluxFrames whose SpecFrames have different Domains do not convert: C's {@code MakeMapF}
-     * finds no conversion between the standardised SpecFrames, so no RateMap is needed.
+     * finds no conversion between the standardised SpecFrames.
      */
     @Test
     void spectralDomainsThatDifferDoNotConvert() {
@@ -659,33 +706,62 @@ class SpecFluxFrameTest {
     }
 
     /**
-     * Every other change goes through C's {@code MakeMapF}. C's values: Jy to mJy gives (2,
-     * 1000.0000000000001), GHz to MHz (1999.9999999999998, 1), and FluxFrames in different
-     * Domains (1.4e9, 1e-26), each through a CmpMap.
+     * Every other change goes through C's {@code MakeMapF} and {@code MakeMapI}, at one spectral
+     * system: Jy to mJy gives (2, 1000.0000000000001), GHz to MHz (1999.9999999999998, 1), and
+     * FluxFrames in different Domains (1.4e9, 1e-26), each through a CmpMap.
      */
     @Test
-    void otherChangesNeedRateMap() {
+    void otherChangesConvert() {
         SpecFluxFrame s = sff("System=FREQ,Unit=GHz", 1.4e9, "System=FLXDN,Unit=Jy");
-        assertNeeds("RateMap", s, sff("System=FREQ,Unit=GHz", 1.4e9, "System=FLXDN,Unit=mJy"), "Jy to mJy");
-        assertNeeds("RateMap", s, sff("System=FREQ,Unit=MHz", 1.4e9, "System=FLXDN,Unit=Jy"), "GHz to MHz");
-        assertNeeds(
-                "RateMap",
+        assertConverts("jy_to_mjy", s, sff("System=FREQ,Unit=GHz", 1.4e9, "System=FLXDN,Unit=mJy"), 2.0, 1.0);
+        assertConverts("ghz_to_mhz", s, sff("System=FREQ,Unit=MHz", 1.4e9, "System=FLXDN,Unit=Jy"), 2.0, 1.0);
+        assertConverts(
+                "flux_domains",
                 sff("System=FREQ", AstObject.AST__BAD, "System=FLXDN,Domain=A"),
                 sff("System=FREQ", AstObject.AST__BAD, "System=FLXDN,Domain=B"),
-                "flux Domains");
+                1.4e9,
+                1.0e-26);
+    }
+
+    /** Flux values in logarithmic units: (2, 1) Jy converts to (2, 0) {@code log(Jy)}, and back. */
+    @Test
+    void logarithmicUnitsConvert() {
+        SpecFluxFrame s = sff("System=FREQ,Unit=GHz", 1.4e9, "System=FLXDN,Unit=Jy");
+        SpecFluxFrame t = sff("System=FREQ,Unit=GHz", 1.4e9, "System=FLXDN,Unit=log(Jy)");
+        assertConverts("jy_to_log_jy", s, t, 2.0, 1.0);
+        assertConverts("log_jy_to_jy", t, s, 2.0, 0.0);
+    }
+
+    /** A spectrum as SPLAT holds it: a FrameSet of a GRID Frame and a SpecFluxFrame. */
+    private static FrameSet spectrum(SpecFluxFrame s) {
+        Frame grid = new Frame(2);
+        grid.setDomain("GRID");
+        FrameSet fs = new FrameSet(grid);
+        fs.addFrame(FrameSet.AST__BASE, new UnitMap(2), s);
+        return fs;
     }
 
     /**
-     * The conversion of flux values between SpecFluxFrames in logarithmic units needs a RateMap
-     * ({@code MakeMapF}). C converts (2, 1) Jy to (2, 0) {@code log(Jy)}, and (2, 0) back to (2,
-     * 1).
+     * Spectra whose SpecFluxFrames differ in both components convert in both directions, between
+     * frequency in GHz with flux density in Jy, wavelength in nm with flux density in mJy, radio
+     * velocity with flux density in W/m^2/Hz, and wavelength in nm with flux density per unit
+     * wavelength in W/m^2/nm, searching the SPECTRUM-FLUX Domain (the GRID Frames would otherwise
+     * match first).
      */
     @Test
-    void logarithmicUnitsNeedRateMap() {
-        SpecFluxFrame s = sff("System=FREQ,Unit=GHz", 1.4e9, "System=FLXDN,Unit=Jy");
-        SpecFluxFrame t = sff("System=FREQ,Unit=GHz", 1.4e9, "System=FLXDN,Unit=log(Jy)");
-        assertNeeds("RateMap", s, t, "Jy to log(Jy)");
-        assertNeeds("RateMap", t, s, "log(Jy) to Jy");
+    void spectraConvertBothWays() {
+        String settings = ",RestFreq=1.4GHz";
+        FrameSet a = spectrum(sff("System=FREQ,Unit=GHz" + settings, AstObject.AST__BAD, "System=FLXDN,Unit=Jy"));
+        FrameSet b = spectrum(sff("System=WAVE,Unit=nm" + settings, AstObject.AST__BAD, "System=FLXDN,Unit=mJy"));
+        FrameSet c = spectrum(sff("System=VRAD" + settings, AstObject.AST__BAD, "System=FLXDN,Unit=W/m^2/Hz"));
+        FrameSet d = spectrum(sff("System=WAVE,Unit=nm" + settings, AstObject.AST__BAD, "System=FLXDNW,Unit=W/m^2/nm"));
+        String domain = "SPECTRUM-FLUX";
+        assertConverts("splat_freq_jy_to_wave_mjy", a, b, domain, 1.3, 2.0);
+        assertConverts("splat_wave_mjy_to_freq_jy", b, a, domain, 2.3e8, 2000.0);
+        assertConverts("splat_freq_jy_to_vrad", a, c, domain, 1.3, 2.0);
+        assertConverts("splat_vrad_to_freq_jy", c, a, domain, 1500.0, 2.0e-26);
+        assertConverts("splat_freq_jy_to_wave_flxdnw", a, d, domain, 1.3, 2.0);
+        assertConverts("splat_wave_flxdnw_to_freq_jy", d, a, domain, 2.3e8, 1.0e-30);
     }
 
     /** jniast's constructor. */
@@ -757,15 +833,16 @@ class SpecFluxFrameTest {
 
     /**
      * A FluxFrame whose System differs from a SpecFluxFrame's: the CmpFrame C's {@code PartMatch}
-     * gives is cast into a SpecFluxFrame, whose conversion {@code MakeSFMapping} builds with a
-     * RateMap. C converts both ways; from the SpecFluxFrame, (5000, 2) gives 239833965686.78632.
+     * gives is cast into a SpecFluxFrame, whose conversion {@code MakeSFMapping} builds. It
+     * converts both ways; from the SpecFluxFrame, (5000, 2) gives 239833965686.78632, and from the
+     * FluxFrame, whose spectral position is unknown, bad values.
      */
     @Test
-    void fluxFrameToSpecFluxFrameNeedsRateMap() {
+    void fluxFrameAndSpecFluxFrameConvert() {
         FluxFrame fw = flux(AstObject.AST__BAD, new SpecFrame(), "System=FLXDNW");
         SpecFluxFrame s = new SpecFluxFrame(new SpecFrame(), flux(AstObject.AST__BAD, new SpecFrame(), ""));
-        assertNeeds("RateMap", fw, s, "FluxFrame to SpecFluxFrame");
-        assertNeeds("RateMap", s, fw, "SpecFluxFrame to FluxFrame");
+        assertConverts("fluxframe_to_specfluxframe", fw, s, 2.0, 0.0);
+        assertConverts("specfluxframe_to_fluxframe", s, fw, 5000.0, 2.0);
     }
 
     /**
