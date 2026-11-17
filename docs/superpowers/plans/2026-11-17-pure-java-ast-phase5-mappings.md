@@ -31,9 +31,9 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 
 1. A MathMap expression using each of C's operators and functions, with C's precedence (including the unary-above-`**` quirk), bad inputs, division by zero and out-of-domain arguments gives C's values, and each malformed expression gives C's status and message (test in Task 2).
 2. MathMap's random-number functions: a MathMap and its copy give the same sequence for the same Seed, a copy's sequence does not disturb the original's, and two threads transforming two copies get identical results (test in Task 2).
-3. A Transformer that throws, returns arrays of the wrong shape, or reports no forward or inverse transformation gives C's IntraMap error (AST__ITFER, AST__TRNND) and never a raw Java exception from inside the library (test in Task 11).
+3. A Transformer that throws, returns arrays of the wrong shape, or reports no forward or inverse transformation gives C's IntraMap error (AST__ITFER, AST__TRNND) and never a raw Java exception from inside the library (test in Task 12).
 4. Every new class survives a NATIVE dump and read, through Channel and FitsChan, with each attribute set and unset, giving C's cards; a Mapping nested inside CmpMap, TranMap, RateMap or SwitchMap survives too (test in each class's task).
-5. Simplifying CmpMaps that mix the new classes with the existing ones (LutMap beside WinMap and its own inverse, a MathMap and its inverse with SimpFI and SimpIF set, an inverted TranMap, a RateMap of a simplifiable Mapping, a SwitchMap whose route Mappings simplify) gives C's result (test in Tasks 1, 3, 5, 6 and 10).
+5. Simplifying CmpMaps that mix the new classes with the existing ones (LutMap beside WinMap and its own inverse, a MathMap and its inverse with SimpFI and SimpIF set, an inverted TranMap, a RateMap of a simplifiable Mapping, a SwitchMap whose route Mappings simplify) gives C's result (test in Tasks 1, 3, 5, 7 and 11).
 
 ---
 
@@ -50,7 +50,7 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 1. TranMap, RateMap and SwitchMap hold the Mappings given, shared where C clones them and copied where C copies them; Rust's clones for borrowing are not reproduced.
 2. MathMap keeps C's compiled form, one opcode list and constant list per function, so `Equal`, `MapMerge` and the dump follow C's comparison and card order.
 3. MathMap's random-number state is C's per-MathMap `Rcontext`, copied by `astCopy` as C copies it.
-4. IntraMap's Transformer is held by reference, as jniast does; C's process-wide `astIntraReg` table is not reproduced (Task 11 sets out the dump format).
+4. IntraMap's Transformer is held by reference, as jniast does; C's process-wide `astIntraReg` table is not reproduced (Task 12 sets out the dump format).
 
 ### Gates and deferred lists
 
@@ -140,7 +140,22 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 - [ ] **Step 4: Run** the Step 2 command, then `mvn -q test` — Expected: PASS.
 - [ ] **Step 5: Commit** `Port TranMap`.
 
-### Task 6: RateMap
+### Task 6: astEqual
+
+**Files:**
+- Modify: `AstObject.java` and `Mapping.java` (C `object.c` and `mapping.c` `Equal`), every ported class whose C source has its own `Equal` (`unitmap.c`, `zoommap.c`, `shiftmap.c`, `winmap.c`, `matrixmap.c`, `permmap.c`, `polymap.c`, `sphmap.c`, `wcsmap.c`, `slamap.c`, `timemap.c`, `specmap.c`, `cmpmap.c`, `lutmap.c`, `mathmap.c`, `tranmap.c`, `frame.c`, `frameset.c`), and the existing `equalTo` methods, which become these overrides; `Simplifier.java` (the recursion guard compares with `astEqual` as `cmpmap.c` `Simplify` does)
+- Test: `EqualTest` (translates `test_equal.rs` and `test_equal_oracle.rs`), the `astEqual (out-of-scope method)` entries of `rust-tests.txt`, the simplify gates
+
+**Interfaces:**
+- Produces: package-private `boolean astEqual(AstObject that)` on `AstObject`, dispatching to each class's C `Equal`, for RateMap, SwitchMap and TranMap to compare the Mappings they hold; the public `equals` keeps jniast's text comparison.
+
+- [ ] **Step 1: Write the failing tests:** the 81 tests of `test_equal.rs`, `test_equal_oracle.rs`, every other `rust-tests.txt` entry whose reason is `astEqual (out-of-scope method)`, and C-probe cases where C's `Equal` and a text comparison disagree (an inverted ZoomMap(2) against ZoomMap(0.5), Mappings differing only in ID or Ident, MathMap's last-opcode quirk).
+- [ ] **Step 2: Run** `mvn test -Dtest=EqualTest` — Expected: FAIL.
+- [ ] **Step 3: Implement** each class's `Equal` as C has it, with C's quirks, and replace the text comparisons that stand in for `astEqual` (the Simplifier recursion guard, `TranMap`'s component comparison) where C calls `astEqual`.
+- [ ] **Step 4: Run** the Step 2 command, then `mvn -q test` — Expected: PASS; the simplify gates unchanged or with entries leaving.
+- [ ] **Step 5: Commit** `Port astEqual`.
+
+### Task 7: RateMap
 
 **Files:**
 - Create: `RateMap.java` (Rust `mappings/ratemap.rs`; C `ratemap.c`)
@@ -156,14 +171,14 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 - [ ] **Step 4: Run** the Step 2 command, then `mvn -q test` — Expected: PASS.
 - [ ] **Step 5: Commit** `Port RateMap`.
 
-### Task 7: SpecFluxFrame conversions
+### Task 8: SpecFluxFrame conversions
 
 **Files:**
 - Modify: `SpecFluxFrame.java` (C `MakeSFMapping`, replacing the `needs RateMap` throws)
 - Test: `SpecFluxFrameTest`, `SpecFluxCmpOracleTest`, `SpecFluxPrimaryOracleTest`, the `rust-tests.txt` and oracle cases that expect `needs RateMap`
 
 **Interfaces:**
-- Consumes: Tasks 2, 3, 5 and 6.
+- Consumes: Tasks 2, 3, 5, 6 and 7.
 - Produces: conversions between any two SpecFluxFrames as C builds them.
 
 - [ ] **Step 1: Write the failing tests:** every case that expects `needs RateMap` now expects C's Mapping and values, including Jy to mJy at one spectral system, and FLXDN to FLXDNW across spectral systems and units; a FrameSet holding two SpecFluxFrames converts in both directions.
@@ -172,7 +187,7 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 - [ ] **Step 4: Run** the Step 2 command, then `mvn -q test` — Expected: PASS.
 - [ ] **Step 5: Commit** `Convert between SpecFluxFrames with differing components`.
 
-### Task 8: GrismMap and FITS grism axes
+### Task 9: GrismMap and FITS grism axes
 
 **Files:**
 - Create: `GrismMap.java` (Rust `mappings/grismmap.rs`; C `grismmap.c`)
@@ -188,7 +203,7 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 - [ ] **Step 4: Run** the Step 2 command, then `mvn -q test` — Expected: PASS.
 - [ ] **Step 5: Commit** `Port GrismMap and read and write grism axes`.
 
-### Task 9: PcdMap
+### Task 10: PcdMap
 
 **Files:**
 - Create: `PcdMap.java` (Rust `mappings/pcdmap.rs`; C `pcdmap.c`)
@@ -204,7 +219,7 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 - [ ] **Step 4: Run** the Step 2 command, then `mvn -q test` — Expected: PASS.
 - [ ] **Step 5: Commit** `Port PcdMap`.
 
-### Task 10: SwitchMap
+### Task 11: SwitchMap
 
 **Files:**
 - Create: `SwitchMap.java` (Rust `mappings/switchmap.rs`; C `switchmap.c`)
@@ -220,7 +235,7 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 - [ ] **Step 4: Run** the Step 2 command, then `mvn -q test` — Expected: PASS.
 - [ ] **Step 5: Commit** `Port SwitchMap`.
 
-### Task 11: IntraMap and Transformers
+### Task 12: IntraMap and Transformers
 
 **Files:**
 - Create: `IntraMap.java`, `Transformer.java`, `Transformer1.java`, `Transformer2.java`, `NeedsChannelizing.java` (jniast's Java classes for the API; Rust `mappings/intramap.rs` and C `intramap.c` for the Mapping)
@@ -236,7 +251,7 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 - [ ] **Step 4: Run** the Step 2 command, then `mvn -q test` — Expected: PASS.
 - [ ] **Step 5: Commit** `Port IntraMap and the Transformer classes`.
 
-### Task 12: DssMap
+### Task 13: DssMap
 
 **Files:**
 - Create: `DssMap.java` (Rust `mappings/dssmap.rs`; C `dssmap.c`)
@@ -252,7 +267,7 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 - [ ] **Step 4: Run** the Step 2 command, then `mvn -q test` — Expected: PASS.
 - [ ] **Step 5: Commit** `Port DssMap`.
 
-### Task 13: The remaining Rust tests and the deferred sweep
+### Task 14: The remaining Rust tests and the deferred sweep
 
 **Files:**
 - Test: translations of every remaining test in `rust-tests.txt` whose reason names a class this phase adds (`test_equal.rs`, `test_cmpmap.rs`, `test_native_roundtrip_all.rs`, `test_map_split.rs`, `test_nan_protocol.rs`, `test_constructor_checks.rs`, `test_clear_on_set.rs` and the others the list names)
@@ -262,7 +277,7 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 - [ ] **Step 3: Run** `mvn verify` on JDK 21 and `mvn test -Djvm=<JDK 27 java>` — Expected: PASS.
 - [ ] **Step 4: Commit** `Translate the remaining Mapping Rust tests` and any list changes as `Sweep the deferred lists after phase 5`.
 
-### Task 14: The phase 5 report
+### Task 15: The phase 5 report
 
 - [ ] **Step 1: Write** `docs/reports/2026-11-<dd>-phase5-report.md` and `docs/reports/2026-11-<dd>-phase5-rulings.md` in the form of the phase 4 report: what was ported, departures from the plan, gates before and after, tolerances with their traced causes, C defects found, final review, gaps and risks.
 - [ ] **Step 2: Commit** `Report phase 5`.
