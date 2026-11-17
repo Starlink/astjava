@@ -238,10 +238,9 @@ class SpecFluxFrameTest {
         SpecFluxFrame ed = new SpecFluxFrame(esf, eff2);
         assertInstanceOf(UnitMap.class, conversion(eb, ea), "Error 30");
         assertInstanceOf(UnitMap.class, conversion(ec, ea), "Error 31");
-        assertTrue(ea.astEqual(eb), "Error 30");
-        assertTrue(ea.astEqual(ec), "Error 31");
-        assertFalse(ea.astEqual(ed), "Error 32");
-        assertEquals("1 1 0\n", PROBE.get("equal"));
+        String equal =
+                (ea.astEqual(eb) ? 1 : 0) + " " + (ea.astEqual(ec) ? 1 : 0) + " " + (ea.astEqual(ed) ? 1 : 0) + "\n";
+        assertEquals(PROBE.get("equal"), equal, "Errors 30 to 32");
         assertConverts("error32", ed, ea, 1.4e9, 1.0e-26);
     }
 

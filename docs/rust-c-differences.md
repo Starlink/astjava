@@ -622,6 +622,14 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: gives the whole Title.
 - Java: as Rust.
 
+### SpecFluxFrames whose SpecFrames do not convert
+
+- C: `MakeMap2`, `MakeMap3`, `MakeMapF` and `MakeMapI` (specfluxframe.c) find each component conversion with `astConvert`, which returns NULL when the Frames do not convert (SpecFrames in different Domains, say), so `MakeSFMapping` gives no match and the SpecFluxFrames do not convert.
+  `MakeSFMapping` gives a UnitMap when both components are `astEqual` (specfluxframe.c:1141-1163).
+- Rust: `make_map2`, `make_map3`, `make_map_f` and `make_map_i` (`frames/specfluxframe.rs`) call `make_spec_mapping` and `make_flux_mapping` directly; `make_spec_mapping` (`frames/specframe.rs`) runs no Domain check and turns no Mapping into an AST__BADUN error.
+  Its comment calls the `astEqual` short-circuit a deliberate divergence from C, which it is not for the pinned C.
+- Java: as C (`SpecFluxFrameTest.spectralDomainsThatDifferDoNotConvert`).
+
 ### Casting between a CmpFrame and a SpecFluxFrame
 
 - C: `Cast` (cmpframe.c) copies a CmpFrame or SpecFluxFrame as an instance of any class of the CmpFrame family, a subclass included (`astCastCopy`), so a SpecFluxFrame template that matches no CmpFrame is cast into a plain CmpFrame and matched again, and a plain CmpFrame template that matches no SpecFluxFrame (the CmpFrame `ConvertX` gets from matching a SpecFluxFrame against a FluxFrame or SpecFrame) is cast into a SpecFluxFrame holding copies of its components, whose `Match` reaches `MakeSFMapping`.
