@@ -1,8 +1,6 @@
 # Rows of fixtures/simplify/cases.txt whose simplification does not match C:
 # <row name> | <reason>
 # Rewritten by SimplifyRegressionTest with -Dast.writeDeferred=true.
-pcd_zero_to_unit | needs PcdMap
-pcd_inverse_cancel | needs PcdMap
 spline_inverse_cancel | needs SplineMap
 intramap_inverse_cancel | needs IntraMap
 normmap_basic_frame_to_unit | needs NormMap
@@ -10,23 +8,15 @@ normmap_inverse_cancel | needs NormMap
 normmap_duplicate_elim | needs NormMap
 unitnormmap_inverse_cancel | needs UnitNormMap
 unitnormmap_diff_centre_to_shift | needs UnitNormMap
-pcd_unit_series_merge | needs PcdMap
-pcd_zoom_swap_cancel | needs PcdMap
 switchmap_invert_normalize | needs SwitchMap
 switchmap_internal_simplify | needs SwitchMap
 selectormap_inverse_cancel | needs Box, PointSet, SelectorMap
 switchmap_inverse_cancel | needs SwitchMap
-pcd_perm_swap_cancel | needs PcdMap
-pcd_swap_zoom_simplifies | needs PcdMap
-pcd_inverted_zoom_swap | needs PcdMap
-neg_pcd_parallel | needs PcdMap
-neg_pcd_nonpcd_neighbour | needs PcdMap
 neg_spline_same_direction | needs SplineMap
 neg_normmap_parallel | needs NormMap
 neg_normmap_different_frames | needs NormMap
 neg_spline_parallel | needs SplineMap
 neg_spline_nonspline_neighbour | needs SplineMap
-neg_pcd_nonswappable_between | needs PcdMap
 neg_normmap_nonnorm_neighbour | needs NormMap
 neg_spline_different_coeffs | needs SplineMap
 normmap_inverse_cancel_upper | needs NormMap
@@ -57,8 +47,6 @@ cap_unitnormmap_01 | needs UnitNormMap
 cap_xphmap_01 | needs XphMap
 cap_xphmap_02 | needs XphMap
 cap_zoommap_04 | needs Box, PointList, PointSet
-neg_pcd_zoom_no_target | needs PcdMap
-pcd_search_blocked | needs PcdMap
 neg_normmap_diff_frame | needs NormMap
 neg_normmap_inv_diff_frame | needs NormMap
 neg_normmap_parallel_sky | needs NormMap
@@ -126,19 +114,10 @@ box_unc_fillfactor_merge | needs Box, PointSet
 neg_box_unc_mismatch | needs Box, PointSet
 nullregion_unc_fillfactor_merge | needs Box, NullRegion, PointSet
 pointlist_unc_fillfactor_merge | needs Box, PointList, PointSet
-neg_pcd_diff_disco | needs PcdMap
-neg_pcd_diff_centre | needs PcdMap
-neg_pcd_same_invert | needs PcdMap
-neg_pcd_perm_nonswap | needs PcdMap
-pcd_inverse_cancel_tail | needs PcdMap
 nullregion_merge_tail | needs NullRegion
 intra_invfwd_cancel_tail | needs IntraMap
 interval_remapped_simplify | needs Interval, PointSet
 interval_halfinf_simplify | needs Interval, PointSet
-unit_parallel_invert_pcd | needs PcdMap
-neg_unit_parallel_forward | needs PcdMap
-pcd_zero_disc_series | needs PcdMap
-pcd_zero_disc_lone | needs PcdMap
 cheby_linear_lone_reduce | needs ChebyMap
 neg_cheby_quadratic_no_reduce | needs ChebyMap
 cap_cheby_consolidate | needs ChebyMap

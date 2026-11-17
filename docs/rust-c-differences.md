@@ -495,6 +495,19 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: `grism_zoom_merge_at` in `mappings/simplify.rs` holds every Mapping of the list with its Invert attribute unset and takes the factor from the list's Invert value alone, so it merges these pairs correctly.
 - Java: as C.
 
+### Comparing two PcdMaps
+
+- **C quirk**: `Equal` (`pcdmap.c`) compares Disco and the two PcdCen values as stored, `AST__BAD` when unset, so a PcdMap whose centre is unset does not equal one whose centre is set to zero, though the two transform alike (probe `src/test/resources/probes/pcdmap_probe.c`, case `equal`, `zero_vs_unset` and `small_vs_unset_disco`).
+- Rust: compares the values in use.
+- Java: as C.
+
+### When a PcdMap's coefficient is zero, and when two PcdMaps cancel
+
+- C: `MapMerge` and `CanMerge` (`pcdmap.c`) compare with the file's own `EQUAL` macro, whose floor is `1e5 * DBL_MIN` (about `2e-303`), not with `astEQUAL`, whose floor is `1e-12`.
+  So a PcdMap with a coefficient of `1e-13` is not replaced by a UnitMap (probe `src/test/resources/probes/pcdmap_probe.c`, case `small_disco`), though `astEqual` finds it equal to one with a coefficient of zero (case `equal`, `small_vs_zero_disco`), while one of `1e-310` is replaced (case `tiny_disco`); and PcdMaps applied in opposite directions whose centres differ by `1e-13` do not cancel (case `inverse_small_centre_offset`).
+- Rust: `pcd_map_merge` (`mappings/simplify.rs`) and `PcdMap::try_merge` (`mappings/pcdmap.rs`) compare with `ast_equal`, which has `astEQUAL`'s floor, so they replace the PcdMap of coefficient `1e-13` with a UnitMap and cancel the pair whose centres differ by `1e-13`.
+- Java: as C.
+
 ## Units
 
 Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follows C in each.

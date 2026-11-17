@@ -127,6 +127,11 @@ class NativeRoundTripTest {
     }
 
     @Test
+    void roundTripPcdmap() {
+        assertDoubleRoundTrip(new PcdMap(1.0e-3, new double[] {0.1, -0.2}), "PcdMap");
+    }
+
+    @Test
     void roundTripGrismmap() {
         GrismMap m = new GrismMap();
         m.set("GrismNR=1.5,GrismNRP=0.0,GrismWaveR=5.0E-7,GrismAlpha=0.1,GrismG=1.0E7,GrismM=1,GrismEps=1.0,"

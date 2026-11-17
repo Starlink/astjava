@@ -119,14 +119,6 @@ simplify/neg_normmap_parallel_sky.map | needs NormMap
 simplify/neg_normmap_parallel.map | needs NormMap
 simplify/neg_nullregion_parallel_nonregion.map | needs NullRegion
 simplify/neg_nullregion_series.map | needs NullRegion
-simplify/neg_pcd_diff_centre.map | needs PcdMap
-simplify/neg_pcd_diff_disco.map | needs PcdMap
-simplify/neg_pcd_nonpcd_neighbour.map | needs PcdMap
-simplify/neg_pcd_nonswappable_between.map | needs PcdMap
-simplify/neg_pcd_parallel.map | needs PcdMap
-simplify/neg_pcd_perm_nonswap.map | needs PcdMap
-simplify/neg_pcd_same_invert.map | needs PcdMap
-simplify/neg_pcd_zoom_no_target.map | needs PcdMap
 simplify/neg_pointlist_parallel_nonregion.map | needs PointList, PointSet
 simplify/neg_pointlist_series.map | needs PointList, PointSet
 simplify/neg_selectormap_not_equal.map | needs Box, PointSet, SelectorMap
@@ -141,7 +133,6 @@ simplify/neg_switchmap_not_equal.map | needs SwitchMap
 simplify/neg_switchmap_parallel.map | needs SwitchMap
 simplify/neg_switchmap_series_lower.map | needs SwitchMap
 simplify/neg_switchmap_series.map | needs SwitchMap
-simplify/neg_unit_parallel_forward.map | needs PcdMap
 simplify/neg_unitnormmap_flanked.map | needs UnitNormMap
 simplify/neg_unitnormmap_fwd_shift.map | needs UnitNormMap
 simplify/neg_unitnormmap_inv_fwd_diffcentre.map | needs UnitNormMap
@@ -168,21 +159,6 @@ simplify/nullregion_self_simplify.map | needs NullRegion
 simplify/nullregion_self_simplify.simp | needs NullRegion
 simplify/nullregion_unc_fillfactor_merge.map | needs Box, NullRegion, PointSet
 simplify/nullregion_unc_fillfactor_merge.simp | needs Box, NullRegion, PointSet
-simplify/pcd_inverse_cancel_tail.map | needs PcdMap
-simplify/pcd_inverse_cancel.map | needs PcdMap
-simplify/pcd_inverted_zoom_swap.map | needs PcdMap
-simplify/pcd_inverted_zoom_swap.simp | needs PcdMap
-simplify/pcd_perm_swap_cancel.map | needs PcdMap
-simplify/pcd_search_blocked.map | needs PcdMap
-simplify/pcd_search_blocked.simp | needs PcdMap
-simplify/pcd_swap_zoom_simplifies.map | needs PcdMap
-simplify/pcd_swap_zoom_simplifies.simp | needs PcdMap
-simplify/pcd_unit_series_merge.map | needs PcdMap
-simplify/pcd_unit_series_merge.simp | needs PcdMap
-simplify/pcd_zero_disc_lone.map | needs PcdMap
-simplify/pcd_zero_disc_series.map | needs PcdMap
-simplify/pcd_zero_to_unit.map | needs PcdMap
-simplify/pcd_zoom_swap_cancel.map | needs PcdMap
 simplify/pointlist_parallel_merge_pair.map | needs PointList, PointSet
 simplify/pointlist_parallel_merge_pair.simp | needs PointList, PointSet
 simplify/pointlist_self_simplify.map | needs PointList, PointSet
@@ -228,8 +204,6 @@ simplify/switchmap_invert_normalize.map | needs SwitchMap
 simplify/switchmap_invert_normalize.simp | needs SwitchMap
 simplify/switchmap_invonly_simplify.map | needs SwitchMap
 simplify/switchmap_invonly_simplify.simp | needs SwitchMap
-simplify/unit_parallel_invert_pcd.map | needs PcdMap
-simplify/unit_parallel_invert_pcd.simp | needs PcdMap
 simplify/unitnormmap_diff_centre_to_shift.map | needs UnitNormMap
 simplify/unitnormmap_fwd_winmap_refused.map | needs UnitNormMap
 simplify/unitnormmap_fwd_winmap_refused.simp | needs UnitNormMap

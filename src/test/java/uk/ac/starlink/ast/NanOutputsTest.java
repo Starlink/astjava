@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * NaN input is taken to be bad. Each Mapping is given points with a NaN on one input axis at a
  * time, and transformed in each direction it defines.
  *
- * <p>The Rust test's UnitNormMap and PcdMap are classes not yet ported.
+ * <p>The Rust test's UnitNormMap is a class not yet ported.
  */
 class NanOutputsTest {
 
@@ -38,6 +38,7 @@ class NanOutputsTest {
         TimeMap time = new TimeMap();
         time.timeAdd("MJDTOJD", new double[] {0.0, 0.0});
         m.put("TimeMap", time);
+        m.put("PcdMap", new PcdMap(1.0e-3, new double[] {0.5, 0.5}));
         m.put("WcsMap", new WcsMap(2, WcsMap.AST__TAN, 1, 2));
         m.put("LutMap", new LutMap(new double[] {1.0, 2.0, 4.0}, 0.0, 1.0));
         m.put("MathMap", new MathMap(2, 2, new String[] {"y1=x1", "y2=x2*2"}, new String[] {"x1=y1", "x2=y2/2"}));

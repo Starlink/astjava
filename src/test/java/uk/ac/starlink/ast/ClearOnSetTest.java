@@ -19,8 +19,8 @@ import org.junit.jupiter.api.Test;
  * flag must survive it. The loader re-applies attributes through the same setters, which discard a
  * record only when the value changes, so a dumped {@code IsSimp} card survives a read.
  *
- * <p>The cases of SplineMap and PcdMap are listed in {@code deferred/rust-tests.txt} (classes not
- * yet ported), and the same classes are left out of {@link
+ * <p>The cases of SplineMap are listed in {@code deferred/rust-tests.txt} (class not yet
+ * ported), and the same class is left out of {@link
  * #loadPreservesTheRecordForEveryClearOnSetClass}. Rust's {@code GrismMap::new}, which sets every
  * attribute, is {@link #grismMap}, through the jniast setters. LutInterp and LutEpsilon, which have no jniast
  * methods, are set through the generic attribute methods, as are the clearing of a MathMap's Seed
@@ -268,6 +268,12 @@ class ClearOnSetTest {
         assertTrue(dump.contains("#   GrmNR = 1 "), "the sentinel should leave GrmNR unset; got:\n" + dump);
     }
 
+    /** PcdMap's Disco setter comes from {@code astMAKE_SET1}, which discards both records when the value changes. */
+    @Test
+    void pcdDiscoDiscardsTheRecord() {
+        assertDiscards(new PcdMap(1e-6, new double[] {0.0, 0.0}), "PcdMap.setDisco", m -> m.setDisco(2e-6));
+    }
+
     @Test
     void zoomDiscardsTheRecord() {
         assertDiscards(new ZoomMap(2, 3.0), "ZoomMap.setZoom", m -> m.setZoom(4.0));
@@ -357,6 +363,14 @@ class ClearOnSetTest {
         PermMap perm = permMap();
         perm.setPermSplit(true);
         assertLoadPreserves(perm, "PermMap PermSplit");
+
+        PcdMap pcd = new PcdMap(0.01, new double[] {1.0, 2.0});
+        pcd.setDisco(0.02);
+        assertLoadPreserves(pcd, "PcdMap Disco");
+
+        PcdMap pcdCen = new PcdMap(0.01, new double[] {1.0, 2.0});
+        pcdCen.setPcdCen(1, 3.0);
+        assertLoadPreserves(pcdCen, "PcdMap PcdCen");
 
         LutMap lut = lutMap();
         lut.setI("LutInterp", 1);

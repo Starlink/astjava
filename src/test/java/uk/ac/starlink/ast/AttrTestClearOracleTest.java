@@ -18,14 +18,13 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * attribute is written whenever it is set, its default included; a cleared one is written
  * commented, as its default, only when the class marks it "helpful" (such as Zoom and PlrLg).
  *
- * <p>{@link #build} makes each object as the probe does. The cases of PcdMap and SplineMap are
- * skipped (classes not yet ported).
+ * <p>{@link #build} makes each object as the probe does. The cases of SplineMap are skipped (class
+ * not yet ported).
  */
 class AttrTestClearOracleTest {
 
     /** The cases whose classes are out of scope. */
-    private static final List<String> OUT_OF_SCOPE =
-            Arrays.asList("pcdmap_cleared", "splinemap_default", "splinemap_cleared");
+    private static final List<String> OUT_OF_SCOPE = Arrays.asList("splinemap_default", "splinemap_cleared");
 
     private static PermMap perm() {
         return new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
@@ -146,6 +145,12 @@ class AttrTestClearOracleTest {
                 m.clear("GrismM");
                 return m;
             }
+            case "pcdmap_cleared": {
+                PcdMap m = new PcdMap(1.0e-5, new double[] {1.0, 2.0});
+                m.clear("Disco");
+                m.clear("PcdCen(1)");
+                return m;
+            }
             case "invert_cleared": {
                 ZoomMap m = new ZoomMap(1, 2.0);
                 m.set("Invert=1");
@@ -188,7 +193,7 @@ class AttrTestClearOracleTest {
                 failures.add(name + ": dump\n" + written + "C:\n" + c.get(2).asText());
             }
         }
-        assertEquals(17, run, "the in-scope cases the C probe recorded");
+        assertEquals(18, run, "the in-scope cases the C probe recorded");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 
