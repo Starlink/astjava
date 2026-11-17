@@ -354,4 +354,19 @@ class CmpMapTest {
         a.setSimpIF(true);
         return new CmpMap(a, (Mapping) a.copy(), true);
     }
+
+    /** cmpmap.c {@code Equal} compares the components as the CmpMaps apply them. */
+    @Test
+    void cmpmapEqualityComparesComponentsAsApplied() {
+        UnitMap u = new UnitMap(1);
+        u.invert();
+        assertTrue(new CmpMap(u, new ZoomMap(1, 2.0), true)
+                .astEqual(new CmpMap(new UnitMap(1), new ZoomMap(1, 2.0), true)));
+        ZoomMap z = new ZoomMap(1, 2.0);
+        z.invert();
+        assertTrue(new CmpMap(z, new ShiftMap(new double[] {1.0}), true)
+                .astEqual(new CmpMap(new ZoomMap(1, 0.5), new ShiftMap(new double[] {1.0}), true)));
+        assertFalse(new CmpMap(new ZoomMap(1, 2.0), new ShiftMap(new double[] {1.0}), true)
+                .astEqual(new CmpMap(new ZoomMap(1, 0.5), new ShiftMap(new double[] {1.0}), true)));
+    }
 }

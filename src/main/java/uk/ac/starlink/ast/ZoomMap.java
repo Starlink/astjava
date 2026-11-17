@@ -70,6 +70,27 @@ public class ZoomMap extends Mapping {
     }
 
     /**
+     * zoommap.c {@code Equal}: {@code that} is a ZoomMap with the same numbers of inputs and
+     * outputs whose stored factor is, to within {@code astEQUAL}, this one's if their Invert
+     * attributes are the same, and its reciprocal if not. C compares the factors as stored, zero
+     * for a Zoom attribute that has been cleared.
+     */
+    @Override
+    boolean equalTo(AstObject that) {
+        if (!(that instanceof ZoomMap)) {
+            return false;
+        }
+        ZoomMap other = (ZoomMap) that;
+        if (other.getNin() != getNin() || other.getNout() != getNout()) {
+            return false;
+        }
+        if (getInvert() == other.getInvert()) {
+            return MappingHelpers.astEqual(zoom, other.zoom);
+        }
+        return MappingHelpers.astEqual(zoom, 1.0 / other.zoom);
+    }
+
+    /**
      * zoommap.c {@code MapMerge}. The run of ZoomMaps and UnitMaps around this ZoomMap is replaced
      * by one Mapping applied forward: in series a ZoomMap of the product of their effective
      * factors, or a UnitMap if that is one to within {@code 8 * DBL_EPSILON}; in parallel a ZoomMap

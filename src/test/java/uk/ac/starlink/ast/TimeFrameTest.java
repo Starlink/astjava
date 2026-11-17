@@ -678,4 +678,14 @@ class TimeFrameTest {
         tf.setSystem("MJD");
         assertClose(53370.75, tf.getTimeOriginValue(), 1.0e-6, "TimeOrigin in MJD");
     }
+
+    /** frame.c {@code Equal}: the conversion simplifies to a UnitMap. */
+    @Test
+    void testEqual() {
+        TimeFrame tf1 = frame("MJD");
+        TimeFrame tf2 = frame("MJD");
+        TimeFrame tf3 = frame("JD");
+        assertTrue(tf1.astEqual(tf2));
+        assertFalse(tf1.astEqual(tf3));
+    }
 }

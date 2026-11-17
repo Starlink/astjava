@@ -26,6 +26,15 @@ public class UnitMap extends Mapping {
     }
 
     /**
+     * unitmap.c {@code Equal}: {@code that} is a UnitMap with the same number of inputs; the
+     * Invert attributes play no part.
+     */
+    @Override
+    boolean equalTo(AstObject that) {
+        return that instanceof UnitMap && ((UnitMap) that).getNin() == getNin();
+    }
+
+    /**
      * unitmap.c {@code MapMerge}: alone, the UnitMap is applied forward; in series it is removed
      * from the list; in parallel it is joined with the UnitMaps on either side of it into one, or,
      * with none beside it, applied forward. The UnitMap's own Invert attribute is not changed.

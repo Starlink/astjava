@@ -336,7 +336,8 @@ The entries are grouped by area, in the order the Java classes were ported.
   A CmpMap applies each component with the Invert value it recorded when made (`cmpmap.c` `Transform`), so neither the original Mapping nor the simplified one transforms differently: brad.map and brad.simp give the same values in C and in Java.
   The change is seen by anything that uses the WcsMap on its own afterwards, and in dumps.
 - Rust: compares owned copies, so nothing changes.
-- Java: the simplification compares Mappings by identity and native text (`astEqual` is not ported), so the WcsMap keeps its Invert attribute of 1, which is the right one; the `brad` row of `simplify/cases.txt` differs from C in that one line of the dump.
+- Java: as C, and the recursion guard of the simplification compares Mappings with `astEqual` as C's does: simplifying `brad.map` gives `brad.simp` and leaves the Mapping read with the WcsMap not inverted (probe `src/test/resources/probes/simplify_input_probe.c`).
+  The `brad` row of `simplify/cases.txt` stays listed in `deferred/simplify-cases.txt` because the gate requires that simplifying leaves the input's dump unchanged, which C does not do here.
 
 ### The status of a MathMap with no outputs
 
@@ -413,7 +414,7 @@ The entries are grouped by area, in the order the Java classes were ported.
 
 - **C quirk**: `MapMerge` (`tranmap.c`) replaces a TranMap whose first component, in series with the inverse of its second, simplifies to a UnitMap with a copy of the first component.
   The copy keeps the Invert value recorded when the TranMap was made, but the list entry it replaces stays applied forward, and the list's value is the one the result is given.
-  A TranMap of two equal Mappings that were inverted when it was made therefore becomes the first Mapping not inverted, which transforms the other way (probe `src/test/resources/probes/tranmap_probe.c`, cases `simp_equal_inverted_mathmaps` and `simp_equal_inverted_lutmaps`).
+  A TranMap of two equal Mappings that were inverted when it was made therefore becomes the first Mapping not inverted, which transforms the other way (probe `src/test/resources/probes/tranmap_probe.c`, cases `simp_equal_inverted_mathmaps`, and `simp_equal_inverted_lutmaps` at 3).
   Two inverted ZoomMaps do not show it, because each simplifies on its own to a ZoomMap of the reciprocal factor first (case `simp_equal_inverted_components`).
 - Rust: applies the copy inverted, so the transformation is kept.
 - Java: as C.
@@ -422,8 +423,7 @@ The entries are grouped by area, in the order the Java classes were ported.
 
 - C: `Equal` (`tranmap.c`) sets each component to the Invert value its TranMap recorded and compares the components with `astEqual`, the `Equal` of their class.
 - Rust: compares them with each class's `equal`.
-- Java: compares them by identity or by their native descriptions without the `IsSimp` item, as the simplifier compares Mappings, since `astEqual` is not ported for every class.
-  The library itself never compares two TranMaps, since CmpMap `Equal` is not ported either; the probe's `equal` case gives C's results.
+- Java: as C.
 
 ### The directions of a loaded TranMap
 
@@ -441,6 +441,13 @@ The entries are grouped by area, in the order the Java classes were ported.
 
 - C: the base `MapSplit` (`mapping.c`) simplifies a PermMap and the TranMap in series; the TranMap's equal components make it a ZoomMap, which `astSimplify` records as simplified, so its dump has `IsSimp = 1` (oracle `map_split.json`, case `tranmap_full_permuted`).
 - Rust: dumps the ZoomMap without that item, and its oracle test compares the case without `IsSimp` items.
+- Java: as C.
+
+### Comparing two ZoomMaps
+
+- **C quirk**: `Equal` (`zoommap.c`) compares the factors as stored, which is zero once the Zoom attribute has been cleared, though the factor is then 1: a ZoomMap whose Zoom is cleared does not equal a ZoomMap of factor 1.
+  For ZoomMaps with different Invert attributes it compares one factor with the reciprocal of the other, which for a cleared Zoom is infinite, and `astEQUAL` finds an infinite value equal to anything (probe `src/test/resources/probes/equal_probe.c`, case `zoommap_cleared_zoom`).
+- Rust: compares the factors in use, and, for different Invert attributes, their product with 1.
 - Java: as C.
 
 ## Units

@@ -153,24 +153,24 @@ class TranMapTest {
 
     @Test
     void equalSameComponents() {
-        assertTrue(tz(2.0, 3.0).equalTo(tz(2.0, 3.0)));
+        assertTrue(tz(2.0, 3.0).astEqual(tz(2.0, 3.0)));
     }
 
     @Test
     void equalDifferentComponents() {
-        assertFalse(tz(2.0, 3.0).equalTo(tz(2.0, 4.0)));
+        assertFalse(tz(2.0, 3.0).astEqual(tz(2.0, 4.0)));
     }
 
     @Test
     void equalInvertedVsSwapped() {
         TranMap tm1 = inv(tz(2.0, 3.0));
         TranMap tm2 = new TranMap(inv(zoom(1, 3.0)), inv(zoom(1, 2.0)));
-        assertTrue(tm1.equalTo(tm2));
+        assertTrue(tm1.astEqual(tm2));
     }
 
     @Test
     void notEqualToNonTranmap() {
-        assertFalse(tz(2.0, 3.0).equalTo(zoom(1, 2.0)));
+        assertFalse(tz(2.0, 3.0).astEqual(zoom(1, 2.0)));
     }
 
     /** Every comparison of the probe's {@code equal} case gives C's {@code astEqual}. */
@@ -184,13 +184,13 @@ class TranMapTest {
         ZoomMap z2 = zoom(1, 2.0);
         TranMap e = new TranMap(z2, zoom(1, 3.0));
         z2.invert();
-        String got = "same_components " + flag(a.equalTo(b)) + "\n"
-                + "different_components " + flag(a.equalTo(c)) + "\n"
-                + "inverted_vs_swapped " + flag(ainv.equalTo(d)) + "\n"
-                + "swapped_vs_inverted " + flag(d.equalTo(ainv)) + "\n"
-                + "not_a_tranmap " + flag(a.equalTo(zoom(1, 2.0))) + "\n"
-                + "inverted_vs_plain " + flag(ainv.equalTo(a)) + "\n"
-                + "component_inverted_after " + flag(e.equalTo(a)) + "\n";
+        String got = "same_components " + flag(a.astEqual(b)) + "\n"
+                + "different_components " + flag(a.astEqual(c)) + "\n"
+                + "inverted_vs_swapped " + flag(ainv.astEqual(d)) + "\n"
+                + "swapped_vs_inverted " + flag(d.astEqual(ainv)) + "\n"
+                + "not_a_tranmap " + flag(a.astEqual(zoom(1, 2.0))) + "\n"
+                + "inverted_vs_plain " + flag(ainv.astEqual(a)) + "\n"
+                + "component_inverted_after " + flag(e.astEqual(a)) + "\n";
         assertEquals(probe("equal"), got);
         // The comparison sets the components' Invert attributes back.
         assertTrue(z2.getInvert());
@@ -266,7 +266,7 @@ class TranMapTest {
         String input = Fixtures.read("simplify/tranmap_invert_normalize.map");
         String ref = Fixtures.read("simplify/tranmap_invert_normalize.simp");
         Mapping simplified = ((Mapping) ChannelText.read(input)).simplify();
-        assertTrue(((TranMap) simplified).equalTo((Mapping) ChannelText.read(ref)));
+        assertTrue(simplified.astEqual(ChannelText.read(ref)));
         assertEquals(ref, ChannelText.dump(simplified));
     }
 
@@ -336,6 +336,14 @@ class TranMapTest {
         assertEquals(probe(name), got, name);
     }
 
+    /** As {@link #assertSimplifies}, with the transformations at two values. */
+    private static void assertSimplifies(String name, Mapping map, double x1, double x2) {
+        Mapping s = map.simplify();
+        String got = "class " + s.astClass() + "\n" + ChannelText.dump(s) + "-- transformations\n" + trans(map, x1)
+                + trans(map, x2) + "-- transformations simplified\n" + trans(s, x1) + trans(s, x2);
+        assertEquals(probe(name), got, name);
+    }
+
     private static String trans(Mapping m, double x) {
         if (m.getNin() != 1) {
             return "";
@@ -375,7 +383,7 @@ class TranMapTest {
     @Test
     void equalInvertedComponentsCollapseToTheForwardComponentAsC() {
         assertSimplifies("simp_equal_inverted_mathmaps", new TranMap(inv(square(true)), inv(square(true))), 2.5);
-        assertSimplifies("simp_equal_inverted_lutmaps", new TranMap(inv(lut()), inv(lut())), 2.5);
+        assertSimplifies("simp_equal_inverted_lutmaps", new TranMap(inv(lut()), inv(lut())), 2.5, 3.0);
     }
 
     /** A TranMap beside the Mappings C merges, and beside other TranMaps. */
@@ -618,5 +626,9 @@ class TranMapTest {
         PermMap p = new PermMap(1, new int[] {1}, 2, new int[] {1, 1}, null);
         assertEquals(
                 errorCase("error_nout"), report(assertThrows(AstException.class, () -> new TranMap(zoom(1, 2.0), p))));
+        PermMap p21 = new PermMap(2, new int[] {1, 1}, 1, new int[] {1}, null);
+        assertEquals(
+                errorCase("error_nin_equal_nout"),
+                report(assertThrows(AstException.class, () -> new TranMap(p21, zoom(1, 2.0)))));
     }
 }

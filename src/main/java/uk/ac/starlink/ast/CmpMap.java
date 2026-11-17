@@ -257,6 +257,101 @@ public class CmpMap extends Mapping {
         return invert || r1 || r2;
     }
 
+    // ------------------------------------------------------------------
+    // Equality
+    // ------------------------------------------------------------------
+
+    /**
+     * cmpmap.c {@code Equal}: {@code that} is a CmpMap combining Mappings in the same way as this
+     * one, and the lists of Mappings the two decompose into ({@link #mapList}) are of the same
+     * length and hold equal Mappings ({@link #astEqual}), each compared with its Invert attribute
+     * set for the duration to the value its list gives it.
+     *
+     * <p>As in C, the attributes are set back in the order they were set, so that when the two
+     * lists hold the same object in the same place it is left with the value the first list gives
+     * it. If neither CmpMap may be decomposed ({@link #doNotSimplify}), each is decomposed one level
+     * further ({@link #expandInto}) and copies of the Mappings are compared instead, leaving the
+     * Mappings unchanged.
+     */
+    // C compares the pointers: each list holds the CmpMap itself when it was not decomposed.
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
+    @Override
+    boolean equalTo(AstObject that) {
+        if (!(that instanceof CmpMap)) {
+            return false;
+        }
+        CmpMap other = (CmpMap) that;
+        if (series != other.series) {
+            return false;
+        }
+        List<Mapping> thisMaps = new ArrayList<>();
+        List<Boolean> thisInverts = new ArrayList<>();
+        mapList(series, getInvert(), thisMaps, thisInverts);
+        List<Mapping> thatMaps = new ArrayList<>();
+        List<Boolean> thatInverts = new ArrayList<>();
+        other.mapList(other.series, other.getInvert(), thatMaps, thatInverts);
+        boolean expanded = false;
+        if (thisMaps.size() == 1 && thatMaps.size() == 1 && thisMaps.get(0) == this && thatMaps.get(0) == other) {
+            thisMaps.clear();
+            thisInverts.clear();
+            thatMaps.clear();
+            thatInverts.clear();
+            expandInto(thisMaps, thisInverts);
+            other.expandInto(thatMaps, thatInverts);
+            expanded = true;
+        }
+        if (thisMaps.size() != thatMaps.size()) {
+            return false;
+        }
+        boolean result = false;
+        for (int i = 0; i < thisMaps.size(); i++) {
+            Mapping m1 = thisMaps.get(i);
+            Mapping m2 = thatMaps.get(i);
+            boolean inv1 = thisInverts.get(i);
+            boolean inv2 = thatInverts.get(i);
+            if (expanded) {
+                result = equalMapping(m1, inv1, m2, inv2);
+            } else {
+                int[] saved = swapInverts(m1, inv1, m2, inv2);
+                try {
+                    result = m1.astEqual(m2);
+                } finally {
+                    restoreInverts(m1, m2, saved);
+                }
+            }
+            if (!result) {
+                break;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Whether copies of {@code a} and {@code b}, with their Invert attributes set to {@code
+     * invertA} and {@code invertB}, are equal (C's {@code EqualMapping}, cmpmap.c); {@code a} and
+     * {@code b} are not changed.
+     */
+    private static boolean equalMapping(Mapping a, boolean invertA, Mapping b, boolean invertB) {
+        Mapping aCopy = (Mapping) a.copy();
+        Mapping bCopy = (Mapping) b.copy();
+        aCopy.setInvert(invertA);
+        bCopy.setInvert(invertB);
+        return aCopy.astEqual(bCopy);
+    }
+
+    /**
+     * Appends the Mappings this CmpMap decomposes into one level down, even when it may not be
+     * decomposed (C's {@code ExpandCmpMap}, cmpmap.c): its components, in the order and with the
+     * Invert values {@link #decomposeInto} gives for its Invert attribute, each decomposed in the
+     * usual way ({@link #mapList}).
+     */
+    private void expandInto(List<Mapping> maps, List<Boolean> inverts) {
+        boolean[] flags = new boolean[3];
+        Mapping[] parts = decomposeInto(flags);
+        parts[0].mapList(series, flags[1], maps, inverts);
+        parts[1].mapList(series, flags[2], maps, inverts);
+    }
+
     /** cmpmap.c {@code Simplify}: {@link Simplifier#simplifyCmpMap}. */
     @Override
     Mapping simplifyStep() {

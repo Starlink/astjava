@@ -601,7 +601,7 @@ class PolyMapTest {
         PolyMap pm = cPoly(2, C_COEFF2);
         Mapping simp = pm.simplify();
         assertInstanceOf(PolyMap.class, simp, "Error 3002");
-        assertTrue(((PolyMap) simp).equalTo(pm), "Error 3003");
+        assertTrue(simp.astEqual(pm), "Error 3003");
     }
 
     /**
@@ -872,5 +872,46 @@ class PolyMapTest {
         AstException nan = assertThrows(AstException.class, () -> m.transformIntoNan(in, 2, false, nanOut));
         assertEquals(plain.getStatus(), nan.getStatus());
         assertArrayEquals(new double[2], nanOut[0], "no outputs written");
+    }
+
+    // ------------------------------------------------------------------
+    // Equality (polymap.c Equal)
+    // ------------------------------------------------------------------
+
+    @Test
+    void polymapEqualComparesTheInverseCoefficients() {
+        double[][] fwd = {term(1.0, 1, 2)};
+        double[][] half = {term(0.5, 1, 1)};
+        double[][] seven = {term(0.7, 1, 1)};
+        PolyMap a = poly(1, 1, fwd, half);
+        PolyMap same = poly(1, 1, fwd, half);
+        assertTrue(a.astEqual(same), "identical PolyMaps compare equal");
+        assertTrue(same.astEqual(a), "equality is symmetric");
+        PolyMap differ = poly(1, 1, fwd, seven);
+        assertFalse(a.astEqual(differ), "the inverse coefficient values differ, so the two are not equal");
+        assertFalse(differ.astEqual(a), "in either direction");
+        differ.invert();
+        Mapping s = new CmpMap(poly(1, 1, fwd, half), differ, true).simplify();
+        assertFalse(s instanceof UnitMap, "the inverse transformations differ, so the pair stands");
+        PolyMap sameInv = poly(1, 1, fwd, half);
+        sameInv.invert();
+        s = new CmpMap(poly(1, 1, fwd, half), sameInv, true).simplify();
+        assertInstanceOf(UnitMap.class, s, "identical PolyMaps in opposite directions cancel");
+    }
+
+    @Test
+    void polymapWithMoreOutputsThanInputsEqualsItsCopy() {
+        int nwide = 8;
+        double[][] fwd = new double[nwide][];
+        for (int io = 1; io <= nwide; io++) {
+            fwd[io - 1] = term(io, io, 1);
+        }
+        int[] ones = new int[nwide];
+        Arrays.fill(ones, 1);
+        double[][] inv = {term(1.0, 1, ones)};
+        PolyMap wide = poly(1, nwide, fwd, inv);
+        PolyMap copy = (PolyMap) wide.copy();
+        assertTrue(wide.astEqual(copy), "a PolyMap equals its own copy");
+        assertTrue(copy.astEqual(wide), "in either direction");
     }
 }

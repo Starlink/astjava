@@ -896,12 +896,13 @@ public class PolyMap extends Mapping {
     // ------------------------------------------------------------------
 
     /**
-     * Whether {@code that} is a PolyMap equivalent to this one, as C's {@code Equal} (polymap.c)
-     * decides it: the same numbers of inputs and outputs, the same Invert attribute, and, for each
-     * original transformation, either no coefficients in both or the same coefficient counts,
-     * maximum powers and powers, and coefficients equal to within {@code astEQUAL}.
+     * polymap.c {@code Equal}: {@code that} is a PolyMap with the same numbers of inputs and
+     * outputs, the same Invert attribute, and, for each original transformation, either no
+     * coefficients in both or the same coefficient counts, maximum powers and powers, and
+     * coefficients equal to within {@code astEQUAL}.
      */
-    boolean equalTo(Mapping that) {
+    @Override
+    boolean equalTo(AstObject that) {
         if (!(that instanceof PolyMap)) {
             return false;
         }
@@ -1153,7 +1154,7 @@ public class PolyMap extends Mapping {
                 int saved1 = pmap1.swapInvert(inv0);
                 boolean ok;
                 try {
-                    ok = astEqual(pmap0, pmap1);
+                    ok = pmap0.astEqual(pmap1);
                 } finally {
                     pmap1.restoreInvert(saved1);
                 }
@@ -1168,17 +1169,6 @@ public class PolyMap extends Mapping {
             pmap0.restoreInvert(saved0);
         }
         return result;
-    }
-
-    /**
-     * C's {@code astEqual(pmap0, pmap1)} for a PolyMap {@code pmap1}: the same object, or, through
-     * the {@code Equal} of {@code pmap0}'s class, an equal PolyMap. The {@code Equal} of every other
-     * class {@code pmap0} can be here (those the linear replacement makes) finds no PolyMap equal.
-     */
-    // C compares the pointers first (object.c astEqual_): the same object is equal.
-    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
-    private static boolean astEqual(Mapping pmap0, PolyMap pmap1) {
-        return pmap0 == pmap1 || (pmap0 instanceof PolyMap && ((PolyMap) pmap0).equalTo(pmap1));
     }
 
     // ------------------------------------------------------------------

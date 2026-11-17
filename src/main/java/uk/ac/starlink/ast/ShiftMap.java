@@ -84,11 +84,12 @@ public class ShiftMap extends Mapping {
     }
 
     /**
-     * Whether {@code that} is a ShiftMap equivalent to this one, as C's {@code Equal} (shiftmap.c)
-     * decides it: the same numbers of inputs and outputs, and, if their Invert attributes are the
-     * same, equal shifts, or, if not, shifts equal and opposite, each to within {@code astEQUAL}.
+     * shiftmap.c {@code Equal}: {@code that} is a ShiftMap with the same numbers of inputs and
+     * outputs and, if their Invert attributes are the same, equal shifts, or, if not, shifts equal
+     * and opposite, each to within {@code astEQUAL}.
      */
-    boolean equalTo(Mapping that) {
+    @Override
+    boolean equalTo(AstObject that) {
         if (!(that instanceof ShiftMap)) {
             return false;
         }
@@ -128,7 +129,8 @@ public class ShiftMap extends Mapping {
         list.set(where, w1, false);
         int oldNmap = list.size();
         int result = Simplifier.dispatchMapMerge(w1, list, where, series);
-        boolean revert = result == where && list.size() == oldNmap && sameAsThis(list.map(where));
+        boolean revert =
+                result == where && list.size() == oldNmap && list.map(where).astEqual(this);
         if (revert || result == -1) {
             if (oldInv) {
                 ShiftMap sm = (ShiftMap) copy();
@@ -143,17 +145,6 @@ public class ShiftMap extends Mapping {
             }
         }
         return result;
-    }
-
-    /**
-     * C's {@code astEqual(map, this)}: the same object, or, through the {@code Equal} of {@code
-     * map}'s class, which finds no Mapping of another class equal to a ShiftMap, an equivalent
-     * ShiftMap.
-     */
-    // C compares the pointers first (object.c astEqual_): the same object is equal.
-    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
-    private boolean sameAsThis(Mapping map) {
-        return map == this || (map instanceof ShiftMap && ((ShiftMap) map).equalTo(this));
     }
 
     /** The rate of change: one where the output is the input, zero elsewhere ({@code Rate}, shiftmap.c). */

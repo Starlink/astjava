@@ -277,23 +277,14 @@ public class TranMap extends Mapping {
     // ------------------------------------------------------------------
 
     /**
-     * Whether {@code that} is equivalent to this TranMap, as C's {@code astEqual} decides it: the
-     * same Object, or, by C's {@code Equal} (tranmap.c), a TranMap with the same numbers of inputs
-     * and outputs whose components, each set for the duration to the Invert value its TranMap
-     * recorded, match this TranMap's: in order when the two TranMaps have the same Invert
-     * attribute, and otherwise each inverted and in the other order. The Invert attributes of the
-     * components are set back afterwards in C's order.
-     *
-     * <p>C compares the components with {@code astEqual}, which this library does not have for
-     * every class; they are compared as the simplifier compares Mappings, by identity or by their
-     * descriptions ({@link Simplifier#guardKey}).
+     * tranmap.c {@code Equal}: {@code that} is a TranMap with the same numbers of inputs and
+     * outputs whose components, each set for the duration to the Invert value its TranMap recorded,
+     * are equal ({@link #astEqual}) to this TranMap's: in order when the two TranMaps have the same
+     * Invert attribute, and otherwise each inverted and in the other order. The Invert attributes
+     * of the components are set back afterwards in C's order.
      */
-    // object.c astEqual compares the pointers first: the same object, not an equal one.
-    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
-    boolean equalTo(Mapping that) {
-        if (that == this) {
-            return true;
-        }
+    @Override
+    boolean equalTo(AstObject that) {
         if (!(that instanceof TranMap)) {
             return false;
         }
@@ -314,24 +305,17 @@ public class TranMap extends Mapping {
             other.map1.setInvert(other.invert1);
             other.map2.setInvert(other.invert2);
             if (getInvert() == other.getInvert()) {
-                return sameMapping(map1, other.map1) && sameMapping(map2, other.map2);
+                return map1.astEqual(other.map1) && map2.astEqual(other.map2);
             }
             other.map1.invert();
             other.map2.invert();
-            return sameMapping(map1, other.map2) && sameMapping(map2, other.map1);
+            return map1.astEqual(other.map2) && map2.astEqual(other.map1);
         } finally {
             map1.restoreInvert(thisInv1);
             map2.restoreInvert(thisInv2);
             other.map1.restoreInvert(thatInv1);
             other.map2.restoreInvert(thatInv2);
         }
-    }
-
-    /** Whether two components are the same object or have the same description. */
-    // C's astEqual compares the pointers first: the same object, not an equal one.
-    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
-    private static boolean sameMapping(Mapping a, Mapping b) {
-        return a == b || Simplifier.guardKey(a).equals(Simplifier.guardKey(b));
     }
 
     // ------------------------------------------------------------------

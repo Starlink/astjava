@@ -402,18 +402,13 @@ public class MathMap extends Mapping {
     // ------------------------------------------------------------------
 
     /**
-     * Whether {@code that} is equivalent to this MathMap, as C's {@code astEqual} decides it: the
-     * same Object, or, by C's {@code Equal} (mathmap.c), a MathMap with the same numbers of inputs
-     * and outputs whose compiled functions for the effective forward direction, and then for the
+     * mathmap.c {@code Equal}: {@code that} is a MathMap with the same numbers of inputs and
+     * outputs whose compiled functions for the effective forward direction, and then for the
      * effective inverse direction, taking each one's Invert attribute into account, match this
      * MathMap's ({@link #sameFunctions}).
      */
-    // object.c astEqual compares the pointers first: the same object, not an equal one.
-    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
-    boolean equalTo(Mapping that) {
-        if (that == this) {
-            return true;
-        }
+    @Override
+    boolean equalTo(AstObject that) {
         if (!(that instanceof MathMap)) {
             return false;
         }

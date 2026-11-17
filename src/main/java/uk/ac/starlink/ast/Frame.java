@@ -488,6 +488,21 @@ public class Frame extends Mapping {
     // ------------------------------------------------------------------
 
     /**
+     * frame.c {@code Equal}: {@code that} is of the same class, and the conversion from {@code
+     * that} to this Frame ({@link #convert}) simplifies to a UnitMap. Attributes that only describe
+     * the axes, such as Title and Label, play no part, nor does the Invert attribute.
+     */
+    @Override
+    boolean equalTo(AstObject that) {
+        if (!astClass().equals(that.astClass())) {
+            return false;
+        }
+        FrameSet fs = ((Frame) that).convert(this, "");
+        return fs != null
+                && fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT).simplify() instanceof UnitMap;
+    }
+
+    /**
      * Gets the number of input coordinates, which is the number of axes.
      *
      * @return the number of axes

@@ -94,6 +94,21 @@ static void simp( const char *name, AstMapping *m, double x ) {
    tran( s, x );
 }
 
+/* As simp, with the transformations at two values. */
+static void simp2( const char *name, AstMapping *m, double x1, double x2 ) {
+   head( name );
+   AstMapping *s = astSimplify( m );
+   if( failed() ) return;
+   printf( "class %s\n", astGetC( s, "Class" ) );
+   astShow( s );
+   printf( "-- transformations\n" );
+   tran( m, x1 );
+   tran( m, x2 );
+   printf( "-- transformations simplified\n" );
+   tran( s, x1 );
+   tran( s, x2 );
+}
+
 static AstZoomMap *zoom( int n, double f ) {
    return astZoomMap( n, f, " " );
 }
@@ -167,9 +182,9 @@ int main( void ) {
          (AstMapping *) astTranMap( inv( (AstMapping *) mathmap( "y = x * x", "x = sqrt( y )", "SimpFI=1,SimpIF=1" ) ),
                                     inv( (AstMapping *) mathmap( "y = x * x", "x = sqrt( y )", "SimpFI=1,SimpIF=1" ) ),
                                     " " ), 2.5 );
-   simp( "simp_equal_inverted_lutmaps",
-         (AstMapping *) astTranMap( inv( (AstMapping *) astLutMap( 5, table, 1.0, 1.0, " " ) ),
-                                    inv( (AstMapping *) astLutMap( 5, table, 1.0, 1.0, " " ) ), " " ), 2.5 );
+   simp2( "simp_equal_inverted_lutmaps",
+          (AstMapping *) astTranMap( inv( (AstMapping *) astLutMap( 5, table, 1.0, 1.0, " " ) ),
+                                     inv( (AstMapping *) astLutMap( 5, table, 1.0, 1.0, " " ) ), " " ), 2.5, 3.0 );
    simp( "simp_unequal_mathmaps",
          (AstMapping *) astTranMap( mathmap( "y = x * x", "x = sqrt( y )", " " ),
                                     mathmap( "y = x * x", "x = sqrt( y )", " " ), " " ), 2.5 );
@@ -323,6 +338,14 @@ int main( void ) {
       int inperm[] = { 1 };
       AstPermMap *p = astPermMap( 1, inperm, 2, outperm, NULL, " " );
       astTranMap( zoom( 1, 2.0 ), p, " " );
+      failed();
+   }
+   head( "error_nin_equal_nout" );
+   {
+      int outperm[] = { 1 };
+      int inperm[] = { 1, 1 };
+      AstPermMap *p = astPermMap( 2, inperm, 1, outperm, NULL, " " );
+      astTranMap( p, zoom( 1, 2.0 ), " " );
       failed();
    }
 

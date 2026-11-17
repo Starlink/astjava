@@ -252,6 +252,32 @@ public class AstObject implements Cloneable {
     }
 
     /**
+     * Whether {@code that} is equivalent to this Object, as C's {@code astEqual} (object.c {@code
+     * astEqual_}) decides it: the same object, or, if {@code that} is not null, an Object the
+     * {@code Equal} of this Object's class ({@link #equalTo}) finds equivalent. Unlike {@link
+     * #equals}, which compares descriptions, each class compares what it considers significant: a
+     * ZoomMap and an inverted ZoomMap of the reciprocal factor are equivalent, and Frames are
+     * equivalent when the conversion between them is a UnitMap.
+     */
+    // C compares the pointers first: the same object, not an equal one.
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
+    final boolean astEqual(AstObject that) {
+        return this == that || (that != null && equalTo(that));
+    }
+
+    /**
+     * C's {@code Equal} for this Object's class, which {@link #astEqual} calls with an Object other
+     * than this one. The base Object class's (object.c {@code Equal}) finds Objects equivalent when
+     * they are the same object, or of the same class: C compares the class names and the sizes of
+     * the structures, which the class of a Java object determines.
+     */
+    // C compares the pointers first, and then the classes, not any equals method.
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
+    boolean equalTo(AstObject that) {
+        return this == that || getClass() == that.getClass();
+    }
+
+    /**
      * Tests whether {@code obj} resembles this Object in all respects: whether it is of the same
      * class and is written to a Channel (with Full -1 and no comments) as the same text. This may
      * be expensive.

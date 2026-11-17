@@ -425,17 +425,12 @@ public class LutMap extends Mapping {
     // ------------------------------------------------------------------
 
     /**
-     * Whether {@code that} is equivalent to this LutMap, as C's {@code astEqual} decides it: the
-     * same Object, or, by C's {@code Equal} (lutmap.c), a LutMap with the same Invert attribute,
-     * start and increment (to within {@code astEQUAL}), number of entries and LutInterp value as
-     * stored, unset included, and entries equal to within {@code astEQUAL}.
+     * lutmap.c {@code Equal}: {@code that} is a LutMap with the same Invert attribute, start and
+     * increment (to within {@code astEQUAL}), number of entries and LutInterp value as stored,
+     * unset included, and entries equal to within {@code astEQUAL}.
      */
-    // object.c astEqual compares the pointers first: the same object, not an equal one.
-    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
-    boolean equalTo(Mapping that) {
-        if (that == this) {
-            return true;
-        }
+    @Override
+    boolean equalTo(AstObject that) {
         if (!(that instanceof LutMap)) {
             return false;
         }
@@ -552,7 +547,7 @@ public class LutMap extends Mapping {
                 boolean oldInv = neb.getInvert();
                 neb.setInvert(invneb);
                 neb.invert();
-                boolean equal = map.equalTo(neb);
+                boolean equal = map.astEqual(neb);
                 neb.setInvert(oldInv);
                 if (equal) {
                     list.replacePairWith(ilo, new UnitMap(1), false);

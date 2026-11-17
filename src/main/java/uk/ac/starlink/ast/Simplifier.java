@@ -18,10 +18,10 @@ import java.util.List;
 final class Simplifier {
 
     /**
-     * The Mappings this thread is simplifying further up its call stack, each with its description
-     * once one has been needed (C's {@code simplify_stackmaps}, cmpmap.c).
+     * The CmpMaps this thread is simplifying further up its call stack, the most recent first (C's
+     * {@code simplify_stackmaps}, cmpmap.c).
      */
-    private static final ThreadLocal<Deque<StackEntry>> STACK = ThreadLocal.withInitial(ArrayDeque::new);
+    private static final ThreadLocal<Deque<Mapping>> STACK = ThreadLocal.withInitial(ArrayDeque::new);
 
     /** The shortest history in which {@link #patternCheck} looks for a pattern (C's {@code PatternCheck}). */
     private static final int PATTERN_MIN_HISTORY = 29;
@@ -37,58 +37,17 @@ final class Simplifier {
 
     private Simplifier() {}
 
-    /** A Mapping on the recursion stack, with the description it is compared by. */
-    private static final class StackEntry {
-        final Mapping map;
-        private String description;
-
-        StackEntry(Mapping map) {
-            this.map = map;
-        }
-
-        String key() {
-            if (description == null) {
-                description = guardKey(map);
-            }
-            return description;
-        }
-    }
-
     /**
-     * The description by which the recursion guard compares two Mappings: the native text without
-     * the records of simplification, which change as a simplification goes on. C compares with
-     * {@code astEqual}, which this library does not have; equal descriptions give equal Mappings.
+     * Whether a Mapping equal to {@code m} ({@link AstObject#astEqual}) is being simplified further
+     * up this thread's stack (C's check at the start of cmpmap.c {@code Simplify}). As in C, the
+     * Mappings are compared from the bottom of the stack up, {@code m} first in each comparison;
+     * a comparison may itself simplify Mappings (that of two Frames does), which pushes them on the
+     * stack and pops them again.
      */
-    static String guardKey(Mapping m) {
-        StringBuilder sb = new StringBuilder();
-        for (String line : Channel.text(m, false, 0).split("\n", -1)) {
-            if (!line.trim().startsWith("IsSimp =")) {
-                sb.append(line).append('\n');
-            }
-        }
-        return sb.toString();
-    }
-
-    /**
-     * Whether a Mapping equal to {@code m} is being simplified further up this thread's stack (C's
-     * check at the start of cmpmap.c {@code Simplify}).
-     */
-    // C compares the pointers: the same object, not an equal one.
-    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
     private static boolean onStack(Mapping m) {
-        Deque<StackEntry> stack = STACK.get();
-        if (stack.isEmpty()) {
-            return false;
-        }
-        String key = null;
-        for (StackEntry e : stack) {
-            if (e.map == m) {
-                return true;
-            }
-            if (key == null) {
-                key = guardKey(m);
-            }
-            if (key.equals(e.key())) {
+        Mapping[] stack = STACK.get().toArray(new Mapping[0]);
+        for (int i = stack.length - 1; i >= 0; i--) {
+            if (m.astEqual(stack[i])) {
                 return true;
             }
         }
@@ -222,8 +181,8 @@ final class Simplifier {
         if (onStack(cmp)) {
             return cmp;
         }
-        Deque<StackEntry> stack = STACK.get();
-        stack.push(new StackEntry(cmp));
+        Deque<Mapping> stack = STACK.get();
+        stack.push(cmp);
         try {
             boolean series = cmp.isSeries();
             boolean[] decomposed = new boolean[1];

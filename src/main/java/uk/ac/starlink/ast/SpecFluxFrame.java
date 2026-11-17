@@ -247,8 +247,8 @@ public class SpecFluxFrame extends CmpFrame {
      *     have
      */
     private static Mapping makeSFMapping(SpecFluxFrame target, SpecFluxFrame result) {
-        boolean same = astEqual(target.getSpecFrame(false), result.getSpecFrame(false))
-                && astEqual(target.getFluxFrame(false), result.getFluxFrame(false));
+        boolean same = target.getSpecFrame(false).astEqual(result.getSpecFrame(false))
+                && target.getFluxFrame(false).astEqual(result.getFluxFrame(false));
         if (same) {
             return new UnitMap(2);
         }
@@ -257,24 +257,6 @@ public class SpecFluxFrame extends CmpFrame {
         }
         // makeMap3 throws where C would make its TranMap; otherwise C makes no conversion either.
         return null;
-    }
-
-    /**
-     * Whether two Frames are equal, as C's {@code astEqual} finds (object.c {@code astEqual_} and
-     * frame.c {@code Equal}): they are the same Frame, or of the same class with a conversion from
-     * {@code that} to {@code frame} that simplifies to a UnitMap.
-     */
-    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
-    private static boolean astEqual(Frame frame, Frame that) {
-        if (frame == that) {
-            return true;
-        }
-        if (!frame.astClass().equals(that.astClass())) {
-            return false;
-        }
-        FrameSet fs = that.convert(frame, "");
-        return fs != null
-                && fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT).simplify() instanceof UnitMap;
     }
 
     /**

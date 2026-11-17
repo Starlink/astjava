@@ -582,9 +582,13 @@ class LutMap
 -- transformations
 fwd 2.5 -> 2.5
 inv 2.5 -> 2.5
+fwd 3 -> 2.6666666666666665
+inv 3 -> 4
 -- transformations simplified
 fwd 2.5 -> 2.5
 inv 2.5 -> 2.5
+fwd 3 -> 4
+inv 3 -> 2.6666666666666665
 == simp_unequal_mathmaps
 class TranMap
  Begin TranMap 	# Compound Transformation Mapping
@@ -905,18 +909,22 @@ outputs 3 1
 == split_mismatched
 split none
 == error_no_forward
-!! AST: Error in routine zoom at line 98 in file tranmap_probe.c.
+!! AST: Error in routine zoom at line 113 in file tranmap_probe.c.
 !  astInitTranMap(TranMap): The first supplied Mapping is not able to transform coordinates in the forward direction.
 status 233933418
 == error_no_inverse
-!! AST: Error in routine zoom at line 98 in file tranmap_probe.c.
+!! AST: Error in routine zoom at line 113 in file tranmap_probe.c.
 !  astInitTranMap(TranMap): The second supplied Mapping is not able to transform coordinates in the inverse direction.
 status 233933418
 == error_nin
-!! AST: Error in routine zoom at line 98 in file tranmap_probe.c.
+!! AST: Error in routine zoom at line 113 in file tranmap_probe.c.
 !  astInitTranMap(TranMap): The number of output coordinates per point (1) for the first Mapping supplied does not match the number of output coordinates (2) for the second Mapping.
 status 233933402
 == error_nout
-!! AST: Error in routine zoom at line 98 in file tranmap_probe.c.
+!! AST: Error in routine zoom at line 113 in file tranmap_probe.c.
 !  astInitTranMap(TranMap): The number of output coordinates per point (1) for the first Mapping supplied does not match the number of output coordinates (2) for the second Mapping.
+status 233933402
+== error_nin_equal_nout
+!! AST: Error in routine zoom at line 113 in file tranmap_probe.c.
+!  astInitTranMap(TranMap): The number of input coordinates per point (2) for the first Mapping supplied does not match the number of input coordinates (1) for the second Mapping.
 status 233933402

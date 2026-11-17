@@ -1648,6 +1648,34 @@ public class FrameSet extends Frame {
     // ------------------------------------------------------------------
 
     /**
+     * frameset.c {@code Equal}: {@code that} is of the same class, with the same numbers of Frames
+     * and nodes and the same Base and Current attributes as stored, whose Frames are equal ({@link
+     * #astEqual}) and at the same nodes, and whose Mappings are equal and join the same nodes with
+     * the same Invert values. The Invert attributes of the FrameSets play no part.
+     */
+    @Override
+    boolean equalTo(AstObject that) {
+        if (!astClass().equals(that.astClass())) {
+            return false;
+        }
+        FrameSet other = (FrameSet) that;
+        if (nframe != other.nframe || nnode != other.nnode || base != other.base || current != other.current) {
+            return false;
+        }
+        for (int i = 0; i < nframe; i++) {
+            if (!frames[i].astEqual(other.frames[i]) || nodes[i] != other.nodes[i]) {
+                return false;
+            }
+        }
+        for (int i = 0; i < nnode - 1; i++) {
+            if (!maps[i].astEqual(other.maps[i]) || links[i] != other.links[i] || inverts[i] != other.inverts[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Gets the number of input coordinates: the number of axes of the base Frame.
      *
      * @return the number of input coordinates

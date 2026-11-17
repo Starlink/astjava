@@ -1375,7 +1375,7 @@ class MathMapTest {
     }
 
     private static void equalLine(StringBuilder sb, String name, MathMap a, Mapping b) {
-        sb.append(name).append(' ').append(a.equalTo(b) ? 1 : 0).append('\n');
+        sb.append(name).append(' ').append(a.astEqual(b) ? 1 : 0).append('\n');
     }
 
     /** A loaded description with fewer functions than outputs is refused. */

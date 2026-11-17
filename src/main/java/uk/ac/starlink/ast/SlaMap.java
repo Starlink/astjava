@@ -416,6 +416,39 @@ public class SlaMap extends Mapping {
     // ------------------------------------------------------------------
 
     /**
+     * slamap.c {@code Equal}: {@code that} is an SlaMap with the same numbers of inputs and
+     * outputs and the same Invert attribute, whose conversions are those of this SlaMap, in the
+     * same order, with the same arguments to within {@code astEQUAL}: the first {@code nargs} of
+     * each. SlaMaps with different Invert attributes are never equal.
+     */
+    @Override
+    boolean equalTo(AstObject that) {
+        if (!(that instanceof SlaMap)) {
+            return false;
+        }
+        SlaMap other = (SlaMap) that;
+        if (other.getNin() != getNin() || other.getNout() != getNout() || getInvert() != other.getInvert()) {
+            return false;
+        }
+        if (steps.size() != other.steps.size()) {
+            return false;
+        }
+        for (int i = 0; i < steps.size(); i++) {
+            Step s1 = steps.get(i);
+            Step s2 = other.steps.get(i);
+            if (s1.cvt != s2.cvt) {
+                return false;
+            }
+            for (int j = 0; j < s1.cvt.nargs(); j++) {
+                if (!MappingHelpers.astEqual(s1.args[j], s2.args[j])) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
      * slamap.c {@code MapMerge}. In series, or alone in the list, the SlaMap and the SlaMaps
      * adjacent to it are condensed into one Mapping: their conversions are gathered in the order
      * they are applied, each SlaMap's in reverse and each conversion inverted where the list applies

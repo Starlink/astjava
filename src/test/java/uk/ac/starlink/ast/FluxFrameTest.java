@@ -1026,4 +1026,27 @@ class FluxFrameTest {
         ff.setSpecVal(5.0);
         assertEquals(5.0, ff.getSpecVal());
     }
+
+    // ------------------------------------------------------------------
+    // Equality (frame.c Equal: the conversion simplifies to a UnitMap)
+    // ------------------------------------------------------------------
+
+    @Test
+    void testFluxframeEqualSame() {
+        assertTrue(new FluxFrame().astEqual(new FluxFrame()));
+    }
+
+    @Test
+    void testFluxframeEqualDifferentSystem() {
+        assertFalse(new FluxFrame().astEqual(flux(AstObject.AST__BAD, "System=FLXDNW")));
+    }
+
+    @Test
+    void testFluxframeEqualDifferentSpecvalIsEqual() {
+        FluxFrame ff1 = new FluxFrame();
+        FluxFrame ff2 = new FluxFrame();
+        ff1.setSpecVal(1.0e9);
+        ff2.setSpecVal(2.0e9);
+        assertTrue(ff1.astEqual(ff2));
+    }
 }
