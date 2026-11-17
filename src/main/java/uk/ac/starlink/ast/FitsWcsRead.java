@@ -52,8 +52,7 @@ final class FitsWcsRead {
      *
      * @throws AstException as C's read reports it
      * @throws UnsupportedOperationException if the header has a {@code -TAB} axis with TabOK above
-     *     zero whose table the FitsChan holds, a {@code -LOG} axis with a non-zero CRVAL, or a
-     *     {@code -GRI} or {@code -GRA} axis
+     *     zero whose table the FitsChan holds, or a {@code -GRI} or {@code -GRA} axis
      */
     static FrameSet read(FitsChan fc, FitsChan.Encoding encoding) {
         FitsCardList cards = fc.cards();

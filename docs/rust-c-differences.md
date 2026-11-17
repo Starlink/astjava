@@ -1067,6 +1067,16 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: as C.
 - Java: as C (`FitsSpectralAxes`, `FitsIsMapLinear`, `FitsFsetToStore.addVersion`).
 
+### `SpectralAxes` changes Hz to GHz for a narrow spectral range
+
+**C quirk.**
+
+- C: `SpectralAxes` keeps the SpecFrame's Unit only if `IsMapLinear` finds the conversion from it to the default Unit linear over the spectral range of the image (`fitschan.c` `SpectralAxes`), and `IsMapLinear` requires every residual of its fit to be within 1e-7 of the range.
+  For a range that is narrow beside its values the conversion fails the test although it is a ZoomMap: the axis of `wcsconv/inputs/freq-log.head` spans about 1 Hz at 1.4204e9 Hz, so its values in GHz are rounded to about 2e-7 of their range, and C clears the Unit and writes the axis as `FREQ` in GHz (`CRVAL1 = 1.4204`, `CDELT1 = 1.000000023045475E-12`), where a range of 1e8 Hz keeps Hz.
+  The Unit is cleared on the FrameSet the write describes, which is not the caller's, so the caller's FrameSet keeps its Unit.
+- Rust: as C (`is_map_linear` has the same tolerance, and `spectral_axes` makes the same test).
+- Java: as C (`FitsSpectralAxes`, `FitsIsMapLinear`); probe `src/test/resources/probes/fitslog_probe.c` cases `freq_log_head` and `freq_log_head_unit`.
+
 ### The MathMap of `LogAxis`
 
 - C: `LogAxis` makes the MathMap `logs=log(s)`, inverse `s=exp(logs)`, with SimpFI and SimpIF set, tests the axis with it and puts the same MathMap in the `-LOG` Mapping it returns; it tests neither the axis index nor whether the reference value is finite (`fitschan.c` `LogAxis`).

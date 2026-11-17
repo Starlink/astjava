@@ -129,11 +129,15 @@ class FitsLogAxesTest {
 
     /**
      * The largest difference from C's of a pixel coordinate transformed back from world
-     * coordinates. The inverse of a {@code -LOG} axis is {@code Sr log(S/Sr)}: with {@code Sr} near
-     * 1.4e9, a difference of the last bit of the logarithm from C's libm is a difference near 3e-7
-     * in the intermediate world coordinate, which a CDELT of 1e5 makes near 3e-12 pixels.
+     * coordinates. The CDELT1 written for a spectral {@code -LOG} axis is the slope fitted through
+     * the axis's {@code exp} and {@code log} values, of which java.lang.Math gives a few in the
+     * last bit unlike C's libm, and is up to 3 ULP (5e-16 of its value) from C's. Read back,
+     * the inverse divides an intermediate world coordinate up to about 500 CDELT from the
+     * reference pixel by that CDELT, which moves the pixel coordinate by up to about 3e-13; the
+     * forward transformation moves the world value by less than an ULP of it. With C's CDELT1
+     * card the pixel coordinates are C's.
      */
-    private static final double PIXEL_ATOL = 1e-11;
+    private static final double PIXEL_ATOL = 1e-12;
 
     /**
      * Whether {@code got} matches C's {@code want}: every line within libm rounding, but for the
@@ -277,7 +281,8 @@ class FitsLogAxesTest {
 
     /**
      * The fixture {@code wcsconv/inputs/freq-log.head}: its logarithmic increment is so small that
-     * the axis is linear, and C writes it back as a linear FREQ axis in GHz.
+     * the axis is linear, and C writes it back as a linear FREQ axis in GHz, since over its range
+     * of 1 Hz at 1.42e9 Hz IsMapLinear does not find the conversion from Hz to GHz linear.
      */
     @Test
     void freqLogFixtureIsWrittenAsLinear() {
@@ -287,6 +292,37 @@ class FitsLogAxesTest {
         trans(out, fs, true);
         writeback(out, fs, "FITS-WCS", NAXIS1K, true);
         assertProbe("freq_log_head", text(out));
+    }
+
+    /**
+     * The write leaves the Unit of the FrameSet given as it was: C's {@code SpectralAxes} clears
+     * the Unit of the FrameSet it describes, which is not the caller's.
+     */
+    @Test
+    void writingLeavesTheUnitOfTheFrameSet() {
+        FrameSet fs = FitsHeaders.readFrameSet(FitsHeaders.fixture("wcsconv/inputs/freq-log.head"));
+        List<String> out = new ArrayList<>();
+        out.add("unit before " + fs.getC("Unit(1)") + " test " + (fs.test("Unit(1)") ? 1 : 0));
+        FitsChan fc = new FitsChan();
+        fc.setEncoding("FITS-WCS");
+        for (String card : NAXIS1K) {
+            fc.putFits(card, false);
+        }
+        out.add("wrote " + fc.write(fs));
+        out.add("unit after " + fs.getC("Unit(1)") + " test " + (fs.test("Unit(1)") ? 1 : 0));
+        assertProbe("freq_log_head_unit", text(out));
+    }
+
+    /** {@code FitsSpectralAxesTest.nonlinearUnitIsCleared}'s FrameSet, written with FITS-WCS. */
+    @Test
+    void logUnitAxisOfAUnitMapIsWrittenAsLog() {
+        SpecFrame sf = new SpecFrame();
+        sf.set("System=FREQ,Unit(1)=log(Hz)");
+        FrameSet fs = frameSet(2, new UnitMap(2), new CmpFrame(new Frame(1), sf));
+        List<String> out = new ArrayList<>();
+        writeback(out, fs, "FITS-WCS", NAXIS2, false);
+        out.add("unit after " + fs.getC("Unit(2)"));
+        assertProbe("write_log_unit_unitmap", text(out));
     }
 
     @Test

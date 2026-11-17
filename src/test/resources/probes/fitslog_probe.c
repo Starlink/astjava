@@ -251,6 +251,30 @@ int main( void ) {
       AstFrameSet *fs = astRead( fc );
       trans( fs, 1 );
       writeback( fs, "FITS-WCS", naxis1k, 1 );
+
+      /* The Unit of the FrameSet written, before and after the write. */
+      head( "freq_log_head_unit" );
+      fc = astFitsChan( NULL, NULL, "" );
+      for( int i = 0; h[ i ]; i++ ) astPutFits( fc, h[ i ], 0 );
+      astClear( fc, "Card" );
+      fs = astRead( fc );
+      printf( "unit before %s test %d\n", astGetC( fs, "Unit(1)" ), astTest( fs, "Unit(1)" ) );
+      AstFitsChan *wfc = astFitsChan( NULL, NULL, "Encoding=FITS-WCS" );
+      for( int i = 0; naxis1k[ i ]; i++ ) astPutFits( wfc, naxis1k[ i ], 0 );
+      printf( "wrote %d\n", astWrite( wfc, fs ) );
+      printf( "unit after %s test %d\n", astGetC( fs, "Unit(1)" ), astTest( fs, "Unit(1)" ) );
+   }
+
+   /* FitsSpectralAxesTest.nonlinearUnitIsCleared: a pixel Frame and a
+      CmpFrame of a Frame and a FREQ SpecFrame in log(Hz), joined by a
+      UnitMap. */
+   {
+      AstSpecFrame *sf = astSpecFrame( "System=FREQ,Unit(1)=log(Hz)" );
+      AstCmpFrame *cf = astCmpFrame( astFrame( 1, " " ), sf, " " );
+      AstFrameSet *fs = frameset( 2, (AstMapping *) astUnitMap( 2, " " ), (AstFrame *) cf );
+      head( "write_log_unit_unitmap" );
+      writeback( fs, "FITS-WCS", naxis2, 0 );
+      printf( "unit after %s\n", astGetC( fs, "Unit(2)" ) );
    }
 
    astEnd;

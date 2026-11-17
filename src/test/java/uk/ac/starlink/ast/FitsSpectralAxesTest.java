@@ -598,8 +598,8 @@ class FitsSpectralAxesTest {
     void nonlinearUnitIsCleared() {
         // The conversion from log(Hz) to the default Unit is not linear, so C clears the Unit:
         // CUNIT is the default, GHz, and the CRVAL of 9 (log10 of 1 GHz in Hz) is converted to it.
-        // The axis, linear in log(Hz), is exponential in GHz, and is written with -LOG (as C
-        // writes the axis of C probe fitslog_probe case write_log_unit).
+        // The axis, linear in log(Hz), is exponential in GHz, and C writes it with -LOG (C probe
+        // fitslog_probe, case write_log_unit_unitmap, writes this FrameSet: C_LOG_UNIT).
         FitsStore store = new FitsStore(2);
         spectralAxes(
                 twoAxis(spec("System=FREQ,Unit(1)=log(Hz)"), null),
@@ -610,7 +610,30 @@ class FitsSpectralAxesTest {
         assertEquals("GHz", store.cunit[1]);
         assertEquals(1.0, store.crval[1], 1e-9);
         assertEquals("FREQ-LOG", store.ctype[1]);
+        assertWritesAsC(C_LOG_UNIT, twoAxis(spec("System=FREQ,Unit(1)=log(Hz)"), null), "", 100, 100);
     }
+
+    /**
+     * C's cards for a FREQ axis in log(Hz) that is the second pixel axis (C probe {@code
+     * fitslog_probe}, case {@code write_log_unit_unitmap}).
+     */
+    private static final String[] C_LOG_UNIT = {
+        "wrote 1",
+        "NAXIS   =                    2",
+        "NAXIS1  =                  100",
+        "NAXIS2  =                  100",
+        "CRPIX1  =                 50.0 / Reference pixel on axis 1",
+        "CRPIX2  =                100.0 / Reference pixel on axis 2",
+        "CRVAL1  =                 50.0 / Value at ref. pixel on axis 1",
+        "CRVAL2  =              1.0E+91 / Value at ref. pixel on axis 2",
+        "CTYPE1  = 'x1      '           / Type of co-ordinate on axis 1", // codespell:ignore
+        "CTYPE2  = 'FREQ-LOG'           / Type of co-ordinate on axis 2", // codespell:ignore
+        "CDELT1  =                  1.0 / Pixel size on axis 1",
+        "CDELT2  = 2.3025850929940716E+91 / Pixel size on axis 2",
+        "CUNIT2  = 'GHz     '           / Units for axis 2",
+        "SPECSYS = 'HELIOCEN'           / Standard of rest for spectral axis",
+        "VELOSYS =   29336.889452278185 / [m/s] Topo. apparent velocity of rest frame",
+    };
 
     @Test
     void x2pCascadePicksFreqForWavelengthAxis() {
