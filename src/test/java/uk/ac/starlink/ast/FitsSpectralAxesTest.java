@@ -868,7 +868,8 @@ class FitsSpectralAxesTest {
         assertEquals("WAVE-GRI", store.ctype[1]);
         assertEquals(2, axmap.getNin());
         assertEquals(2, axmap.getNout());
-        assertEquals(g.getGrismWaveR(), store.crval[1], 1e-9);
+        // C's CRVAL1, the GrismMap's reference wavelength (case write_shift_zoom_grism).
+        assertEquals(5.0e-7, store.crval[1]);
         assertEquals(9.0e5, store.pv[1][0]);
         assertEquals(1.0, store.pv[1][1]);
         for (int m = 2; m < store.pv[1].length; m++) {

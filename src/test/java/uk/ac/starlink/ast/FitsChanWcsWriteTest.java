@@ -418,22 +418,32 @@ class FitsChanWcsWriteTest {
     }
 
     /**
-     * The relative difference from C's allowed a number in the grism cases. Reading a grism axis
-     * divides by the rate of change of the grism parameter at CRVAL, which C's {@code astRate}
-     * estimates numerically, choosing the interval whose sub-interval gradients spread least. The
-     * grism parameter is {@code tan(asin(s) - k3)}, zero at CRVAL; java.lang.Math's {@code asin}
-     * and {@code tan} differ from C's libm by an ULP at some points, and near CRVAL the
-     * subtraction makes that a large part of the parameter, which changes the interval chosen. The
-     * rate, and with it the read Mapping's scale, the world coordinates and the CDELT written
-     * back, then differ from C's by up to 8e-10 of their values (the {@code AWAV-GRA} and nm
-     * cases).
+     * The relative difference from C's allowed the values that depend on the rate of change of the
+     * grism parameter at CRVAL: the WinMap's scale and shift in a read Mapping, the world
+     * coordinates and the pixel coordinates transformed back, and CDELT. C's {@code astRate}
+     * estimates the rate numerically from the Mapping's values at points about CRVAL, and
+     * java.lang.Math's {@code asin} and {@code tan} give some of those values 1 ULP, and near
+     * CRVAL, where the grism parameter is the difference of two nearly equal angles, up to 32 ULP
+     * from C's libm (measured against the pinned C library for the {@code AWAV-GRA} and nm cases).
+     * The rates then differ from C's by 1.7e-10 and 8e-10 of their values in those cases.
      */
     private static final double GRISM_RTOL = 1.0e-8;
 
     /**
+     * Whether a line holds values that depend on the rate (see {@link #GRISM_RTOL}): a {@code
+     * pixel} line, the WinMap's {@code Sft1} or {@code Scl1}, or a CDELT card.
+     */
+    private static boolean rateDerived(String line) {
+        String t = line.trim();
+        return t.startsWith("pixel ") || t.startsWith("Sft1 =") || t.startsWith("Scl1 =") || line.startsWith("CDELT");
+    }
+
+    /**
      * Whether {@code got} is C's {@code want} without the lines naming the C source of an error:
-     * each line the same, but for numbers within {@link #GRISM_RTOL} of C's, which on a card may
-     * be written to a width the white space beside them absorbs.
+     * each line the same, but for the numbers of a line holding rate-derived values ({@link
+     * #rateDerived}), which need be within {@link #GRISM_RTOL} of C's, and the numbers of other
+     * lines, which need be within libm rounding; a number on a card may be written to a width the
+     * white space beside it absorbs.
      */
     static boolean grismMatchesC(String got, String want) {
         List<String> g = CValues.lines(got);
@@ -447,7 +457,12 @@ class FitsChanWcsWriteTest {
             return false;
         }
         for (int i = 0; i < g.size(); i++) {
-            if (!CValues.nativeStringsWithinRelative(g.get(i) + "\n", w.get(i) + "\n", GRISM_RTOL)) {
+            String gl = g.get(i) + "\n";
+            String wl = w.get(i) + "\n";
+            boolean ok = rateDerived(w.get(i))
+                    ? CValues.nativeStringsWithinRelative(gl, wl, GRISM_RTOL)
+                    : CValues.nativeStringsWithinLibmRounding(gl, wl);
+            if (!ok) {
                 return false;
             }
         }

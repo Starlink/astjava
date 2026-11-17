@@ -226,15 +226,16 @@ final class FitsSpectralAxes {
                     Mapping[] sansGrism = new Mapping[1];
                     GrismMap gmap = extractGrismMap(wmap, iax, sansGrism);
                     if (gmap != null && FitsIsMapLinear.isMapLinear(sansGrism[0], lbndP, ubndP, iax, null)) {
-                        // The reference wavelength in m, and the wavelength SpecFrame.
-                        double wcrval = gmap.getGrismWaveRValue();
+                        // The reference value is the reference wavelength in m until it is
+                        // converted to S below, as in C.
+                        crval = gmap.getGrismWaveRValue();
                         SpecFrame tfrm1 = (SpecFrame) specfrm.copy();
                         fs.setC(systemAttr, origSystem);
                         fs.setC(unitAttr, linUnit);
                         FrameSet tfs1 = specfrm.convert(tfrm1, "");
                         if (tfs1 != null) {
                             Mapping tmap3 = tfs1.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
-                            crval = tmap3.tran1(1, new double[] {wcrval}, false)[0];
+                            crval = tmap3.tran1(1, new double[] {crval}, false)[0];
 
                             // From S to wavelength to the grism parameter: its value and rate
                             // of change with S at the reference point.

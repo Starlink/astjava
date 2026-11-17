@@ -220,19 +220,36 @@ class ClearOnSetTest {
         assertDiscards(new GrismMap(), "GrismMap.setGrismTheta", m -> m.setGrismTheta(0.02));
     }
 
-    /** The setters recompute the derived constants, as C's {@code MAKE_SET} does ({@code UpdateConstants}). */
+    /**
+     * The setters recompute the derived constants, as C's {@code MAKE_SET} does ({@code
+     * UpdateConstants}): a GrismMap made with no attribute set, whose forward transformation is
+     * bad everywhere, has every attribute set afterwards and must then transform as C's GrismMap
+     * with the same attributes (probe {@code probes/grismmap_probe.c}, case {@code
+     * transformations}). Constants left from construction would give bad values.
+     */
     @Test
     void grismSettersRecomputeTheConstants() {
         GrismMap set = new GrismMap();
-        set.setGrismG(1000.0);
+        set.setGrismNR(1.5);
+        set.setGrismNRP(-1e-6);
+        set.setGrismWaveR(5000.0);
+        set.setGrismAlpha(0.1);
+        set.setGrismG(2e-4);
         set.setGrismM(1);
-        set.setGrismWaveR(6000.0);
-        GrismMap constructed = grismMap(1.0, 0.0, 6000.0, 0.0, 1000.0, 1);
-        double[] pts = {1.0, 2.0, 3.0};
-        double[] viaSetters = set.tran1(3, pts, true);
-        double[] viaConstructor = constructed.tran1(3, pts, true);
+        set.setGrismEps(0.02);
+        set.setGrismTheta(0.03);
+        String c = uk.ac.starlink.ast.testsupport.ProbeOutput.load("grismmap_probe")
+                .get("transformations");
+        double[] pts = {0.0, 0.01, -0.01, 0.05};
+        double[] got = set.tran1(pts.length, pts, true);
         for (int i = 0; i < pts.length; i++) {
-            assertEquals(viaConstructor[i], viaSetters[i], "point " + i + ": the setters left stale derived constants");
+            String head = "fwd " + CFormat.format("%.17g", pts[i]) + " -> ";
+            int at = c.indexOf(head);
+            assertTrue(at >= 0, "the probe has no line " + head);
+            double want = Double.parseDouble(c.substring(at + head.length(), c.indexOf('\n', at)));
+            assertTrue(
+                    uk.ac.starlink.ast.testsupport.CValues.withinLibmRounding(got[i], want),
+                    "point " + i + ": got " + got[i] + ", C gives " + want + "; the setters left stale constants");
         }
     }
 

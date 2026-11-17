@@ -1,6 +1,7 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static uk.ac.starlink.ast.MappingTestData.fromRows;
@@ -200,10 +201,12 @@ class NanProtocolTest {
 
     @Test
     void nanProtocolGrismmap() {
-        // Realistic-ish grism parameters.
+        // The probe's typical grism (probes/grismmap_probe.c), whose forward transformation is
+        // good over these inputs.
         GrismMap map = new GrismMap();
-        map.set("GrismNR=1.5,GrismNRP=0.0,GrismWaveR=5000.0E-10,GrismAlpha=0.0,GrismG=1.0E7,GrismM=1,"
-                + "GrismEps=1.0,GrismTheta=0.0");
+        map.set("GrismNR=1.5,GrismNRP=-1.0E-6,GrismWaveR=5000,GrismAlpha=0.1,GrismG=2.0E-4,GrismM=1,"
+                + "GrismEps=0.02,GrismTheta=0.03");
+        assertNotEquals(BAD, map.tran1(1, new double[] {0.031}, true)[0], "the inputs must transform to good values");
         double[][] rows = new double[32][];
         for (int i = 0; i < 32; i++) {
             rows[i] = new double[] {i * 0.001};
