@@ -187,7 +187,8 @@ public class GrismMap extends Mapping {
      * (k1 + sin(atan(g) + k3)) / k2} of the grism parameter {@code g}, and the inverse the grism
      * parameter {@code tan(asin(k2 * w - k1) - k3)} of the wavelength {@code w}, bad where the
      * sine is outside -1 to 1. Every output is bad when a constant is bad, and the forward
-     * transformation's when {@code k2} is zero.
+     * transformation's when {@code k2} is zero. An input that is not finite is bad, where C tests
+     * only for {@link #AST__BAD} (docs/rust-c-differences.md, "Infinite input coordinates").
      */
     @Override
     void transformInto(double[][] in, int npoint, boolean forward, double[][] out) {
@@ -201,7 +202,7 @@ public class GrismMap extends Mapping {
         } else if (effectiveForward(forward)) {
             for (int p = 0; p < npoint; p++) {
                 double v = xin[p];
-                if (v == AST__BAD || k2 == 0.0) {
+                if (isBad(v) || k2 == 0.0) {
                     xout[p] = AST__BAD;
                 } else {
                     xout[p] = (k1 + Math.sin(Math.atan(v) + k3)) / k2;
@@ -210,7 +211,7 @@ public class GrismMap extends Mapping {
         } else {
             for (int p = 0; p < npoint; p++) {
                 double v = xin[p];
-                if (v == AST__BAD) {
+                if (isBad(v)) {
                     xout[p] = AST__BAD;
                 } else {
                     double sinbeta = k2 * v - k1;
