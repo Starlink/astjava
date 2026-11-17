@@ -510,10 +510,11 @@ The entries are grouped by area, in the order the Java classes were ported.
 
 ### A SwitchMap selector value beyond the range of `int`
 
-- C: `GetRoute` and `Transform` (`switchmap.c`) exclude only `AST__BAD` and then take `(int) round( sel ) - 1` as the route index, so a selector value beyond the range of `int`, an infinity or a NaN makes the conversion undefined.
-  The pinned library built on macOS aarch64 saturates the conversion, and such a value picks no route (probe `src/test/resources/probes/switchmap_probe.c`, case `selector_values`, which includes `2147483648.5`, `4294967297` and `1e30`).
+- C: `GetRoute` and `Transform` (`switchmap.c`) exclude only `AST__BAD` and then take `(int) round( sel ) - 1` as the route index, so a selector value beyond the range of `int`, an infinity or a NaN makes the conversion undefined, and a conversion giving `INT_MIN` makes the `- 1` overflow, a second undefined step.
+  C's documented contract is that a nearest integer below 1 or above the number of routes picks no route.
+  The pinned library built on macOS aarch64 keeps to that contract for such values: `2147483648.5`, `4294967297`, `4294967298`, `±1e30` and `±DBL_MAX` pick no route, so there is no modular wrap into the routes (probe `src/test/resources/probes/switchmap_probe.c`, case `selector_values`); the probe cannot tell whether the conversion saturates or gives `INT_MIN`.
 - Rust: compares the rounded value with 1 and the number of routes before converting, so such a value picks no route by definition.
-- Java: converts as C does; Java's conversion is defined, giving 0 for a NaN and the nearest `int` for any other value, so such a value picks no route, as in the probe.
+- Java: converts as C does; Java's conversion is defined, giving 0 for a NaN and the nearest `int` for any other value, and `Integer.MIN_VALUE - 1` wraps to `Integer.MAX_VALUE`, so every such value gives an index outside the routes and picks no route, as the contract says and the probe shows.
 
 ### Simplifying a SwitchMap that holds one Mapping twice
 
@@ -524,11 +525,12 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Java: as C.
   Java sets back each Invert attribute as it was, set or unset, where C's `astSetInvert` leaves it set, so the two differ only in what `test("Invert")` gives afterwards.
 
-### A SwitchMap dump without `ISInv`, or without route Mappings
+### A SwitchMap round trip when only the forward selector was inverted
 
-- **C quirk**: `astLoadSwitchMap` takes an absent `ISInv` to be the value of `FSInv`, so a dump with the forward selector inverted and no `ISInv` applies the inverse selector inverted too (probe case `load_without_isinv`); an absent `RInv<n>` is 0.
-  A dump without `RMap1` loads a SwitchMap of no route Mappings, which gives bad values everywhere.
-- Rust: takes an absent `ISInv` to be 0, and refuses a dump without route Mappings with AST__LDERR.
+- **C bug**: `Dump` (`switchmap.c`) writes `ISInv` with its set flag equal to its value and not as a helpful value, so `Channel` writes `ISInv = 0` not at all at Full 0, and only as a comment, which is never read back, at a higher Full; C's own dump therefore never carries `ISInv = 0`.
+  `astLoadSwitchMap` takes an absent `ISInv` to be the value of `FSInv`, so a SwitchMap whose forward selector was inverted when it was made and whose inverse selector was not reloads with its inverse selector inverted, its inverse transformation changed and `astEqual` false (probe `src/test/resources/probes/switchmap_probe.c`, case `dump_fsinv_set_isinv_unset`: the inverse transformation of 1000 is 1 before the round trip and 47.454545454545453 after).
+  An absent `RInv<n>` is 0, and a dump without `RMap1` loads a SwitchMap of no route Mappings, which gives bad values everywhere.
+- Rust: takes an absent `ISInv` to be 0, so its round trips keep the SwitchMap, and refuses a dump without route Mappings with AST__LDERR.
 - Java: as C; a component that is not a Mapping is AST__LDERR, as for a CmpMap, TranMap or RateMap.
 
 ### The messages of SwitchMap's constructor

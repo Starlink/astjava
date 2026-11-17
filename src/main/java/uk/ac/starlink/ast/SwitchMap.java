@@ -276,7 +276,9 @@ public class SwitchMap extends Mapping {
      * Writes each selector there is with its Invert value recorded when the SwitchMap was made
      * (set when true), and then each route Mapping with its recorded Invert value, as C's {@code
      * Dump} (switchmap.c) does; each Mapping is written with its own Invert attribute as it now
-     * is.
+     * is. As in C, a SwitchMap whose forward selector was recorded inverted and whose inverse
+     * selector was not loads back with its inverse selector inverted, since {@code ISInv} is
+     * written only when true and the loader takes its absence as {@code FSInv}.
      */
     @Override
     void dump(NativeNode node) {
@@ -387,9 +389,12 @@ public class SwitchMap extends Mapping {
     /**
      * The zero-based index of the route a good selector value picks, as C computes it: {@code
      * (int) round(sel) - 1}, which may be outside the routes. C converts without a range check, so
-     * a value beyond the range of {@code int}, an infinity or a NaN makes the conversion undefined;
-     * Java's conversion is defined, giving 0 for a NaN and the nearest {@code int} for any other
-     * value, and those give an index outside the routes, as C on common hardware does.
+     * a value beyond the range of {@code int}, an infinity or a NaN makes the conversion undefined,
+     * as does the {@code - 1} after a conversion giving {@code INT_MIN}; Java's conversion is
+     * defined, giving 0 for a NaN and the nearest {@code int} for any other value, and {@code
+     * Integer.MIN_VALUE - 1} wraps to {@code Integer.MAX_VALUE}, so each of these gives an index
+     * outside the routes, which picks no route, as C's documentation says of an index below 1 or
+     * above the number of routes.
      */
     private static int routeIndex(double sel) {
         return (int) FitsMakeIntWorld.roundHalfAway(sel) - 1;

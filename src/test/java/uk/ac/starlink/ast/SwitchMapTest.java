@@ -272,8 +272,8 @@ class SwitchMapTest {
     /**
      * The route each selector value picks, in both directions and in the rate, as C picks it,
      * including values beyond the range of {@code int}, which C converts without a range check
-     * and saturates on this hardware, and the halfway points, which C's {@code round} takes away
-     * from zero.
+     * and which pick no route, as C's documented contract says of an index below 1 or above the
+     * number of routes, and the halfway points, which C's {@code round} takes away from zero.
      */
     @Test
     void selectorValuesPickTheRoutesCPicks() {
@@ -583,22 +583,24 @@ class SwitchMapTest {
     }
 
     /**
-     * A dump with {@code FSInv} set and no {@code ISInv} gives the inverse selector the forward
-     * selector's value, as C's loader does.
+     * A SwitchMap whose forward selector was inverted when it was made and whose inverse selector
+     * was not does not survive a native round trip, as in C: the dump writes {@code ISInv} only
+     * when it is set, and the loader takes an absent {@code ISInv} to be {@code FSInv}, so the
+     * SwitchMap read back applies its inverse selector inverted and its inverse transformation
+     * changes.
      */
     @Test
-    void anAbsentIsInvTakesFsInv() {
+    void aRoundTripInvertsAnInverseSelectorAsC() {
         SwitchMap sw =
                 switch2(inv(halves()), halves(), win(1.0, 101.0, 1000.0, 2000.0), win(102.0, 202.0, 1600.0, 2700.0));
-        StringBuilder edited = new StringBuilder();
-        for (String line : ChannelText.dump(sw).split("\n", -1)) {
-            if (!line.isEmpty() && !line.contains("ISInv")) {
-                edited.append(line).append('\n');
-            }
-        }
-        Mapping back = (Mapping) ChannelText.read(edited.toString());
-        assertEquals(
-                probe("load_without_isinv"), ChannelText.dump(back) + "-- transformations read back\n" + tran(back));
+        String dump = ChannelText.dump(sw);
+        assertFalse(dump.contains("ISInv"));
+        assertRoundTrips("dump_fsinv_set_isinv_unset", sw);
+        Mapping back = (Mapping) ChannelText.read(dump);
+        assertFalse(sw.astEqual(back));
+        double[] wave = {1000.0, 1700.0};
+        assertArrayEquals(new double[] {1.0, 71.0}, sw.tran1(2, wave, false));
+        assertArrayEquals(new double[] {47.45454545454545, 111.09090909090911}, back.tran1(2, wave, false));
     }
 
     /**

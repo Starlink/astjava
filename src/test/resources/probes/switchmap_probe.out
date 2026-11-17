@@ -46,7 +46,7 @@ rate 20 1: 10
 rate 20 2: 11.00000002048
 rate 20 2 axis 2: 0
 rate inverted 1700: 0.10000000000000001
-!! AST: Error in routine main at line 256 in file src/test/resources/probes/switchmap_probe.c.
+!! AST: Error in routine main at line 257 in file src/test/resources/probes/switchmap_probe.c.
 !  astRate(SwitchMap): Invalid input index (2) specified - should be in the range 1 to 1.
 rate inverted 1900: -1.7976931348623157e+308
 status 233933178
@@ -1353,7 +1353,42 @@ fwd 101 -> -1.7976931348623157e+308
 fwd 140 -> -1.7976931348623157e+308
 fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
 inv undefined
-== load_without_isinv
+== dump_fsinv_set_isinv_unset
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    FSInv = 1 	# Fwd selector used in inverse direction
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- read back
  Begin SwitchMap 	# Alternate regionalised Mapping
     Nin = 1 	# Number of input coordinates
  IsA Mapping 	# Mapping between coordinate systems
@@ -1389,6 +1424,18 @@ inv undefined
           Scl1 = 11 	# Scale factor for axis 1
        End WinMap
  End SwitchMap
+-- equal 0
+-- transformations
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2390
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
 -- transformations read back
 fwd 1 -> 1000
 fwd 37.5 -> 1365
@@ -2608,42 +2655,42 @@ inv 2700 -> 171
 inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
 -- Invert shared after 0 test 1
 == error_no_routes
-!! AST: Error in routine mathmap at line 76 in file src/test/resources/probes/switchmap_probe.c.
+!! AST: Error in routine mathmap at line 77 in file src/test/resources/probes/switchmap_probe.c.
 !  astSwitchMap(SwitchMap):  Bad number of route Mappings (0) specified.
 status 233934170
 == error_route_nin
-!! AST: Error in routine mathmap at line 76 in file src/test/resources/probes/switchmap_probe.c.
+!! AST: Error in routine mathmap at line 77 in file src/test/resources/probes/switchmap_probe.c.
 !  astInitSwitchMap(SwitchMap): Route Mapping number 2 has 2 input(s) but the first route Mapping has 1 input(s).
 status 233933210
 == error_route_nout
-!! AST: Error in routine mathmap at line 76 in file src/test/resources/probes/switchmap_probe.c.
+!! AST: Error in routine mathmap at line 77 in file src/test/resources/probes/switchmap_probe.c.
 !  astInitSwitchMap(SwitchMap): Route Mapping number 2 has 1 output(s) but the first route Mapping has 1 output(s).
 status 233933218
 == error_fsmap_no_forward
-!! AST: Error in routine inv at line 65 in file src/test/resources/probes/switchmap_probe.c.
+!! AST: Error in routine inv at line 66 in file src/test/resources/probes/switchmap_probe.c.
 !  astInitSwitchMap(SwitchMap): The forward selector Mapping is not able to transform coordinates in the forward direction.
 status 233933418
 == error_ismap_no_inverse
-!! AST: Error in routine main at line 539 in file src/test/resources/probes/switchmap_probe.c.
+!! AST: Error in routine main at line 522 in file src/test/resources/probes/switchmap_probe.c.
 !  astInitSwitchMap(SwitchMap): The inverse selector Mapping is not able to transform coordinates in the inverse direction.
 status 233933418
 == error_fsmap_nin
-!! AST: Error in routine main at line 542 in file src/test/resources/probes/switchmap_probe.c.
+!! AST: Error in routine main at line 525 in file src/test/resources/probes/switchmap_probe.c.
 !  astInitSwitchMap(SwitchMap): The forward selector Mapping has 2 input(s) but the SwitchMap has 1 input(s).
 status 233933210
 == error_fsmap_nout
-!! AST: Error in routine main at line 548 in file src/test/resources/probes/switchmap_probe.c.
+!! AST: Error in routine main at line 531 in file src/test/resources/probes/switchmap_probe.c.
 !  astInitSwitchMap(SwitchMap): The forward selector Mapping has 2 outputs but should only have 1.
 status 233933218
 == error_ismap_nout
-!! AST: Error in routine main at line 552 in file src/test/resources/probes/switchmap_probe.c.
+!! AST: Error in routine main at line 535 in file src/test/resources/probes/switchmap_probe.c.
 !  astInitSwitchMap(SwitchMap): The inverse selector Mapping has 2 output(s) but the SwitchMap has 1 output(s).
 status 233933218
 == error_ismap_nin
-!! AST: Error in routine main at line 558 in file src/test/resources/probes/switchmap_probe.c.
+!! AST: Error in routine main at line 541 in file src/test/resources/probes/switchmap_probe.c.
 !  astInitSwitchMap(SwitchMap): The inverse selector Mapping has 2 inputs but should only have 1.
 status 233933210
 == error_no_selectors
-!! AST: Error in routine main at line 562 in file src/test/resources/probes/switchmap_probe.c.
+!! AST: Error in routine main at line 545 in file src/test/resources/probes/switchmap_probe.c.
 !  astInitSwitchMap(SwitchMap): No selector Mappings supplied.
 status 233933418

@@ -5,10 +5,11 @@
  * precision; native dumps with selectors and routes inverted at
  * construction and afterwards, one Mapping as both selectors, LutMap,
  * MathMap and PcdMap components, a SwitchMap inside a CmpMap and a
- * TranMap, and a dump without ISInv, each read back through a Channel;
- * astEqual; simplification of a SwitchMap alone, inverted, with route and
- * selector Mappings that simplify, beside its own inverse and other
- * Mappings; and the constructor's errors.
+ * TranMap, and one whose inverse selector changes on the way (C writes
+ * ISInv only when set and reads its absence as FSInv), each read back
+ * through a Channel; astEqual; simplification of a SwitchMap alone,
+ * inverted, with route and selector Mappings that simplify, beside its
+ * own inverse and other Mappings; and the constructor's errors.
  *
  * Each case starts with a line "== <name>"; error reports, which the error
  * module writes to standard error, are merged in order (stdout unbuffered).
@@ -371,32 +372,14 @@ int main( void ) {
       roundtrip( "dump_in_switchmap", (AstMapping *) astSwitchMap( astUnitMap( 1, " " ), NULL, 1, (void **) rm, " " ) );
    }
 
-   /* A dump with FSInv set and ISInv absent: the inverse selector takes
-      the forward selector's flag. */
-   head( "load_without_isinv" );
-   {
-      AstSwitchMap *sw = switch2( inv( halves() ), halves(), win( 1.0, 101.0, 1000.0, 2000.0 ),
-                                  win( 102.0, 202.0, 1600.0, 2700.0 ) );
-      clear_lines();
-      AstChannel *ch = astChannel( source, sink, " " );
-      astWrite( ch, sw );
-      int out = 0;
-      for( int k = 0; k < nline; k++ ) {
-         if( strstr( lines[ k ], "ISInv" ) ) {
-            free( lines[ k ] );
-         } else {
-            lines[ out++ ] = lines[ k ];
-         }
-      }
-      nline = out;
-      AstMapping *back = astRead( ch );
-      if( !failed() ) {
-         astShow( back );
-         printf( "-- transformations read back\n" );
-         tran( back );
-      }
-      ch = astAnnul( ch );
-   }
+   /* A SwitchMap whose forward selector was inverted when it was made and
+      whose inverse selector was not: Dump writes ISInv only when it is
+      set, and the loader takes an absent ISInv to be FSInv, so the
+      SwitchMap read back applies its inverse selector inverted and its
+      inverse transformation changes. */
+   roundtrip( "dump_fsinv_set_isinv_unset",
+              (AstMapping *) switch2( inv( halves() ), halves(), win( 1.0, 101.0, 1000.0, 2000.0 ),
+                                      win( 102.0, 202.0, 1600.0, 2700.0 ) ) );
 
    /* Equality. */
    head( "equal" );
