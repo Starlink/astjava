@@ -183,6 +183,13 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: as C.
 - Java: as C.
 
+### Comparing two MatrixMaps changes them
+
+- **C quirk**: `Equal` (`matrixmap.c`) stores both MatrixMaps in full form for the comparison and then compresses them (`CompressMatrix`), which sets to zero each off-diagonal element no larger than sqrt(DBL_EPSILON) times the largest in its row and in its column, and stores a matrix that is then diagonal in diagonal form.
+  A MatrixMap that was never compressed, such as one read from a dump, can therefore be changed by being compared, and with it what the merge in the entry above does with it; the recursion guard of `Simplify` (`cmpmap.c`) compares the components of CmpMaps, which may share such a MatrixMap with the Mapping being simplified.
+- Rust: `equal` (`mappings/matrix.rs`) compares without changing either MatrixMap.
+- Java: as C.
+
 ### Array arguments longer than needed
 
 - C and jniast: accept them and use the leading elements (WinMap corners, MatrixMap matrices, PermMap permutations).
@@ -337,7 +344,8 @@ The entries are grouped by area, in the order the Java classes were ported.
   The change is seen by anything that uses the WcsMap on its own afterwards, and in dumps.
 - Rust: compares owned copies, so nothing changes.
 - Java: as C, and the recursion guard of the simplification compares Mappings with `astEqual` as C's does: simplifying `brad.map` gives `brad.simp` and leaves the Mapping read with the WcsMap not inverted (probe `src/test/resources/probes/simplify_input_probe.c`).
-  The `brad` row of `simplify/cases.txt` stays listed in `deferred/simplify-cases.txt` because the gate requires that simplifying leaves the input's dump unchanged, which C does not do here.
+  The `brad` row of `simplify/cases.txt` matches C; its gate compares the input's dump after simplification with the one the probe records.
+  Java restores each component's Invert attribute as it was, set or unset, where C's `astSetInvert` leaves it set, so the two differ only in what `test("Invert")` gives afterwards.
 
 ### The status of a MathMap with no outputs
 
@@ -446,7 +454,7 @@ The entries are grouped by area, in the order the Java classes were ported.
 ### Comparing two ZoomMaps
 
 - **C quirk**: `Equal` (`zoommap.c`) compares the factors as stored, which is zero once the Zoom attribute has been cleared, though the factor is then 1: a ZoomMap whose Zoom is cleared does not equal a ZoomMap of factor 1.
-  For ZoomMaps with different Invert attributes it compares one factor with the reciprocal of the other, which for a cleared Zoom is infinite, and `astEQUAL` finds an infinite value equal to anything (probe `src/test/resources/probes/equal_probe.c`, case `zoommap_cleared_zoom`).
+  For ZoomMaps with different Invert attributes it compares one factor with the reciprocal of the other, which for a cleared Zoom is infinite, and `astEQUAL` finds an infinite value equal to any finite value that is not bad (probe `src/test/resources/probes/equal_probe.c`, case `zoommap_cleared_zoom`).
 - Rust: compares the factors in use, and, for different Invert attributes, their product with 1.
 - Java: as C.
 

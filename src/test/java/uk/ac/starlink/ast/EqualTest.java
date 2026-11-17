@@ -820,10 +820,10 @@ class EqualTest {
     void simplifyingBradChangesItsSharedWcsmapAsC() {
         Map<String, String> c = ProbeOutput.load("simplify_input_probe");
         Mapping m = (Mapping) ChannelText.read(Fixtures.read("simplify/brad.map"));
-        assertEquals(c.get("input_before"), ChannelText.dump(m));
+        assertEquals(c.get("brad/input_before"), ChannelText.dump(m));
         Mapping s = m.simplify();
-        assertEquals(c.get("simplified"), ChannelText.dump(s));
-        assertEquals(c.get("input_after"), ChannelText.dump(m));
+        assertEquals(c.get("brad/simplified"), ChannelText.dump(s));
+        assertEquals(c.get("brad/input_after"), ChannelText.dump(m));
     }
 
     /** CmpMaps with Ident set are compared through copies of their components. */

@@ -15,6 +15,7 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
 import uk.ac.starlink.ast.testsupport.NativeClasses;
 import uk.ac.starlink.ast.testsupport.OracleFile;
 import uk.ac.starlink.ast.testsupport.OracleSection;
+import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
  * Translation of Rust {@code tests/test_simplify_regression.rs::simplify_regression}: the rows of
@@ -38,7 +39,10 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  *
  * <p>Simplifying must leave the input as C leaves it: its dump, apart from the records of
  * simplification C also writes on it ({@code IsSimp}, {@code ReSimp}), and what it computes for the
- * inputs of its oracle sections, are unchanged.
+ * inputs of its oracle sections, are unchanged. Where the probe {@code
+ * probes/simplify_input_probe.c} records C's dump of a row's input after simplification, the
+ * input's dump, apart from those records, must be that instead: C's comparisons of CmpMaps can
+ * change the Invert attribute of a component shared with the input (row {@code brad}).
  *
  * <p>The simplified Mapping must also transform the inputs of the input file's sections of {@code
  * oracle/simplify_fixtures.oracle} to C's recorded outputs, within the file's tolerances, as the
@@ -111,6 +115,12 @@ class SimplifyRegressionTest {
     static final String SIMPLIFY = "needs simplification";
 
     /**
+     * C's dumps of rows' inputs after simplification, as {@code <row>/input_after} cases of the
+     * probe {@code probes/simplify_input_probe.c}.
+     */
+    private static final Map<String, String> INPUT_AFTER = ProbeOutput.load("simplify_input_probe");
+
+    /**
      * The reason a failing row is listed with: the out-of-scope classes its input or reference
      * names, or {@value #SIMPLIFY} if there are none, since the row then fails in a part of the
      * simplifier not yet ported.
@@ -145,7 +155,13 @@ class SimplifyRegressionTest {
             }
             List<String> inputBefore = withoutRecords(ChannelText.dump(input));
             simplified = input.simplify();
-            if (!sameButForClearedAlSimp(inputBefore, withoutRecords(ChannelText.dump(input)))) {
+            List<String> inputAfter = withoutRecords(ChannelText.dump(input));
+            String cAfter = INPUT_AFTER.get(r.name + "/input_after");
+            if (cAfter != null) {
+                if (!withoutRecords(cAfter).equals(inputAfter)) {
+                    return "simplify() left the input's dump other than C leaves it";
+                }
+            } else if (!sameButForClearedAlSimp(inputBefore, inputAfter)) {
                 return "simplify() changed the input's dump";
             }
             // Both dumps are taken before anything is transformed, since a transformation can

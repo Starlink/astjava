@@ -1,4 +1,4 @@
-== input_before
+== brad/input_before
  Begin CmpMap 	# Compound Mapping
     Nin = 3 	# Number of input coordinates
  IsA Mapping 	# Mapping between coordinate systems
@@ -55,7 +55,7 @@
              End WcsMap
        End CmpMap
  End CmpMap
-== simplified
+== brad/simplified
  Begin CmpMap 	# Compound Mapping
     Nin = 3 	# Number of input coordinates
     IsSimp = 1 	# Mapping has been simplified
@@ -103,7 +103,7 @@
              End WcsMap
        End CmpMap
  End CmpMap
-== input_after
+== brad/input_after
  Begin CmpMap 	# Compound Mapping
     Nin = 3 	# Number of input coordinates
  IsA Mapping 	# Mapping between coordinate systems

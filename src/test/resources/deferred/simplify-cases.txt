@@ -1,7 +1,6 @@
 # Rows of fixtures/simplify/cases.txt whose simplification does not match C:
 # <row name> | <reason>
 # Rewritten by SimplifyRegressionTest with -Dast.writeDeferred=true.
-brad | needs simplification
 pcd_zero_to_unit | needs PcdMap
 pcd_inverse_cancel | needs PcdMap
 grism_inverse_cancel | needs GrismMap

@@ -268,13 +268,14 @@ public class AstObject implements Cloneable {
     /**
      * C's {@code Equal} for this Object's class, which {@link #astEqual} calls with an Object other
      * than this one. The base Object class's (object.c {@code Equal}) finds Objects equivalent when
-     * they are the same object, or of the same class: C compares the class names and the sizes of
-     * the structures, which the class of a Java object determines.
+     * they are the same object, or of the same AST class: C compares the class names and the sizes
+     * of the structures, and objects of one AST class have structures of one size, so the class
+     * names ({@link #astClass}) decide.
      */
-    // C compares the pointers first, and then the classes, not any equals method.
+    // C compares the pointers first, and then the class names, not any equals method.
     @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
     boolean equalTo(AstObject that) {
-        return this == that || getClass() == that.getClass();
+        return this == that || astClass().equals(that.astClass());
     }
 
     /**

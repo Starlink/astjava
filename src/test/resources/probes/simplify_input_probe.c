@@ -5,14 +5,15 @@
  * CmpMaps that share a WcsMap (cmpmap.c Equal sets the WcsMap's Invert
  * attribute to the value the first CmpMap records).
  *
- * Each case starts with a line "== <name>". Built against the C library at
+ * Each case starts with a line "== <row>/<name>", <row> being the name the
+ * file's row of ast_tester/fixtures/simplify/cases.txt gives it. Built against the C library at
  * 3d3f255f with its static libraries:
  *   cc -I<build> -o simplify_input_probe simplify_input_probe.c
  *      <build>/libast.a <build>/libast_pal.a <build>/libast_err.a
  *      <build>/libast_grf3d.a <build>/libast_grf_2.0.a
  *      <build>/libast_grf_3.2.a <build>/libast_grf_5.6.a
  *      <build>/libast_cminpack.a -lyaml -lm
- * and run as ./simplify_input_probe <fixtures>/simplify/brad.map >
+ * and run as ./simplify_input_probe brad <fixtures>/simplify/brad.map >
  * simplify_input_probe.out 2>&1, then trailing white space removed from
  * every line. */
 #include <stdio.h>
@@ -31,18 +32,18 @@ static const char *source( void ) {
 
 int main( int argc, char **argv ) {
    int status = 0;
-   if( argc != 2 || !( in = fopen( argv[ 1 ], "r" ) ) ) return 1;
+   if( argc != 3 || !( in = fopen( argv[ 2 ], "r" ) ) ) return 1;
    setvbuf( stdout, NULL, _IONBF, 0 );
    astWatch( &status );
    astBegin;
    AstChannel *ch = astChannel( source, NULL, " " );
    AstMapping *m = astRead( ch );
-   printf( "== input_before\n" );
+   printf( "== %s/input_before\n", argv[ 1 ] );
    astShow( m );
    AstMapping *s = astSimplify( m );
-   printf( "== simplified\n" );
+   printf( "== %s/simplified\n", argv[ 1 ] );
    astShow( s );
-   printf( "== input_after\n" );
+   printf( "== %s/input_after\n", argv[ 1 ] );
    astShow( m );
    astEnd;
    fclose( in );
