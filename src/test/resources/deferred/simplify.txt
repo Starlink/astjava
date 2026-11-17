@@ -91,9 +91,6 @@ simplify/interval_self_simplify_cmp.map | needs Interval, PointSet
 simplify/interval_self_simplify_cmp.simp | needs Box, PointSet
 simplify/interval_unc_fillfactor_merge.map | needs Box, Interval, PointSet
 simplify/interval_unc_fillfactor_merge.simp | needs Box, Interval, PointSet
-simplify/intra_invfwd_cancel.map | needs IntraMap
-simplify/intra_invfwd_cancel_tail.map | needs IntraMap
-simplify/intramap_inverse_cancel.map | needs IntraMap
 simplify/merge_box_fillfactor_product.map | needs Box, PointSet
 simplify/merge_box_fillfactor_product.simp | needs Box, PointSet
 simplify/merge_box_meshsize_scaled.map | needs Box, PointSet
@@ -110,13 +107,6 @@ simplify/neg_circle_cmpframe_sky_second.map | needs Circle, PointSet
 simplify/neg_interval_parallel_nonregion.map | needs Interval, PointSet
 simplify/neg_interval_series.map | needs Interval, PointSet
 simplify/neg_interval_unbounded_pointlist.map | needs Interval, PointList, PointSet
-simplify/neg_intra_diff_flag.map | needs IntraMap
-simplify/neg_intra_diff_func.map | needs IntraMap
-simplify/neg_intra_no_simpfi.map | needs IntraMap
-simplify/neg_intra_no_simpif.map | needs IntraMap
-simplify/neg_intra_nonintra_neighbour.map | needs IntraMap
-simplify/neg_intra_parallel.map | needs IntraMap
-simplify/neg_intra_same_direction.map | needs IntraMap
 simplify/neg_normmap_diff_frame.map | needs NormMap
 simplify/neg_normmap_different_frames.map | needs NormMap
 simplify/neg_normmap_inv_diff_frame.map | needs NormMap

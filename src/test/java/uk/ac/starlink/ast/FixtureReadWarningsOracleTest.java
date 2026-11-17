@@ -3,8 +3,10 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -83,9 +85,13 @@ class FixtureReadWarningsOracleTest {
         return out;
     }
 
-    /** Each read of {@code fixture}, up to the end or an error, listing only reads that fail or warn. */
+    /**
+     * Each read of {@code fixture}, up to the end or an error, listing only reads that fail or warn.
+     * The Channel has no transformation functions registered, as the probe's C Channel has none.
+     */
     private static List<List<Object>> reads(String fixture) {
-        Channel ch = ChannelText.reader(Fixtures.read(fixture.substring(2)));
+        Channel ch = new Channel(
+                new ByteArrayInputStream(Fixtures.read(fixture.substring(2)).getBytes(StandardCharsets.UTF_8)), null);
         List<List<Object>> out = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             int status = 0;

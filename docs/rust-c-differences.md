@@ -540,6 +540,25 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: has its own messages, with the same statuses.
 - Java: as C, the public constructor giving the public function's message.
 
+### The directions of a loaded IntraMap
+
+- C: `astLoadIntraMap` leaves TranForward and TranInverse to the Mapping part of the dump (`Fwd` and `Inv`); the registered function's AST__NOFWD and AST__NOINV flags decide them only when an IntraMap is made (`astInitIntraMap`).
+- Rust: `has_forward` and `has_inverse` read the transformation's flags each time, so a dump whose `Fwd` or `Inv` disagrees with them reads back with the transformation's directions.
+- Java: as C.
+
+### Registering a transformation function a second time
+
+- C: `IntraReg` accepts a second registration of a name only if the numbers of coordinates, the function, the flags and the purpose, author and contact strings are all the same, and otherwise reports AST__MRITF.
+  Its table is process-wide.
+- Rust: `IntraRegistry::register` accepts a second registration of the same `Arc`, whatever else differs; the registry belongs to a Channel.
+- Java: as C, comparing the Transformer object as C compares the function pointer, with a registry per Channel, used only for an IntraMap whose IntraFlag holds no serialised Transformer.
+
+### The status of an error from an IntraMap's transformation function
+
+- C: `Transform` (`intramap.c`) keeps the status the function set; jniast's `tranWrap` sets AST__ITFER for any exception the Transformer throws or any result of the wrong shape.
+- Rust: keeps the code of the error the transformation returns.
+- Java: AST__ITFER, as jniast, with the Transformer's exception as the cause.
+
 ## Units
 
 Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follows C in each.

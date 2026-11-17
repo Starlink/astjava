@@ -2,7 +2,6 @@
 # <row name> | <reason>
 # Rewritten by SimplifyRegressionTest with -Dast.writeDeferred=true.
 spline_inverse_cancel | needs SplineMap
-intramap_inverse_cancel | needs IntraMap
 normmap_basic_frame_to_unit | needs NormMap
 normmap_inverse_cancel | needs NormMap
 normmap_duplicate_elim | needs NormMap
@@ -46,14 +45,6 @@ cap_zoommap_04 | needs Box, PointList, PointSet
 neg_normmap_diff_frame | needs NormMap
 neg_normmap_inv_diff_frame | needs NormMap
 neg_normmap_parallel_sky | needs NormMap
-intra_invfwd_cancel | needs IntraMap
-neg_intra_parallel | needs IntraMap
-neg_intra_nonintra_neighbour | needs IntraMap
-neg_intra_diff_flag | needs IntraMap
-neg_intra_same_direction | needs IntraMap
-neg_intra_diff_func | needs IntraMap
-neg_intra_no_simpfi | needs IntraMap
-neg_intra_no_simpif | needs IntraMap
 xph_inverse_cancel | needs XphMap
 neg_xph_parallel | needs XphMap
 neg_xph_nonxph_neighbour | needs XphMap
@@ -102,7 +93,6 @@ neg_box_unc_mismatch | needs Box, PointSet
 nullregion_unc_fillfactor_merge | needs Box, NullRegion, PointSet
 pointlist_unc_fillfactor_merge | needs Box, PointList, PointSet
 nullregion_merge_tail | needs NullRegion
-intra_invfwd_cancel_tail | needs IntraMap
 interval_remapped_simplify | needs Interval, PointSet
 interval_halfinf_simplify | needs Interval, PointSet
 cheby_linear_lone_reduce | needs ChebyMap
