@@ -388,6 +388,21 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: takes a count that is not positive as the default, and refuses a smaller one with AST__INNTF.
 - Java: refuses a count smaller than the number of outputs or inputs with AST__INNTF and the message of `astInitMathMap`, naming `astLoadMathMap`.
 
+### The precedence of unary operators and `**` in a MathMap
+
+- **C quirk**: the `astMathMap` prologue, and jniast's MathMap Javadoc taken from it, list the unary operators `+ - ! .not.` above `**`, which says that `-x**2` is `(-x)**2`; `EvaluationSort` (mathmap.c) binds `**` tighter, so `-x**2` is `-(x**2)` and `x**-2` is `x**(-2)` (probe `src/test/resources/probes/mathmap_probe.c`, case `evaluate`).
+  The difference is in the documentation only.
+- Rust: the parser follows the code, and its documentation lists `**` above the unary operators.
+- Java: as Rust; MathMap's Javadoc lists `**` above the unary operators, as the code binds them.
+
+### Comparing two MathMaps
+
+- **C quirk**: `Equal` (mathmap.c) compares the compiled functions of the effective forward and inverse directions, but its loop over a function's opcode array starts at element 0, which holds the number of opcodes, and stops before the last opcode.
+  The last operation of a function is therefore never compared, so `y=x+1` equals `y=x-1` and `y=max(x,1)` equals `y=min(x,1)` (probe `src/test/resources/probes/mathmap_simplify_probe.c`, case `equal`).
+  A number of opcodes equal to the code of an operation that consumes a constant (0, 1, 62 or 63) consumes one as well; for a function of one operation that loads no constant, such as `y=<pi>`, C reads a list of constants that does not exist and crashes.
+- Rust: `equal` compares the function texts and the Invert flags.
+- Java: as C; where C reads past the end of the constants, a constant neither function has matches and one only one function has does not.
+
 ### Simplifying a CmpMap clears AlSimp on the components it shares
 
 - C: `Simplify` (cmpmap.c) clears the flag that lets a restricted simplification use a Mapping on each component it joins into a new CmpMap; those components are shared with the input, so the input's components lose the flag too (probe case `simplify_input_after`, from `simplify/cap_restricted_component_flags.map`).

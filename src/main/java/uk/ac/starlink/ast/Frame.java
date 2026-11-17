@@ -2687,13 +2687,13 @@ public class Frame extends Mapping {
      */
     private static void newUnit(Axis ax, String oldUnits, String newUnits) {
         if (ax.testAxisLabel()) {
-            Units.LabelledMapping lm = Units.relabel(oldUnits, newUnits, ax.getAxisLabel());
+            Units.LabelledMapping lm = Units.unitMapperLabel(oldUnits, newUnits, ax.getAxisLabel());
             if (lm != null && lm.label != null) {
                 ax.setAxisLabel(lm.label);
             }
         }
         if (ax.testAxisSymbol()) {
-            Units.LabelledMapping lm = Units.relabel(oldUnits, newUnits, ax.getAxisSymbol());
+            Units.LabelledMapping lm = Units.unitMapperLabel(oldUnits, newUnits, ax.getAxisSymbol());
             if (lm != null && lm.label != null) {
                 ax.setAxisSymbol(lm.label);
             }

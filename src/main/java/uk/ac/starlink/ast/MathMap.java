@@ -1,5 +1,7 @@
 package uk.ac.starlink.ast;
 
+import java.util.Arrays;
+
 /**
  * Java interface to the AST MathMap class - transform coordinates using mathematical expressions.
  * A MathMap is a Mapping which allows you to specify a set of forward and/or inverse transformation
@@ -387,9 +389,150 @@ public class MathMap extends Mapping {
         return invfun.clone();
     }
 
-    /** The compiled forward and inverse functions. */
+    /**
+     * The compiled forward and inverse functions. The arrays are shared with every copy of this
+     * MathMap, as the functions never change, so callers must not modify them.
+     */
     MathMapParser.Compiled compiledFunctions() {
         return compiled;
+    }
+
+    // ------------------------------------------------------------------
+    // Equality and simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * Whether {@code that} is equivalent to this MathMap, as C's {@code astEqual} decides it: the
+     * same Object, or, by C's {@code Equal} (mathmap.c), a MathMap with the same numbers of inputs
+     * and outputs whose compiled functions for the effective forward direction, and then for the
+     * effective inverse direction, taking each one's Invert attribute into account, match this
+     * MathMap's ({@link #sameFunctions}).
+     */
+    // object.c astEqual compares the pointers first: the same object, not an equal one.
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
+    boolean equalTo(Mapping that) {
+        if (that == this) {
+            return true;
+        }
+        if (!(that instanceof MathMap)) {
+            return false;
+        }
+        MathMap other = (MathMap) that;
+        if (other.getNout() != getNout() || other.getNin() != getNin()) {
+            return false;
+        }
+        boolean result = true;
+        for (int pass = 0; pass < 2 && result; pass++) {
+            // The first pass compares the effective forward functions, the second the inverse.
+            boolean thisFwd = (pass == 0) != getInvert();
+            boolean thatFwd = (pass == 0) != other.getInvert();
+            result = sameFunctions(
+                    thisFwd ? fwdfun.length : invfun.length,
+                    thisFwd ? compiled.fwdcode : compiled.invcode,
+                    thisFwd ? compiled.fwdcon : compiled.invcon,
+                    thatFwd ? other.fwdfun.length : other.invfun.length,
+                    thatFwd ? other.compiled.fwdcode : other.compiled.invcode,
+                    thatFwd ? other.compiled.fwdcon : other.compiled.invcon);
+        }
+        return result;
+    }
+
+    /**
+     * The comparison of two sets of compiled functions in C's {@code Equal} (mathmap.c): the
+     * numbers of functions must be the same, and for each function the numbers of opcodes (none
+     * for a direction that is not defined); the opcodes are then compared in turn, and the constant
+     * consumed by each opcode that loads a constant or a variable or takes a variable number of
+     * arguments ({@code max}, {@code min}) is compared to within {@code astEQUAL}.
+     *
+     * <p>As C does, the comparison runs over the elements of the opcode array from the first, which
+     * holds the number of opcodes, and stops before the last opcode, so that the last opcode of a
+     * function is never compared ({@code x+1} matches {@code x-1}) and a number of opcodes equal to
+     * the value of a constant-consuming opcode is taken to consume a constant. Where that leads
+     * past the end of the constants, which C reads regardless, a constant that neither function has
+     * matches and one that only one function has does not.
+     */
+    private static boolean sameFunctions(
+            int thisNfun, int[][] thisCode, double[][] thisCon, int thatNfun, int[][] thatCode, double[][] thatCon) {
+        if (thatNfun != thisNfun) {
+            return false;
+        }
+        for (int ifun = 0; ifun < thisNfun; ifun++) {
+            int ncode = thisCode != null ? thisCode[ifun][0] : 0;
+            int ncodeThat = thatCode != null ? thatCode[ifun][0] : 0;
+            if (ncode != ncodeThat) {
+                return false;
+            }
+            int icon = 0;
+            for (int icode = 0; icode < ncode; icode++) {
+                int code = thisCode[ifun][icode];
+                if (thatCode[ifun][icode] != code) {
+                    return false;
+                } else if (code == MathMapToken.OP_LDCON
+                        || code == MathMapToken.OP_LDVAR
+                        || code == MathMapToken.OP_MAX
+                        || code == MathMapToken.OP_MIN) {
+                    double[] a = thisCon[ifun];
+                    double[] b = thatCon[ifun];
+                    boolean inA = icon < a.length;
+                    boolean inB = icon < b.length;
+                    if (inA != inB || (inA && !MappingHelpers.astEqual(a[icon], b[icon]))) {
+                        return false;
+                    }
+                    icon++;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * mathmap.c {@code MapMerge}. In series, a MathMap cancels with the MathMap after it in the
+     * list, the pair becoming a UnitMap applied forward, when each allows it and they are each
+     * other's inverse as text: the first's SimpFI (its SimpIF if the list applies it inverted) and
+     * the second's SimpIF (its SimpFI if applied inverted) must both be set non-zero; the first's
+     * number of inputs as applied must equal the second's number of outputs as applied; and the
+     * cleaned functions of the first's effective forward direction must be those of the second's
+     * effective inverse direction, and the other way round. The index returned is that of the
+     * first of the pair.
+     */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        boolean simplify = series;
+        int imap1 = where;
+        int imap2 = imap1 + 1;
+        if (simplify) {
+            simplify = imap2 < list.size();
+        }
+        if (simplify) {
+            simplify = "MathMap".equals(list.map(imap1).astClass())
+                    && "MathMap".equals(list.map(imap2).astClass());
+        }
+        if (!simplify) {
+            return -1;
+        }
+        MathMap mathmap1 = (MathMap) list.map(imap1);
+        MathMap mathmap2 = (MathMap) list.map(imap2);
+        boolean invert1 = list.invert(imap1);
+        boolean invert2 = list.invert(imap2);
+        simplify = (invert1 ? mathmap1.getSimpIFValue() : mathmap1.getSimpFIValue())
+                && (invert2 ? mathmap2.getSimpFIValue() : mathmap2.getSimpIFValue());
+        int nin1 = appliedNin(mathmap1, invert1);
+        if (simplify) {
+            simplify = nin1 == appliedNout(mathmap2, invert2);
+        }
+        if (simplify) {
+            simplify = Arrays.equals(
+                    invert1 ? mathmap1.invfun : mathmap1.fwdfun, invert2 ? mathmap2.fwdfun : mathmap2.invfun);
+        }
+        if (simplify) {
+            simplify = Arrays.equals(
+                    invert1 ? mathmap1.fwdfun : mathmap1.invfun, invert2 ? mathmap2.invfun : mathmap2.fwdfun);
+        }
+        if (!simplify) {
+            return -1;
+        }
+        list.replacePairWith(imap1, new UnitMap(nin1), false);
+        return imap1;
     }
 
     // ------------------------------------------------------------------

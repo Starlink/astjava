@@ -21,10 +21,8 @@ import org.junit.jupiter.api.Test;
  *
  * <p>A conversion between two SpecFluxFrames whose SpecFrames and FluxFrames are not each equal
  * (C's {@code astEqual}) is built by C's {@code MakeSFMapping} with a RateMap, a MathMap and a
- * TranMap ({@code MakeMapF} and {@code MakeMapI}, specfluxframe.c), classes this library does not
- * have; such a conversion throws, naming the first absent class C builds. That is RateMap, built
- * by {@code MakeMapF}, unless the comparison of the FluxFrames first needs a MathMap for
- * logarithmic units ({@code astUnitMapper} in fluxframe.c {@code MakeFluxMapping}). Each such test
+ * TranMap ({@code MakeMapF} and {@code MakeMapI}, specfluxframe.c); such a conversion throws,
+ * naming the first absent class C builds, RateMap, built by {@code MakeMapF}. Each such test
  * gives C's converted value in its Javadoc. Equal components convert through a UnitMap, and
  * SpecFluxFrames whose SpecFrames do not convert do not convert at all; both work here as in C.
  *
@@ -152,17 +150,17 @@ class SpecFluxFrameTest {
 
     /**
      * testspecflux.c Errors 17 and 18 ({@code logarithmic_flux_units_convert}). C converts (2, 1)
-     * to (2, -24.8747607) and back (Errors 19 to 22). Comparing the FluxFrames converts Jy to
-     * {@code log(W/m2/nm)}, which needs a MathMap before {@code MakeMapF} is reached.
+     * to (2, -24.8747607) and back (Errors 19 to 22); the conversion of the flux values needs a
+     * RateMap ({@code MakeMapF}).
      */
     @Test
-    void logarithmicFluxUnitsNeedMathMap() {
+    void logarithmicFluxUnitsNeedRateMap() {
         SpecFrame sf = ghz();
         SpecFluxFrame csff = (SpecFluxFrame) jansky(sf).copy();
         FluxFrame ff2 = flux(AstObject.AST__BAD, null, "Unit=log(W/m2/nm)");
         assertEquals("FLXDNW", ff2.getC("System"), "Error 17");
         SpecFluxFrame sff2 = new SpecFluxFrame(sf, ff2);
-        assertNeeds("MathMap", csff, sff2, "Error 18");
+        assertNeeds("RateMap", csff, sff2, "Error 18");
     }
 
     /**
@@ -170,7 +168,7 @@ class SpecFluxFrameTest {
      * (2, -21.3585154) and back (Errors 26 to 29).
      */
     @Test
-    void surfaceBrightnessNeedsMathMap() {
+    void surfaceBrightnessNeedsRateMap() {
         FluxFrame ff2 = flux(AstObject.AST__BAD, null, "Unit=log(W/m2/nm/sr)");
         assertEquals("SFCBRW", ff2.getC("System"), "Error 23");
         SpecFluxFrame sff2 = new SpecFluxFrame(ghz(), ff2);
@@ -178,7 +176,7 @@ class SpecFluxFrameTest {
         FluxFrame ff = flux(123.0, sf, "Unit=Jy/deg**2");
         assertEquals("SFCBR", ff.getC("System"), "Error 24");
         SpecFluxFrame sff = new SpecFluxFrame(sf, ff);
-        assertNeeds("MathMap", sff, sff2, "Error 25");
+        assertNeeds("RateMap", sff, sff2, "Error 25");
     }
 
     /**
@@ -400,21 +398,21 @@ class SpecFluxFrameTest {
 
     /** Rust's {@code test_specflux_log_units}: as testspecflux.c Errors 18 to 20. */
     @Test
-    void logUnitsNeedMathMap() {
+    void logUnitsNeedRateMap() {
         SpecFrame sf = ghz();
         SpecFluxFrame sff = new SpecFluxFrame(sf, flux(AstObject.AST__BAD, sf, "System=FLXDN,Unit=Jy,SpecVal=123.0"));
         SpecFluxFrame sff2 = new SpecFluxFrame(sf, flux(AstObject.AST__BAD, sf, "System=FLXDNW,Unit=log(W/m2/nm)"));
-        assertNeeds("MathMap", sff, sff2, "Jy to log(W/m2/nm)");
+        assertNeeds("RateMap", sff, sff2, "Jy to log(W/m2/nm)");
     }
 
     /** Rust's {@code test_specflux_surface_brightness}: as testspecflux.c Errors 25 to 27. */
     @Test
-    void surfaceBrightnessLogUnitsNeedMathMap() {
+    void surfaceBrightnessLogUnitsNeedRateMap() {
         SpecFrame sf = ghz();
         SpecFluxFrame sff =
                 new SpecFluxFrame(sf, flux(AstObject.AST__BAD, sf, "System=SFCBR,Unit=Jy/deg**2,SpecVal=123.0"));
         SpecFluxFrame sff2 = new SpecFluxFrame(sf, flux(AstObject.AST__BAD, sf, "System=SFCBRW,Unit=log(W/m2/nm/sr)"));
-        assertNeeds("MathMap", sff, sff2, "Jy/deg**2 to log(W/m2/nm/sr)");
+        assertNeeds("RateMap", sff, sff2, "Jy/deg**2 to log(W/m2/nm/sr)");
     }
 
     // ------------------------------------------------------------------
@@ -678,15 +676,16 @@ class SpecFluxFrameTest {
     }
 
     /**
-     * Comparing FluxFrames in logarithmic units needs a MathMap. C converts (2, 1) Jy to (2, 0)
-     * {@code log(Jy)}, and (2, 0) back to (2, 1).
+     * The conversion of flux values between SpecFluxFrames in logarithmic units needs a RateMap
+     * ({@code MakeMapF}). C converts (2, 1) Jy to (2, 0) {@code log(Jy)}, and (2, 0) back to (2,
+     * 1).
      */
     @Test
-    void logarithmicUnitsNeedMathMap() {
+    void logarithmicUnitsNeedRateMap() {
         SpecFluxFrame s = sff("System=FREQ,Unit=GHz", 1.4e9, "System=FLXDN,Unit=Jy");
         SpecFluxFrame t = sff("System=FREQ,Unit=GHz", 1.4e9, "System=FLXDN,Unit=log(Jy)");
-        assertNeeds("MathMap", s, t, "Jy to log(Jy)");
-        assertNeeds("MathMap", t, s, "log(Jy) to Jy");
+        assertNeeds("RateMap", s, t, "Jy to log(Jy)");
+        assertNeeds("RateMap", t, s, "log(Jy) to Jy");
     }
 
     /** jniast's constructor. */

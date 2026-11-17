@@ -14,7 +14,12 @@
  *      <build>/libast_grf_2.0.a <build>/libast_grf_3.2.a
  *      <build>/libast_grf_5.6.a <build>/libast_cminpack.a -lyaml -lm
  * and run as ./mathmap_probe > mathmap_probe.out 2>&1, then trailing white
- * space removed from every line (MathMapTest compares lines without it). */
+ * space removed from every line (MathMapTest compares lines without it).
+ * It was run on macOS, whose maths library does not set errno, so where
+ * mathmap.c traps an error through errno (CATCH_MATHS_OVERFLOW and
+ * CATCH_MATHS_ERROR) the output holds the library's infinity or NaN, not
+ * the bad value; MathMapTest overrides those values (ERRNO_TRAPPED,
+ * ERRNO_CASES). */
 #include <float.h>
 #include <limits.h>
 #include <stdio.h>

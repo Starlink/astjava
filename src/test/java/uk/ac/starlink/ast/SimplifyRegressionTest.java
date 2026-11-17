@@ -143,9 +143,9 @@ class SimplifyRegressionTest {
             if (input == null) {
                 return "input is a " + inObj.getClass().getSimpleName() + ", not a Mapping";
             }
-            String inputBefore = withoutRecords(ChannelText.dump(input));
+            List<String> inputBefore = withoutRecords(ChannelText.dump(input));
             simplified = input.simplify();
-            if (!inputBefore.equals(withoutRecords(ChannelText.dump(input)))) {
+            if (!sameButForClearedAlSimp(inputBefore, withoutRecords(ChannelText.dump(input)))) {
                 return "simplify() changed the input's dump";
             }
             // Both dumps are taken before anything is transformed, since a transformation can
@@ -214,21 +214,37 @@ class SimplifyRegressionTest {
     }
 
     /**
-     * A dump without its records of simplification, {@code IsSimp} and {@code ReSimp}, which C's
-     * {@code astSimplify} also writes on the Mapping it is given and on its shared components, and
-     * {@code AlSimp}, which cmpmap.c {@code Simplify} clears on each component it joins into a new
-     * CmpMap, among them components it shares with the input (probe {@code mathmap_probe.c}, case
-     * {@code simplify_input_after}).
+     * The lines of a dump without its records of simplification, {@code IsSimp} and {@code
+     * ReSimp}, which C's {@code astSimplify} also writes on the Mapping it is given and on its
+     * shared components.
      */
-    private static String withoutRecords(String dump) {
-        StringBuilder sb = new StringBuilder();
+    private static List<String> withoutRecords(String dump) {
+        List<String> out = new ArrayList<>();
         for (String line : CValues.lines(dump)) {
             String t = line.trim();
-            if (!t.startsWith("IsSimp =") && !t.startsWith("ReSimp =") && !t.startsWith("AlSimp =")) {
-                sb.append(line).append('\n');
+            if (!t.startsWith("IsSimp =") && !t.startsWith("ReSimp =")) {
+                out.add(line);
             }
         }
-        return sb.toString();
+        return out;
+    }
+
+    /**
+     * Whether the dump {@code after} is the dump {@code before} with no change but {@code AlSimp}
+     * lines removed: cmpmap.c {@code Simplify} clears AllowSimplify on each component it joins
+     * into a new CmpMap, among them components it shares with the input (probe {@code
+     * mathmap_probe.c}, case {@code simplify_input_after}), but sets it on none of them.
+     */
+    private static boolean sameButForClearedAlSimp(List<String> before, List<String> after) {
+        int j = 0;
+        for (String line : before) {
+            if (j < after.size() && line.equals(after.get(j))) {
+                j++;
+            } else if (!line.trim().startsWith("AlSimp =")) {
+                return false;
+            }
+        }
+        return j == after.size();
     }
 
     /**

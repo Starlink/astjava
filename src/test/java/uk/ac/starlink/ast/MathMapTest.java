@@ -3,6 +3,7 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,10 +23,11 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
 import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
- * Translation of the Rust tests {@code tests/test_mathmap.rs} that need no simplification, and
- * tests against the C probe {@code probes/mathmap_probe.c}.
+ * Translation of the Rust tests {@code tests/test_mathmap.rs}, and tests against the C probes
+ * {@code probes/mathmap_probe.c} and, for simplification and equality, {@code
+ * probes/mathmap_simplify_probe.c}.
  *
- * <p>The probe pins what no fixture or oracle holds: the value of every operator, function and
+ * <p>The first probe pins what no fixture or oracle holds: the value of every operator, function and
  * constant of C's symbol table at a set of arguments, bad and out-of-domain ones included; the
  * status and messages of each malformed function; the random-number functions for a given Seed;
  * the attribute strings; and the dumps through a Channel and a FitsChan.
@@ -67,7 +69,10 @@ class MathMapTest {
     /**
      * The values, by "expression @ argument" as the probe prints them, that depend on an error C
      * traps through {@code errno} in a part of the expression: the value a library that sets
-     * {@code errno} gives, which Java gives.
+     * {@code errno} gives, which Java gives. These values are derived from mathmap.c's {@code
+     * CATCH_MATHS_OVERFLOW} and {@code CATCH_MATHS_ERROR} traps, not observed: the probe ran
+     * against the macOS maths library (named in the probe's header), which does not set {@code
+     * errno}, and its infinities and NaNs for these cases are what this list overrides.
      */
     private static final Map<String, Double> ERRNO_CASES = new LinkedHashMap<>();
 
@@ -1156,6 +1161,221 @@ class MathMapTest {
         assertEquals(text, ChannelText.dump(back));
         assertArrayEquals(at2(m, 3.0, 4.0, true), at2(back, 3.0, 4.0, true));
         assertArrayEquals(at2(m, 5.0, 0.5, false), at2(back, 5.0, 0.5, false));
+    }
+
+    // ------------------------------------------------------------------
+    // Simplification and equality (probe mathmap_simplify_probe.c)
+    // ------------------------------------------------------------------
+
+    private static final Map<String, String> SIMPLIFY_CASES = ProbeOutput.load("mathmap_simplify_probe");
+
+    /** The text of a case of the simplification probe. */
+    private static String simplifyProbe(String name) {
+        String text = SIMPLIFY_CASES.get(name);
+        if (text == null) {
+            throw new IllegalStateException("no probe case " + name);
+        }
+        return text;
+    }
+
+    /** A MathMap of the functions given with the attribute settings given. */
+    private static MathMap make(int nin, int nout, String[] fwd, String[] inv, String settings) {
+        MathMap m = new MathMap(nin, nout, fwd, inv);
+        if (!settings.isEmpty()) {
+            m.set(settings);
+        }
+        return m;
+    }
+
+    /** The probe's text for the simplified {@code map}: class, input and output counts, and dump. */
+    private static String simplified(Mapping map) {
+        Mapping s = map.simplify();
+        return s.astClass() + " " + s.getNin() + " " + s.getNout() + "\n" + ChannelText.dump(s);
+    }
+
+    /** Asserts that {@code map} simplifies as the probe case {@code name} says C's does. */
+    private static void assertSimplified(String name, Mapping map) {
+        assertEquals(simplifyProbe(name), simplified(map), name);
+    }
+
+    /**
+     * Rust {@code test_simplification_simpfi}: a MathMap followed by an identical MathMap applied
+     * inversely simplifies when both have SimpFI set.
+     */
+    @Test
+    void simplificationSimpfi() {
+        MathMap map1 = new MathMap(1, 1, new String[] {"y = x * 2"}, new String[] {"x = y / 2"});
+        map1.setSimpFI(true);
+        MathMap map2 = new MathMap(1, 1, new String[] {"y = x * 2"}, new String[] {"x = y / 2"});
+        map2.setSimpFI(true);
+        map2.invert();
+        Mapping s = new CmpMap(map1, map2, true).simplify();
+        assertInstanceOf(UnitMap.class, s);
+    }
+
+    /**
+     * A MathMap in series with an inverted copy of itself, each way round, cancels to a UnitMap
+     * exactly where C's does for each setting (unset, 0, 1) of SimpFI and SimpIF: forward then
+     * inverse needs SimpFI, inverse then forward SimpIF.
+     */
+    @Test
+    void anInversePairCancelsAsSimpFIAndSimpIFAllow() {
+        String[] settings = {"", "=0", "=1"};
+        String[] names = {"unset", "0", "1"};
+        for (int fi = 0; fi < 3; fi++) {
+            for (int jf = 0; jf < 3; jf++) {
+                StringBuilder set = new StringBuilder();
+                if (fi > 0) {
+                    set.append("SimpFI").append(settings[fi]);
+                }
+                if (fi > 0 && jf > 0) {
+                    set.append(',');
+                }
+                if (jf > 0) {
+                    set.append("SimpIF").append(settings[jf]);
+                }
+                MathMap m = make(1, 1, new String[] {"y = 2 * x"}, new String[] {"x = y / 2"}, set.toString());
+                MathMap mi = (MathMap) m.copy();
+                mi.invert();
+                String suffix = "_simpfi_" + names[fi] + "_simpif_" + names[jf];
+                assertSimplified("fwd_inv" + suffix, new CmpMap(m, mi, true));
+                assertSimplified("inv_fwd" + suffix, new CmpMap(mi, m, true));
+            }
+        }
+    }
+
+    /** Both MathMaps of the pair must allow the cancellation. */
+    @Test
+    void bothMathMapsMustConsent() {
+        MathMap m = make(1, 1, new String[] {"y = 2 * x"}, new String[] {"x = y / 2"}, "SimpFI=1,SimpIF=1");
+        MathMap mi = (MathMap) m.copy();
+        mi.clear("SimpFI");
+        mi.invert();
+        assertSimplified("consent_of_both", new CmpMap(m, mi, true));
+    }
+
+    /**
+     * Two MathMaps made separately cancel when their functions are the same once cleaned of case
+     * and white space, and not when they are equivalent but written differently.
+     */
+    @Test
+    void separateMathMapsCancelOnlyWithTheSameFunctions() {
+        MathMap a = make(1, 1, new String[] {"Y = 2 * X"}, new String[] {"X = Y / 2"}, "SimpFI=1,SimpIF=1");
+        MathMap b = make(1, 1, new String[] {"y=2*x"}, new String[] {"x=y/2"}, "SimpFI=1,SimpIF=1");
+        MathMap c = make(1, 1, new String[] {"y = x * 2"}, new String[] {"x = y / 2"}, "SimpFI=1,SimpIF=1");
+        b.invert();
+        c.invert();
+        assertSimplified("equal_functions", new CmpMap(a, b, true));
+        assertSimplified("unequal_functions", new CmpMap(a, c, true));
+    }
+
+    /**
+     * The UnitMap a pair cancels to has the effective number of inputs of the first; intermediate
+     * functions are compared too; the pair cancels within a longer series but not in parallel; a
+     * MathMap followed by itself does not cancel.
+     */
+    @Test
+    void pairsCancelWithTheirCountsAndNeighbours() {
+        MathMap m = make(
+                2, 1, new String[] {"r = sqrt( x * x + y * y )"}, new String[] {"x = r", "y = 0"}, "SimpFI=1,SimpIF=1");
+        MathMap mi = (MathMap) m.copy();
+        mi.invert();
+        assertSimplified("nin_nout_fwd_inv", new CmpMap(m, mi, true));
+        assertSimplified("nin_nout_inv_fwd", new CmpMap(mi, m, true));
+
+        MathMap n = make(
+                2,
+                2,
+                new String[] {"t = x + 1", "u = y * t", "v = x - y"},
+                new String[] {"x = u + v", "y = u - v"},
+                "SimpFI=1,SimpIF=1");
+        MathMap ni = (MathMap) n.copy();
+        ni.invert();
+        assertSimplified("intermediate_functions", new CmpMap(n, ni, true));
+        CmpMap pair = new CmpMap(n, ni, true);
+        assertSimplified("pair_then_zoommap", new CmpMap(pair, new ZoomMap(2, 3.0), true));
+        assertSimplified("pair_in_parallel", new CmpMap(n, ni, false));
+        assertSimplified("same_twice", new CmpMap(n, n, true));
+    }
+
+    /**
+     * A parallel CmpMap whose first component is an inverted series CmpMap of two identical
+     * MathMaps simplifies as C's does: the inner CmpMap carries the inversion in InvA and InvB.
+     */
+    @Test
+    void aParallelCmpMapWithAnInvertedSeriesSimplifiesAsC() {
+        MathMap a = make(1, 1, new String[] {"y=2*x"}, new String[] {"x=0.5*y"}, "SimpFI=1,SimpIF=1");
+        CmpMap first = new CmpMap(a, (Mapping) a.copy(), true);
+        first.invert();
+        MathMap c = make(1, 1, new String[] {"y=2*x"}, new String[] {"x=0.5*y"}, "SimpFI=1,SimpIF=1");
+        CmpMap second = new CmpMap(c, (Mapping) c.copy(), true);
+        assertSimplified("parallel_with_inverted_series", new CmpMap(first, second, false));
+    }
+
+    /**
+     * C's {@code astEqual} on pairs of MathMaps, which compares the compiled functions of the
+     * effective directions; C leaves the last operation of each function out of the comparison,
+     * so {@code x+1} equals {@code x-1}.
+     */
+    @Test
+    void equalToAsC() {
+        String[] ia = {"x = y / 2"};
+        String[] iu = {"x"};
+        String[] fu = {"y"};
+        String[] i23 = {"x = z", "y = z"};
+        MathMap a = make(1, 1, new String[] {"y = 2 * x"}, ia, "");
+        MathMap a2 = make(1, 1, new String[] {"y = 2 * x"}, ia, "SimpFI=1");
+        MathMap ainv = (MathMap) a.copy();
+        ainv.invert();
+        MathMap ainv2 = (MathMap) a.copy();
+        ainv2.invert();
+        MathMap b = make(1, 1, new String[] {"y = 3 * x"}, new String[] {"x = y / 3"}, "");
+        MathMap c = make(1, 1, new String[] {"y = x + 1"}, new String[] {"x = y - 1"}, "");
+        MathMap d = make(1, 1, new String[] {"y = x - 1"}, new String[] {"x = y + 1"}, "");
+        MathMap e = make(1, 1, new String[] {"y = x"}, new String[] {"x = y"}, "");
+        MathMap f = make(1, 1, new String[] {"b = a"}, new String[] {"a = b"}, "");
+        MathMap g = make(1, 1, new String[] {"y = max( x, 1 )"}, iu, "");
+        MathMap h = make(1, 1, new String[] {"y = min( x, 1 )"}, iu, "");
+        MathMap i = make(1, 1, new String[] {"y = max( x, 1, 2 )"}, iu, "");
+        MathMap j = make(1, 1, new String[] {"y = max( x, 1, 3 )"}, iu, "");
+        MathMap u1 = make(1, 1, fu, ia, "");
+        MathMap u2 = make(1, 1, fu, ia, "");
+        MathMap k = make(1, 1, new String[] {"y = x * 2"}, ia, "");
+        MathMap m2 = make(2, 1, new String[] {"z = x"}, i23, "");
+        MathMap m3 = make(2, 1, new String[] {"z = y"}, i23, "");
+        MathMap m4 = make(1, 1, new String[] {"y = 2 * x", "w = y"}, new String[] {"x = w / 2"}, "");
+        MathMap m5 = make(1, 1, new String[] {"y = x * x"}, new String[] {"x = sqrt( y )"}, "");
+        MathMap m6 = make(1, 1, new String[] {"y = x * x * x"}, new String[] {"x = sqrt( y )"}, "");
+        ZoomMap z = new ZoomMap(1, 2.0);
+        MathMap u3 = make(1, 1, fu, iu, "");
+        MathMap u4 = make(1, 1, fu, iu, "");
+
+        StringBuilder sb = new StringBuilder();
+        equalLine(sb, "same_object", a, a);
+        equalLine(sb, "same_functions", a, a2);
+        equalLine(sb, "different_constant", a, b);
+        equalLine(sb, "last_opcode_differs", c, d);
+        equalLine(sb, "inverted_copy", a, ainv);
+        equalLine(sb, "both_inverted", ainv, ainv2);
+        equalLine(sb, "renamed_variables", e, f);
+        equalLine(sb, "max_min", g, h);
+        equalLine(sb, "max_constant", i, j);
+        equalLine(sb, "max_argument_count", g, i);
+        equalLine(sb, "no_forward_both", u1, u2);
+        equalLine(sb, "no_forward_one", u1, a);
+        equalLine(sb, "forward_one", a, u1);
+        equalLine(sb, "neither_direction", u3, u4);
+        equalLine(sb, "operand_order", a, k);
+        equalLine(sb, "variable_index", m2, m3);
+        equalLine(sb, "nin_differs", a, m2);
+        equalLine(sb, "function_count_differs", a, m4);
+        equalLine(sb, "opcode_count_differs", m5, m6);
+        equalLine(sb, "zoommap", a, z);
+        assertEquals(simplifyProbe("equal"), sb.toString());
+    }
+
+    private static void equalLine(StringBuilder sb, String name, MathMap a, Mapping b) {
+        sb.append(name).append(' ').append(a.equalTo(b) ? 1 : 0).append('\n');
     }
 
     /** A loaded description with fewer functions than outputs is refused. */

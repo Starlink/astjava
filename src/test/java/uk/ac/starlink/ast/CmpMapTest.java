@@ -18,11 +18,8 @@ import org.junit.jupiter.api.Test;
  * gives, which Rust, copying its components, has no counterpart for. Rust's {@code then} and
  * {@code alongside} are the constructor with {@code series} true and false.
  *
- * <p>{@code
- * series_inverse_pair_of_mathmaps_cancels_to_unitmap} and {@code
- * parallel_with_inverted_cmpmap_child_canonicalises_for_serialisation} need the simplification of
- * MathMaps, and {@code cmpmap_equality_compares_components_as_applied} tests {@code astEqual}: none
- * is ported yet. {@code cmpmap_simplified_two_unitmaps_series} and {@code
+ * <p>{@code cmpmap_equality_compares_components_as_applied} tests {@code astEqual}, which is not
+ * ported. {@code cmpmap_simplified_two_unitmaps_series} and {@code
  * cmpmap_simplified_two_unitmaps_parallel} check only how the simplified Mapping transforms, which
  * holds of a Mapping that is not restructured.
  */
@@ -296,5 +293,65 @@ class CmpMapTest {
                 "       End UnitMap",
                 " End CmpMap");
         assertEquals(want, ChannelText.dump(cmp));
+    }
+
+    @Test
+    void seriesInversePairOfMathmapsCancelsToUnitmap() {
+        MathMap mFwd = new MathMap(1, 1, new String[] {"y=2*x"}, new String[] {"x=0.5*y"});
+        mFwd.setSimpFI(true);
+        mFwd.setSimpIF(true);
+        MathMap mInv = (MathMap) mFwd.copy();
+        mInv.invert();
+        Mapping simp = new CmpMap(mFwd, mInv, true).simplify();
+        assertInstanceOf(UnitMap.class, simp);
+    }
+
+    /**
+     * A simplified parallel CmpMap whose first component is an inverted series CmpMap is written
+     * with the inversion in the inner CmpMap's InvA and InvB, not as an InvA of the outer one or an
+     * Invert of the inner one ({@code MathMapTest.aParallelCmpMapWithAnInvertedSeriesSimplifiesAsC}
+     * compares the whole dump with C's).
+     */
+    @Test
+    void parallelWithInvertedCmpmapChildCanonicalisesForSerialisation() {
+        CmpMap first = makeInnerSeries();
+        first.invert();
+        CmpMap second = makeInnerSeries();
+        Mapping simp = new CmpMap(first, second, false).simplify();
+        assertInstanceOf(CmpMap.class, simp);
+        String s = ChannelText.dump(simp);
+        String[] lines = s.split("\n", -1);
+        int outerIndent = -1;
+        for (String l : lines) {
+            if (l.contains("Begin CmpMap")) {
+                outerIndent = l.length() - l.trim().length();
+                break;
+            }
+        }
+        boolean outerInva = false;
+        int innerInva = 0;
+        int innerInvb = 0;
+        for (String l : lines) {
+            int ind = l.length() - l.replaceAll("^\\s+", "").length();
+            if (ind == outerIndent + 3 && l.trim().startsWith("InvA = 1")) {
+                outerInva = true;
+            }
+            if (l.contains("InvA = 1")) {
+                innerInva++;
+            }
+            if (l.contains("InvB = 1")) {
+                innerInvb++;
+            }
+            assertFalse(l.contains("Invert = 1"), "no CmpMap should carry Invert = 1:\n" + s);
+        }
+        assertFalse(outerInva, "outer parallel must not have InvA:\n" + s);
+        assertTrue(innerInva >= 1 && innerInvb >= 1, "inner CmpMap must carry InvA = 1 and InvB = 1:\n" + s);
+    }
+
+    private static CmpMap makeInnerSeries() {
+        MathMap a = new MathMap(1, 1, new String[] {"y=2*x"}, new String[] {"x=0.5*y"});
+        a.setSimpFI(true);
+        a.setSimpIF(true);
+        return new CmpMap(a, (Mapping) a.copy(), true);
     }
 }

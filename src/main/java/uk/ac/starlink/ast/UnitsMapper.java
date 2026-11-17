@@ -27,10 +27,8 @@ final class UnitsMapper {
      * The Mapping {@code tree} describes, whose input is the input units and whose output is the
      * head of the tree (C {@code MakeMapping}): a UnitMap for the input units alone or a product
      * of them and 1, a ZoomMap for a product of them and another constant, and otherwise a
-     * MathMap.
-     *
-     * @throws UnsupportedOperationException where a MathMap is needed, since MathMap is not
-     *     available
+     * MathMap whose forward function gives "output_units" from "input_units" and whose inverse is
+     * that of the inverted tree, with SimpFI and SimpIF set, so that it cancels with its inverse.
      */
     static Mapping makeMapping(Node tree) {
         if (tree.opcode == Oper.LDVAR) {
@@ -52,8 +50,10 @@ final class UnitsMapper {
                             + "' (internal AST programming error).");
         }
         String invexp = UnitsToExpr.makeExp(inv, UnitsToExpr.MATHMAP, true);
-        throw new UnsupportedOperationException("This conversion of units (forward \"output_units=" + fwdexp
-                + "\", inverse \"input_units=" + invexp + "\") needs MathMap");
+        MathMap result =
+                new MathMap(1, 1, new String[] {"output_units=" + fwdexp}, new String[] {"input_units=" + invexp});
+        result.set("SimpFI=1,SimpIF=1");
+        return result;
     }
 
     /**
@@ -74,18 +74,8 @@ final class UnitsMapper {
      *     if {@code inLab} is null, or where C gives none
      * @throws AstException with status {@code AST__BADUN} if a units string or the label cannot
      *     be parsed
-     * @throws UnsupportedOperationException if the conversion needs a MathMap
      */
     static Units.LabelledMapping unitMapper(String in, String out, String inLab) {
-        return unitMapper(in, out, inLab, true);
-    }
-
-    /**
-     * {@link #unitMapper(String, String, String)}, making the Mapping from the conversion found
-     * only if {@code makeMap}: otherwise the result's Mapping is null, so that a conversion C makes with a MathMap is found
-     * and its label rewritten, as C's {@code NewUnit} (frame.c) uses them.
-     */
-    static Units.LabelledMapping unitMapper(String in, String out, String inLab, boolean makeMap) {
         if (in.equals(out)) {
             return new Units.LabelledMapping(new UnitMap(1), inLab);
         }
@@ -172,7 +162,7 @@ final class UnitsMapper {
             return null;
         }
 
-        Mapping result = makeMap ? makeMapping(testtree) : null;
+        Mapping result = makeMapping(testtree);
         if (inLab == null) {
             return new Units.LabelledMapping(result, null);
         }

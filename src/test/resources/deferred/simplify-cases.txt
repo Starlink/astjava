@@ -7,7 +7,6 @@ pcd_inverse_cancel | needs PcdMap
 grism_inverse_cancel | needs GrismMap
 grism_zoom_merge | needs GrismMap
 spline_inverse_cancel | needs SplineMap
-math_inverse_cancel | needs simplification
 ratemap_inverse_cancel | needs RateMap
 tranmap_equal_components | needs TranMap
 intramap_inverse_cancel | needs IntraMap
@@ -57,7 +56,6 @@ neg_grism_zoom_before_fwd | needs GrismMap
 neg_grism_nonzoom_before_inv | needs GrismMap
 neg_ratemap_parallel | needs RateMap
 neg_spline_different_coeffs | needs SplineMap
-cmpmap_parallel_in_series_merge | needs simplification
 normmap_inverse_cancel_upper | needs NormMap
 unitnormmap_inv_fwd_cancel | needs UnitNormMap
 box_parallel_merge | needs Box, PointSet
@@ -77,7 +75,6 @@ switchmap_inverse_cancel_distinct_selectors | needs SwitchMap
 cap_cmpmap_01 | needs RateMap, TranMap
 cap_cmpmap_04 | needs RateMap, TranMap
 cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism
-cap_mathmap_01 | needs simplification
 cap_matrixmap_04 | needs ChebyMap
 cap_permmap_01 | needs NormMap
 cap_pointlist_01 | needs Box, PointList, PointSet, Prism
