@@ -193,6 +193,22 @@ class GrismMapTest {
         assertNotEquals(BAD, out[1]);
     }
 
+    /**
+     * An infinite input is bad in either direction (docs/rust-c-differences.md, "Infinite input
+     * coordinates"); forward, C would give the finite wavelength of {@code atan(±inf)}.
+     */
+    @Test
+    void infiniteInputIsBad() {
+        double[] in = {Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0.0};
+        double[] fwd = typical().tran1(3, in, true);
+        assertEquals(BAD, fwd[0]);
+        assertEquals(BAD, fwd[1]);
+        assertNotEquals(BAD, fwd[2]);
+        double[] inv = typical().tran1(2, in, false);
+        assertEquals(BAD, inv[0]);
+        assertEquals(BAD, inv[1]);
+    }
+
     /** A GrismMap with no attribute set has {@code k2} zero, so its forward transformation is bad. */
     @Test
     void degenerateParamsProduceBad() {
