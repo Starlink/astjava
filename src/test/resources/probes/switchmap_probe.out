@@ -1,0 +1,2649 @@
+== selector_values
+-1e+30 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+-2147483649 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+-0.5 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+0 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+0.48999999999999999 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+0.49999999999999994 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+0.5 fwd 1 inv 0.25 rate 2
+1.4999999999999998 fwd 2.9999999999999996 inv 0.74999999999999989 rate 2
+1.5 fwd 4.5 inv 0.5 rate 3
+2.25 fwd 6.75 inv 0.75 rate 3
+2.4999999999999996 fwd 7.4999999999999982 inv 0.83333333333333315 rate 3
+2.5 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+3 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+2147483647 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+2147483648.5 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+4294967297 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+4294967298 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+1e+30 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+-1.7976931348623157e+308 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+1.7976931348623157e+308 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+-1.7976931348623157e+308 fwd -1.7976931348623157e+308 inv -1.7976931348623157e+308 rate -1.7976931348623157e+308
+== section1
+fwd 1 1 -> 1000
+fwd 37.5 2 -> 2001.5
+fwd 101 2 -> 2700
+fwd 140 1 -> 2390
+fwd -1.7976931348623157e+308 1 -> -1.7976931348623157e+308
+inv 1000 -> 1 1
+inv 1700 -> 71 1
+inv 1900 -> 28.272727272727252 2
+inv 2700 -> 101 2
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308 2
+-- inverted
+fwd 1 -> -98.900000000000006 1
+fwd 37.5 -> -95.25 1
+fwd 101 -> -88.900000000000006 1
+fwd 140 -> -85 1
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308 2
+inv 1 1 -> 1000
+inv 37.5 2 -> 2001.5
+inv 101 2 -> 2700
+inv 140 1 -> 2390
+inv -1.7976931348623157e+308 1 -> -1.7976931348623157e+308
+rate 20 1: 10
+rate 20 2: 11.00000002048
+rate 20 2 axis 2: 0
+rate inverted 1700: 0.10000000000000001
+!! AST: Error in routine main at line 256 in file src/test/resources/probes/switchmap_probe.c.
+!  astRate(SwitchMap): Invalid input index (2) specified - should be in the range 1 to 1.
+rate inverted 1900: -1.7976931348623157e+308
+status 233933178
+== section2
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- inverted
+fwd 1 -> -98.900000000000006
+fwd 37.5 -> -95.25
+fwd 101 -> -88.900000000000006
+fwd 140 -> -85
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 11478
+inv 1700 -> 19178
+inv 1900 -> 21378
+inv 2700 -> 30178
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+rate 20: 10
+rate 120: 11
+rate 300: 11
+rate inverted 1700: 0.10000000000000001
+rate inverted 1900: 0.090909090909090912
+== forward_only
+TranForward 1 TranInverse 0
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv undefined
+rate 20: 10
+inverted TranForward 0 TranInverse 1
+rate inverted 1700: -1.7976931348623157e+308
+== inverted_routes
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+rate 20: 10
+rate inverted 1900: 0.090909090909090912
+== components_inverted_after
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+Invert fs 1 is 1 r1 1 r2 0
+== dump_section1
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 2 	# Number of input coordinates
+    Nout = 1 	# Number of output coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin PermMap 	# Coordinate permutation
+          Nin = 2 	# Number of input coordinates
+          Nout = 1 	# Number of output coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Out1 = 2 	# Output coordinate 1 = input coordinate 2
+          In1 = 0 	# Input coordinate 1 is "bad"
+          In2 = 1 	# Input coordinate 2 = output coordinate 1
+       End PermMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Fwd = 0 	# Forward transformation not defined
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin CmpMap 	# Compound Mapping
+          Nin = 2 	# Number of input coordinates
+          Nout = 1 	# Number of output coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          MapA = 	# First component Mapping
+             Begin PermMap 	# Coordinate permutation
+                Nin = 2 	# Number of input coordinates
+                Nout = 1 	# Number of output coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Out1 = 1 	# Output coordinate 1 = input coordinate 1
+                In1 = 1 	# Input coordinate 1 = output coordinate 1
+                In2 = -1 	# Input coordinate 2 = constant no. 1
+                Nconst = 1 	# Number of constants
+                Con1 = 1 	# Constant number 1
+             End PermMap
+          MapB = 	# Second component Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+       End CmpMap
+    RMap2 = 	# Route Mapping
+       Begin CmpMap 	# Compound Mapping
+          Nin = 2 	# Number of input coordinates
+          Nout = 1 	# Number of output coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          MapA = 	# First component Mapping
+             Begin PermMap 	# Coordinate permutation
+                Nin = 2 	# Number of input coordinates
+                Nout = 1 	# Number of output coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Out1 = 1 	# Output coordinate 1 = input coordinate 1
+                In1 = 1 	# Input coordinate 1 = output coordinate 1
+                In2 = -1 	# Input coordinate 2 = constant no. 1
+                Nconst = 1 	# Number of constants
+                Con1 = 2 	# Constant number 1
+             End PermMap
+          MapB = 	# Second component Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 1589 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End CmpMap
+ End SwitchMap
+-- read back
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 2 	# Number of input coordinates
+    Nout = 1 	# Number of output coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin PermMap 	# Coordinate permutation
+          Nin = 2 	# Number of input coordinates
+          Nout = 1 	# Number of output coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Out1 = 2 	# Output coordinate 1 = input coordinate 2
+          In1 = 0 	# Input coordinate 1 is "bad"
+          In2 = 1 	# Input coordinate 2 = output coordinate 1
+       End PermMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Fwd = 0 	# Forward transformation not defined
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin CmpMap 	# Compound Mapping
+          Nin = 2 	# Number of input coordinates
+          Nout = 1 	# Number of output coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          MapA = 	# First component Mapping
+             Begin PermMap 	# Coordinate permutation
+                Nin = 2 	# Number of input coordinates
+                Nout = 1 	# Number of output coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Out1 = 1 	# Output coordinate 1 = input coordinate 1
+                In1 = 1 	# Input coordinate 1 = output coordinate 1
+                In2 = -1 	# Input coordinate 2 = constant no. 1
+                Nconst = 1 	# Number of constants
+                Con1 = 1 	# Constant number 1
+             End PermMap
+          MapB = 	# Second component Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+       End CmpMap
+    RMap2 = 	# Route Mapping
+       Begin CmpMap 	# Compound Mapping
+          Nin = 2 	# Number of input coordinates
+          Nout = 1 	# Number of output coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          MapA = 	# First component Mapping
+             Begin PermMap 	# Coordinate permutation
+                Nin = 2 	# Number of input coordinates
+                Nout = 1 	# Number of output coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Out1 = 1 	# Output coordinate 1 = input coordinate 1
+                In1 = 1 	# Input coordinate 1 = output coordinate 1
+                In2 = -1 	# Input coordinate 2 = constant no. 1
+                Nconst = 1 	# Number of constants
+                Con1 = 2 	# Constant number 1
+             End PermMap
+          MapB = 	# Second component Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 1589 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End CmpMap
+ End SwitchMap
+-- equal 1
+-- transformations
+fwd 1 1 -> 1000
+fwd 37.5 2 -> 2001.5
+fwd 101 2 -> 2700
+fwd 140 1 -> 2390
+fwd -1.7976931348623157e+308 1 -> -1.7976931348623157e+308
+inv 1000 -> 1 1
+inv 1700 -> 71 1
+inv 1900 -> 28.272727272727252 2
+inv 2700 -> 101 2
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308 2
+-- transformations read back
+fwd 1 1 -> 1000
+fwd 37.5 2 -> 2001.5
+fwd 101 2 -> 2700
+fwd 140 1 -> 2390
+fwd -1.7976931348623157e+308 1 -> -1.7976931348623157e+308
+inv 1000 -> 1 1
+inv 1700 -> 71 1
+inv 1900 -> 28.272727272727252 2
+inv 2700 -> 101 2
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308 2
+== dump_section2
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- read back
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- equal 1
+-- transformations
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations read back
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== dump_inverted
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    Invert = 1 	# Mapping inverted
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- read back
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    Invert = 1 	# Mapping inverted
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- equal 1
+-- transformations
+fwd 1 -> -98.900000000000006
+fwd 37.5 -> -95.25
+fwd 101 -> -88.900000000000006
+fwd 140 -> -85
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 11478
+inv 1700 -> 19178
+inv 1900 -> 21378
+inv 2700 -> 30178
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations read back
+fwd 1 -> -98.900000000000006
+fwd 37.5 -> -95.25
+fwd 101 -> -88.900000000000006
+fwd 140 -> -85
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 11478
+inv 1700 -> 19178
+inv 1900 -> 21378
+inv 2700 -> 30178
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== dump_forward_only
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    Inv = 0 	# Inverse transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- read back
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    Inv = 0 	# Inverse transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- equal 1
+-- transformations
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv undefined
+-- transformations read back
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv undefined
+== dump_inverse_only
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    Fwd = 0 	# Forward transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- read back
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    Fwd = 0 	# Forward transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- equal 1
+-- transformations
+fwd undefined
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations read back
+fwd undefined
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== dump_inverted_at_construction
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    FSInv = 1 	# Fwd selector used in inverse direction
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISInv = 1 	# Inv selector used in inverse direction
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = -99 	# Shift for axis 1
+          Scl1 = 0.10000000000000001 	# Scale factor for axis 1
+       End WinMap
+    RInv1 = 1 	# Route Mapping used in inverse direction
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- read back
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    FSInv = 1 	# Fwd selector used in inverse direction
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISInv = 1 	# Inv selector used in inverse direction
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = -99 	# Shift for axis 1
+          Scl1 = 0.10000000000000001 	# Scale factor for axis 1
+       End WinMap
+    RInv1 = 1 	# Route Mapping used in inverse direction
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- equal 1
+-- transformations
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2390
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 47.454545454545453
+inv 1700 -> 111.09090909090911
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations read back
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2390
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 47.454545454545453
+inv 1700 -> 111.09090909090911
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== dump_inverted_after
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- read back
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- equal 1
+-- transformations
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations read back
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== dump_lutmap_mathmap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+          Start = 1 	# Input value at first element
+          Incr = 25 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 1000 	# Lookup table elements...
+          L2 = 1100
+          L3 = 1300
+          L4 = 1600
+          L5 = 2000
+       End LutMap
+    RMap2 = 	# Route Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=x*10+990" 	# Forward function 1
+          Inv1 = "x=(y-990)/10" 	# Inverse function 1
+       End MathMap
+ End SwitchMap
+-- read back
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+          Start = 1 	# Input value at first element
+          Incr = 25 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 1000 	# Lookup table elements...
+          L2 = 1100
+          L3 = 1300
+          L4 = 1600
+          L5 = 2000
+       End LutMap
+    RMap2 = 	# Route Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=x*10+990" 	# Forward function 1
+          Inv1 = "x=(y-990)/10" 	# Inverse function 1
+       End MathMap
+ End SwitchMap
+-- equal 1
+-- transformations
+fwd 1 -> 1000
+fwd 37.5 -> 1192
+fwd 101 -> 2000
+fwd 140 -> 2390
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 82.25
+inv 1900 -> 91
+inv 2700 -> 171
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations read back
+fwd 1 -> 1000
+fwd 37.5 -> 1192
+fwd 101 -> 2000
+fwd 140 -> 2390
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 82.25
+inv 1900 -> 91
+inv 2700 -> 171
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== dump_pcdmap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 2 	# Number of input coordinates
+    Inv = 0 	# Inverse transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin PermMap 	# Coordinate permutation
+          Nin = 2 	# Number of input coordinates
+          Nout = 1 	# Number of output coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Out1 = 2 	# Output coordinate 1 = input coordinate 2
+          In1 = 0 	# Input coordinate 1 is "bad"
+          In2 = 1 	# Input coordinate 2 = output coordinate 1
+       End PermMap
+    RMap1 = 	# Route Mapping
+       Begin PcdMap 	# Apply pincushion distortion
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          PcdCn0 = 1 	# Distortion centre on first axis
+          PcdCn1 = 1.5 	# Distortion centre on second axis
+          Disco = 0.001 	# Distortion coefficient
+       End PcdMap
+    RMap2 = 	# Route Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+ End SwitchMap
+-- read back
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 2 	# Number of input coordinates
+    Inv = 0 	# Inverse transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin PermMap 	# Coordinate permutation
+          Nin = 2 	# Number of input coordinates
+          Nout = 1 	# Number of output coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Out1 = 2 	# Output coordinate 1 = input coordinate 2
+          In1 = 0 	# Input coordinate 1 is "bad"
+          In2 = 1 	# Input coordinate 2 = output coordinate 1
+       End PermMap
+    RMap1 = 	# Route Mapping
+       Begin PcdMap 	# Apply pincushion distortion
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          PcdCn0 = 1 	# Distortion centre on first axis
+          PcdCn1 = 1.5 	# Distortion centre on second axis
+          Disco = 0.001 	# Distortion coefficient
+       End PcdMap
+    RMap2 = 	# Route Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+ End SwitchMap
+-- equal 1
+-- transformations
+fwd 1 1 -> 1 0.99987499999999996
+fwd 37.5 2 -> 75 4
+fwd 101 2 -> 202 4
+fwd 140 1 -> 2825.6537499999999 -8.6606249999999996
+fwd -1.7976931348623157e+308 1 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv undefined
+-- transformations read back
+fwd 1 1 -> 1 0.99987499999999996
+fwd 37.5 2 -> 75 4
+fwd 101 2 -> 202 4
+fwd 140 1 -> 2825.6537499999999 -8.6606249999999996
+fwd -1.7976931348623157e+308 1 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv undefined
+== dump_in_cmpmap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Second component Mapping
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+ End CmpMap
+-- read back
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Second component Mapping
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+ End CmpMap
+-- equal 1
+-- transformations
+fwd 1 -> 1010
+fwd 37.5 -> 1740
+fwd 101 -> 2700
+fwd 140 -> 3558
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 0.5
+inv 1700 -> 35.5
+inv 1900 -> 64.636363636363626
+inv 2700 -> 101
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations read back
+fwd 1 -> 1010
+fwd 37.5 -> 1740
+fwd 101 -> 2700
+fwd 140 -> 3558
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 0.5
+inv 1700 -> 35.5
+inv 1900 -> 64.636363636363626
+inv 2700 -> 101
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== dump_in_tranmap
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# Mapping for forward transformation
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+    MapB = 	# Mapping for inverse transformation
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+ End TranMap
+-- read back
+ Begin TranMap 	# Compound Transformation Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# Mapping for forward transformation
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+    MapB = 	# Mapping for inverse transformation
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+ End TranMap
+-- equal 1
+-- transformations
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 11478
+inv 1700 -> 19178
+inv 1900 -> 21378
+inv 2700 -> 30178
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations read back
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 11478
+inv 1700 -> 19178
+inv 1900 -> 21378
+inv 2700 -> 30178
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== dump_in_switchmap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    Inv = 0 	# Inverse transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin UnitMap 	# Unit (null) Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+       End UnitMap
+    RMap1 = 	# Route Mapping
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+ End SwitchMap
+-- read back
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    Inv = 0 	# Inverse transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin UnitMap 	# Unit (null) Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+       End UnitMap
+    RMap1 = 	# Route Mapping
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+ End SwitchMap
+-- equal 1
+-- transformations
+fwd 1 -> 1000
+fwd 37.5 -> -1.7976931348623157e+308
+fwd 101 -> -1.7976931348623157e+308
+fwd 140 -> -1.7976931348623157e+308
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv undefined
+-- transformations read back
+fwd 1 -> 1000
+fwd 37.5 -> -1.7976931348623157e+308
+fwd 101 -> -1.7976931348623157e+308
+fwd 140 -> -1.7976931348623157e+308
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv undefined
+== load_without_isinv
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    FSInv = 1 	# Fwd selector used in inverse direction
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISInv = 1 	# Inv selector used in inverse direction
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- transformations read back
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2390
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 47.454545454545453
+inv 1700 -> 111.09090909090911
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== equal
+same_contents 1
+different_route 0
+missing_inverse_selector 0
+missing_inverse_selector_reversed 0
+both_forward_only 1
+three_routes 0
+inverted_vs_plain 0
+inverted_vs_normalised 1
+normalised_vs_inverted 1
+route_inverted_equivalent 1
+selector_inverted_after 1
+Invert fs after 1
+shared_selectors 1
+Invert shared after 1 test 1
+not_a_switchmap 0
+== simp_plain
+class SwitchMap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- transformations
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_inverted
+class SwitchMap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    FSInv = 1 	# Fwd selector used in inverse direction
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISInv = 1 	# Inv selector used in inverse direction
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RInv1 = 1 	# Route Mapping used in inverse direction
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+    RInv2 = 1 	# Route Mapping used in inverse direction
+ End SwitchMap
+-- transformations
+fwd 1 -> -98.900000000000006
+fwd 37.5 -> -95.25
+fwd 101 -> -88.900000000000006
+fwd 140 -> -85
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 11478
+inv 1700 -> 19178
+inv 1900 -> 21378
+inv 2700 -> 30178
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> -98.900000000000006
+fwd 37.5 -> -95.25
+fwd 101 -> -88.900000000000006
+fwd 140 -> -85
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 11478
+inv 1700 -> 19178
+inv 1900 -> 21378
+inv 2700 -> 30178
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_routes_simplify
+class SwitchMap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 10 	# Zoom factor
+       End ZoomMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- transformations
+fwd 1 -> 10
+fwd 37.5 -> 375
+fwd 101 -> 1010
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 100
+inv 1700 -> 170
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 10
+fwd 37.5 -> 375
+fwd 101 -> 1010
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 100
+inv 1700 -> 170
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_inverted_route_simplifies
+class SwitchMap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 10 	# Zoom factor
+       End ZoomMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- transformations
+fwd 1 -> 10
+fwd 37.5 -> 375
+fwd 101 -> 1010
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 100
+inv 1700 -> 170
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 10
+fwd 37.5 -> 375
+fwd 101 -> 1010
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 100
+inv 1700 -> 170
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_selector_simplifies
+class SwitchMap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+    Inv = 0 	# Inverse transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin UnitMap 	# Unit (null) Mapping
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+       End UnitMap
+    RMap1 = 	# Route Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 10 	# Zoom factor
+       End ZoomMap
+    RMap2 = 	# Route Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 20 	# Zoom factor
+       End ZoomMap
+ End SwitchMap
+-- transformations
+fwd 1 -> 10
+fwd 37.5 -> -1.7976931348623157e+308
+fwd 101 -> -1.7976931348623157e+308
+fwd 140 -> -1.7976931348623157e+308
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv undefined
+-- transformations simplified
+fwd 1 -> 10
+fwd 37.5 -> -1.7976931348623157e+308
+fwd 101 -> -1.7976931348623157e+308
+fwd 140 -> -1.7976931348623157e+308
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv undefined
+== simp_inverted_routes_simplify
+class SwitchMap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    FSInv = 1 	# Fwd selector used in inverse direction
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISInv = 1 	# Inv selector used in inverse direction
+    RMap1 = 	# Route Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 0.10000000000000001 	# Zoom factor
+       End ZoomMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+    RInv2 = 1 	# Route Mapping used in inverse direction
+ End SwitchMap
+-- transformations
+fwd 1 -> 0.10000000000000001
+fwd 37.5 -> 3.75
+fwd 101 -> 10.100000000000001
+fwd 140 -> 14
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 11478
+inv 1700 -> 19178
+inv 1900 -> 21378
+inv 2700 -> 30178
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 0.10000000000000001
+fwd 37.5 -> 3.75
+fwd 101 -> 10.100000000000001
+fwd 140 -> 14
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 11478
+inv 1700 -> 19178
+inv 1900 -> 21378
+inv 2700 -> 30178
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_beside_inverse
+class UnitMap
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+-- transformations
+fwd 1 -> 1
+fwd 37.5 -> 37.5
+fwd 101 -> 138.36363636363637
+fwd 140 -> 140
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1000
+inv 1700 -> 1700
+inv 1900 -> 1900
+inv 2700 -> 2700
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 1
+fwd 37.5 -> 37.5
+fwd 101 -> 101
+fwd 140 -> 140
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1000
+inv 1700 -> 1700
+inv 1900 -> 1900
+inv 2700 -> 2700
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_inverse_beside
+class UnitMap
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+-- transformations
+fwd 1 -> 1
+fwd 37.5 -> 37.5
+fwd 101 -> 101
+fwd 140 -> 140
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1000
+inv 1700 -> 1700
+inv 1900 -> 1899.9999999999998
+inv 2700 -> 2700
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 1
+fwd 37.5 -> 37.5
+fwd 101 -> 101
+fwd 140 -> 140
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1000
+inv 1700 -> 1700
+inv 1900 -> 1900
+inv 2700 -> 2700
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_beside_inverse_parallel
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Series = 0 	# Component Mappings applied in parallel
+    MapA = 	# First component Mapping
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+    MapB = 	# Second component Mapping
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          FSInv = 1 	# Fwd selector used in inverse direction
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISInv = 1 	# Inv selector used in inverse direction
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RInv1 = 1 	# Route Mapping used in inverse direction
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+          RInv2 = 1 	# Route Mapping used in inverse direction
+       End SwitchMap
+ End CmpMap
+-- transformations
+fwd 1 1 -> 1000 -98.900000000000006
+fwd 37.5 2 -> 1365 -98.799999999999997
+fwd 101 2 -> 2000 -98.799999999999997
+fwd 140 1 -> 2018 -98.900000000000006
+fwd -1.7976931348623157e+308 1 -> -1.7976931348623157e+308 -98.900000000000006
+inv 1 1 -> -98.900000000000006 1000
+inv 37.5 2 -> -95.25 1010
+inv 101 2 -> -88.900000000000006 1010
+inv 140 1 -> -85 1000
+inv -1.7976931348623157e+308 1 -> -1.7976931348623157e+308 1000
+-- transformations simplified
+fwd 1 1 -> 1000 -98.900000000000006
+fwd 37.5 2 -> 1365 -98.799999999999997
+fwd 101 2 -> 2000 -98.799999999999997
+fwd 140 1 -> 2018 -98.900000000000006
+fwd -1.7976931348623157e+308 1 -> -1.7976931348623157e+308 -98.900000000000006
+inv 1 1 -> -98.900000000000006 1000
+inv 37.5 2 -> -95.25 1010
+inv 101 2 -> -88.900000000000006 1010
+inv 140 1 -> -85 1000
+inv -1.7976931348623157e+308 1 -> -1.7976931348623157e+308 1000
+== simp_beside_inverse_inverted_cmpmap
+class UnitMap
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+-- transformations
+fwd 1 -> 1
+fwd 37.5 -> 37.5
+fwd 101 -> 138.36363636363637
+fwd 140 -> 140
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1000
+inv 1700 -> 1700
+inv 1900 -> 1900
+inv 2700 -> 2700
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 1
+fwd 37.5 -> 37.5
+fwd 101 -> 101
+fwd 140 -> 140
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1000
+inv 1700 -> 1700
+inv 1900 -> 1900
+inv 2700 -> 2700
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_beside_inverse_between
+class UnitMap
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+-- transformations
+fwd 1 -> 1
+fwd 37.5 -> 37.5
+fwd 101 -> 101
+fwd 140 -> 140
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1000
+inv 1700 -> 1700
+inv 1900 -> 1900
+inv 2700 -> 2700.0000000000005
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 1
+fwd 37.5 -> 37.5
+fwd 101 -> 101
+fwd 140 -> 140
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1000
+inv 1700 -> 1700
+inv 1900 -> 1900
+inv 2700 -> 2700
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_beside_equal
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+    MapB = 	# Second component Mapping
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+ End CmpMap
+-- transformations
+fwd 1 -> 11478
+fwd 37.5 -> 15493
+fwd 101 -> 22478
+fwd 140 -> 22676
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> -98.900000000000006
+inv 1700 -> -91.900000000000006
+inv 1900 -> -86.072727272727278
+inv 2700 -> -78.799999999999997
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 11478
+fwd 37.5 -> 15493
+fwd 101 -> 22478
+fwd 140 -> 22676
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> -98.900000000000006
+inv 1700 -> -91.900000000000006
+inv 1900 -> -86.072727272727278
+inv 2700 -> -78.799999999999997
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_beside_unequal_inverse
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+    MapB = 	# Second component Mapping
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          FSInv = 1 	# Fwd selector used in inverse direction
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISInv = 1 	# Inv selector used in inverse direction
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RInv1 = 1 	# Route Mapping used in inverse direction
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 376 	# Shift for axis 1
+                Scl1 = 12 	# Scale factor for axis 1
+             End WinMap
+          RInv2 = 1 	# Route Mapping used in inverse direction
+       End SwitchMap
+ End CmpMap
+-- transformations
+fwd 1 -> 1
+fwd 37.5 -> 37.5
+fwd 101 -> 135.33333333333331
+fwd 140 -> 136.83333333333331
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1081.6363636363637
+inv 1700 -> 1845.2727272727273
+inv 1900 -> 2063.4545454545455
+inv 2700 -> 2936.181818181818
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 1
+fwd 37.5 -> 37.5
+fwd 101 -> 135.33333333333331
+fwd 140 -> 136.83333333333331
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1081.6363636363637
+inv 1700 -> 1845.2727272727273
+inv 1900 -> 2063.4545454545455
+inv 2700 -> 2936.181818181818
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_beside_zoommap
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Second component Mapping
+       Begin SwitchMap 	# Alternate regionalised Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          FSMap = 	# Forward selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          ISMap = 	# Inverse selector Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+                Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+             End MathMap
+          RMap1 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          RMap2 = 	# Route Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+                IsSimp = 1 	# Mapping has been simplified
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 478 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+       End SwitchMap
+ End CmpMap
+-- transformations
+fwd 1 -> 1010
+fwd 37.5 -> 1740
+fwd 101 -> 2700
+fwd 140 -> 3558
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 0.5
+inv 1700 -> 35.5
+inv 1900 -> 64.636363636363626
+inv 2700 -> 101
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 1010
+fwd 37.5 -> 1740
+fwd 101 -> 2700
+fwd 140 -> 3558
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 0.5
+inv 1700 -> 35.5
+inv 1900 -> 64.636363636363626
+inv 2700 -> 101
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_section1_beside_inverse
+class UnitMap
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+-- transformations
+fwd 1 1 -> 1 1
+fwd 37.5 2 -> 37.5 2
+fwd 101 2 -> 101 2
+fwd 140 1 -> 72.818181818181813 2
+fwd -1.7976931348623157e+308 1 -> -1.7976931348623157e+308 2
+inv 1 1 -> 1 1
+inv 37.5 2 -> 37.5 2
+inv 101 2 -> 101 2
+inv 140 1 -> 72.818181818181813 2
+inv -1.7976931348623157e+308 1 -> -1.7976931348623157e+308 2
+-- transformations simplified
+fwd 1 1 -> 1 1
+fwd 37.5 2 -> 37.5 2
+fwd 101 2 -> 101 2
+fwd 140 1 -> 140 1
+fwd -1.7976931348623157e+308 1 -> -1.7976931348623157e+308 1
+inv 1 1 -> 1 1
+inv 37.5 2 -> 37.5 2
+inv 101 2 -> 101 2
+inv 140 1 -> 140 1
+inv -1.7976931348623157e+308 1 -> -1.7976931348623157e+308 1
+== simp_section1_inverse_beside
+class UnitMap
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+-- transformations
+fwd 1 -> 1
+fwd 37.5 -> 37.5
+fwd 101 -> 101
+fwd 140 -> 140
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1000
+inv 1700 -> 1700
+inv 1900 -> 1899.9999999999998
+inv 2700 -> 2700
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 1
+fwd 37.5 -> 37.5
+fwd 101 -> 101
+fwd 140 -> 140
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1000
+inv 1700 -> 1700
+inv 1900 -> 1900
+inv 2700 -> 2700
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+== simp_section1_inverted
+class SwitchMap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    Nout = 2 	# Number of output coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Fwd = 0 	# Forward transformation not defined
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    FSInv = 1 	# Fwd selector used in inverse direction
+    ISMap = 	# Inverse selector Mapping
+       Begin PermMap 	# Coordinate permutation
+          Nin = 1 	# Number of input coordinates
+          Nout = 2 	# Number of output coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Out1 = 0 	# Output coordinate 1 is "bad"
+          Out2 = 1 	# Output coordinate 2 = input coordinate 1
+          In1 = 2 	# Input coordinate 1 = output coordinate 2
+       End PermMap
+    RMap1 = 	# Route Mapping
+       Begin CmpMap 	# Compound Mapping
+          Nin = 1 	# Number of input coordinates
+          Nout = 2 	# Number of output coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          InvA = 1 	# First Mapping used in inverse direction
+          MapA = 	# First component Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 990 	# Shift for axis 1
+                Scl1 = 10 	# Scale factor for axis 1
+             End WinMap
+          MapB = 	# Second component Mapping
+             Begin PermMap 	# Coordinate permutation
+                Nin = 1 	# Number of input coordinates
+                Nout = 2 	# Number of output coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Out1 = 1 	# Output coordinate 1 = input coordinate 1
+                Out2 = -1 	# Output coordinate 2 = constant no. 1
+                InCpy = 1 	# Input coordinates = output coordinates
+                Nconst = 1 	# Number of constants
+                Con1 = 1 	# Constant number 1
+             End PermMap
+       End CmpMap
+    RMap2 = 	# Route Mapping
+       Begin CmpMap 	# Compound Mapping
+          Nin = 1 	# Number of input coordinates
+          Nout = 2 	# Number of output coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          InvA = 1 	# First Mapping used in inverse direction
+          MapA = 	# First component Mapping
+             Begin WinMap 	# Map one window on to another
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 1589 	# Shift for axis 1
+                Scl1 = 11 	# Scale factor for axis 1
+             End WinMap
+          MapB = 	# Second component Mapping
+             Begin PermMap 	# Coordinate permutation
+                Nin = 1 	# Number of input coordinates
+                Nout = 2 	# Number of output coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Out1 = 1 	# Output coordinate 1 = input coordinate 1
+                Out2 = -1 	# Output coordinate 2 = constant no. 1
+                InCpy = 1 	# Input coordinates = output coordinates
+                Nconst = 1 	# Number of constants
+                Con1 = 2 	# Constant number 1
+             End PermMap
+       End CmpMap
+ End SwitchMap
+-- transformations
+fwd 1 -> -98.900000000000006 1
+fwd 37.5 -> -95.25 1
+fwd 101 -> -88.900000000000006 1
+fwd 140 -> -85 1
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308 2
+inv 1 1 -> 1000
+inv 37.5 2 -> 2001.5
+inv 101 2 -> 2700
+inv 140 1 -> 2390
+inv -1.7976931348623157e+308 1 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> -98.900000000000006 1
+fwd 37.5 -> -95.25 1
+fwd 101 -> -88.900000000000006 1
+fwd 140 -> -85 1
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308 2
+inv 1 1 -> 1000
+inv 37.5 2 -> 2001.5
+inv 101 2 -> 2700
+inv 140 1 -> 2390
+inv -1.7976931348623157e+308 1 -> -1.7976931348623157e+308
+== simp_section2_shared_selector
+class SwitchMap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- transformations
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2018
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 129.27272727272725
+inv 2700 -> 202
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- Invert shared after 0 test 1
+== simp_section2_shared_selector_inverted
+class SwitchMap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    FSInv = 1 	# Fwd selector used in inverse direction
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISInv = 1 	# Inv selector used in inverse direction
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RInv1 = 1 	# Route Mapping used in inverse direction
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 478 	# Shift for axis 1
+          Scl1 = 11 	# Scale factor for axis 1
+       End WinMap
+    RInv2 = 1 	# Route Mapping used in inverse direction
+ End SwitchMap
+-- transformations
+fwd 1 -> -98.900000000000006
+fwd 37.5 -> -95.25
+fwd 101 -> -88.900000000000006
+fwd 140 -> -85
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 11478
+inv 1700 -> 19178
+inv 1900 -> 21378
+inv 2700 -> 30178
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> -98.900000000000006
+fwd 37.5 -> -95.25
+fwd 101 -> -88.900000000000006
+fwd 140 -> -85
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 11478
+inv 1700 -> 19178
+inv 1900 -> 21378
+inv 2700 -> 30178
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- Invert shared after 1 test 1
+== simp_shared_route
+class SwitchMap
+ Begin SwitchMap 	# Alternate regionalised Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    FSMap = 	# Forward selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    ISMap = 	# Inverse selector Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=qif(x>101.5,2,1)" 	# Forward function 1
+          Inv1 = "x=qif(y>1800,2,1)" 	# Inverse function 1
+       End MathMap
+    RMap1 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+    RMap2 = 	# Route Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 990 	# Shift for axis 1
+          Scl1 = 10 	# Scale factor for axis 1
+       End WinMap
+ End SwitchMap
+-- transformations
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2390
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 91
+inv 2700 -> 171
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- transformations simplified
+fwd 1 -> 1000
+fwd 37.5 -> 1365
+fwd 101 -> 2000
+fwd 140 -> 2390
+fwd -1.7976931348623157e+308 -> -1.7976931348623157e+308
+inv 1000 -> 1
+inv 1700 -> 71
+inv 1900 -> 91
+inv 2700 -> 171
+inv -1.7976931348623157e+308 -> -1.7976931348623157e+308
+-- Invert shared after 0 test 1
+== error_no_routes
+!! AST: Error in routine mathmap at line 76 in file src/test/resources/probes/switchmap_probe.c.
+!  astSwitchMap(SwitchMap):  Bad number of route Mappings (0) specified.
+status 233934170
+== error_route_nin
+!! AST: Error in routine mathmap at line 76 in file src/test/resources/probes/switchmap_probe.c.
+!  astInitSwitchMap(SwitchMap): Route Mapping number 2 has 2 input(s) but the first route Mapping has 1 input(s).
+status 233933210
+== error_route_nout
+!! AST: Error in routine mathmap at line 76 in file src/test/resources/probes/switchmap_probe.c.
+!  astInitSwitchMap(SwitchMap): Route Mapping number 2 has 1 output(s) but the first route Mapping has 1 output(s).
+status 233933218
+== error_fsmap_no_forward
+!! AST: Error in routine inv at line 65 in file src/test/resources/probes/switchmap_probe.c.
+!  astInitSwitchMap(SwitchMap): The forward selector Mapping is not able to transform coordinates in the forward direction.
+status 233933418
+== error_ismap_no_inverse
+!! AST: Error in routine main at line 539 in file src/test/resources/probes/switchmap_probe.c.
+!  astInitSwitchMap(SwitchMap): The inverse selector Mapping is not able to transform coordinates in the inverse direction.
+status 233933418
+== error_fsmap_nin
+!! AST: Error in routine main at line 542 in file src/test/resources/probes/switchmap_probe.c.
+!  astInitSwitchMap(SwitchMap): The forward selector Mapping has 2 input(s) but the SwitchMap has 1 input(s).
+status 233933210
+== error_fsmap_nout
+!! AST: Error in routine main at line 548 in file src/test/resources/probes/switchmap_probe.c.
+!  astInitSwitchMap(SwitchMap): The forward selector Mapping has 2 outputs but should only have 1.
+status 233933218
+== error_ismap_nout
+!! AST: Error in routine main at line 552 in file src/test/resources/probes/switchmap_probe.c.
+!  astInitSwitchMap(SwitchMap): The inverse selector Mapping has 2 output(s) but the SwitchMap has 1 output(s).
+status 233933218
+== error_ismap_nin
+!! AST: Error in routine main at line 558 in file src/test/resources/probes/switchmap_probe.c.
+!  astInitSwitchMap(SwitchMap): The inverse selector Mapping has 2 inputs but should only have 1.
+status 233933210
+== error_no_selectors
+!! AST: Error in routine main at line 562 in file src/test/resources/probes/switchmap_probe.c.
+!  astInitSwitchMap(SwitchMap): No selector Mappings supplied.
+status 233933418

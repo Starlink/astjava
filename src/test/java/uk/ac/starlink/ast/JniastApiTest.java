@@ -67,6 +67,7 @@ class JniastApiTest {
             "SpecFrame",
             "SpecMap",
             "SphMap",
+            "SwitchMap",
             "TimeFrame",
             "TimeMap",
             "TranMap",

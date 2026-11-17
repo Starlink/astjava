@@ -508,6 +508,36 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: `pcd_map_merge` (`mappings/simplify.rs`) and `PcdMap::try_merge` (`mappings/pcdmap.rs`) compare with `ast_equal`, which has `astEQUAL`'s floor, so they replace the PcdMap of coefficient `1e-13` with a UnitMap and cancel the pair whose centres differ by `1e-13`.
 - Java: as C.
 
+### A SwitchMap selector value beyond the range of `int`
+
+- C: `GetRoute` and `Transform` (`switchmap.c`) exclude only `AST__BAD` and then take `(int) round( sel ) - 1` as the route index, so a selector value beyond the range of `int`, an infinity or a NaN makes the conversion undefined.
+  The pinned library built on macOS aarch64 saturates the conversion, and such a value picks no route (probe `src/test/resources/probes/switchmap_probe.c`, case `selector_values`, which includes `2147483648.5`, `4294967297` and `1e30`).
+- Rust: compares the rounded value with 1 and the number of routes before converting, so such a value picks no route by definition.
+- Java: converts as C does; Java's conversion is defined, giving 0 for a NaN and the nearest `int` for any other value, so such a value picks no route, as in the probe.
+
+### Simplifying a SwitchMap that holds one Mapping twice
+
+- **C quirk**: `MapMerge` (`switchmap.c`) saves the Invert attribute of the forward selector, the inverse selector and each route Mapping in turn while setting each to the value the SwitchMap recorded, and sets them back in the same order, not the reverse.
+  When one Mapping is held twice, as when it is both selectors (`testswitchmap.c` section 2) or two routes, the value saved for its second place is the one just set for its first, so it is left with the value recorded for its first place instead of its own: a MathMap held as both selectors and inverted after the SwitchMap was made is no longer inverted after the SwitchMap is simplified (probe cases `simp_section2_shared_selector`, `simp_section2_shared_selector_inverted` and `simp_shared_route`).
+  The SwitchMap applies each Mapping with the value it recorded, so it transforms as before; anything that uses the Mapping on its own afterwards sees the change.
+- Rust: holds its own copies, so nothing changes.
+- Java: as C.
+  Java sets back each Invert attribute as it was, set or unset, where C's `astSetInvert` leaves it set, so the two differ only in what `test("Invert")` gives afterwards.
+
+### A SwitchMap dump without `ISInv`, or without route Mappings
+
+- **C quirk**: `astLoadSwitchMap` takes an absent `ISInv` to be the value of `FSInv`, so a dump with the forward selector inverted and no `ISInv` applies the inverse selector inverted too (probe case `load_without_isinv`); an absent `RInv<n>` is 0.
+  A dump without `RMap1` loads a SwitchMap of no route Mappings, which gives bad values everywhere.
+- Rust: takes an absent `ISInv` to be 0, and refuses a dump without route Mappings with AST__LDERR.
+- Java: as C; a component that is not a Mapping is AST__LDERR, as for a CmpMap, TranMap or RateMap.
+
+### The messages of SwitchMap's constructor
+
+- **C quirk**: `astInitSwitchMap` reports a route Mapping with a different number of outputs from the first with the two numbers of inputs, as "Route Mapping number 2 has 1 output(s) but the first route Mapping has 1 output(s)." (probe case `error_route_nout`).
+  The public `astSwitchMap` reports no route Mappings with two spaces after the colon, the library's own with one.
+- Rust: has its own messages, with the same statuses.
+- Java: as C, the public constructor giving the public function's message.
+
 ## Units
 
 Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follows C in each.

@@ -42,6 +42,20 @@ class ConstructorChecksTest {
         new TranMap(forwardOnly(), inverseOnly());
     }
 
+    /**
+     * switchmap.c astInitSwitchMap: the forward selector needs a forward transformation and the
+     * inverse selector an inverse one.
+     */
+    @Test
+    void aSwitchmapSelectorNeedsItsDirection() {
+        AstException e = assertThrows(
+                AstException.class, () -> new SwitchMap(inverseOnly(), null, new Mapping[] {new ZoomMap(1, 2.0)}));
+        assertEquals(AstException.AST__INTRD, e.getStatus());
+        e = assertThrows(
+                AstException.class, () -> new SwitchMap(null, forwardOnly(), new Mapping[] {new ZoomMap(1, 2.0)}));
+        assertEquals(AstException.AST__INTRD, e.getStatus());
+    }
+
     /** wcsmap.c SetPV: an axis out of range, or one that is not celestial, is AST__AXIIN. */
     @Test
     void aWcsmapPvNeedsACelestialAxis() {

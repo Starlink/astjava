@@ -8,10 +8,7 @@ normmap_inverse_cancel | needs NormMap
 normmap_duplicate_elim | needs NormMap
 unitnormmap_inverse_cancel | needs UnitNormMap
 unitnormmap_diff_centre_to_shift | needs UnitNormMap
-switchmap_invert_normalize | needs SwitchMap
-switchmap_internal_simplify | needs SwitchMap
 selectormap_inverse_cancel | needs Box, PointSet, SelectorMap
-switchmap_inverse_cancel | needs SwitchMap
 neg_spline_same_direction | needs SplineMap
 neg_normmap_parallel | needs NormMap
 neg_normmap_different_frames | needs NormMap
@@ -34,7 +31,6 @@ dssmap_inv_winmap_absorb | needs DssMap
 dssmap_winmap_absorb | needs DssMap
 dssmap_zoom_no_merge | needs DssMap
 neg_box_asymmetric_2d | needs Box, PointSet
-switchmap_inverse_cancel_distinct_selectors | needs SwitchMap
 cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism
 cap_matrixmap_04 | needs ChebyMap
 cap_permmap_01 | needs NormMap
@@ -80,15 +76,6 @@ neg_selectormap_series_lower | needs Box, PointSet, SelectorMap
 neg_selectormap_not_equal | needs Box, PointSet, SelectorMap
 neg_selectormap_parallel | needs Box, PointSet, SelectorMap
 selectormap_inverse_cancel_tail | needs Box, PointSet, SelectorMap
-neg_switchmap_not_equal | needs SwitchMap
-neg_switchmap_series | needs SwitchMap
-neg_switchmap_parallel | needs SwitchMap
-switchmap_inverse_cancel_tail | needs SwitchMap
-switchmap_fwdonly_simplify | needs SwitchMap
-switchmap_invonly_simplify | needs SwitchMap
-switchmap_inv_invonly | needs SwitchMap
-switchmap_inv_fwdonly | needs SwitchMap
-neg_switchmap_series_lower | needs SwitchMap
 unitnormmap_shift_fwd_merge | needs UnitNormMap
 unitnormmap_winmap_fwd_merge | needs UnitNormMap
 unitnormmap_inv_shift_merge | needs UnitNormMap

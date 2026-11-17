@@ -17,8 +17,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * it records (tranmap.c Rate). A RateMap read from a dump whose recorded orientation ({@code Inv})
  * differs from its Mapping's Invert asks the rate in the recorded orientation.
  *
- * <p>The SwitchMap cases need a class not yet ported, so {@code rates_match_the_c_library} runs the
- * others.
+ * <p>The SwitchMap cases select their routes with a SelectorMap of Box Regions, classes not yet
+ * ported, so {@code rates_match_the_c_library} runs the others.
  */
 class RateOracleTest {
 

@@ -78,6 +78,8 @@ final class ObjectRegistry {
                 return SpecMap::new;
             case "SphMap":
                 return SphMap::new;
+            case "SwitchMap":
+                return SwitchMap::new;
             case "TimeFrame":
                 return TimeFrame::new;
             case "TimeMap":

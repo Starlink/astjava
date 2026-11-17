@@ -136,10 +136,6 @@ simplify/neg_spline_different_coeffs.map | needs SplineMap
 simplify/neg_spline_nonspline_neighbour.map | needs SplineMap
 simplify/neg_spline_parallel.map | needs SplineMap
 simplify/neg_spline_same_direction.map | needs SplineMap
-simplify/neg_switchmap_not_equal.map | needs SwitchMap
-simplify/neg_switchmap_parallel.map | needs SwitchMap
-simplify/neg_switchmap_series.map | needs SwitchMap
-simplify/neg_switchmap_series_lower.map | needs SwitchMap
 simplify/neg_unitnormmap_flanked.map | needs UnitNormMap
 simplify/neg_unitnormmap_fwd_shift.map | needs UnitNormMap
 simplify/neg_unitnormmap_inv_fwd_diffcentre.map | needs UnitNormMap
@@ -197,21 +193,6 @@ simplify/simpstab_box_nonlinear_unc.simp | needs Box, PointSet
 simplify/simpstab_permmap_slice_unc.map | needs Box, PointSet
 simplify/simpstab_permmap_slice_unc.simp | needs Box, PointSet
 simplify/spline_inverse_cancel.map | needs SplineMap
-simplify/switchmap_fwdonly_simplify.map | needs SwitchMap
-simplify/switchmap_fwdonly_simplify.simp | needs SwitchMap
-simplify/switchmap_internal_simplify.map | needs SwitchMap
-simplify/switchmap_internal_simplify.simp | needs SwitchMap
-simplify/switchmap_inv_fwdonly.map | needs SwitchMap
-simplify/switchmap_inv_fwdonly.simp | needs SwitchMap
-simplify/switchmap_inv_invonly.map | needs SwitchMap
-simplify/switchmap_inv_invonly.simp | needs SwitchMap
-simplify/switchmap_inverse_cancel.map | needs SwitchMap
-simplify/switchmap_inverse_cancel_distinct_selectors.map | needs SwitchMap
-simplify/switchmap_inverse_cancel_tail.map | needs SwitchMap
-simplify/switchmap_invert_normalize.map | needs SwitchMap
-simplify/switchmap_invert_normalize.simp | needs SwitchMap
-simplify/switchmap_invonly_simplify.map | needs SwitchMap
-simplify/switchmap_invonly_simplify.simp | needs SwitchMap
 simplify/unitnormmap_diff_centre_to_shift.map | needs UnitNormMap
 simplify/unitnormmap_fwd_winmap_refused.map | needs UnitNormMap
 simplify/unitnormmap_fwd_winmap_refused.simp | needs UnitNormMap

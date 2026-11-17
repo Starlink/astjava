@@ -16,11 +16,11 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * oracle/tran_definedness.json}, for Mappings whose definedness depends on more than their
  * coefficients, here a MatrixMap holding a bad element (matrixmap.c {@code InvertMatrix}) and its
  * control, and an NCP WcsMap, which defines both directions but cannot transform in either
- * (wcsmap.c {@code Map}), and its SIN control, and a PolyMap with unequal numbers of inputs and
+ * (wcsmap.c {@code Map}), and its SIN control, a PolyMap with unequal numbers of inputs and
  * outputs (polymap.c {@code GetIterInverse}, {@code SetIterInverse}), with whether setting
- * IterInverse fails. The MatrixMaps are also built from the matrices C was given.
- *
- * <p>The SwitchMap cases need a class outside the first phase.
+ * IterInverse fails, and a SwitchMap with only a forward selector, inverted and not, whose
+ * directions swap under Invert (switchmap.c {@code astInitSwitchMap}). The MatrixMaps are also
+ * built from the matrices C was given.
  */
 class TranDefinednessOracleTest {
 
@@ -53,7 +53,10 @@ class TranDefinednessOracleTest {
     }
 
     private static boolean inScope(String name) {
-        return name.startsWith("matrixmap_") || name.startsWith("wcsmap_") || name.startsWith("polymap_");
+        return name.startsWith("matrixmap_")
+                || name.startsWith("wcsmap_")
+                || name.startsWith("polymap_")
+                || name.startsWith("switchmap_");
     }
 
     @Test
@@ -91,7 +94,7 @@ class TranDefinednessOracleTest {
             ran++;
         }
         assertTrue(failures.isEmpty(), String.join("\n", failures));
-        assertEquals(7, ran, "cases run");
+        assertEquals(9, ran, "cases run");
     }
 
     @Test
