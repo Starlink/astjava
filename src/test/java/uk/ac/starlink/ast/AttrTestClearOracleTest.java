@@ -18,19 +18,14 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * attribute is written whenever it is set, its default included; a cleared one is written
  * commented, as its default, only when the class marks it "helpful" (such as Zoom and PlrLg).
  *
- * <p>{@link #build} makes each object as the probe does. The cases of PcdMap, GrismMap, SplineMap
- * and MathMap are skipped (classes not yet ported).
+ * <p>{@link #build} makes each object as the probe does. The cases of PcdMap, GrismMap and
+ * SplineMap are skipped (classes not yet ported).
  */
 class AttrTestClearOracleTest {
 
     /** The cases whose classes are out of scope. */
-    private static final List<String> OUT_OF_SCOPE = Arrays.asList(
-            "pcdmap_cleared",
-            "grismmap_cleared",
-            "splinemap_default",
-            "splinemap_cleared",
-            "mathmap_default",
-            "mathmap_cleared");
+    private static final List<String> OUT_OF_SCOPE =
+            Arrays.asList("pcdmap_cleared", "grismmap_cleared", "splinemap_default", "splinemap_cleared");
 
     private static PermMap perm() {
         return new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
@@ -60,6 +55,13 @@ class AttrTestClearOracleTest {
      * The object a case builds, and C's {@code astTest} route for each attribute: PermSplit is
      * protected in C, so the probe tests it through {@code astTestPermSplit}.
      */
+    private static MathMap math() {
+        MathMap m = new MathMap(1, 1, new String[] {"y=x"}, new String[] {"x=y"});
+        m.setSimpFI(false);
+        m.setSimpIF(false);
+        return m;
+    }
+
     private static Mapping build(String name) {
         switch (name) {
             case "permmap_split_default": {
@@ -110,6 +112,13 @@ class AttrTestClearOracleTest {
             case "sphmap_cleared": {
                 SphMap m = sph();
                 m.clear("UnitRadius,PolarLong");
+                return m;
+            }
+            case "mathmap_default":
+                return math();
+            case "mathmap_cleared": {
+                MathMap m = math();
+                m.clear("SimpFI,SimpIF");
                 return m;
             }
             case "invert_set_zero": {
@@ -171,7 +180,7 @@ class AttrTestClearOracleTest {
                 failures.add(name + ": dump\n" + written + "C:\n" + c.get(2).asText());
             }
         }
-        assertEquals(14, run, "the in-scope cases the C probe recorded");
+        assertEquals(16, run, "the in-scope cases the C probe recorded");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

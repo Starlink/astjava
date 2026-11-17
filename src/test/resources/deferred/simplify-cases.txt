@@ -7,7 +7,7 @@ pcd_inverse_cancel | needs PcdMap
 grism_inverse_cancel | needs GrismMap
 grism_zoom_merge | needs GrismMap
 spline_inverse_cancel | needs SplineMap
-math_inverse_cancel | needs MathMap
+math_inverse_cancel | needs simplification
 ratemap_inverse_cancel | needs RateMap
 tranmap_equal_components | needs TranMap
 intramap_inverse_cancel | needs IntraMap
@@ -34,15 +34,12 @@ switchmap_inverse_cancel | needs SwitchMap
 pcd_perm_swap_cancel | needs PcdMap
 pcd_swap_zoom_simplifies | needs PcdMap
 pcd_inverted_zoom_swap | needs PcdMap
-neg_win_nonmergeable_series | needs MathMap
-neg_math_no_simpfi | needs MathMap
 neg_grism_same_direction | needs GrismMap
 neg_pcd_parallel | needs PcdMap
 neg_pcd_nonpcd_neighbour | needs PcdMap
 neg_tranmap_unequal_components | needs TranMap
 neg_spline_same_direction | needs SplineMap
 neg_normmap_parallel | needs NormMap
-neg_perm_no_merge | needs MathMap
 neg_ratemap_nonratemap_neighbour | needs RateMap
 neg_ratemap_different_inner | needs RateMap
 neg_grism_different_attrs | needs GrismMap
@@ -50,25 +47,17 @@ neg_normmap_different_frames | needs NormMap
 neg_grism_parallel | needs GrismMap
 neg_grism_inv_then_zoom | needs GrismMap
 neg_grism_fwd_then_nonzoom | needs GrismMap
-neg_math_nonmath_neighbour | needs MathMap
 neg_spline_parallel | needs SplineMap
 neg_spline_nonspline_neighbour | needs SplineMap
 neg_tranmap_parallel | needs TranMap
 neg_tranmap_nontranmap_neighbour | needs TranMap
 neg_pcd_nonswappable_between | needs PcdMap
-neg_wcs_nonperm_between | needs MathMap
 neg_normmap_nonnorm_neighbour | needs NormMap
 neg_grism_zoom_before_fwd | needs GrismMap
 neg_grism_nonzoom_before_inv | needs GrismMap
 neg_ratemap_parallel | needs RateMap
 neg_spline_different_coeffs | needs SplineMap
-cmpmap_parallel_in_series_merge | needs MathMap
-cmpmap_perm_swap_aconstants | needs MathMap
-cmpmap_perm_swap_bconstants | needs MathMap
-cmpmap_decompose_middle | needs MathMap
-cmpmap_series_in_parallel_inverted | needs MathMap
-cmpmap_parallel_series_dim_mismatch | needs MathMap
-unit_parallel_invert_clear | needs MathMap
+cmpmap_parallel_in_series_merge | needs simplification
 normmap_inverse_cancel_upper | needs NormMap
 unitnormmap_inv_fwd_cancel | needs UnitNormMap
 box_parallel_merge | needs Box, PointSet
@@ -84,38 +73,30 @@ dssmap_inv_winmap_absorb | needs DssMap
 dssmap_winmap_absorb | needs DssMap
 dssmap_zoom_no_merge | needs DssMap
 neg_box_asymmetric_2d | needs Box, PointSet
-switchmap_inverse_cancel_distinct_selectors | needs MathMap, SwitchMap
-cap_cmpmap_01 | needs MathMap, RateMap, TranMap
-cap_cmpmap_02 | needs MathMap
-cap_cmpmap_04 | needs MathMap, RateMap, TranMap
+switchmap_inverse_cancel_distinct_selectors | needs SwitchMap
+cap_cmpmap_01 | needs RateMap, TranMap
+cap_cmpmap_04 | needs RateMap, TranMap
 cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism
-cap_lutmap_01 | needs MathMap
-cap_mathmap_01 | needs MathMap
+cap_mathmap_01 | needs simplification
 cap_matrixmap_04 | needs ChebyMap
 cap_permmap_01 | needs NormMap
 cap_pointlist_01 | needs Box, PointList, PointSet, Prism
 cap_pointlist_02 | needs Interval, PointList, PointSet, Prism
 cap_slamap_02 | needs Box, PointSet, Polygon, Prism
 cap_slamap_07 | needs Box, Circle, CmpRegion, NullRegion, PointSet
-cap_specmap_14 | needs MathMap
 cap_timemap_02 | needs Box, Interval, PointSet, StcResourceProfile
 cap_unitnormmap_01 | needs UnitNormMap
 cap_xphmap_01 | needs XphMap
 cap_xphmap_02 | needs XphMap
-cap_zoommap_04 | needs Box, MathMap, PointList, PointSet
-neg_tranmap_adjacent_no_merge | needs MathMap, TranMap
-neg_math_lone | needs MathMap
+cap_zoommap_04 | needs Box, PointList, PointSet
+neg_tranmap_adjacent_no_merge | needs TranMap
 neg_pcd_zoom_no_target | needs PcdMap
 neg_ratemap_lower_nonrate | needs RateMap
 neg_ratemap_same_invert | needs RateMap
 neg_ratemap_diff_indices | needs RateMap
 neg_ratemap_diff_inner | needs RateMap
-neg_zoom_parallel_lone | needs MathMap
-neg_cmpmap_neighbour_nonexcmpmap | needs MathMap
-neg_tranmap_oneway | needs MathMap, TranMap
-neg_math_inv_text_mismatch | needs MathMap
+neg_tranmap_oneway | needs TranMap
 pcd_search_blocked | needs PcdMap
-cmpmap_solo_after_unit | needs MathMap
 neg_normmap_diff_frame | needs NormMap
 neg_normmap_inv_diff_frame | needs NormMap
 neg_normmap_parallel_sky | needs NormMap
@@ -198,18 +179,10 @@ unit_parallel_invert_pcd | needs PcdMap
 neg_unit_parallel_forward | needs PcdMap
 pcd_zero_disc_series | needs PcdMap
 pcd_zero_disc_lone | needs PcdMap
-parcomp_inverted_reemitted | needs MathMap
-parcomp_inverted_nested_reemitted | needs MathMap
-parpair_one_side_reduces | needs MathMap
-neg_parpair_aligned_irreducible | needs MathMap
-cmpmap_inverted_nested | needs MathMap
 rate_inner_reduce_series | needs RateMap
 rate_inner_reduce_lone | needs RateMap
 cheby_linear_lone_reduce | needs ChebyMap
 neg_cheby_quadratic_no_reduce | needs ChebyMap
-cap_restricted_component_flags | needs MathMap
-cap_cmpperm_resume | needs MathMap
-cap_cmpperm_resume_inv | needs MathMap
 cap_cheby_consolidate | needs ChebyMap
 cap_box_permmap_const | needs Box, PointSet
 cap_box_permmap_null | needs Box, NullRegion, PointSet
@@ -217,13 +190,11 @@ cap_box_permmap_null_first | needs Box, NullRegion, PointSet
 cap_box_permmap_nonbidi | needs Box, PointSet
 neg_circle_cmpframe_sky_second | needs Circle, PointSet
 cap_poly_unc_frame | needs Box, PointSet, Polygon
-cap_poly_bent_edges | needs Box, MathMap, PointSet, Polygon
-cap_poly_bend_allowed | needs Box, MathMap, PointSet, Polygon
+cap_poly_bent_edges | needs Box, PointSet, Polygon
+cap_poly_bend_allowed | needs Box, PointSet, Polygon
 neg_unitnormmap_nonunit_scale | needs UnitNormMap
-neg_cmpmap_mode_mismatch | needs MathMap
-neg_win_cmpmap_split_no_simplify | needs MathMap
 cefit_circle_conformal | needs Circle, PointSet
-cefit_circle_nonconformal_keep | needs Circle, MathMap, PointSet
+cefit_circle_nonconformal_keep | needs Circle, PointSet
 cefit_circle_to_ellipse | needs Ellipse, PointSet
 cefit_ellipse_to_circle | needs Circle, PointSet
 defunc_cmpregion_component_unc | needs Box, PointSet
@@ -242,5 +213,5 @@ setunc_box_remapped_unc | needs Box, PointSet
 setunc_unbounded_negated | needs Box, PointSet
 setunc_unitmap_regionfs_omitted | needs Box, PointSet
 simpstab_box_linear_unc | needs Box, PointSet
-simpstab_box_nonlinear_unc | needs Box, MathMap, PointSet
+simpstab_box_nonlinear_unc | needs Box, PointSet
 simpstab_permmap_slice_unc | needs Box, PointSet

@@ -52,11 +52,11 @@ class NativeClassesTest {
     void aFitsHeaderNeedsTheClassesOfItsBegastCards() {
         String header = "BEGAST_A= 'FrameSet'           / Set of inter-related coordinate systems\n"
                 + "BEGAST_B= 'Frame   '           / Coordinate system description\n"
-                + "BEGAST_C= 'MathMap '           / Transformation using mathematical functions\n"
+                + "BEGAST_C= 'TranMap '           / Compound Transformation\n"
                 + "BEGAST_D= 'SplineMap'\n"
-                + "BEGAST_E= 'MathMap '\n"
+                + "BEGAST_E= 'TranMap '\n"
                 + "CTYPE1  = 'RA---TAN'\n";
-        assertEquals("needs MathMap, SplineMap", NativeClasses.needsInFitsHeader(header));
+        assertEquals("needs SplineMap, TranMap", NativeClasses.needsInFitsHeader(header));
         assertNull(NativeClasses.needsInFitsHeader("BEGAST_A= 'ZoomMap '\nZOOM_A  =                  2.0\n"));
     }
 }

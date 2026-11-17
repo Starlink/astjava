@@ -20,9 +20,9 @@ import org.junit.jupiter.api.Test;
  *
  * <p>{@code
  * series_inverse_pair_of_mathmaps_cancels_to_unitmap} and {@code
- * parallel_with_inverted_cmpmap_child_canonicalises_for_serialisation} need a MathMap, and {@code
- * cmpmap_equality_compares_components_as_applied} tests {@code astEqual}: all are outside the first
- * phase. {@code cmpmap_simplified_two_unitmaps_series} and {@code
+ * parallel_with_inverted_cmpmap_child_canonicalises_for_serialisation} need the simplification of
+ * MathMaps, and {@code cmpmap_equality_compares_components_as_applied} tests {@code astEqual}: none
+ * is ported yet. {@code cmpmap_simplified_two_unitmaps_series} and {@code
  * cmpmap_simplified_two_unitmaps_parallel} check only how the simplified Mapping transforms, which
  * holds of a Mapping that is not restructured.
  */

@@ -338,6 +338,62 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: compares owned copies, so nothing changes.
 - Java: the simplification compares Mappings by identity and native text (`astEqual` is not ported), so the WcsMap keeps its Invert attribute of 1, which is the right one; the `brad` row of `simplify/cases.txt` differs from C in that one line of the dump.
 
+### The status of a MathMap with no outputs
+
+- **C quirk**: `astInitMathMap` reports a bad number of outputs with AST__BADNO and then its second line, "This number should be one or more.", with AST__BADNI, which replaces the status, so a caller sees AST__BADNI (probe `src/test/resources/probes/mathmap_probe.c`, case `count_errors`).
+- Rust: reports AST__BADNO.
+- Java: as C.
+
+### The messages of a MathMap's errors
+
+- C: each error names the method and class, quotes the expression up to the character where reading stopped, and adds a line naming the transformation function, as "Error in forward transformation function 3." (probe cases `expression_errors` and `function_errors`).
+- Rust: has its own messages, with the same statuses.
+- Java: as C.
+
+### The MathMap constant `<dig>`
+
+- C: loads `AST__DBL_DIG`, which is 17 (probe case `evaluate`).
+- Rust: loads 15, `DBL_DIG`.
+- Java: as C.
+
+### Maths library errors in a MathMap
+
+- C: traps the errors of `exp`, `cosh`, `sinh`, `tan`, `pow` and `ldexp` (in `<<` and `>>`) through `errno`, giving a bad value for an overflow and for an argument outside the domain (a negative number to a fractional power); `csch` and `sech` are then 0.
+  The macOS maths library sets no `errno`, so C built there gives the infinity or NaN instead, and a later operator acts on it: `!x**2` at 1e300 is 0 there (probe case `evaluate`).
+- Rust: gives a bad value for any of these results that is not finite.
+- Java: as C with a library that sets `errno` (glibc): a result that is not finite from finite arguments is bad.
+
+### A NaN made inside a MathMap expression
+
+- C: passes a NaN that an expression makes (such as `1e999-1e999`, whose constant overflows to infinity) to the output.
+- Rust: replaces a NaN output by AST__BAD.
+- Java: as C; an input that is not finite is bad, the rule for every Mapping.
+
+### The second value of a Gaussian pair
+
+- **C quirk**: `Gauss` (mathmap.c) keeps the second value of each pair it makes, and the flag saying it has one, in static variables shared by every MathMap, so the next `gauss` of any MathMap whose generator is active takes it.
+  A MathMap and its copy therefore give different Gaussian sequences, and two MathMaps used in turn take each other's values (probe cases `random_copies` and `gauss_two_mathmaps`); two threads using MathMaps at once race on it.
+- Rust: keeps the value in each MathMap's random-number context.
+- Java: as Rust, so a copy gives its original's sequence and a MathMap's sequence does not depend on other MathMaps; with one MathMap, or MathMaps whose generators are not yet active, the values are C's.
+
+### A MathMap Seed below 1
+
+- **C quirk**: `Rand` makes a seed below 1 positive by adding `LONG_MAX`, which on a 64-bit `long` leaves the generators outside their ranges, so `rand(0,1)` gives values far outside 0 to 1 for several calls (Seed -7 gives -308527335.2 first; probe case `random_seeds`).
+- Rust: the same.
+- Java: as C.
+
+### A MathMap dump with fewer functions than its outputs or inputs
+
+- C: `astLoadMathMap` reads the counts `Nfwd` and `Ninv` (defaults the numbers of outputs and inputs) and compiles with them; a smaller count reads before the start of the function arrays.
+- Rust: takes a count that is not positive as the default, and refuses a smaller one with AST__INNTF.
+- Java: refuses a count smaller than the number of outputs or inputs with AST__INNTF and the message of `astInitMathMap`, naming `astLoadMathMap`.
+
+### Simplifying a CmpMap clears AlSimp on the components it shares
+
+- C: `Simplify` (cmpmap.c) clears the flag that lets a restricted simplification use a Mapping on each component it joins into a new CmpMap; those components are shared with the input, so the input's components lose the flag too (probe case `simplify_input_after`, from `simplify/cap_restricted_component_flags.map`).
+- Rust: copies the components, so the input keeps the flag.
+- Java: as C.
+
 ## Units
 
 Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follows C in each.

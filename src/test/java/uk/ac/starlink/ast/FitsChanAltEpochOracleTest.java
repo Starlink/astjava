@@ -23,13 +23,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * write returns and the cards written. The cases are those of {@code
  * oracle/fitschan_alt_epoch.json}, made by {@code tools/oracle_fixtures/fitschan_alt_epoch_probe.c}.
  *
- * <p>The cases that remap the alternate Frame with a MathMap, which this library does not have,
- * do not run; their number is pinned.
  */
 class FitsChanAltEpochOracleTest {
-
-    /** The number of cases that remap the alternate Frame with a MathMap. */
-    private static final int NEED_MATHMAP = 3;
 
     private static final String[] HEADER = {
         "NAXIS   = 2",
@@ -59,7 +54,7 @@ class FitsChanAltEpochOracleTest {
      * The value the write returns and the cards written. {@code prim} and {@code alt} are the MJD
      * epochs set on the primary and alternate Frames, or 0 for none.
      */
-    private static List<String> written(String mjdobs, double prim, double alt) {
+    private static List<String> written(String mjdobs, double prim, double alt, boolean fail) {
         FitsChan fc = new FitsChan();
         for (String card : HEADER) {
             fc.putFits(card, false);
@@ -76,6 +71,10 @@ class FitsChanAltEpochOracleTest {
         fs.setCurrent(3);
         if (alt != 0.0) {
             fs.setEpoch(String.format(java.util.Locale.ROOT, "MJD %.1f", alt));
+        }
+        if (fail) {
+            fs.remapFrame(
+                    3, new MathMap(2, 2, new String[] {"x=a+100*b*b", "y=b"}, new String[] {"a=x-100*y*y", "b=y"}));
         }
         fs.setCurrent(2);
         FitsChan out = new FitsChan();
@@ -96,23 +95,23 @@ class FitsChanAltEpochOracleTest {
     @Test
     void datesMatchC() {
         List<String> failed = new ArrayList<>();
-        int needMathMap = 0;
+        int remapped = 0;
         for (JsonNode c : ProbeData.load("fitschan_alt_epoch").get("CASES")) {
             String name = c.get(0).asText();
-            if (c.get(4).asBoolean()) {
-                needMathMap++;
-                continue;
+            boolean fail = c.get(4).asBoolean();
+            if (fail) {
+                remapped++;
             }
             List<String> want = new ArrayList<>();
             want.add("wrote " + c.get(5).asInt());
             want.addAll(FitsHeaders.strings(c.get(6)));
             List<String> got =
-                    written(c.get(1).asText(), c.get(2).asDouble(), c.get(3).asDouble());
+                    written(c.get(1).asText(), c.get(2).asDouble(), c.get(3).asDouble(), fail);
             if (!FitsHeaders.cardsMatchC(got, want)) {
                 failed.add(name + ":\n--- Java\n" + String.join("\n", got) + "\n--- C\n" + String.join("\n", want));
             }
         }
         assertTrue(failed.isEmpty(), String.join("\n", failed));
-        assertEquals(NEED_MATHMAP, needMathMap, "cases that need MathMap");
+        assertEquals(3, remapped, "cases that remap the alternate Frame with a MathMap");
     }
 }

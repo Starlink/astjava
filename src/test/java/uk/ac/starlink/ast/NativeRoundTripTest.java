@@ -114,6 +114,13 @@ class NativeRoundTripTest {
     }
 
     @Test
+    void roundTripMathmap() {
+        MathMap m = new MathMap(
+                2, 2, new String[] {"u = x + y", "v = x - y"}, new String[] {"x = 0.5 * (u + v)", "y = 0.5 * (u - v)"});
+        assertDoubleRoundTrip(m, "MathMap");
+    }
+
+    @Test
     void roundTripPermmap() {
         PermMap m = new PermMap(3, new int[] {2, -1, 1}, 2, new int[] {3, 1}, new double[] {7.5});
         m.setInvert(true);

@@ -51,6 +51,7 @@ class JniastApiTest {
             "KeyMap",
             "LutMap",
             "Mapping",
+            "MathMap",
             "MatrixMap",
             "PermMap",
             "PolyMap",

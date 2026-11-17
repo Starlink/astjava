@@ -13,8 +13,7 @@ import org.junit.jupiter.api.Test;
  *
  * <p>{@code numericRateMatchesTheTanDerivatives} is not in the Rust file: it checks the rates of a
  * TAN WcsMap, which is nonlinear, against its derivatives, which they match to within 3e-8
- * relative. {@code numeric_rate_tan_at_zero} needs a MathMap, and the {@code numeric_rate_chebymap_*} tests a
- * ChebyMap, which are outside the first phase.
+ * relative. The {@code numeric_rate_chebymap_*} tests need a ChebyMap, which is not yet ported.
  */
 class NumericRateTest {
 
@@ -24,6 +23,17 @@ class NumericRateTest {
         assertEquals(3.0, zoom.rate(new double[] {1.0, 2.0}, 1, 1), 1e-6, "zoom rate d(out1)/d(in1)");
         assertEquals(0.0, zoom.rate(new double[] {1.0, 2.0}, 1, 2), 1e-6, "zoom rate d(out1)/d(in2)");
         assertEquals(3.0, zoom.rate(new double[] {1.0, 2.0}, 2, 2), 1e-6, "zoom rate d(out2)/d(in2)");
+    }
+
+    /**
+     * The rate of {@code tan} at 0 is 1, and at 1 is {@code 1/cos^2(1)}; C's numerical rate
+     * converges to both (oracle: {@code astRate} of the MathMap {@code y=tan(x)} at 0 is 1.0).
+     */
+    @Test
+    void numericRateTanAtZero() {
+        MathMap m = new MathMap(1, 1, new String[] {"y = tan(x)"}, new String[] {"x = atan(y)"});
+        assertEquals(1.0, m.rate(new double[] {0.0}, 1, 1), 1e-6, "rate at x = 0");
+        assertEquals(3.4255188224, m.rate(new double[] {1.0}, 1, 1), 1e-6, "rate at x = 1");
     }
 
     @Test

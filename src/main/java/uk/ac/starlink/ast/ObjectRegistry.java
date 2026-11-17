@@ -48,6 +48,8 @@ final class ObjectRegistry {
                 return KeyMap::new;
             case "LutMap":
                 return LutMap::new;
+            case "MathMap":
+                return MathMap::new;
             case "MatrixMap":
                 return MatrixMap::new;
             case "PermMap":

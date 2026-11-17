@@ -22,8 +22,8 @@ import uk.ac.starlink.ast.UnitsTree.Oper;
  *
  * <p>The four {@code tests.rs} tests of conversions that need a MathMap ({@code
  * log_hz_to_hz_is_mathmap}, {@code sqrt_hz_to_hz_is_mathmap}, {@code log_kms_to_ms_is_mathmap},
- * {@code hz_to_log_hz_is_mathmap}) are deferred until MathMap is ported; {@link
- * #conversionsNeedingMathMapThrow} checks that they report it.
+ * {@code hz_to_log_hz_is_mathmap}) are deferred, as the units conversion that builds a MathMap is
+ * not yet ported; {@link #conversionsNeedingMathMapThrow} checks that they report it.
  */
 class UnitsTest {
 

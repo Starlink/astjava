@@ -215,13 +215,16 @@ class SimplifyRegressionTest {
 
     /**
      * A dump without its records of simplification, {@code IsSimp} and {@code ReSimp}, which C's
-     * {@code astSimplify} also writes on the Mapping it is given and on its shared components.
+     * {@code astSimplify} also writes on the Mapping it is given and on its shared components, and
+     * {@code AlSimp}, which cmpmap.c {@code Simplify} clears on each component it joins into a new
+     * CmpMap, among them components it shares with the input (probe {@code mathmap_probe.c}, case
+     * {@code simplify_input_after}).
      */
     private static String withoutRecords(String dump) {
         StringBuilder sb = new StringBuilder();
         for (String line : CValues.lines(dump)) {
             String t = line.trim();
-            if (!t.startsWith("IsSimp =") && !t.startsWith("ReSimp =")) {
+            if (!t.startsWith("IsSimp =") && !t.startsWith("ReSimp =") && !t.startsWith("AlSimp =")) {
                 sb.append(line).append('\n');
             }
         }

@@ -13,8 +13,7 @@ import org.junit.jupiter.api.Test;
  * with initial scale sizes of 100 and 4. The results are transformed back with {@code tranP}
  * rather than C's {@code astTranN}, and, as in C, the unit MatrixMap is made in its unit form.
  *
- * <p>{@code tranmap} needs a TranMap and {@code nonlinear_mathmap_1d} a MathMap, which are outside
- * the first phase. {@code fits_wcs_pixel_to_sky} reads a header with a {@code CROTA1} card, which
+ * <p>{@code tranmap} needs a TranMap, which is not yet ported. {@code fits_wcs_pixel_to_sky} reads a header with a {@code CROTA1} card, which
  * C's FitsChan guesses to be FITS-AIPS (fitschan.c:12880).
  */
 class TranGridTest {
@@ -105,6 +104,12 @@ class TranGridTest {
     @Test
     void permmap() {
         assertGridsRoundTrip(new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, new double[] {0.0}), 4, 0.5);
+    }
+
+    @Test
+    void nonlinearMathmap1d() {
+        assertGridsRoundTrip(
+                new MathMap(1, 1, new String[] {"y=x**3"}, new String[] {"x=sign((abs(y)**(1/3)),y)"}), 7, 0.0001);
     }
 
     @Test

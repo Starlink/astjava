@@ -3,5 +3,3 @@
 # Rewritten by TransformOracleTest with -Dast.writeDeferred=true.
 wcsconv/inputs/freq-log.head | needs MathMap
 wcsconv/inputs/grism.head | needs GrismMap
-wcsconv/inputs/polco.head | needs MathMap
-wcsconv/inputs/polco2.head | needs MathMap

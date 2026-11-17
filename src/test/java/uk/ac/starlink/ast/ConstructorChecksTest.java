@@ -23,6 +23,16 @@ class ConstructorChecksTest {
         }
     }
 
+    /** mathmap.c astInitMathMap: too few forward or inverse functions is AST__INNTF. */
+    @Test
+    void aMathmapNeedsAFunctionPerOutput() {
+        AstException e =
+                assertThrows(AstException.class, () -> new MathMap(1, 2, new String[] {"y=x"}, new String[] {"x=y"}));
+        assertEquals(AstException.AST__INNTF, e.getStatus());
+        e = assertThrows(AstException.class, () -> new MathMap(2, 1, new String[] {"y=x1"}, new String[] {"x1=y"}));
+        assertEquals(AstException.AST__INNTF, e.getStatus());
+    }
+
     /** polymap.c StoreArrays: a term for an output that does not exist is AST__BADCI. */
     @Test
     void aPolymapTermNeedsARealOutput() {

@@ -17,8 +17,7 @@ import uk.ac.starlink.ast.testsupport.CValues;
  * <p>Listed in {@code deferred/rust-tests.txt}: {@code grism_interference_order_survives_a_round_trip}
  * and {@code a_non_linear_grism_axis_writes_a_header_that_reads_back} (GrismMap, which the read of
  * their {@code WAVE-GRI} headers builds),
- * the four tests of the {@code lsst2.ast} FrameSet (SplineMap), and {@code
- * a_sip_description_is_rejected_when_it_is_not_linear_over_the_image} (MathMap).
+ * and the four tests of the {@code lsst2.ast} FrameSet (SplineMap).
  */
 class FitsChanWcsWriteTest {
 
@@ -50,6 +49,53 @@ class FitsChanWcsWriteTest {
         fc.setEncoding("FITS-WCS");
         assertEquals(1, fc.write(fs));
         return fc;
+    }
+
+    /**
+     * A SIP-shaped PolyMap followed by a MathMap that is not linear over the image is not written
+     * as a SIP description; the plain linear approximation is good enough, so the write succeeds.
+     */
+    @Test
+    void aSipDescriptionIsRejectedWhenItIsNotLinearOverTheImage() {
+        FrameSet tan = FitsHeaders.readFrameSet(FitsHeaders.chan(
+                "CTYPE1  = 'RA---TAN'",
+                "CTYPE2  = 'DEC--TAN'",
+                "CRPIX1  =                  0.0",
+                "CRPIX2  =                  0.0",
+                "CRVAL1  =                180.0",
+                "CRVAL2  =                  0.0",
+                "CD1_1   =             -5.5E-05",
+                "CD1_2   =                  0.0",
+                "CD2_1   =                  0.0",
+                "CD2_2   =              5.5E-05",
+                "RADESYS = 'ICRS'"));
+        // A unit linear term per axis plus one quadratic term, as the SIP conventions require.
+        PolyMap poly = new PolyMap(
+                2, 2, 4, new double[] {1.0, 1, 1, 0, 1.0e-9, 1, 2, 0, 1.0, 2, 0, 1, 1.0e-9, 2, 0, 2}, 4, new double[] {
+                    1.0, 1, 1, 0, -1.0e-9, 1, 2, 0, 1.0, 2, 0, 1, -1.0e-9, 2, 0, 2
+                });
+        // The cubic term sits between the PolyMap and the CD matrix, so it is part of the Mapping
+        // whose linearity the SIP test judges.
+        MathMap cubic = new MathMap(
+                2, 2, new String[] {"u = x + 1.0E-15*x*x*x", "v = y"}, new String[] {"x = u - 1.0E-15*u*u*u", "y = v"});
+        Mapping total = new CmpMap(
+                new CmpMap(new CmpMap(new ShiftMap(new double[] {20000.0, 20000.0}), poly, true), cubic, true),
+                tan.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT),
+                true);
+        Frame grid = new Frame(2);
+        grid.setDomain("GRID");
+        FrameSet fs = new FrameSet(grid);
+        fs.addFrame(FrameSet.AST__BASE, total, (Frame)
+                tan.getFrame(FrameSet.AST__CURRENT).copy());
+        FitsChan fc = new FitsChan();
+        fc.setEncoding("FITS-WCS");
+        fc.setCDMatrix(true);
+        fc.putFits("NAXIS1  =                 4000", false);
+        fc.putFits("NAXIS2  =                 4000", false);
+        assertEquals(1, fc.write(fs), "the plain linear approximation is good enough");
+        assertFalse(
+                FitsHeaders.keywords(fc).contains("A_ORDER"),
+                "a SIP description must not be accepted when the Mapping after the SIP polynomial is not linear");
     }
 
     @Test

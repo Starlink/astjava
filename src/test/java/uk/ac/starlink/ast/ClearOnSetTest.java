@@ -19,10 +19,11 @@ import org.junit.jupiter.api.Test;
  * flag must survive it. The loader re-applies attributes through the same setters, which discard a
  * record only when the value changes, so a dumped {@code IsSimp} card survives a read.
  *
- * <p>The cases of MathMap, SplineMap, PcdMap and GrismMap are listed in {@code
+ * <p>The cases of SplineMap, PcdMap and GrismMap are listed in {@code
  * deferred/rust-tests.txt} (classes not yet ported), and the same classes are left out of {@link
  * #loadPreservesTheRecordForEveryClearOnSetClass}. LutInterp and LutEpsilon, which have no jniast
- * methods, are set through the generic attribute methods.
+ * methods, are set through the generic attribute methods, as are the clearing of a MathMap's Seed
+ * and its test.
  */
 class ClearOnSetTest {
 
@@ -44,6 +45,10 @@ class ClearOnSetTest {
 
     private static LutMap lutMap() {
         return new LutMap(new double[] {0.0, 1.0, 4.0, 9.0}, 0.0, 1.0);
+    }
+
+    private static MathMap mathMap() {
+        return new MathMap(1, 1, new String[] {"y=2*x"}, new String[] {"x=0.5*y"});
     }
 
     private static WcsMap wcsMap() {
@@ -111,6 +116,51 @@ class ClearOnSetTest {
     }
 
     @Test
+    void mathSimpFiDiscardsTheRecord() {
+        assertDiscards(mathMap(), "MathMap.setSimpFI", m -> m.setSimpFI(true));
+    }
+
+    @Test
+    void mathSimpIfDiscardsTheRecord() {
+        assertDiscards(mathMap(), "MathMap.setSimpIF", m -> m.setSimpIF(true));
+    }
+
+    @Test
+    void mathSeedDiscardsTheRecord() {
+        assertDiscards(mathMap(), "MathMap.setSeed", m -> m.setSeed(1234));
+    }
+
+    @Test
+    void clearingMathSeedDiscardsTheRecord() {
+        assertDiscards(mathMap(), "MathMap Seed cleared", m -> m.clear("Seed"));
+    }
+
+    /**
+     * Seed carries a separate set flag, so setting an unset Seed to the value it already holds is
+     * still a change (mathmap.c {@code SetSeed} tests {@code seed_set} before comparing values).
+     */
+    @Test
+    void settingAnUnsetSeedToItsOwnDefaultDiscardsTheRecord() {
+        MathMap m = mathMap();
+        assertFalse(m.test("Seed"), "a new MathMap must not report Seed as set, or the case proves nothing");
+        int defaultSeed = m.getSeed();
+        m.setIsSimple();
+        m.setSeed(defaultSeed);
+        assertTrue(m.test("Seed"), "setting the default Seed did not make it set");
+        assertFalse(m.getIsSimple(), "setting an unset Seed to its own default kept the simplified record");
+    }
+
+    /** Setting a set Seed to the value it already holds is not a change. */
+    @Test
+    void reSettingAnExplicitSeedToTheSameValueKeepsTheRecord() {
+        MathMap m = mathMap();
+        m.setSeed(4242);
+        m.setIsSimple();
+        m.setSeed(4242);
+        assertTrue(m.getIsSimple(), "re-setting Seed to the value it already held discarded the record");
+    }
+
+    @Test
     void zoomDiscardsTheRecord() {
         assertDiscards(new ZoomMap(2, 3.0), "ZoomMap.setZoom", m -> m.setZoom(4.0));
     }
@@ -173,6 +223,12 @@ class ClearOnSetTest {
         ZoomMap zoom = new ZoomMap(2, 3.0);
         zoom.setIsSimple();
         assertLoadPreserves(zoom, "ZoomMap Zoom");
+
+        MathMap math = mathMap();
+        math.setSimpFI(true);
+        math.setSimpIF(true);
+        math.setSeed(77);
+        assertLoadPreserves(math, "MathMap SimpFI");
 
         PolyMap poly = polyMap();
         poly.setIterInverse(true);
