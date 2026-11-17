@@ -2,8 +2,7 @@ package uk.ac.starlink.ast;
 
 /**
  * A 1-dimensional Mapping whose inverse transformation is not defined and whose forward
- * transformation doubles each value, standing in for the RateMap the Rust tests use (RateMap is
- * outside the first phase): C's ratemap.c creates its Mapping with the inverse undefined.
+ * transformation doubles each value, for tests that need a Mapping defined in one direction only.
  */
 final class NoInverseMap extends Mapping {
 

@@ -202,7 +202,7 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: refuses it at construction.
 - Java: as C.
 
-### A CmpMap or TranMap dump with a missing or non-Mapping component
+### A CmpMap, TranMap or RateMap dump with a missing or non-Mapping component
 
 - C: leaves a NULL component.
 - Rust: raises AST__LDERR.
@@ -449,6 +449,20 @@ The entries are grouped by area, in the order the Java classes were ported.
 
 - C: the base `MapSplit` (`mapping.c`) simplifies a PermMap and the TranMap in series; the TranMap's equal components make it a ZoomMap, which `astSimplify` records as simplified, so its dump has `IsSimp = 1` (oracle `map_split.json`, case `tranmap_full_permuted`).
 - Rust: dumps the ZoomMap without that item, and its oracle test compares the case without `IsSimp` items.
+- Java: as C.
+
+### The orientation in which RateMaps compare their Mappings
+
+- C: `Equal` (`ratemap.c`) sets each encapsulated Mapping to the Invert value its RateMap recorded when it was made and compares them with `astEqual`; `MapMerge` does the same before cancelling a RateMap with a neighbouring RateMap applied the other way.
+  A RateMap whose Mapping was inverted after the RateMap was made therefore equals, and cancels with, one made from a Mapping that was not (probe `src/test/resources/probes/ratemap_probe.c`, cases `equal` (`mapping_inverted_after`) and `cancel_mapping_inverted_after`).
+- Rust: compares the encapsulated Mappings in their current orientations.
+- Java: as C.
+
+### Cancelling a RateMap with its inverse
+
+- **C quirk**: `MapMerge` (`ratemap.c`) replaces a RateMap and a neighbouring RateMap of the same indices and an equal Mapping, applied in series the other way, with two UnitMaps, so that a series CmpMap of the two, which defines neither direction (a RateMap's inverse transformation is not its rate's inverse), simplifies to a UnitMap that defines both.
+  For a Mapping of two inputs the RateMap followed by its inverse becomes a UnitMap of two axes, and the inverse followed by the RateMap a UnitMap of one (probe cases `cancel_two_inputs_upper` and `cancel_two_inputs_lower`).
+- Rust: as C.
 - Java: as C.
 
 ### Comparing two ZoomMaps

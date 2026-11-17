@@ -13,9 +13,7 @@ import org.junit.jupiter.api.Test;
  * the tolerance of 1e-12 is the Rust tests' own. A fit is {@code Nout} constant terms followed by
  * the gradients, row by row.
  *
- * <p>{@code returns_correct_type} tests a Rust type. In
- * {@code transform_error_is_reported}, a Mapping with no inverse, inverted, stands in for the
- * inverted RateMap, which is outside the first phase.
+ * <p>{@code returns_correct_type} tests a Rust type.
  */
 class LinearApproxTest {
 
@@ -84,7 +82,7 @@ class LinearApproxTest {
 
     @Test
     void transformErrorIsReported() {
-        NoInverseMap rm = new NoInverseMap();
+        RateMap rm = new RateMap(new ZoomMap(1, 2.0), 1, 1);
         rm.invert();
         AstException e =
                 assertThrows(AstException.class, () -> rm.linearApprox(new double[] {0.0}, new double[] {1.0}, 1e-3));

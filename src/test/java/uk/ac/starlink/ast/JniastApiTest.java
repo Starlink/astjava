@@ -55,6 +55,7 @@ class JniastApiTest {
             "MatrixMap",
             "PermMap",
             "PolyMap",
+            "RateMap",
             "ResampleFlags",
             "ShiftMap",
             "SkyAxis",

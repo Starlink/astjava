@@ -127,6 +127,13 @@ class NativeRoundTripTest {
     }
 
     @Test
+    void roundTripRatemap() {
+        double[] cofs = {1.0, 1.0, 1.0, 0.0, 0.1, 1.0, 0.0, 1.0, 0.1, 2.0, 1.0, 0.0, 1.0, 2.0, 0.0, 1.0};
+        PolyMap inner = new PolyMap(2, 2, 4, cofs, 0, null);
+        assertDoubleRoundTrip(new RateMap(inner, 1, 1), "RateMap");
+    }
+
+    @Test
     void roundTripPermmap() {
         PermMap m = new PermMap(3, new int[] {2, -1, 1}, 2, new int[] {3, 1}, new double[] {7.5});
         m.setInvert(true);

@@ -18,7 +18,7 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * package-private {@code mapSplit(int[])}, C's protected {@code astMapSplit} with zero-based
  * indices, and Rust's public {@code map_split} is jniast's {@code mapSplit(int[], int[])}.
  *
- * <p>The {@code normmap_*} and {@code ratemap_*} tests need classes not yet ported.
+ * <p>The {@code normmap_*} tests need a class not yet ported.
  */
 class MapSplitTest {
 
@@ -728,5 +728,40 @@ class MapSplitTest {
         assertArrayEquals(new int[] {1}, s.outputs);
         assertEquals(1, s.map.getNin());
         assertEquals(25.0, fwdPoint(s.map, 5.0)[0], 1e-12);
+    }
+
+    // ------------------------------------------------------------------
+    // RateMap (ratemap.c MapSplit)
+    // ------------------------------------------------------------------
+
+    /**
+     * A RateMap of output 2 with respect to input 1: the split of its ShiftMap for input 1 lacks
+     * output 2, so there is no split.
+     */
+    @Test
+    void ratemapSplitDiffOutputDroppedReturnsNone() {
+        RateMap rm = new RateMap(new ShiftMap(new double[] {10.0, 20.0, 30.0}), 2, 1);
+        assertEquals(3, rm.getNin());
+        assertEquals(1, rm.getNout());
+        assertNull(split(rm, 0));
+    }
+
+    /**
+     * A RateMap of output 1 with respect to input 1 splits for input 1, the varied input, into a
+     * RateMap of the split ShiftMap, and not for input 2 alone. (The Rust test's name refers to
+     * the inverted RateMap, which C splits only as the base class does; the probe case {@code
+     * split_inverted} of {@code RateMapTest} shows it.)
+     */
+    @Test
+    void ratemapSplitRejectsWhenInverted() {
+        RateMap rm = new RateMap(new ShiftMap(new double[] {10.0, 20.0, 30.0}), 1, 1);
+        assertEquals(3, rm.getNin());
+        assertEquals(1, rm.getNout());
+        MapSplit s = split(rm, 0);
+        assertNotNull(s);
+        assertArrayEquals(new int[] {0}, s.outputs);
+        assertEquals(1, s.map.getNin());
+        assertEquals(1, s.map.getNout());
+        assertNull(split(rm, 1));
     }
 }

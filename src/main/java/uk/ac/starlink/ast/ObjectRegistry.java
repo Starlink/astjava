@@ -56,6 +56,8 @@ final class ObjectRegistry {
                 return PermMap::new;
             case "PolyMap":
                 return PolyMap::new;
+            case "RateMap":
+                return RateMap::new;
             case "ShiftMap":
                 return ShiftMap::new;
             case "SkyAxis":
