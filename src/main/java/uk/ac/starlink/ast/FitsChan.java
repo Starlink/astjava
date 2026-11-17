@@ -1890,6 +1890,14 @@ public class FitsChan extends Channel {
         return ignoreBadAlt == null ? 0 : ignoreBadAlt;
     }
 
+    /**
+     * The FitsTables a {@code -TAB} read looks for its tables in, keyed by extension name, C's
+     * {@code tables}, or null if none was stored.
+     */
+    KeyMap getTables() {
+        return tables;
+    }
+
     /** The TabOK attribute (default 0). */
     int getTabOK() {
         return tabOk == null ? 0 : tabOk;

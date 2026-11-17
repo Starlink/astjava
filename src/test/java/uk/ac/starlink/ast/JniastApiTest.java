@@ -49,6 +49,7 @@ class JniastApiTest {
             "Frame",
             "FrameSet",
             "KeyMap",
+            "LutMap",
             "Mapping",
             "MatrixMap",
             "PermMap",

@@ -18,15 +18,13 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * attribute is written whenever it is set, its default included; a cleared one is written
  * commented, as its default, only when the class marks it "helpful" (such as Zoom and PlrLg).
  *
- * <p>{@link #build} makes each object as the probe does. The cases of LutMap, PcdMap, GrismMap,
- * SplineMap and MathMap are skipped (out of scope).
+ * <p>{@link #build} makes each object as the probe does. The cases of PcdMap, GrismMap, SplineMap
+ * and MathMap are skipped (classes not yet ported).
  */
 class AttrTestClearOracleTest {
 
     /** The cases whose classes are out of scope. */
     private static final List<String> OUT_OF_SCOPE = Arrays.asList(
-            "lutmap_default",
-            "lutmap_cleared",
             "pcdmap_cleared",
             "grismmap_cleared",
             "splinemap_default",
@@ -42,6 +40,13 @@ class AttrTestClearOracleTest {
         double[] pcf = {1.0, 1, 1, 0, 1.0, 2, 0, 1};
         PolyMap m = new PolyMap(2, 2, 2, pcf, 0, null);
         m.set("NiterInverse=4,TolInverse=1.0E-6");
+        return m;
+    }
+
+    private static LutMap lut() {
+        LutMap m = new LutMap(new double[] {0.0, 1.0, 4.0, 9.0, 16.0}, 0.0, 1.0);
+        m.setI("LutInterp", 0);
+        m.setD("LutEpsilon", 1e-10);
         return m;
     }
 
@@ -72,6 +77,16 @@ class AttrTestClearOracleTest {
                 ZoomMap m = new ZoomMap(2, 3.0);
                 m.clear("Zoom");
                 assertEquals(1.0, m.getZoom());
+                return m;
+            }
+            case "lutmap_default":
+                return lut();
+            case "lutmap_cleared": {
+                LutMap m = lut();
+                m.clear("LutInterp,LutEpsilon");
+                // C's defaults (lutmap.c astMAKE_GET of LutInterp and LutEpsilon).
+                assertEquals(0, m.getI("LutInterp"));
+                assertEquals(Math.ulp(1.0), m.getD("LutEpsilon"));
                 return m;
             }
             case "polymap_default":
@@ -156,7 +171,7 @@ class AttrTestClearOracleTest {
                 failures.add(name + ": dump\n" + written + "C:\n" + c.get(2).asText());
             }
         }
-        assertEquals(12, run, "the in-scope cases the C probe recorded");
+        assertEquals(14, run, "the in-scope cases the C probe recorded");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

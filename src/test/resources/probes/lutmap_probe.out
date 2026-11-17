@@ -1,0 +1,917 @@
+== win_lut
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 1 	# Shift for axis 1
+          Scl1 = 2 	# Scale factor for axis 1
+       End WinMap
+    MapB = 	# Second component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+ End CmpMap
+== lut_win
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+    MapB = 	# Second component Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = 1 	# Shift for axis 1
+          Scl1 = 2 	# Scale factor for axis 1
+       End WinMap
+ End CmpMap
+== zoom_lut
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Second component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+ End CmpMap
+== lut_zoom
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+    MapB = 	# Second component Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+ End CmpMap
+== zoom_linlut
+class WinMap
+ Begin WinMap 	# Map one window on to another
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Sft1 = 1 	# Shift for axis 1
+    Scl1 = 4 	# Scale factor for axis 1
+ End WinMap
+== linlut_win
+class WinMap
+ Begin WinMap 	# Map one window on to another
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Sft1 = 3 	# Shift for axis 1
+    Scl1 = 4 	# Scale factor for axis 1
+ End WinMap
+== linlut_alone
+class WinMap
+ Begin WinMap 	# Map one window on to another
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Sft1 = 1 	# Shift for axis 1
+    Scl1 = 2 	# Scale factor for axis 1
+ End WinMap
+== linlut_inverted
+class WinMap
+ Begin WinMap 	# Map one window on to another
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Sft1 = -0.5 	# Shift for axis 1
+    Scl1 = 0.5 	# Scale factor for axis 1
+ End WinMap
+== lut_lutinv
+class UnitMap
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== lutinv_lut
+class UnitMap
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== inverted_cmp_lut_lutinv
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+    MapB = 	# Second component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+ End CmpMap
+== inverted_cmp_lut_lut
+class UnitMap
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== inverted_inner_then_lut
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+    MapB = 	# Second component Mapping
+       Begin CmpMap 	# Compound Mapping
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          MapA = 	# First component Mapping
+             Begin ZoomMap 	# Zoom about the origin
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Zoom = 0.5 	# Zoom factor
+             End ZoomMap
+          MapB = 	# Second component Mapping
+             Begin LutMap 	# Map 1-d coordinates using a lookup table
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Nlut = 5 	# Number of lookup table elements
+#               Start = 0 	# Input value at first element
+#               Incr = 1 	# Input value increment between elements
+                LutInt = 0 	# Interpolation method
+                L1 = 0 	# Lookup table elements...
+                L2 = 1
+                L3 = 4
+                L4 = 9
+                L5 = 16
+             End LutMap
+       End CmpMap
+ End CmpMap
+== lut_lut
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+    MapB = 	# Second component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+ End CmpMap
+== lut_lutinv_parallel
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Series = 0 	# Component Mappings applied in parallel
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+    MapB = 	# Second component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+ End CmpMap
+== lut_nearestinv
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+    MapB = 	# Second component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 5 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 1 	# Interpolation method
+          L1 = 0 	# Lookup table elements...
+          L2 = 1
+          L3 = 4
+          L4 = 9
+          L5 = 16
+       End LutMap
+ End CmpMap
+== flat_linear_lutinv
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+    Fwd = 0 	# Forward transformation not defined
+    Inv = 0 	# Inverse transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+          Inv = 0 	# Inverse transformation not defined
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 3 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 1 	# Lookup table elements...
+          L2 = 1.0000000000000002
+          L3 = 1
+       End LutMap
+    MapB = 	# Second component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+          Inv = 0 	# Inverse transformation not defined
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 3 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 1 	# Lookup table elements...
+          L2 = 1.0000000000000002
+          L3 = 1
+       End LutMap
+ End CmpMap
+== constant_lutinv
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+    Fwd = 0 	# Forward transformation not defined
+    Inv = 0 	# Inverse transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+          Inv = 0 	# Inverse transformation not defined
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 3 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 5 	# Lookup table elements...
+          L2 = 5
+          L3 = 5
+       End LutMap
+    MapB = 	# Second component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+          Inv = 0 	# Inverse transformation not defined
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 3 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 0 	# Interpolation method
+          L1 = 5 	# Lookup table elements...
+          L2 = 5
+          L3 = 5
+       End LutMap
+ End CmpMap
+== near_linear_default_eps
+class LutMap
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 5 	# Number of lookup table elements
+#   Start = 0 	# Input value at first element
+#   Incr = 1 	# Input value increment between elements
+    LutInt = 0 	# Interpolation method
+    L1 = 1 	# Lookup table elements...
+    L2 = 3.0000000010000001
+    L3 = 5
+    L4 = 7
+    L5 = 9
+ End LutMap
+== near_linear_eps
+class WinMap
+ Begin WinMap 	# Map one window on to another
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Sft1 = 1 	# Shift for axis 1
+    Scl1 = 2 	# Scale factor for axis 1
+ End WinMap
+== attrs_default
+LutInterp 0 test 1
+LutEpsilon 2.2204460492503131e-16 test 0
+== dump_default
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+    Start = 5 	# Input value at first element
+    Incr = 2 	# Input value increment between elements
+    LutInt = 0 	# Interpolation method
+    L1 = 0 	# Lookup table elements...
+    L2 = 10
+    L3 = 20
+    L4 = 30
+ End LutMap
+-- fits
+
+COMMENT AST ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ AST
+COMMENT AST             Beginning of AST data for LutMap object              AST
+COMMENT AST ................................................................ AST
+BEGAST_A= 'LutMap  '           / Map 1-d coordinates using a lookup table
+NIN_A   =                    1 / Number of input coordinates
+ISA_A   = 'Mapping '           / Mapping between coordinate systems
+NLUT_A  =                    4 / Number of lookup table elements
+START_A =                  5.0 / Input value at first element
+INCR_A  =                  2.0 / Input value increment between elements
+LUTINT_A=                    0 / Interpolation method
+L1_A    =                  0.0 / Lookup table elements...
+L2_A    =                 10.0
+L3_A    =                 20.0
+L4_A    =                 30.0
+ENDAST_A= 'LutMap  '           / End of object definition
+COMMENT AST ................................................................ AST
+COMMENT AST                End of AST data for LutMap object                 AST
+COMMENT AST ---------------------------------------------------------------- AST
+-- read back from fits
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+    Start = 5 	# Input value at first element
+    Incr = 2 	# Input value increment between elements
+    LutInt = 0 	# Interpolation method
+    L1 = 0 	# Lookup table elements...
+    L2 = 10
+    L3 = 20
+    L4 = 30
+ End LutMap
+== attrs_interp1
+LutInterp 1 test 1
+LutEpsilon 2.2204460492503131e-16 test 0
+== dump_interp1
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+    Start = 5 	# Input value at first element
+    Incr = 2 	# Input value increment between elements
+    LutInt = 1 	# Interpolation method
+    L1 = 0 	# Lookup table elements...
+    L2 = 10
+    L3 = 20
+    L4 = 30
+ End LutMap
+-- fits
+
+COMMENT AST ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ AST
+COMMENT AST             Beginning of AST data for LutMap object              AST
+COMMENT AST ................................................................ AST
+BEGAST_A= 'LutMap  '           / Map 1-d coordinates using a lookup table
+NIN_A   =                    1 / Number of input coordinates
+ISA_A   = 'Mapping '           / Mapping between coordinate systems
+NLUT_A  =                    4 / Number of lookup table elements
+START_A =                  5.0 / Input value at first element
+INCR_A  =                  2.0 / Input value increment between elements
+LUTINT_A=                    1 / Interpolation method
+L1_A    =                  0.0 / Lookup table elements...
+L2_A    =                 10.0
+L3_A    =                 20.0
+L4_A    =                 30.0
+ENDAST_A= 'LutMap  '           / End of object definition
+COMMENT AST ................................................................ AST
+COMMENT AST                End of AST data for LutMap object                 AST
+COMMENT AST ---------------------------------------------------------------- AST
+-- read back from fits
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+    Start = 5 	# Input value at first element
+    Incr = 2 	# Input value increment between elements
+    LutInt = 1 	# Interpolation method
+    L1 = 0 	# Lookup table elements...
+    L2 = 10
+    L3 = 20
+    L4 = 30
+ End LutMap
+== attrs_both
+LutInterp 1 test 1
+LutEpsilon 9.9999999999999995e-08 test 1
+== dump_both
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+    Start = 5 	# Input value at first element
+    Incr = 2 	# Input value increment between elements
+    LutInt = 1 	# Interpolation method
+    LutEps = 9.9999999999999995e-08 	# Table relative error
+    L1 = 0 	# Lookup table elements...
+    L2 = 10
+    L3 = 20
+    L4 = 30
+ End LutMap
+-- fits
+
+COMMENT AST ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ AST
+COMMENT AST             Beginning of AST data for LutMap object              AST
+COMMENT AST ................................................................ AST
+BEGAST_A= 'LutMap  '           / Map 1-d coordinates using a lookup table
+NIN_A   =                    1 / Number of input coordinates
+ISA_A   = 'Mapping '           / Mapping between coordinate systems
+NLUT_A  =                    4 / Number of lookup table elements
+START_A =                  5.0 / Input value at first element
+INCR_A  =                  2.0 / Input value increment between elements
+LUTINT_A=                    1 / Interpolation method
+LUTEPS_A=              10.0E-8 / Table relative error
+L1_A    =                  0.0 / Lookup table elements...
+L2_A    =                 10.0
+L3_A    =                 20.0
+L4_A    =                 30.0
+ENDAST_A= 'LutMap  '           / End of object definition
+COMMENT AST ................................................................ AST
+COMMENT AST                End of AST data for LutMap object                 AST
+COMMENT AST ---------------------------------------------------------------- AST
+-- read back from fits
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+    Start = 5 	# Input value at first element
+    Incr = 2 	# Input value increment between elements
+    LutInt = 1 	# Interpolation method
+    LutEps = 9.9999999999999995e-08 	# Table relative error
+    L1 = 0 	# Lookup table elements...
+    L2 = 10
+    L3 = 20
+    L4 = 30
+ End LutMap
+== attrs_cleared
+LutInterp 0 test 0
+LutEpsilon 2.2204460492503131e-16 test 0
+== dump_cleared
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+    Start = 5 	# Input value at first element
+    Incr = 2 	# Input value increment between elements
+#   LutInt = 0 	# Interpolation method
+    L1 = 0 	# Lookup table elements...
+    L2 = 10
+    L3 = 20
+    L4 = 30
+ End LutMap
+-- fits
+
+COMMENT AST ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ AST
+COMMENT AST             Beginning of AST data for LutMap object              AST
+COMMENT AST ................................................................ AST
+BEGAST_A= 'LutMap  '           / Map 1-d coordinates using a lookup table
+NIN_A   =                    1 / Number of input coordinates
+ISA_A   = 'Mapping '           / Mapping between coordinate systems
+NLUT_A  =                    4 / Number of lookup table elements
+START_A =                  5.0 / Input value at first element
+INCR_A  =                  2.0 / Input value increment between elements
+L1_A    =                  0.0 / Lookup table elements...
+L2_A    =                 10.0
+L3_A    =                 20.0
+L4_A    =                 30.0
+ENDAST_A= 'LutMap  '           / End of object definition
+COMMENT AST ................................................................ AST
+COMMENT AST                End of AST data for LutMap object                 AST
+COMMENT AST ---------------------------------------------------------------- AST
+-- read back from fits
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+    Start = 5 	# Input value at first element
+    Incr = 2 	# Input value increment between elements
+    LutInt = 0 	# Interpolation method
+    L1 = 0 	# Lookup table elements...
+    L2 = 10
+    L3 = 20
+    L4 = 30
+ End LutMap
+== attrs_interp5
+LutInterp 1 test 1
+LutEpsilon 2.2204460492503131e-16 test 0
+== attrs_interp0_eps
+LutInterp 0 test 1
+LutEpsilon 0.25 test 1
+== dump_interp0_eps
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+    Start = 5 	# Input value at first element
+    Incr = 2 	# Input value increment between elements
+    LutInt = 0 	# Interpolation method
+    LutEps = 0.25 	# Table relative error
+    L1 = 0 	# Lookup table elements...
+    L2 = 10
+    L3 = 20
+    L4 = 30
+ End LutMap
+-- fits
+
+COMMENT AST ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ AST
+COMMENT AST             Beginning of AST data for LutMap object              AST
+COMMENT AST ................................................................ AST
+BEGAST_A= 'LutMap  '           / Map 1-d coordinates using a lookup table
+NIN_A   =                    1 / Number of input coordinates
+ISA_A   = 'Mapping '           / Mapping between coordinate systems
+NLUT_A  =                    4 / Number of lookup table elements
+START_A =                  5.0 / Input value at first element
+INCR_A  =                  2.0 / Input value increment between elements
+LUTINT_A=                    0 / Interpolation method
+LUTEPS_A=                 0.25 / Table relative error
+L1_A    =                  0.0 / Lookup table elements...
+L2_A    =                 10.0
+L3_A    =                 20.0
+L4_A    =                 30.0
+ENDAST_A= 'LutMap  '           / End of object definition
+COMMENT AST ................................................................ AST
+COMMENT AST                End of AST data for LutMap object                 AST
+COMMENT AST ---------------------------------------------------------------- AST
+-- read back from fits
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+    Start = 5 	# Input value at first element
+    Incr = 2 	# Input value increment between elements
+    LutInt = 0 	# Interpolation method
+    LutEps = 0.25 	# Table relative error
+    L1 = 0 	# Lookup table elements...
+    L2 = 10
+    L3 = 20
+    L4 = 30
+ End LutMap
+== dump_bad_first
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+#   Start = 0 	# Input value at first element
+#   Incr = 1 	# Input value increment between elements
+    LutInt = 0 	# Interpolation method
+    L2 = 1
+    L3 = 2
+    L4 = 4
+ End LutMap
+-- fits
+
+COMMENT AST ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ AST
+COMMENT AST             Beginning of AST data for LutMap object              AST
+COMMENT AST ................................................................ AST
+BEGAST_A= 'LutMap  '           / Map 1-d coordinates using a lookup table
+NIN_A   =                    1 / Number of input coordinates
+ISA_A   = 'Mapping '           / Mapping between coordinate systems
+NLUT_A  =                    4 / Number of lookup table elements
+LUTINT_A=                    0 / Interpolation method
+L2_A    =                  1.0
+L3_A    =                  2.0
+L4_A    =                  4.0
+ENDAST_A= 'LutMap  '           / End of object definition
+COMMENT AST ................................................................ AST
+COMMENT AST                End of AST data for LutMap object                 AST
+COMMENT AST ---------------------------------------------------------------- AST
+-- read back from fits
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+#   Start = 0 	# Input value at first element
+#   Incr = 1 	# Input value increment between elements
+    LutInt = 0 	# Interpolation method
+    L2 = 1
+    L3 = 2
+    L4 = 4
+ End LutMap
+== dump_nonmonotonic_inverted
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+    Invert = 1 	# Mapping inverted
+    Inv = 0 	# Inverse transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+#   Start = 0 	# Input value at first element
+#   Incr = 1 	# Input value increment between elements
+    LutInt = 0 	# Interpolation method
+    L1 = 0 	# Lookup table elements...
+    L2 = 1
+    L3 = 0.5
+    L4 = 4
+ End LutMap
+-- fits
+
+COMMENT AST ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ AST
+COMMENT AST             Beginning of AST data for LutMap object              AST
+COMMENT AST ................................................................ AST
+BEGAST_A= 'LutMap  '           / Map 1-d coordinates using a lookup table
+NIN_A   =                    1 / Number of input coordinates
+INVERT_A=                    1 / Mapping inverted
+INV_A   =                    0 / Inverse transformation not defined
+ISA_A   = 'Mapping '           / Mapping between coordinate systems
+NLUT_A  =                    4 / Number of lookup table elements
+LUTINT_A=                    0 / Interpolation method
+L1_A    =                  0.0 / Lookup table elements...
+L2_A    =                  1.0
+L3_A    =                  0.5
+L4_A    =                  4.0
+ENDAST_A= 'LutMap  '           / End of object definition
+COMMENT AST ................................................................ AST
+COMMENT AST                End of AST data for LutMap object                 AST
+COMMENT AST ---------------------------------------------------------------- AST
+-- read back from fits
+ Begin LutMap 	# Map 1-d coordinates using a lookup table
+    Nin = 1 	# Number of input coordinates
+    Invert = 1 	# Mapping inverted
+    Inv = 0 	# Inverse transformation not defined
+ IsA Mapping 	# Mapping between coordinate systems
+    Nlut = 4 	# Number of lookup table elements
+#   Start = 0 	# Input value at first element
+#   Incr = 1 	# Input value increment between elements
+    LutInt = 0 	# Interpolation method
+    L1 = 0 	# Lookup table elements...
+    L2 = 1
+    L3 = 0.5
+    L4 = 4
+ End LutMap
+== dump_in_cmpmap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Second component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 4 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 1 	# Interpolation method
+          LutEps = 9.9999999999999995e-08 	# Table relative error
+          L1 = 0 	# Lookup table elements...
+          L2 = 10
+          L3 = 20
+          L4 = 30
+       End LutMap
+ End CmpMap
+-- fits
+
+COMMENT AST ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ AST
+COMMENT AST             Beginning of AST data for CmpMap object              AST
+COMMENT AST ................................................................ AST
+BEGAST_A= 'CmpMap  '           / Compound Mapping
+NIN_A   =                    1 / Number of input coordinates
+ISA_A   = 'Mapping '           / Mapping between coordinate systems
+MAPA_A  = '        '           / First component Mapping
+BEGAST_B= 'ZoomMap '           / Zoom about the origin
+NIN_B   =                    1 / Number of input coordinates
+ISA_B   = 'Mapping '           / Mapping between coordinate systems
+ZOOM_A  =                  2.0 / Zoom factor
+ENDAST_A= 'ZoomMap '           / End of object definition
+MAPB_A  = '        '           / Second component Mapping
+BEGAST_C= 'LutMap  '           / Map 1-d coordinates using a lookup table
+NIN_C   =                    1 / Number of input coordinates
+ISA_C   = 'Mapping '           / Mapping between coordinate systems
+NLUT_A  =                    4 / Number of lookup table elements
+LUTINT_A=                    1 / Interpolation method
+LUTEPS_A=              10.0E-8 / Table relative error
+L1_A    =                  0.0 / Lookup table elements...
+L2_A    =                 10.0
+L3_A    =                 20.0
+L4_A    =                 30.0
+ENDAST_B= 'LutMap  '           / End of object definition
+ENDAST_C= 'CmpMap  '           / End of object definition
+COMMENT AST ................................................................ AST
+COMMENT AST                End of AST data for CmpMap object                 AST
+COMMENT AST ---------------------------------------------------------------- AST
+-- read back from fits
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Second component Mapping
+       Begin LutMap 	# Map 1-d coordinates using a lookup table
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nlut = 4 	# Number of lookup table elements
+#         Start = 0 	# Input value at first element
+#         Incr = 1 	# Input value increment between elements
+          LutInt = 1 	# Interpolation method
+          LutEps = 9.9999999999999995e-08 	# Table relative error
+          L1 = 0 	# Lookup table elements...
+          L2 = 10
+          L3 = 20
+          L4 = 30
+       End LutMap
+ End CmpMap
+== cache
+fwd 1.3999999999999999 -> 3.9999999999999991
+fwd 1.3999999999999999 -> 3.9999999999999991
+fwd 1.6000000000000001 -> 10
+fwd 1.3999999999999999 -> 0
+inv 4 -> 1
+inv 4 -> 1
+inv 5 -> 1.5
+inv 4 -> 1.3999999999999999
+== cache_copy
+fwd 1.3999999999999999 -> 3.9999999999999991
+fwd 1.3999999999999999 -> 3.9999999999999991
+inv 1.3999999999999999 -> 3.9999999999999991
+inv 1.6000000000000001 -> 10
+== tab_spectral
+!  AST: Error in routine tabread at line 75 in file lutmap_probe.c.
+!  astRead(FitsChan): Failed to read FITS binary table from extension 'WCS-TAB' (extver=1, extlevel=1).
+read status 233934338
+== tab_no_extname
+!  AST: Error in routine tabread at line 75 in file lutmap_probe.c.
+!  astRead(FitsChan): No value can be found for PS1_0 .
+read status 233933554
+== tab_other_extver
+!  AST: Error in routine tabread at line 75 in file lutmap_probe.c.
+!  astRead(FitsChan): Failed to read FITS binary table from extension 'TABLE2' (extver=3, extlevel=2).
+read status 233934338
+== tab_other_tabok0
+nframe 2
+== tab_alternate
+!  AST: Error in routine tabread at line 75 in file lutmap_probe.c.
+!  astRead(FitsChan): Failed to read FITS binary table from extension 'WCS-TAB' (extver=1, extlevel=1).
+read status 233934338
+== end status 0

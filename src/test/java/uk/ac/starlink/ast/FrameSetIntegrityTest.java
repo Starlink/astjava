@@ -25,7 +25,9 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  *
  * <p>The probe's SpecFluxFrame cases need a class this version does not have yet and are skipped.
  * Every value is compared within libm rounding, which is no wider than the Rust test's comparison.
- * {@code unit_change_leaves_mappings_alone} reads a FrameSet holding a LutMap and is deferred.
+ * {@code unit_change_leaves_mappings_alone} runs Rust's integrity routine with no change; here the
+ * change sets an attribute of the current Frame to the value it already has, which marks the
+ * integrity as lost, as any setting through the FrameSet does.
  */
 class FrameSetIntegrityTest {
 
@@ -324,5 +326,18 @@ class FrameSetIntegrityTest {
         assertTrue(first.contains("\"x0\""), "the dump records the label");
         assertEquals(nodeCount(first), nodeCount(last), "nodes after the first and last settings");
         assertEquals(first.replace("\"x0\"", "\"x199\""), last);
+    }
+    /**
+     * A change to the current Frame that leaves the conversion from its old state a UnitMap does
+     * not remap the Frame, as C's {@code RestoreIntegrity} does not, so the FrameSet's Mappings,
+     * one of which holds a LutMap and simplifies further than it stands in {@code
+     * programs/testfitschan/sparse.ast}, are left as they are rather than re-simplified.
+     */
+    @Test
+    void unitChangeLeavesMappingsAlone() {
+        FrameSet fs = (FrameSet) ChannelText.read(Fixtures.read("programs/testfitschan/sparse.ast"));
+        String before = ChannelText.dump(fs);
+        fs.setC("System(1)", "FK5");
+        assertEquals(before, ChannelText.dump(fs));
     }
 }

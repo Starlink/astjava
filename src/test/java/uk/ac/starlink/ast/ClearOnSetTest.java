@@ -19,9 +19,10 @@ import org.junit.jupiter.api.Test;
  * flag must survive it. The loader re-applies attributes through the same setters, which discard a
  * record only when the value changes, so a dumped {@code IsSimp} card survives a read.
  *
- * <p>The cases of LutMap, MathMap, SplineMap, PcdMap and GrismMap are listed in {@code
- * deferred/rust-tests.txt} (out of scope), and the same classes are left out of {@link
- * #loadPreservesTheRecordForEveryClearOnSetClass}.
+ * <p>The cases of MathMap, SplineMap, PcdMap and GrismMap are listed in {@code
+ * deferred/rust-tests.txt} (classes not yet ported), and the same classes are left out of {@link
+ * #loadPreservesTheRecordForEveryClearOnSetClass}. LutInterp and LutEpsilon, which have no jniast
+ * methods, are set through the generic attribute methods.
  */
 class ClearOnSetTest {
 
@@ -39,6 +40,10 @@ class ClearOnSetTest {
 
     private static PermMap permMap() {
         return new PermMap(2, new int[] {1, 2}, 2, new int[] {1, 2}, null);
+    }
+
+    private static LutMap lutMap() {
+        return new LutMap(new double[] {0.0, 1.0, 4.0, 9.0}, 0.0, 1.0);
     }
 
     private static WcsMap wcsMap() {
@@ -93,6 +98,16 @@ class ClearOnSetTest {
     @Test
     void clearingPermSplitDiscardsTheRecord() {
         assertDiscards(permMap(), "PermMap.clearPermSplit", PermMap::clearPermSplit);
+    }
+
+    @Test
+    void lutInterpDiscardsTheRecord() {
+        assertDiscards(lutMap(), "LutMap LutInterp", m -> m.setI("LutInterp", 1));
+    }
+
+    @Test
+    void lutEpsilonDiscardsTheRecord() {
+        assertDiscards(lutMap(), "LutMap LutEpsilon", m -> m.setD("LutEpsilon", 1e-7));
     }
 
     @Test
@@ -178,5 +193,13 @@ class ClearOnSetTest {
         PermMap perm = permMap();
         perm.setPermSplit(true);
         assertLoadPreserves(perm, "PermMap PermSplit");
+
+        LutMap lut = lutMap();
+        lut.setI("LutInterp", 1);
+        assertLoadPreserves(lut, "LutMap LutInterp");
+
+        LutMap lutEps = lutMap();
+        lutEps.setD("LutEpsilon", 1e-10);
+        assertLoadPreserves(lutEps, "LutMap LutEpsilon");
     }
 }

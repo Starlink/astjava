@@ -103,6 +103,17 @@ class NativeRoundTripTest {
     }
 
     @Test
+    void roundTripLutmap() {
+        double[] lut = new double[20];
+        for (int i = 0; i < lut.length; i++) {
+            lut[i] = i + 0.1 * Math.pow(i, 1.3);
+        }
+        LutMap m = new LutMap(lut, 0.0, 1.0);
+        m.setI("LutInterp", 0);
+        assertDoubleRoundTrip(m, "LutMap");
+    }
+
+    @Test
     void roundTripPermmap() {
         PermMap m = new PermMap(3, new int[] {2, -1, 1}, 2, new int[] {3, 1}, new double[] {7.5});
         m.setInvert(true);

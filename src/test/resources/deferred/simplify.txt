@@ -11,8 +11,6 @@ simplify/box_self_simplify.map | needs Box, PointSet
 simplify/box_self_simplify.simp | needs Box, PointSet
 simplify/box_unc_fillfactor_merge.map | needs Box, PointSet
 simplify/box_unc_fillfactor_merge.simp | needs Box, PointSet
-simplify/brad.map | needs LutMap
-simplify/brad.simp | needs LutMap
 simplify/cap_box_permmap_const.map | needs Box, PointSet
 simplify/cap_box_permmap_const.simp | needs Box, PointSet
 simplify/cap_box_permmap_nonbidi.map | needs Box, PointSet
@@ -34,7 +32,7 @@ simplify/cap_cmpperm_resume_inv.map | needs MathMap
 simplify/cap_cmpperm_resume_inv.simp | needs MathMap
 simplify/cap_interval_01.map | needs Box, Interval, NullRegion, PointSet, Prism
 simplify/cap_interval_01.simp | needs Box, Interval, PointSet
-simplify/cap_lutmap_01.map | needs LutMap, MathMap
+simplify/cap_lutmap_01.map | needs MathMap
 simplify/cap_lutmap_01.simp | needs MathMap
 simplify/cap_mathmap_01.map | needs MathMap
 simplify/cap_normmap_cmpframe.map | needs NormMap
@@ -57,7 +55,6 @@ simplify/cap_slamap_02.map | needs Box, PointSet
 simplify/cap_slamap_02.simp | needs Box, PointSet, Polygon, Prism
 simplify/cap_slamap_07.map | needs Box, Circle, CmpRegion, PointSet
 simplify/cap_slamap_07.simp | needs NullRegion
-simplify/cap_specmap_09.map | needs LutMap
 simplify/cap_specmap_14.map | needs MathMap
 simplify/cap_specmap_14.simp | needs MathMap
 simplify/cap_timemap_02.map | needs Box, Interval, PointSet, StcResourceProfile
@@ -135,9 +132,6 @@ simplify/interval_unc_fillfactor_merge.simp | needs Box, Interval, PointSet
 simplify/intra_invfwd_cancel.map | needs IntraMap
 simplify/intra_invfwd_cancel_tail.map | needs IntraMap
 simplify/intramap_inverse_cancel.map | needs IntraMap
-simplify/lut_exactly_linear.map | needs LutMap
-simplify/lut_inverse_cancel.map | needs LutMap
-simplify/lut_linear_to_win.map | needs LutMap
 simplify/math_inverse_cancel.map | needs MathMap
 simplify/merge_box_fillfactor_product.map | needs Box, PointSet
 simplify/merge_box_fillfactor_product.simp | needs Box, PointSet
@@ -171,12 +165,6 @@ simplify/neg_intra_no_simpif.map | needs IntraMap
 simplify/neg_intra_nonintra_neighbour.map | needs IntraMap
 simplify/neg_intra_parallel.map | needs IntraMap
 simplify/neg_intra_same_direction.map | needs IntraMap
-simplify/neg_lut_constant.map | needs LutMap
-simplify/neg_lut_different_tables.map | needs LutMap
-simplify/neg_lut_near_linear.map | needs LutMap
-simplify/neg_lut_nonlinear.map | needs LutMap
-simplify/neg_lut_nonlut_neighbour.map | needs LutMap
-simplify/neg_lut_parallel.map | needs LutMap
 simplify/neg_math_inv_text_mismatch.map | needs MathMap
 simplify/neg_math_lone.map | needs MathMap
 simplify/neg_math_no_simpfi.map | needs MathMap

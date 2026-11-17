@@ -303,6 +303,38 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: gives its own message.
 - Java: keeps C's message.
 
+### The last value a LutMap transformed
+
+- **C quirk**: `Transform` (`lutmap.c`) keeps the last input and output of each direction in the LutMap, and gives the kept output for the same input in a later call, even after LutInterp has changed; a copy keeps them too, and only the constructor and the loader reset them (probe `src/test/resources/probes/lutmap_probe.c`, cases `cache` and `cache_copy`).
+- Rust: keeps nothing, so each transformation uses the current LutInterp (`lutmap_interp_change_applies_to_a_repeated_value`).
+- Java: as C.
+
+### Cancelling a LutMap with its inverse
+
+- **C quirk**: `MapMerge` (`lutmap.c`) compares the nominated LutMap, with its own Invert attribute, with the inverse of its neighbour applied as the list says; it does not use the Invert value the list gives the nominated LutMap.
+  In an inverted series CmpMap a LutMap followed by an inverted copy of itself is kept, and a LutMap followed by a copy of itself is replaced by a UnitMap, which changes the transformation (probe cases `inverted_cmp_lut_lutinv` and `inverted_cmp_lut_lut`).
+- Rust: applies the list's Invert value to both LutMaps before comparing them.
+- Java: as C.
+
+### A linear LutMap whose first and last entries are equal
+
+- C: `MapMerge` (`lutmap.c`) tries the cancellation with a neighbouring LutMap only for a table `GetLinear` finds not linear, so a constant table, or one linear within LutEpsilon whose ends are equal, is neither replaced by a WinMap nor cancelled (probe cases `flat_linear_lutinv` and `constant_lutinv`).
+- Rust: `linear_equivalent` gives nothing for such a table, and the cancellation is then tried.
+- Java: as C.
+
+### The number of entries of a loaded LutMap
+
+- C: `astLoadLutMap` takes 2 entries when the dump has no `Nlut` item.
+- Rust: takes 0.
+- Java: as C.
+
+### A CmpMap comparison changes a shared component's Invert attribute
+
+- **C quirk**: `Equal` (`cmpmap.c`), without its expanded lists, saves the Invert attribute of the two components it compares, sets each to the value its list gives, and restores them in the same order; when the two are the same object, the value saved second is the one set first, so the object is left with the second list's value.
+  `Simplify` (`cmpmap.c`) compares CmpMaps this way, so simplifying `simplify/brad.map` leaves its WcsMap, which the simplified CmpMap shares, with Invert set to 0 (traced in the pinned library); `brad.simp` records it so.
+- Rust: compares owned copies.
+- Java: the simplification compares Mappings by identity and native text (`astEqual` is not ported), so the WcsMap keeps its Invert attribute and the `brad` row of `simplify/cases.txt` differs from C in that one line; the transformations agree.
+
 ## Units
 
 Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follows C in each.

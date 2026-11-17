@@ -17,7 +17,8 @@ import org.junit.jupiter.api.Test;
  * cards (the SpecFrame's attributes as {@code astGetC} formats them, the pixel to world transform,
  * and the error status and messages), including the read half of the plan's Review Focus 5: a
  * spectral axis whose Mapping needs a class that is not available ({@code -LOG} through MathMap,
- * {@code -GRI} through GrismMap, {@code -TAB} through LutMap) fails with {@code needs <Class>}.
+ * {@code -GRI} through GrismMap) fails with {@code needs <Class>}. A {@code -TAB} axis with TabOK
+ * set fails as in C, since the FitsChan holds no table.
  */
 class FitsWcsSpectralTest {
 
@@ -478,13 +479,21 @@ class FitsWcsSpectralTest {
         }
     }
 
-    /** With TabOK above zero C reads a {@code -TAB} spectral axis through a LutMap. */
+    /**
+     * With TabOK above zero C reads a {@code -TAB} spectral axis through a LutMap made from the
+     * table the FitsChan holds; it holds none, so the read fails as C's does (probe {@code
+     * probes/lutmap_probe.c}, case {@code tab_spectral}).
+     */
     @Test
-    void tabSpectralAxisNeedsLutMapWithTabOk() {
+    void tabSpectralAxisWithTabOkNeedsItsTable() {
         FitsChan fc = oneAxis("CTYPE1  = 'WAVE-TAB'", "CRVAL1  = 1.4E9", "PS1_0   = 'WCS-TAB'");
         fc.setI("TabOK", 1);
-        UnsupportedOperationException e = assertThrows(UnsupportedOperationException.class, fc::read);
-        assertTrue(e.getMessage().endsWith(" needs LutMap"), e.getMessage());
+        AstException e = assertThrows(AstException.class, fc::read);
+        assertEquals(AstException.AST__NOTAB, e.getStatus());
+        assertEquals(
+                "astRead(FitsChan): Failed to read FITS binary table from extension 'WCS-TAB' (extver=1,"
+                        + " extlevel=1).",
+                e.getMsgText());
     }
 
     /**

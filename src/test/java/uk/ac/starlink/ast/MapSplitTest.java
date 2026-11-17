@@ -11,15 +11,15 @@ import static uk.ac.starlink.ast.MappingTestData.point;
 import static uk.ac.starlink.ast.MappingTestData.transformRows;
 
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.Fixtures;
 
 /**
  * Translation of Rust {@code tests/test_map_split.rs}. Rust's {@code map_split_zero_based} is the
  * package-private {@code mapSplit(int[])}, C's protected {@code astMapSplit} with zero-based
  * indices, and Rust's public {@code map_split} is jniast's {@code mapSplit(int[], int[])}.
  *
- * <p>The {@code normmap_*}, {@code tranmap_*} and {@code ratemap_*} tests need classes
- * outside the first phase, as does {@code testcmpmap_split_of_splittest1}, whose Mapping holds
- * LutMaps.
+ * <p>The {@code normmap_*}, {@code tranmap_*} and {@code ratemap_*} tests need classes not yet
+ * ported.
  */
 class MapSplitTest {
 
@@ -689,5 +689,24 @@ class MapSplitTest {
         assertNotNull(s, "the inverse splits too");
         assertArrayEquals(new int[] {1}, s.outputs);
         assertArrayEquals(new double[] {1.0}, fwdPoint(s.map, 6.0));
+    }
+    /**
+     * testcmpmap.c Errors 7-13 on {@code programs/testcmpmap/splittest1.ast}, a Mapping holding
+     * LutMaps: input 1 alone cannot be split off, and inputs (1, 4, 2) can, the split Mapping
+     * taking (1, 8, 2) to outputs 1, 2 and 4 of the full Mapping at (1, 2, 4, 8).
+     */
+    @Test
+    void testcmpmapSplitOfSplittest1() {
+        Mapping m1 = (Mapping) ChannelText.read(Fixtures.read("programs/testcmpmap/splittest1.ast"));
+        assertNull(m1.mapSplit(new int[] {1}, new int[m1.getNout()]), "Error 7");
+        Mapping m2 = m1.mapSplit(new int[] {1, 4, 2}, new int[m1.getNout()]);
+        assertNotNull(m2, "Error 8");
+        assertEquals(3, m2.getNin(), "Error 9");
+        assertEquals(3, m2.getNout(), "Error 10");
+        double[] y = fwdPoint(m1, 1.0, 2.0, 4.0, 8.0);
+        double[] y2 = fwdPoint(m2, 1.0, 8.0, 2.0);
+        assertEquals(y[0], y2[0], "Error 11");
+        assertEquals(y[1], y2[1], "Error 12");
+        assertEquals(y[3], y2[2], "Error 13");
     }
 }

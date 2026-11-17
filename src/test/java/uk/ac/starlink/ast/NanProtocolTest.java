@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  * <p>{@code nan_protocol_forward_matches_transform}, {@code
  * nan_protocol_inverse_matches_transform} and {@code nan_protocol_propagates_bad_and_nan_inputs}
  * run through the simplified FrameSet read from {@code wcsconv/inputs/lsst.ast}. The tests of
- * classes outside the first phase are deferred.
+ * classes not yet ported are deferred.
  */
 class NanProtocolTest {
 
@@ -181,6 +181,20 @@ class NanProtocolTest {
         }
         rows[7][0] = BAD;
         rows[11][0] = Double.NaN;
+        assertNanProtocolMatchesTransform(map, fromRows(rows), 32, true, 1e-14);
+    }
+
+    @Test
+    void nanProtocolLutmap() {
+        // A 5-entry table covering x in [0, 4].
+        LutMap map = new LutMap(new double[] {10.0, 12.0, 14.0, 16.0, 18.0}, 0.0, 1.0);
+        map.setI("LutInterp", 0);
+        double[][] rows = new double[32][];
+        for (int i = 0; i < 32; i++) {
+            rows[i] = new double[] {i * 0.1};
+        }
+        rows[3][0] = BAD;
+        rows[10][0] = Double.NaN;
         assertNanProtocolMatchesTransform(map, fromRows(rows), 32, true, 1e-14);
     }
 

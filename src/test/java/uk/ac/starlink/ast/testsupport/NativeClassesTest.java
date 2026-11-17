@@ -14,8 +14,8 @@ class NativeClassesTest {
             + "    Frm1 = \t# Frame number 1\n"
             + "       Begin GrismMap \t# Grism Mapping\n"
             + "          Ax1 = \n"
-            + "             Begin LutMap\n"
-            + "             End LutMap\n"
+            + "             Begin SplineMap\n"
+            + "             End SplineMap\n"
             + "       End GrismMap\n"
             + "    Map2 = \n"
             + "       Begin CmpMap\n"
@@ -31,14 +31,14 @@ class NativeClassesTest {
     @Test
     void listsTheBegunClassesInOrder() {
         assertEquals(
-                Arrays.asList("FrameSet", "GrismMap", "LutMap", "CmpMap", "ZoomMap", "GrismMap"),
+                Arrays.asList("FrameSet", "GrismMap", "SplineMap", "CmpMap", "ZoomMap", "GrismMap"),
                 NativeClasses.begun(DUMP));
     }
 
     @Test
     void missingClassesAreSortedWithoutRepeats() {
-        assertEquals(Arrays.asList("GrismMap", "LutMap"), NativeClasses.missing(DUMP));
-        assertEquals("needs GrismMap, LutMap", NativeClasses.needs(DUMP));
+        assertEquals(Arrays.asList("GrismMap", "SplineMap"), NativeClasses.missing(DUMP));
+        assertEquals("needs GrismMap, SplineMap", NativeClasses.needs(DUMP));
     }
 
     @Test
@@ -53,10 +53,10 @@ class NativeClassesTest {
         String header = "BEGAST_A= 'FrameSet'           / Set of inter-related coordinate systems\n"
                 + "BEGAST_B= 'Frame   '           / Coordinate system description\n"
                 + "BEGAST_C= 'MathMap '           / Transformation using mathematical functions\n"
-                + "BEGAST_D= 'LutMap  '\n"
+                + "BEGAST_D= 'SplineMap'\n"
                 + "BEGAST_E= 'MathMap '\n"
                 + "CTYPE1  = 'RA---TAN'\n";
-        assertEquals("needs LutMap, MathMap", NativeClasses.needsInFitsHeader(header));
+        assertEquals("needs MathMap, SplineMap", NativeClasses.needsInFitsHeader(header));
         assertNull(NativeClasses.needsInFitsHeader("BEGAST_A= 'ZoomMap '\nZOOM_A  =                  2.0\n"));
     }
 }

@@ -24,12 +24,12 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * zoommap_blank}, {@code keymap}, {@code channel}, {@code zoommap_copy}, {@code
  * zoommap_simplified}, {@code cmpmap}, {@code cmpmap_copy}, {@code cmpmap_simplified}, {@code
  * frame}, {@code skyframe}, {@code frameset}, {@code frameset_frame_id}, {@code
- * frameset_part_ids}, {@code cmpframe} and {@code fitschan}. {@code simplify} returns the ZoomMap
- * itself, as C's {@code astSimplify} returns a Mapping it cannot simplify, recording it as
+ * frameset_part_ids}, {@code cmpframe}, {@code fitschan} and {@code cmpmap_unsimplifiable}.
+ * {@code simplify} returns the ZoomMap itself, as C's {@code astSimplify} returns a Mapping it cannot simplify, recording it as
  * simplified, and a CmpMap shares its components, as C's does, so the Rust test's exclusions for
  * copies do not arise for them. A case whose dump differs from C's is listed in {@link #EXCLUDED},
- * and {@code excluded_cases_still_differ} fails when it matches. {@code cmpmap_unsimplifiable}
- * needs a LutMap, and the remaining cases other classes outside the first phase.
+ * and {@code excluded_cases_still_differ} fails when it matches. The remaining cases need classes
+ * not yet ported.
  */
 class ObjectIdOracleTest {
 
@@ -44,6 +44,7 @@ class ObjectIdOracleTest {
             "cmpmap",
             "cmpmap_copy",
             "cmpmap_simplified",
+            "cmpmap_unsimplifiable",
             "frame",
             "skyframe",
             "frameset",
@@ -123,6 +124,13 @@ class ObjectIdOracleTest {
                 return cmpmap().copy();
             case "cmpmap_simplified":
                 return cmpmap().simplify();
+            case "cmpmap_unsimplifiable": {
+                LutMap lut = new LutMap(new double[] {0.0, 1.0, 4.0}, 1.0, 1.0);
+                lut.setID("l");
+                CmpMap m = new CmpMap(zoom(2.0, "a"), lut, true);
+                m.setID("c");
+                return m.simplify();
+            }
             case "frame":
                 Frame f = new Frame(2);
                 f.setID("fid");
