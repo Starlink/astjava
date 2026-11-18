@@ -400,7 +400,10 @@ class RebinTest {
         return null;
     }
 
-    /** Checks that the only nonzero good output value is a single {@code kt}; element numbers are offset by {@code label0}. */
+    /**
+     * Checks that the only nonzero good output value is a single {@code kt}; element numbers are
+     * offset by {@code label0}.
+     */
     private static String checkSingleSpike(String test, Data d, double kt, int label0) {
         int nz = 0;
         for (int k = 0; k < d.out.length; k++) {
