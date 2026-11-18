@@ -18,8 +18,9 @@ import java.util.Objects;
  *
  * <p>The IntraMap holds its Transformer by reference; a {@link #copy} shares it. The name of its
  * transformation function (written to a dump as {@code Fname}) is the Transformer's class name
- * followed by {@code #} and its identity hash code in hexadecimal, and two IntraMaps with the same
- * name are taken to apply the same function. Making an IntraMap registers its Transformer under
+ * followed by {@code #} and its identity hash code in hexadecimal, with {@code #1}, {@code #2},
+ * ... added if another Transformer still in use already has that name, and two IntraMaps with the
+ * same name are taken to apply the same function. Making an IntraMap registers its Transformer under
  * that name, as jniast registers it with C's {@code astIntraReg}, together with the numbers of
  * coordinates, the flags (whether the forward and inverse transformations exist, and whether a
  * forward and inverse pair, or an inverse and forward pair, in series simplify away) and the
@@ -73,9 +74,9 @@ public class IntraMap extends Mapping implements NeedsChannelizing {
      * @throws IllegalArgumentException if {@code trans} is not able to transform from {@code nin}
      *     to {@code nout} coordinates
      * @throws NullPointerException if {@code trans} is null
-     * @throws AstException with status {@code AST__MRITF} if another IntraMap in use was made with
-     *     the same function name and different details: another Transformer, other numbers of
-     *     coordinates, or other flags or strings
+     * @throws AstException with status {@code AST__MRITF} if an IntraMap in use was made with
+     *     {@code trans} and other numbers of coordinates, or {@code trans} now gives other flags or
+     *     strings
      */
     public IntraMap(Transformer trans, int nin, int nout) {
         this(register(trans, nin, nout), nin, nout);

@@ -553,6 +553,7 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: `IntraRegistry::register` accepts a second registration of the same `Arc`, whatever else differs; the registry belongs to a Channel.
 - Java: as C, comparing the Transformer object as C compares the function pointer.
   Functions are registered with a Channel for its reads, and the process-wide table holds the Transformer of each IntraMap made in the process, weakly; a read looks in the Channel's first.
+  The process-wide names are made from identity hash codes, which two Transformers may share, so where C would refuse a name held by another function, making an IntraMap takes the next free name instead (`#1`, `#2`, ... added); the same Transformer with other details is still AST__MRITF.
 
 ### The numbers of coordinates `astLoadIntraMap` checks
 

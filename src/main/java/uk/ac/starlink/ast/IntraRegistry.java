@@ -128,6 +128,18 @@ final class IntraRegistry {
             this.contact = contact;
         }
 
+        /** This entry under the name {@code newName}. */
+        Entry renamed(String newName) {
+            return new Entry(newName, nin, nout, trans, flags, purpose, author, contact);
+        }
+
+        /** Whether this entry registers {@code t}. */
+        // The same Transformer, not an equal one.
+        @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
+        boolean sameTransformer(Transformer t) {
+            return trans == t;
+        }
+
         /** Whether this entry and {@code o} register the same function, as C's IntraReg compares them. */
         // C compares the function pointers: the same Transformer, not an equal one.
         @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
@@ -266,34 +278,50 @@ final class IntraRegistry {
     }
 
     /**
-     * Registers {@code trans}, the Transformer of an IntraMap being made, under {@code name} in the
-     * process-wide table, as jniast's {@code construct} registers it with {@code astIntraReg}:
-     * accepted if the name is free, or held by a Transformer no longer in use, or registered
-     * already with the same details (the same Transformer, numbers of coordinates, flags and
-     * strings); otherwise AST__MRITF, as C's {@code IntraReg} reports a name registered with
-     * different details, the Transformer standing for C's function pointer.
+     * Registers {@code trans}, the Transformer of an IntraMap being made, in the process-wide table,
+     * as jniast's {@code construct} registers it with {@code astIntraReg}, under {@code name} or,
+     * if that is held by another Transformer still in use, under the first of {@code name#1},
+     * {@code name#2}, ... that is not. A name is taken if it is free, held by a Transformer no
+     * longer in use, or held by {@code trans}; held by {@code trans} with other details (numbers
+     * of coordinates, flags or strings), it is AST__MRITF, as C's {@code IntraReg} reports a
+     * function registered again with different details.
      *
-     * @return the entry for {@code trans}
-     * @throws AstException with status {@code AST__MRITF} if the name is held with different
-     *     details
+     * <p>The names come from identity hash codes, which two Transformers in use may share; C's
+     * names are chosen by its callers, and its {@code IntraReg} refuses a name held by another
+     * function. A new name is chosen here instead, so that making an IntraMap does not fail
+     * because of a shared hash code.
+     *
+     * @return the entry for {@code trans}, with the name it is registered under
+     * @throws AstException with status {@code AST__MRITF} if {@code trans} is registered under the
+     *     name with different details
      */
     static Entry registerMade(String name, int nin, int nout, Transformer trans) {
         purge();
-        Entry entry = new Entry(name, nin, nout, trans);
-        MADE.compute(name, (key, old) -> {
-            Transformer held = old == null ? null : old.get();
-            if (held == null) {
-                return new Made(entry);
+        Entry first = new Entry(name, nin, nout, trans);
+        for (int k = 0; ; k++) {
+            Entry entry = k == 0 ? first : first.renamed(name + "#" + k);
+            boolean[] other = new boolean[1];
+            MADE.compute(entry.name, (key, old) -> {
+                Transformer held = old == null ? null : old.get();
+                if (held == null) {
+                    return new Made(entry);
+                }
+                if (!old.entry(held).sameTransformer(trans)) {
+                    other[0] = true;
+                    return old;
+                }
+                if (!old.entry(held).sameAs(entry)) {
+                    throw Ast.err(
+                            AstException.AST__MRITF,
+                            "astIntraReg: Invalid attempt to register the transformation function name \"" + entry.name
+                                    + "\" multiple times.");
+                }
+                return old;
+            });
+            if (!other[0]) {
+                return entry;
             }
-            if (!old.entry(held).sameAs(entry)) {
-                throw Ast.err(
-                        AstException.AST__MRITF,
-                        "astIntraReg: Invalid attempt to register the transformation function name \"" + name
-                                + "\" multiple times.");
-            }
-            return old;
-        });
-        return entry;
+        }
     }
 
     /** Removes the entries of the process-wide table whose Transformers have been collected. */

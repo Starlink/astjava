@@ -341,9 +341,9 @@ class IntraMapTest {
         assertEquals(AstException.AST__MRITF, e.getStatus());
 
         String name = IntraMapTest.class.getName() + "#collision";
-        IntraRegistry.registerMade(name, 1, 1, t);
-        IntraRegistry.registerMade(name, 1, 1, t);
-        e = assertThrows(AstException.class, () -> IntraRegistry.registerMade(name, 1, 1, new Doubler()));
+        assertEquals(name, IntraRegistry.registerMade(name, 1, 1, t).name);
+        assertEquals(name, IntraRegistry.registerMade(name, 1, 1, t).name);
+        e = assertThrows(AstException.class, () -> IntraRegistry.registerMade(name, 2, 2, t));
         assertEquals(AstException.AST__MRITF, e.getStatus());
     }
 
@@ -743,6 +743,30 @@ class IntraMapTest {
             }
             m.invert();
         }
+    }
+
+    /**
+     * When the name made from a Transformer's identity hash code is held by another Transformer in
+     * use, as two Transformers' hash codes may coincide, the IntraMap takes the next free name,
+     * with {@code #1}, {@code #2}, ... added, and is written and read back under it.
+     */
+    @Test
+    void aSharedIdentityHashGivesAnotherName() throws IOException {
+        Doubler t = new Doubler();
+        String base = Doubler.class.getName() + "#" + Integer.toHexString(System.identityHashCode(t));
+        Doubler other1 = new Doubler();
+        Doubler other2 = new Doubler();
+        IntraRegistry.registerMade(base, 1, 1, other1);
+        IntraRegistry.registerMade(base + "#1", 1, 1, other2);
+        IntraMap m = new IntraMap(t);
+        assertEquals(base + "#2", m.getFname());
+        IntraMap again = new IntraMap(t);
+        assertEquals(base + "#2", again.getFname());
+        IntraMap back = assertInstanceOf(IntraMap.class, readBack(dump(m)));
+        assertSame(t, back.getTransformer());
+        assertEquals(base + "#2", back.getFname());
+        assertSame(other1, IntraRegistry.lookup(base).trans);
+        assertSame(other2, IntraRegistry.lookup(base + "#1").trans);
     }
 
     /** jniast's {@code copy}: a copy shares the Transformer and the function name. */
