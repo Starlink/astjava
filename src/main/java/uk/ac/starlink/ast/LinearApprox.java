@@ -28,8 +28,23 @@ final class LinearApprox {
      *     error transforming the points
      */
     static double[] linearApprox(Mapping map, double[] lbnd, double[] ubnd, double tol) {
-        int ndimIn = map.getNin();
-        int ndimOut = map.getNout();
+        return linearApprox(map, lbnd, ubnd, tol, true);
+    }
+
+    /**
+     * The fit to the transformation of {@code map} in direction {@code forward}, as C's {@code
+     * LinearApprox} makes it for the Mapping inverted when {@code forward} is false. C inverts the
+     * Mapping in place around the call; transforming in the other direction instead leaves the
+     * Mapping unchanged, so that other threads may use it meanwhile.
+     *
+     * @return the constant terms followed by the gradients, row by row, of the transformation in
+     *     direction {@code forward}, or null if it is not linear enough, or every output is bad
+     * @throws AstException with status {@code AST__NCPIN} if a bound holds too few values, or any
+     *     error transforming the points
+     */
+    static double[] linearApprox(Mapping map, double[] lbnd, double[] ubnd, double tol, boolean forward) {
+        int ndimIn = forward ? map.getNin() : map.getNout();
+        int ndimOut = forward ? map.getNout() : map.getNin();
         if (lbnd.length < ndimIn || ubnd.length < ndimIn) {
             throw Ast.err(
                     AstException.AST__NCPIN,
@@ -53,7 +68,7 @@ final class LinearApprox {
             }
             inF[face / 2][face] = face % 2 != 0 ? ubnd[face / 2] : lbnd[face / 2];
         }
-        double[][] outF = map.transform(inF, nfaces, true);
+        double[][] outF = map.transform(inF, nfaces, forward);
 
         // The gradients, and constant terms for an origin at the centre of the box. An output that
         // is bad at a face centre keeps bad coefficients.
@@ -105,7 +120,7 @@ final class LinearApprox {
 
         double[][] inT = testPoints(ndimIn, lbnd, ubnd);
         int npoint = inT[0].length;
-        double[][] outT = map.transform(inT, npoint, true);
+        double[][] outT = map.transform(inT, npoint, forward);
         for (int point = 0; point < npoint; point++) {
             double err = 0.0;
             int badOutput = 0;

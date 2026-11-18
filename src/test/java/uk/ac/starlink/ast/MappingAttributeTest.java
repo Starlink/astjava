@@ -123,18 +123,19 @@ class MappingAttributeTest {
     }
 
     @Test
-    void resamplingIsUnavailable() {
+    void rebinningIsUnavailable() {
         UnitMap map = new UnitMap(1);
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> map.resampleD(
+                () -> map.rebinD(
+                        0.0,
                         1,
                         new int[] {1},
                         new int[] {2},
                         new double[2],
                         null,
-                        Mapping.LINEAR_INTERPOLATOR,
-                        new ResampleFlags(),
+                        Mapping.LINEAR_SPREADER,
+                        false,
                         0.0,
                         100,
                         AstObject.AST__BAD,

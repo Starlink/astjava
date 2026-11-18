@@ -37,8 +37,8 @@ import java.util.Objects;
  * #effectiveForward}, every time it transforms, so that the class's own data always describe the
  * Mapping as it was created.
  *
- * <p>Resampling and rebinning ({@code resample*}, {@code rebin*}) are not available in this
- * version, and throw {@link UnsupportedOperationException}.
+ * <p>Rebinning ({@code rebin*}) is not available in this version, and throws {@link
+ * UnsupportedOperationException}.
  *
  * <p>Ported from Rust {@code mappings/mod.rs} and C {@code mapping.c}.
  */
@@ -1332,19 +1332,69 @@ public abstract class Mapping extends AstObject {
     }
 
     // ------------------------------------------------------------------
-    // Resampling and rebinning (not available)
+    // Resampling
     // ------------------------------------------------------------------
 
-    private static UnsupportedOperationException noResampling() {
-        return new UnsupportedOperationException("Resampling and rebinning are not available in this version");
-    }
-
     /**
-     * Resamples a grid of data of any numeric type, chosen by the class of {@code in}. Not
-     * available in this version.
+     * Resamples a grid of data, and optionally its variances, into a region of another grid,
+     * through the inverse transformation of this Mapping: the {@code resample<X>} method for the
+     * type of {@code in} is called. The Mapping takes positions in the input grid to positions in
+     * the output grid, so it needs one input coordinate per input grid dimension and one output
+     * coordinate per output grid dimension, and an inverse transformation.
      *
-     * @return never
-     * @throws UnsupportedOperationException always
+     * <p>Each pixel has unit extent along each dimension, with integer coordinates at its centre,
+     * and each array holds its grid with the first dimension varying fastest. The centre of each
+     * output pixel in the region from {@code lbnd} to {@code ubnd} is transformed to the input
+     * grid, and the input is interpolated there as {@code interp} says; pixels of the output grid
+     * outside the region are not changed. A position on a pixel boundary belongs to the pixel with
+     * the larger index. An output pixel is set to {@code badval}, or left as it is when the NoBad
+     * flag is set, when its input position is bad or outside the input grid, or lies in a bad input
+     * pixel (one equal to {@code badval}, when the UseBad flag is set). Bad pixels are found by
+     * comparing values with {@code badval} in the data type, so a NaN value is never bad, even
+     * when {@code badval} is NaN, and a NaN input reaches the output through the interpolation.
+     * Variances are resampled when both {@code inVar} and {@code outVar} are given; an output
+     * variance is bad when its value is, or a contributing input variance is bad or negative.
+     *
+     * <p>To transform fewer pixels, the inverse transformation is replaced by linear fits over
+     * sections of the output region wherever they are accurate to within {@code tol} input pixels,
+     * as for {@link #tranGrid}, which also describes {@code maxpix}. The ConserveFlux flag scales
+     * each output value by the ratio of output to input pixel sizes in its section, and each
+     * variance by its square; it needs a {@code tol} greater than zero, a Mapping with as many
+     * inputs as outputs that is linear within {@code tol} over each section, and the NoBad flag
+     * unset.
+     *
+     * <p>Resampling never changes the Mapping, even for a moment (C inverts it while fitting its
+     * inverse), so several threads may resample through one Mapping at once wherever they may
+     * transform through it at once.
+     *
+     * @param ndimIn the number of dimensions of the input grid
+     * @param lbndIn the lowest pixel index of the input grid on each dimension
+     * @param ubndIn the highest pixel index of the input grid on each dimension
+     * @param in the input data, an array of {@code byte}, {@code short}, {@code int}, {@code
+     *     long}, {@code float} or {@code double} with one element per input pixel
+     * @param inVar the input variances, an array of the type of {@code in} and its length, or null
+     * @param interp the sub-pixel interpolation scheme
+     * @param flags the flags
+     * @param tol the largest positional error, in input pixels, a linear fit may introduce, or
+     *     zero to transform every output pixel through the Mapping
+     * @param maxpix the largest extent, in output pixels, over which a linear fit is first tried
+     * @param badval the bad value, a {@code Number} of the class wrapping the type of {@code in}
+     * @param ndimOut the number of dimensions of the output grid
+     * @param lbndOut the lowest pixel index of the output grid on each dimension
+     * @param ubndOut the highest pixel index of the output grid on each dimension
+     * @param lbnd the lowest pixel index of the output region on each dimension
+     * @param ubnd the highest pixel index of the output region on each dimension
+     * @param out the output data, an array of the type of {@code in} with one element per output
+     *     pixel
+     * @param outVar the output variances, an array of the type and length of {@code out}, or null
+     * @return the number of output values and variances given the bad value
+     * @throws IllegalArgumentException if the arrays are not all of the same primitive type, or
+     *     {@code badval} is not of the matching {@code Number} class
+     * @throws AstException if an argument is invalid, for example with status {@code AST__DIMIN}
+     *     if a data or variance array does not have one element per pixel of its grid, or a bound
+     *     array has fewer values than its grid has dimensions, {@code AST__GBDIN} if the output
+     *     region does not lie within the output grid, or {@code AST__TRNND} if the Mapping has no
+     *     inverse transformation
      */
     public int resample(
             int ndimIn,
@@ -1364,14 +1414,177 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             Object out,
             Object outVar) {
-        throw noResampling();
+        // jniast casts each argument to the type of in and reports any mismatch; the types are
+        // checked here before the call so that an exception from within it is not mistaken for one.
+        // As in jniast, null data is a NullPointerException.
+        Objects.requireNonNull(in, "in");
+        if (in instanceof byte[]
+                && (inVar == null || inVar instanceof byte[])
+                && out instanceof byte[]
+                && (outVar == null || outVar instanceof byte[])
+                && badval instanceof Byte) {
+            return resampleB(
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    (byte[]) in,
+                    (byte[]) inVar,
+                    interp,
+                    flags,
+                    tol,
+                    maxpix,
+                    (Byte) badval,
+                    ndimOut,
+                    lbndOut,
+                    ubndOut,
+                    lbnd,
+                    ubnd,
+                    (byte[]) out,
+                    (byte[]) outVar);
+        } else if (in instanceof short[]
+                && (inVar == null || inVar instanceof short[])
+                && out instanceof short[]
+                && (outVar == null || outVar instanceof short[])
+                && badval instanceof Short) {
+            return resampleS(
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    (short[]) in,
+                    (short[]) inVar,
+                    interp,
+                    flags,
+                    tol,
+                    maxpix,
+                    (Short) badval,
+                    ndimOut,
+                    lbndOut,
+                    ubndOut,
+                    lbnd,
+                    ubnd,
+                    (short[]) out,
+                    (short[]) outVar);
+        } else if (in instanceof int[]
+                && (inVar == null || inVar instanceof int[])
+                && out instanceof int[]
+                && (outVar == null || outVar instanceof int[])
+                && badval instanceof Integer) {
+            return resampleI(
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    (int[]) in,
+                    (int[]) inVar,
+                    interp,
+                    flags,
+                    tol,
+                    maxpix,
+                    (Integer) badval,
+                    ndimOut,
+                    lbndOut,
+                    ubndOut,
+                    lbnd,
+                    ubnd,
+                    (int[]) out,
+                    (int[]) outVar);
+        } else if (in instanceof long[]
+                && (inVar == null || inVar instanceof long[])
+                && out instanceof long[]
+                && (outVar == null || outVar instanceof long[])
+                && badval instanceof Long) {
+            return resampleL(
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    (long[]) in,
+                    (long[]) inVar,
+                    interp,
+                    flags,
+                    tol,
+                    maxpix,
+                    (Long) badval,
+                    ndimOut,
+                    lbndOut,
+                    ubndOut,
+                    lbnd,
+                    ubnd,
+                    (long[]) out,
+                    (long[]) outVar);
+        } else if (in instanceof float[]
+                && (inVar == null || inVar instanceof float[])
+                && out instanceof float[]
+                && (outVar == null || outVar instanceof float[])
+                && badval instanceof Float) {
+            return resampleF(
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    (float[]) in,
+                    (float[]) inVar,
+                    interp,
+                    flags,
+                    tol,
+                    maxpix,
+                    (Float) badval,
+                    ndimOut,
+                    lbndOut,
+                    ubndOut,
+                    lbnd,
+                    ubnd,
+                    (float[]) out,
+                    (float[]) outVar);
+        } else if (in instanceof double[]
+                && (inVar == null || inVar instanceof double[])
+                && out instanceof double[]
+                && (outVar == null || outVar instanceof double[])
+                && badval instanceof Double) {
+            return resampleD(
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    (double[]) in,
+                    (double[]) inVar,
+                    interp,
+                    flags,
+                    tol,
+                    maxpix,
+                    (Double) badval,
+                    ndimOut,
+                    lbndOut,
+                    ubndOut,
+                    lbnd,
+                    ubnd,
+                    (double[]) out,
+                    (double[]) outVar);
+        } else {
+            throw new IllegalArgumentException(
+                    "in, in_var, out, out_var must be all arrays of the same primitive type, and badval a matching"
+                            + " Number type");
+        }
     }
 
     /**
-     * Resamples a grid of {@code byte} data. Not available in this version.
+     * Resamples a grid of {@code byte} data, as {@link #resample} describes.
      *
-     * @return never
-     * @throws UnsupportedOperationException always
+     * @param ndimIn the number of dimensions of the input grid
+     * @param lbndIn the lowest pixel index of the input grid on each dimension
+     * @param ubndIn the highest pixel index of the input grid on each dimension
+     * @param in the input data, one element per input pixel
+     * @param inVar the input variances, one element per input pixel, or null
+     * @param interp the sub-pixel interpolation scheme
+     * @param flags the flags
+     * @param tol the largest positional error, in input pixels, a linear fit may introduce
+     * @param maxpix the largest extent, in output pixels, over which a linear fit is first tried
+     * @param badval the bad value
+     * @param ndimOut the number of dimensions of the output grid
+     * @param lbndOut the lowest pixel index of the output grid on each dimension
+     * @param ubndOut the highest pixel index of the output grid on each dimension
+     * @param lbnd the lowest pixel index of the output region on each dimension
+     * @param ubnd the highest pixel index of the output region on each dimension
+     * @param out the output data, one element per output pixel
+     * @param outVar the output variances, one element per output pixel, or null
+     * @return the number of output values and variances given the bad value
+     * @throws AstException if an argument is invalid, as for {@link #resample}
      */
     public int resampleB(
             int ndimIn,
@@ -1391,14 +1604,49 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             byte[] out,
             byte[] outVar) {
-        throw noResampling();
+        return Resample.resample(
+                this,
+                ndimIn,
+                lbndIn,
+                ubndIn,
+                PixelArray.of(in, badval),
+                inVar == null ? null : PixelArray.of(inVar, badval),
+                interp,
+                flags,
+                tol,
+                maxpix,
+                ndimOut,
+                lbndOut,
+                ubndOut,
+                lbnd,
+                ubnd,
+                PixelArray.of(out, badval),
+                outVar == null ? null : PixelArray.of(outVar, badval),
+                "astResampleB");
     }
 
     /**
-     * Resamples a grid of {@code short} data. Not available in this version.
+     * Resamples a grid of {@code short} data, as {@link #resample} describes.
      *
-     * @return never
-     * @throws UnsupportedOperationException always
+     * @param ndimIn the number of dimensions of the input grid
+     * @param lbndIn the lowest pixel index of the input grid on each dimension
+     * @param ubndIn the highest pixel index of the input grid on each dimension
+     * @param in the input data, one element per input pixel
+     * @param inVar the input variances, one element per input pixel, or null
+     * @param interp the sub-pixel interpolation scheme
+     * @param flags the flags
+     * @param tol the largest positional error, in input pixels, a linear fit may introduce
+     * @param maxpix the largest extent, in output pixels, over which a linear fit is first tried
+     * @param badval the bad value
+     * @param ndimOut the number of dimensions of the output grid
+     * @param lbndOut the lowest pixel index of the output grid on each dimension
+     * @param ubndOut the highest pixel index of the output grid on each dimension
+     * @param lbnd the lowest pixel index of the output region on each dimension
+     * @param ubnd the highest pixel index of the output region on each dimension
+     * @param out the output data, one element per output pixel
+     * @param outVar the output variances, one element per output pixel, or null
+     * @return the number of output values and variances given the bad value
+     * @throws AstException if an argument is invalid, as for {@link #resample}
      */
     public int resampleS(
             int ndimIn,
@@ -1418,14 +1666,49 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             short[] out,
             short[] outVar) {
-        throw noResampling();
+        return Resample.resample(
+                this,
+                ndimIn,
+                lbndIn,
+                ubndIn,
+                PixelArray.of(in, badval),
+                inVar == null ? null : PixelArray.of(inVar, badval),
+                interp,
+                flags,
+                tol,
+                maxpix,
+                ndimOut,
+                lbndOut,
+                ubndOut,
+                lbnd,
+                ubnd,
+                PixelArray.of(out, badval),
+                outVar == null ? null : PixelArray.of(outVar, badval),
+                "astResampleS");
     }
 
     /**
-     * Resamples a grid of {@code int} data. Not available in this version.
+     * Resamples a grid of {@code int} data, as {@link #resample} describes.
      *
-     * @return never
-     * @throws UnsupportedOperationException always
+     * @param ndimIn the number of dimensions of the input grid
+     * @param lbndIn the lowest pixel index of the input grid on each dimension
+     * @param ubndIn the highest pixel index of the input grid on each dimension
+     * @param in the input data, one element per input pixel
+     * @param inVar the input variances, one element per input pixel, or null
+     * @param interp the sub-pixel interpolation scheme
+     * @param flags the flags
+     * @param tol the largest positional error, in input pixels, a linear fit may introduce
+     * @param maxpix the largest extent, in output pixels, over which a linear fit is first tried
+     * @param badval the bad value
+     * @param ndimOut the number of dimensions of the output grid
+     * @param lbndOut the lowest pixel index of the output grid on each dimension
+     * @param ubndOut the highest pixel index of the output grid on each dimension
+     * @param lbnd the lowest pixel index of the output region on each dimension
+     * @param ubnd the highest pixel index of the output region on each dimension
+     * @param out the output data, one element per output pixel
+     * @param outVar the output variances, one element per output pixel, or null
+     * @return the number of output values and variances given the bad value
+     * @throws AstException if an argument is invalid, as for {@link #resample}
      */
     public int resampleI(
             int ndimIn,
@@ -1445,14 +1728,49 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             int[] out,
             int[] outVar) {
-        throw noResampling();
+        return Resample.resample(
+                this,
+                ndimIn,
+                lbndIn,
+                ubndIn,
+                PixelArray.of(in, badval),
+                inVar == null ? null : PixelArray.of(inVar, badval),
+                interp,
+                flags,
+                tol,
+                maxpix,
+                ndimOut,
+                lbndOut,
+                ubndOut,
+                lbnd,
+                ubnd,
+                PixelArray.of(out, badval),
+                outVar == null ? null : PixelArray.of(outVar, badval),
+                "astResampleI");
     }
 
     /**
-     * Resamples a grid of {@code long} data. Not available in this version.
+     * Resamples a grid of {@code long} data, as {@link #resample} describes.
      *
-     * @return never
-     * @throws UnsupportedOperationException always
+     * @param ndimIn the number of dimensions of the input grid
+     * @param lbndIn the lowest pixel index of the input grid on each dimension
+     * @param ubndIn the highest pixel index of the input grid on each dimension
+     * @param in the input data, one element per input pixel
+     * @param inVar the input variances, one element per input pixel, or null
+     * @param interp the sub-pixel interpolation scheme
+     * @param flags the flags
+     * @param tol the largest positional error, in input pixels, a linear fit may introduce
+     * @param maxpix the largest extent, in output pixels, over which a linear fit is first tried
+     * @param badval the bad value
+     * @param ndimOut the number of dimensions of the output grid
+     * @param lbndOut the lowest pixel index of the output grid on each dimension
+     * @param ubndOut the highest pixel index of the output grid on each dimension
+     * @param lbnd the lowest pixel index of the output region on each dimension
+     * @param ubnd the highest pixel index of the output region on each dimension
+     * @param out the output data, one element per output pixel
+     * @param outVar the output variances, one element per output pixel, or null
+     * @return the number of output values and variances given the bad value
+     * @throws AstException if an argument is invalid, as for {@link #resample}
      */
     public int resampleL(
             int ndimIn,
@@ -1472,14 +1790,49 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             long[] out,
             long[] outVar) {
-        throw noResampling();
+        return Resample.resample(
+                this,
+                ndimIn,
+                lbndIn,
+                ubndIn,
+                PixelArray.of(in, badval),
+                inVar == null ? null : PixelArray.of(inVar, badval),
+                interp,
+                flags,
+                tol,
+                maxpix,
+                ndimOut,
+                lbndOut,
+                ubndOut,
+                lbnd,
+                ubnd,
+                PixelArray.of(out, badval),
+                outVar == null ? null : PixelArray.of(outVar, badval),
+                "astResampleL");
     }
 
     /**
-     * Resamples a grid of {@code float} data. Not available in this version.
+     * Resamples a grid of {@code float} data, as {@link #resample} describes.
      *
-     * @return never
-     * @throws UnsupportedOperationException always
+     * @param ndimIn the number of dimensions of the input grid
+     * @param lbndIn the lowest pixel index of the input grid on each dimension
+     * @param ubndIn the highest pixel index of the input grid on each dimension
+     * @param in the input data, one element per input pixel
+     * @param inVar the input variances, one element per input pixel, or null
+     * @param interp the sub-pixel interpolation scheme
+     * @param flags the flags
+     * @param tol the largest positional error, in input pixels, a linear fit may introduce
+     * @param maxpix the largest extent, in output pixels, over which a linear fit is first tried
+     * @param badval the bad value
+     * @param ndimOut the number of dimensions of the output grid
+     * @param lbndOut the lowest pixel index of the output grid on each dimension
+     * @param ubndOut the highest pixel index of the output grid on each dimension
+     * @param lbnd the lowest pixel index of the output region on each dimension
+     * @param ubnd the highest pixel index of the output region on each dimension
+     * @param out the output data, one element per output pixel
+     * @param outVar the output variances, one element per output pixel, or null
+     * @return the number of output values and variances given the bad value
+     * @throws AstException if an argument is invalid, as for {@link #resample}
      */
     public int resampleF(
             int ndimIn,
@@ -1499,14 +1852,49 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             float[] out,
             float[] outVar) {
-        throw noResampling();
+        return Resample.resample(
+                this,
+                ndimIn,
+                lbndIn,
+                ubndIn,
+                PixelArray.of(in, badval),
+                inVar == null ? null : PixelArray.of(inVar, badval),
+                interp,
+                flags,
+                tol,
+                maxpix,
+                ndimOut,
+                lbndOut,
+                ubndOut,
+                lbnd,
+                ubnd,
+                PixelArray.of(out, badval),
+                outVar == null ? null : PixelArray.of(outVar, badval),
+                "astResampleF");
     }
 
     /**
-     * Resamples a grid of {@code double} data. Not available in this version.
+     * Resamples a grid of {@code double} data, as {@link #resample} describes.
      *
-     * @return never
-     * @throws UnsupportedOperationException always
+     * @param ndimIn the number of dimensions of the input grid
+     * @param lbndIn the lowest pixel index of the input grid on each dimension
+     * @param ubndIn the highest pixel index of the input grid on each dimension
+     * @param in the input data, one element per input pixel
+     * @param inVar the input variances, one element per input pixel, or null
+     * @param interp the sub-pixel interpolation scheme
+     * @param flags the flags
+     * @param tol the largest positional error, in input pixels, a linear fit may introduce
+     * @param maxpix the largest extent, in output pixels, over which a linear fit is first tried
+     * @param badval the bad value
+     * @param ndimOut the number of dimensions of the output grid
+     * @param lbndOut the lowest pixel index of the output grid on each dimension
+     * @param ubndOut the highest pixel index of the output grid on each dimension
+     * @param lbnd the lowest pixel index of the output region on each dimension
+     * @param ubnd the highest pixel index of the output region on each dimension
+     * @param out the output data, one element per output pixel
+     * @param outVar the output variances, one element per output pixel, or null
+     * @return the number of output values and variances given the bad value
+     * @throws AstException if an argument is invalid, as for {@link #resample}
      */
     public int resampleD(
             int ndimIn,
@@ -1526,7 +1914,33 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             double[] out,
             double[] outVar) {
-        throw noResampling();
+        return Resample.resample(
+                this,
+                ndimIn,
+                lbndIn,
+                ubndIn,
+                PixelArray.of(in, badval),
+                inVar == null ? null : PixelArray.of(inVar, badval),
+                interp,
+                flags,
+                tol,
+                maxpix,
+                ndimOut,
+                lbndOut,
+                ubndOut,
+                lbnd,
+                ubnd,
+                PixelArray.of(out, badval),
+                outVar == null ? null : PixelArray.of(outVar, badval),
+                "astResampleD");
+    }
+
+    // ------------------------------------------------------------------
+    // Rebinning (not available)
+    // ------------------------------------------------------------------
+
+    private static UnsupportedOperationException noRebinning() {
+        return new UnsupportedOperationException("Rebinning is not available in this version");
     }
 
     /**
@@ -1554,7 +1968,7 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             Object out,
             Object outVar) {
-        throw noResampling();
+        throw noRebinning();
     }
 
     /**
@@ -1581,7 +1995,7 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             int[] out,
             int[] outVar) {
-        throw noResampling();
+        throw noRebinning();
     }
 
     /**
@@ -1608,7 +2022,7 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             float[] out,
             float[] outVar) {
-        throw noResampling();
+        throw noRebinning();
     }
 
     /**
@@ -1635,7 +2049,7 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             double[] out,
             double[] outVar) {
-        throw noResampling();
+        throw noRebinning();
     }
 
     /**

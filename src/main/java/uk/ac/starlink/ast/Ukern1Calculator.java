@@ -3,8 +3,8 @@ package uk.ac.starlink.ast;
 /**
  * A 1-dimensional interpolation kernel supplied by the caller, for resampling with {@link
  * Mapping.Interpolator#ukern1}: C's {@code AST__UKERN1} scheme, in which the kernel is applied to
- * each dimension of the input grid in turn. Resampling is not available in this version, so the
- * kernel is never called.
+ * each dimension of the input grid in turn. Resampling with this scheme is not available in this
+ * version, so the kernel is never called.
  */
 @FunctionalInterface
 public interface Ukern1Calculator {

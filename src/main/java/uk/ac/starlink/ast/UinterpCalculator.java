@@ -4,7 +4,7 @@ package uk.ac.starlink.ast;
  * An interpolation function supplied by the caller, for resampling with {@link
  * Mapping.Interpolator#uinterp}: C's {@code AST__UINTERP} scheme. A subclass overrides the method
  * for each data type it handles; the others throw {@link UnsupportedOperationException}.
- * Resampling is not available in this version, so the methods are never called.
+ * Resampling with this scheme is not available in this version, so the methods are never called.
  *
  * <p>Each method is given the input grid and the positions at which to interpolate, and returns
  * the number of output pixels it set to the bad value. Its parameters are:
