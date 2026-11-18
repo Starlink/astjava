@@ -72,6 +72,7 @@ final class Resample {
             PixelArray inVar,
             Mapping.Interpolator interp,
             ResampleFlags resampleFlags,
+            int flags,
             double tol,
             int maxpix,
             long[] lbndOut,
@@ -87,7 +88,7 @@ final class Resample {
         this.inVar = inVar;
         this.interp = interp;
         this.resampleFlags = resampleFlags;
-        this.flags = resampleFlags.getFlagsInt();
+        this.flags = flags;
         this.tol = tol;
         this.maxpix = maxpix;
         this.lbndOut = lbndOut;
@@ -240,6 +241,7 @@ final class Resample {
                 usevar ? inVar : null,
                 interp,
                 flags,
+                iflags,
                 tol,
                 maxpix,
                 longs(lbndOut, ndimOut),
