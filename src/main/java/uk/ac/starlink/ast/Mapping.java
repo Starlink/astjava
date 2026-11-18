@@ -1407,6 +1407,8 @@ public abstract class Mapping extends AstObject {
      *     region does not lie within the output grid, {@code AST__TRNND} if the Mapping has no
      *     inverse transformation, or {@code AST__UK1ER} or {@code AST__UINER} if a kernel or
      *     interpolation function of the caller's throws an exception, which is the cause
+     * @throws NullPointerException if a bound array, {@code interp} or {@code flags} is null,
+     *     leaving the output unchanged
      */
     public int resample(
             int ndimIn,
@@ -1597,6 +1599,8 @@ public abstract class Mapping extends AstObject {
      * @param outVar the output variances, an element for each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws AstException if an argument is invalid, as for {@link #resample}
+     * @throws NullPointerException if an argument other than {@code inVar} and {@code outVar} is
+     *     null, leaving the output unchanged
      */
     public int resampleB(
             int ndimIn,
@@ -1621,7 +1625,7 @@ public abstract class Mapping extends AstObject {
                 ndimIn,
                 lbndIn,
                 ubndIn,
-                PixelArray.of(in, badval),
+                PixelArray.of(Objects.requireNonNull(in, "in"), badval),
                 inVar == null ? null : PixelArray.of(inVar, badval),
                 interp,
                 flags,
@@ -1632,7 +1636,7 @@ public abstract class Mapping extends AstObject {
                 ubndOut,
                 lbnd,
                 ubnd,
-                PixelArray.of(out, badval),
+                PixelArray.of(Objects.requireNonNull(out, "out"), badval),
                 outVar == null ? null : PixelArray.of(outVar, badval),
                 "astResampleB");
     }
@@ -1659,6 +1663,8 @@ public abstract class Mapping extends AstObject {
      * @param outVar the output variances, an element for each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws AstException if an argument is invalid, as for {@link #resample}
+     * @throws NullPointerException if an argument other than {@code inVar} and {@code outVar} is
+     *     null, leaving the output unchanged
      */
     public int resampleS(
             int ndimIn,
@@ -1683,7 +1689,7 @@ public abstract class Mapping extends AstObject {
                 ndimIn,
                 lbndIn,
                 ubndIn,
-                PixelArray.of(in, badval),
+                PixelArray.of(Objects.requireNonNull(in, "in"), badval),
                 inVar == null ? null : PixelArray.of(inVar, badval),
                 interp,
                 flags,
@@ -1694,7 +1700,7 @@ public abstract class Mapping extends AstObject {
                 ubndOut,
                 lbnd,
                 ubnd,
-                PixelArray.of(out, badval),
+                PixelArray.of(Objects.requireNonNull(out, "out"), badval),
                 outVar == null ? null : PixelArray.of(outVar, badval),
                 "astResampleS");
     }
@@ -1721,6 +1727,8 @@ public abstract class Mapping extends AstObject {
      * @param outVar the output variances, an element for each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws AstException if an argument is invalid, as for {@link #resample}
+     * @throws NullPointerException if an argument other than {@code inVar} and {@code outVar} is
+     *     null, leaving the output unchanged
      */
     public int resampleI(
             int ndimIn,
@@ -1745,7 +1753,7 @@ public abstract class Mapping extends AstObject {
                 ndimIn,
                 lbndIn,
                 ubndIn,
-                PixelArray.of(in, badval),
+                PixelArray.of(Objects.requireNonNull(in, "in"), badval),
                 inVar == null ? null : PixelArray.of(inVar, badval),
                 interp,
                 flags,
@@ -1756,7 +1764,7 @@ public abstract class Mapping extends AstObject {
                 ubndOut,
                 lbnd,
                 ubnd,
-                PixelArray.of(out, badval),
+                PixelArray.of(Objects.requireNonNull(out, "out"), badval),
                 outVar == null ? null : PixelArray.of(outVar, badval),
                 "astResampleI");
     }
@@ -1783,6 +1791,8 @@ public abstract class Mapping extends AstObject {
      * @param outVar the output variances, an element for each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws AstException if an argument is invalid, as for {@link #resample}
+     * @throws NullPointerException if an argument other than {@code inVar} and {@code outVar} is
+     *     null, leaving the output unchanged
      */
     public int resampleL(
             int ndimIn,
@@ -1807,7 +1817,7 @@ public abstract class Mapping extends AstObject {
                 ndimIn,
                 lbndIn,
                 ubndIn,
-                PixelArray.of(in, badval),
+                PixelArray.of(Objects.requireNonNull(in, "in"), badval),
                 inVar == null ? null : PixelArray.of(inVar, badval),
                 interp,
                 flags,
@@ -1818,7 +1828,7 @@ public abstract class Mapping extends AstObject {
                 ubndOut,
                 lbnd,
                 ubnd,
-                PixelArray.of(out, badval),
+                PixelArray.of(Objects.requireNonNull(out, "out"), badval),
                 outVar == null ? null : PixelArray.of(outVar, badval),
                 "astResampleL");
     }
@@ -1845,6 +1855,8 @@ public abstract class Mapping extends AstObject {
      * @param outVar the output variances, an element for each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws AstException if an argument is invalid, as for {@link #resample}
+     * @throws NullPointerException if an argument other than {@code inVar} and {@code outVar} is
+     *     null, leaving the output unchanged
      */
     public int resampleF(
             int ndimIn,
@@ -1869,7 +1881,7 @@ public abstract class Mapping extends AstObject {
                 ndimIn,
                 lbndIn,
                 ubndIn,
-                PixelArray.of(in, badval),
+                PixelArray.of(Objects.requireNonNull(in, "in"), badval),
                 inVar == null ? null : PixelArray.of(inVar, badval),
                 interp,
                 flags,
@@ -1880,7 +1892,7 @@ public abstract class Mapping extends AstObject {
                 ubndOut,
                 lbnd,
                 ubnd,
-                PixelArray.of(out, badval),
+                PixelArray.of(Objects.requireNonNull(out, "out"), badval),
                 outVar == null ? null : PixelArray.of(outVar, badval),
                 "astResampleF");
     }
@@ -1907,6 +1919,8 @@ public abstract class Mapping extends AstObject {
      * @param outVar the output variances, an element for each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws AstException if an argument is invalid, as for {@link #resample}
+     * @throws NullPointerException if an argument other than {@code inVar} and {@code outVar} is
+     *     null, leaving the output unchanged
      */
     public int resampleD(
             int ndimIn,
@@ -1931,7 +1945,7 @@ public abstract class Mapping extends AstObject {
                 ndimIn,
                 lbndIn,
                 ubndIn,
-                PixelArray.of(in, badval),
+                PixelArray.of(Objects.requireNonNull(in, "in"), badval),
                 inVar == null ? null : PixelArray.of(inVar, badval),
                 interp,
                 flags,
@@ -1942,7 +1956,7 @@ public abstract class Mapping extends AstObject {
                 ubndOut,
                 lbnd,
                 ubnd,
-                PixelArray.of(out, badval),
+                PixelArray.of(Objects.requireNonNull(out, "out"), badval),
                 outVar == null ? null : PixelArray.of(outVar, badval),
                 "astResampleD");
     }
@@ -2028,6 +2042,8 @@ public abstract class Mapping extends AstObject {
      *     forward transformation; as in C, the first output value and variance have then been set
      *     to zero after an error in the numbers of dimensions, the bounds, {@code tol} or {@code
      *     maxpix}, and all of them after a later error
+     * @throws NullPointerException if a bound array or {@code spread} is null, leaving the output
+     *     unchanged
      */
     public void rebin(
             double wlim,
@@ -2165,6 +2181,8 @@ public abstract class Mapping extends AstObject {
      * @param outVar the output variances, an element for each output pixel, or null; left
      *     unchanged when {@code inVar} is null
      * @throws AstException if an argument is invalid, as for {@link #rebin}
+     * @throws NullPointerException if an argument other than {@code inVar} and {@code outVar} is
+     *     null, leaving the output unchanged
      */
     public void rebinI(
             double wlim,
@@ -2192,7 +2210,7 @@ public abstract class Mapping extends AstObject {
                 ndimIn,
                 lbndIn,
                 ubndIn,
-                PixelArray.of(in, badval),
+                PixelArray.of(Objects.requireNonNull(in, "in"), badval),
                 inVar == null ? null : PixelArray.of(inVar, badval),
                 spread,
                 rebinFlags(usebad, inVar, outVar),
@@ -2203,7 +2221,7 @@ public abstract class Mapping extends AstObject {
                 ubndOut,
                 lbnd,
                 ubnd,
-                PixelArray.of(out, badval),
+                PixelArray.of(Objects.requireNonNull(out, "out"), badval),
                 inVar == null || outVar == null ? null : PixelArray.of(outVar, badval),
                 "astRebinI");
     }
@@ -2233,6 +2251,8 @@ public abstract class Mapping extends AstObject {
      * @param outVar the output variances, an element for each output pixel, or null; left
      *     unchanged when {@code inVar} is null
      * @throws AstException if an argument is invalid, as for {@link #rebin}
+     * @throws NullPointerException if an argument other than {@code inVar} and {@code outVar} is
+     *     null, leaving the output unchanged
      */
     public void rebinF(
             double wlim,
@@ -2260,7 +2280,7 @@ public abstract class Mapping extends AstObject {
                 ndimIn,
                 lbndIn,
                 ubndIn,
-                PixelArray.of(in, badval),
+                PixelArray.of(Objects.requireNonNull(in, "in"), badval),
                 inVar == null ? null : PixelArray.of(inVar, badval),
                 spread,
                 rebinFlags(usebad, inVar, outVar),
@@ -2271,7 +2291,7 @@ public abstract class Mapping extends AstObject {
                 ubndOut,
                 lbnd,
                 ubnd,
-                PixelArray.of(out, badval),
+                PixelArray.of(Objects.requireNonNull(out, "out"), badval),
                 inVar == null || outVar == null ? null : PixelArray.of(outVar, badval),
                 "astRebinF");
     }
@@ -2301,6 +2321,8 @@ public abstract class Mapping extends AstObject {
      * @param outVar the output variances, an element for each output pixel, or null; left
      *     unchanged when {@code inVar} is null
      * @throws AstException if an argument is invalid, as for {@link #rebin}
+     * @throws NullPointerException if an argument other than {@code inVar} and {@code outVar} is
+     *     null, leaving the output unchanged
      */
     public void rebinD(
             double wlim,
@@ -2328,7 +2350,7 @@ public abstract class Mapping extends AstObject {
                 ndimIn,
                 lbndIn,
                 ubndIn,
-                PixelArray.of(in, badval),
+                PixelArray.of(Objects.requireNonNull(in, "in"), badval),
                 inVar == null ? null : PixelArray.of(inVar, badval),
                 spread,
                 rebinFlags(usebad, inVar, outVar),
@@ -2339,7 +2361,7 @@ public abstract class Mapping extends AstObject {
                 ubndOut,
                 lbnd,
                 ubnd,
-                PixelArray.of(out, badval),
+                PixelArray.of(Objects.requireNonNull(out, "out"), badval),
                 inVar == null || outVar == null ? null : PixelArray.of(outVar, badval),
                 "astRebinD");
     }

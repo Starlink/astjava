@@ -10,8 +10,10 @@ import org.junit.jupiter.api.Test;
 /**
  * The arguments of {@code resample} and {@code resampleX} that C cannot check: a data or variance
  * array shorter than its grid and a bound array shorter than its number of dimensions give {@code
- * AST__DIMIN}, while a longer array is accepted and its leading elements used, as in C and jniast; an output region outside the output grid gives C's {@code
- * AST__GBDIN}; and the generic {@code resample} given arrays of different types, a bad value of
+ * AST__DIMIN}, while a longer array is accepted and its leading elements used, as in C and jniast;
+ * an output region outside the output grid gives C's {@code AST__GBDIN}; a null argument other
+ * than a variance array gives a {@code NullPointerException} naming it, leaving the output
+ * unchanged; and the generic {@code resample} given arrays of different types, a bad value of
  * another {@code Number} type or data that is not a primitive array gives jniast's {@code
  * IllegalArgumentException}. No such call reaches an {@code ArrayIndexOutOfBoundsException} or a
  * {@code ClassCastException}. Nor does a Mapping whose user-supplied transformation gives NaN for
@@ -238,6 +240,50 @@ class ResampleArgumentsTest {
                 AstException.AST__GBDIN,
                 "astResampleD(UnitMap): Lower bound of output region (0) is less than corresponding bound of output"
                         + " grid (1).\nError in output dimension 1.");
+    }
+
+    private static double[] sevens(int n) {
+        double[] a = new double[n];
+        Arrays.fill(a, 7.0);
+        return a;
+    }
+
+    /** The arguments of {@code resampleD} that may not be null. */
+    private static final String[] REQUIRED = {
+        "lbndIn", "ubndIn", "in", "interp", "flags", "lbndOut", "ubndOut", "lbnd", "ubnd", "out"
+    };
+
+    @Test
+    void nullArgumentsAreRejectedBeforeTheOutputIsTouched() {
+        for (String name : REQUIRED) {
+            double[] out = sevens(20);
+            double[] outVar = sevens(20);
+            NullPointerException e = assertThrows(
+                    NullPointerException.class,
+                    () -> new UnitMap(2)
+                            .resampleD(
+                                    2,
+                                    "lbndIn".equals(name) ? null : L,
+                                    "ubndIn".equals(name) ? null : U,
+                                    "in".equals(name) ? null : sevens(20),
+                                    sevens(20),
+                                    "interp".equals(name) ? null : Mapping.LINEAR_INTERPOLATOR,
+                                    "flags".equals(name) ? null : new ResampleFlags(),
+                                    0.0,
+                                    100,
+                                    -1.0,
+                                    2,
+                                    "lbndOut".equals(name) ? null : L,
+                                    "ubndOut".equals(name) ? null : U,
+                                    "lbnd".equals(name) ? null : L,
+                                    "ubnd".equals(name) ? null : U,
+                                    "out".equals(name) ? null : out,
+                                    outVar),
+                    name);
+            assertEquals(name, e.getMessage());
+            assertArrayEquals(sevens(20), out, name);
+            assertArrayEquals(sevens(20), outVar, name);
+        }
     }
 
     private static IllegalArgumentException generic(Object in, Object inVar, Number badval, Object out, Object outVar) {

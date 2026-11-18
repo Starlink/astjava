@@ -1,6 +1,7 @@
 package uk.ac.starlink.ast;
 
 import java.util.Arrays;
+import java.util.Objects;
 import uk.ac.starlink.ast.internal.pal.Dmat;
 
 /**
@@ -127,6 +128,15 @@ final class Resample {
             PixelArray out,
             PixelArray outVar,
             String method) {
+        // A null argument is an error before anything, the output included, is changed.
+        Objects.requireNonNull(lbndIn, "lbndIn");
+        Objects.requireNonNull(ubndIn, "ubndIn");
+        Objects.requireNonNull(interp, "interp");
+        Objects.requireNonNull(flags, "flags");
+        Objects.requireNonNull(lbndOut, "lbndOut");
+        Objects.requireNonNull(ubndOut, "ubndOut");
+        Objects.requireNonNull(lbnd, "lbnd");
+        Objects.requireNonNull(ubnd, "ubnd");
         String cls = map.astClass();
         String prefix = method + "(" + cls + "): ";
         int iflags = flags.getFlagsInt();

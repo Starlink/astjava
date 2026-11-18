@@ -1,5 +1,7 @@
 package uk.ac.starlink.ast;
 
+import java.util.Objects;
+
 /**
  * Rebinning a grid of data through a Mapping, as C's {@code astRebin<X>} does.
  *
@@ -237,6 +239,14 @@ final class Rebin {
             PixelArray outVar,
             String method,
             BlockSpreading spreading) {
+        // A null argument is an error before anything, the output included, is changed.
+        Objects.requireNonNull(lbndIn, "lbndIn");
+        Objects.requireNonNull(ubndIn, "ubndIn");
+        Objects.requireNonNull(spread, "spread");
+        Objects.requireNonNull(lbndOut, "lbndOut");
+        Objects.requireNonNull(ubndOut, "ubndOut");
+        Objects.requireNonNull(lbnd, "lbnd");
+        Objects.requireNonNull(ubnd, "ubnd");
         String cls = map.astClass();
         String prefix = method + "(" + cls + "): ";
 
