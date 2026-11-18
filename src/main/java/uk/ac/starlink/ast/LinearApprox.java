@@ -35,7 +35,7 @@ final class LinearApprox {
      * The fit to the transformation of {@code map} in direction {@code forward}, as C's {@code
      * LinearApprox} makes it for the Mapping inverted when {@code forward} is false. C inverts the
      * Mapping in place around the call; transforming in the other direction instead leaves the
-     * Mapping unchanged, so that other threads may use it meanwhile.
+     * Mapping's Invert attribute alone.
      *
      * @return the constant terms followed by the gradients, row by row, of the transformation in
      *     direction {@code forward}, or null if it is not linear enough, or every output is bad

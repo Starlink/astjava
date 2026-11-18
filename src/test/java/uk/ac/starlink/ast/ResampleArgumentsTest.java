@@ -3,12 +3,13 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 /**
  * The arguments of {@code resample} and {@code resampleX} that C cannot check: a data or variance
- * array whose length does not match its grid and a bound array shorter than its number of
- * dimensions give {@code AST__DIMIN}; an output region outside the output grid gives C's {@code
+ * array shorter than its grid and a bound array shorter than its number of dimensions give {@code
+ * AST__DIMIN}, while a longer array is accepted and its leading elements used, as in C and jniast; an output region outside the output grid gives C's {@code
  * AST__GBDIN}; and the generic {@code resample} given arrays of different types, a bad value of
  * another {@code Number} type or data that is not a primitive array gives jniast's {@code
  * IllegalArgumentException}. No such call reaches an {@code ArrayIndexOutOfBoundsException} or a
@@ -54,18 +55,18 @@ class ResampleArgumentsTest {
     }
 
     @Test
-    void dataAndVarianceLengthsMustMatchTheirGrids() {
+    void dataAndVarianceArraysMustCoverTheirGrids() {
         AstException e = dimin(new double[19], null, new double[20], null);
         assertError(
                 e,
                 AstException.AST__DIMIN,
                 "astResampleD(UnitMap): The input data array has 19 elements but its grid has 20.");
 
-        e = dimin(new double[20], new double[21], new double[20], new double[20]);
+        e = dimin(new double[20], new double[17], new double[20], new double[20]);
         assertError(
                 e,
                 AstException.AST__DIMIN,
-                "astResampleD(UnitMap): The input variance array has 21 elements but its grid has 20.");
+                "astResampleD(UnitMap): The input variance array has 17 elements but its grid has 20.");
 
         e = dimin(new double[20], null, new double[3], null);
         assertError(
@@ -78,6 +79,52 @@ class ResampleArgumentsTest {
                 e,
                 AstException.AST__DIMIN,
                 "astResampleD(UnitMap): The output variance array has 2 elements but its grid has 20.");
+    }
+
+    @Test
+    void longerArraysAreAcceptedAndTheirLeadingElementsUsed() {
+        double[] in = new double[23];
+        double[] inVar = new double[21];
+        for (int k = 0; k < in.length; k++) {
+            in[k] = k + 1.0;
+        }
+        for (int k = 0; k < inVar.length; k++) {
+            inVar[k] = 0.5 * k;
+        }
+        double[] out = new double[22];
+        double[] outVar = new double[25];
+        Arrays.fill(out, -7.0);
+        Arrays.fill(outVar, -7.0);
+        int nbad = new UnitMap(2)
+                .resampleD(
+                        2,
+                        L,
+                        U,
+                        in,
+                        inVar,
+                        Mapping.NEAREST_INTERPOLATOR,
+                        new ResampleFlags(),
+                        0.0,
+                        100,
+                        -1.0,
+                        2,
+                        L,
+                        U,
+                        L,
+                        U,
+                        out,
+                        outVar);
+        assertEquals(0, nbad);
+        for (int k = 0; k < 20; k++) {
+            assertEquals(in[k], out[k], "value " + k);
+            assertEquals(inVar[k], outVar[k], "variance " + k);
+        }
+        for (int k = 20; k < out.length; k++) {
+            assertEquals(-7.0, out[k], "value beyond the grid " + k);
+        }
+        for (int k = 20; k < outVar.length; k++) {
+            assertEquals(-7.0, outVar[k], "variance beyond the grid " + k);
+        }
     }
 
     @Test

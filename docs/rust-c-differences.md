@@ -1281,14 +1281,14 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 
 - C: `ResampleAdaptively` inverts the Mapping in place with `astInvert`, calls `astLinearApprox`, and inverts it back; the Mapping is the caller's own when the output region has 1024 pixels or fewer, or the Mapping is already simplified, since `astSimplify` then returns it.
 - Rust: `Resampler::adaptively` in `mappings/resample/mod.rs` copies the Mapping and inverts the copy before each fit.
-- Java: `Resample.adaptively` fits the inverse transformation directly (`LinearApprox.linearApprox` with `forward` false), which gives C's fit without changing or copying the Mapping, so that several threads may resample through one Mapping at once (`ResampleThreadsTest`, which fails if the Mapping is inverted in place).
+- Java: `Resample.adaptively` fits the inverse transformation directly (`LinearApprox.linearApprox` with `forward` false), which gives C's fit without inverting or copying the Mapping.
 
 ### Array lengths in resampling
 
 - C: cannot check the lengths of the arrays it is given.
 - jniast: throws `IllegalArgumentException` ("bound arrays too short", "data/variance arrays too short") when a bound array has fewer elements than its number of dimensions or a data or variance array fewer than its grid has pixels.
 - Rust: `resample` reports AST__DIMIN when a data or variance array has a length other than its grid's number of pixels, or bound arrays differ in length.
-- Java: AST__DIMIN with Rust's messages when a data or variance array has a length other than its grid's number of pixels, and when a bound array has fewer elements than the number of dimensions given; a longer bound array is accepted, as in jniast, since the number of dimensions is passed separately.
+- Java: AST__DIMIN with Rust's messages when a data or variance array has fewer elements than its grid has pixels, or a bound array fewer than the number of dimensions given; a longer array is accepted and its leading elements used, as in C and jniast (see "Array arguments longer than needed").
 
 ### The bad value NaN in resampling
 

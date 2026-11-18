@@ -14,37 +14,40 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 /**
- * Eight threads resampling at once through one Mapping each get the result a single thread gets,
- * and the Mapping is unchanged. This test has no Rust counterpart.
+ * Eight threads, each resampling through the Mapping of its own {@code copy()} of a FrameSet, get
+ * exactly the result of a single thread: resampling shares no hidden state between copies. This
+ * test has no Rust counterpart.
  *
- * <p>The Mapping is a FrameSet's, from its base Frame to its current one, through a ZoomMap, a
- * ShiftMap and a non-linear MathMap in series, simplified. A 200 by 200 {@code double} image has
- * more than C's 1024 output pixels, so resampling simplifies the Mapping, which, being simplified
- * already, gives the Mapping itself: every thread works on the one object. The MathMap makes the
- * linear fits divide the output, so the inverse is fitted many times. Each thread resamples the
- * image ten times, linearly and with variances, and every result must equal, bit for bit, the
- * result of resampling in the test's own thread first. Inverting the Mapping in place around each
- * fit, as C does, makes this test fail.
+ * <p>The FrameSet's Mapping, from its base Frame to its current one, is a ZoomMap, a ShiftMap and
+ * a non-linear MathMap in series. The test's own thread resamples a 200 by 200 {@code double}
+ * image through the original's Mapping, then makes eight copies of the FrameSet and hands one to
+ * each of eight threads, so that no object is used by two threads at once, as the design
+ * requires. Each thread fetches the unsimplified Mapping of its copy and resamples the image
+ * through it twenty times, linearly and with variances; the image has more than C's 1024 output
+ * pixels, so each call simplifies the Mapping, and the MathMap makes the linear fits divide the
+ * output. Every result must equal the single-thread result bit for bit, and the original
+ * FrameSet's dump must be unchanged.
  */
 class ResampleThreadsTest {
 
     private static final int NTHREAD = 8;
-    private static final int REPEATS = 10;
+    private static final int REPEATS = 20;
     private static final int NX = 200;
     private static final int[] LBND = {1, 1};
     private static final int[] UBND = {NX, NX};
 
-    private static Mapping mapping() {
+    private static FrameSet frameSet() {
         FrameSet fs = new FrameSet(new Frame(2));
         MathMap curve = new MathMap(
                 2, 2, new String[] {"p=a", "q=b"}, new String[] {"a=p+0.0002*p*q-0.3", "b=q-0.00015*p*p+0.2"});
         Mapping series = new CmpMap(
                 new CmpMap(new ZoomMap(2, 1.05), new ShiftMap(new double[] {-3.5, 2.25}), true), curve, true);
         fs.addFrame(FrameSet.AST__BASE, series, new Frame(2));
-        return fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT).simplify();
+        return fs;
     }
 
-    private static double[][] resample(Mapping map, double[] in, double[] var) {
+    private static double[][] resample(FrameSet fs, double[] in, double[] var) {
+        Mapping map = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
         ResampleFlags flags = new ResampleFlags();
         flags.setUseBad(true);
         double[] out = new double[NX * NX];
@@ -73,26 +76,27 @@ class ResampleThreadsTest {
     // ExecutorService is not AutoCloseable before Java 19; the pool is shut down in the finally block.
     @SuppressWarnings("PMD.CloseResource")
     @Test
-    void threadsGetTheSingleThreadResult() throws InterruptedException, ExecutionException {
-        Mapping map = mapping();
-        String dump = map.toString();
+    void copiesGetTheSingleThreadResult() throws InterruptedException, ExecutionException {
+        FrameSet fs = frameSet();
+        String dump = fs.toString();
         double[] in = new double[NX * NX];
         double[] var = new double[NX * NX];
         for (int k = 0; k < in.length; k++) {
             in[k] = Math.sin(k * 0.001) * 100.0 + k % 37;
             var[k] = 1.0 + k % 11;
         }
-        double[][] want = resample(map, in, var);
+        double[][] want = resample(fs, in, var);
 
         // MODERN-JAVA(19): try-with-resources on the ExecutorService
         ExecutorService pool = Executors.newFixedThreadPool(NTHREAD);
         try {
             List<Future<List<double[][]>>> futures = new ArrayList<>();
             for (int t = 0; t < NTHREAD; t++) {
+                FrameSet mine = (FrameSet) fs.copy();
                 Callable<List<double[][]>> task = () -> {
                     List<double[][]> results = new ArrayList<>();
                     for (int r = 0; r < REPEATS; r++) {
-                        results.add(resample(map, in, var));
+                        results.add(resample(mine, in, var));
                     }
                     return results;
                 };
@@ -109,6 +113,6 @@ class ResampleThreadsTest {
             pool.shutdown();
             pool.awaitTermination(60, TimeUnit.SECONDS);
         }
-        assertEquals(dump, map.toString(), "the Mapping's dump");
+        assertEquals(dump, fs.toString(), "the original FrameSet's dump");
     }
 }

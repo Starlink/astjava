@@ -1363,16 +1363,17 @@ public abstract class Mapping extends AstObject {
      * inputs as outputs that is linear within {@code tol} over each section, and the NoBad flag
      * unset.
      *
-     * <p>Resampling never changes the Mapping, even for a moment (C inverts it while fitting its
-     * inverse), so several threads may resample through one Mapping at once wherever they may
-     * transform through it at once.
+     * <p>As in C, resampling a region of more than 1024 pixels simplifies the Mapping, which can set
+     * its IsSimple flag. Like every AST object, a Mapping is used by one thread at a time; a
+     * thread that resamples through a FrameSet another thread uses makes its own {@code copy()}.
      *
      * @param ndimIn the number of dimensions of the input grid
      * @param lbndIn the lowest pixel index of the input grid on each dimension
      * @param ubndIn the highest pixel index of the input grid on each dimension
      * @param in the input data, an array of {@code byte}, {@code short}, {@code int}, {@code
-     *     long}, {@code float} or {@code double} with one element per input pixel
-     * @param inVar the input variances, an array of the type of {@code in} and its length, or null
+     *     long}, {@code float} or {@code double} with an element for each input pixel
+     * @param inVar the input variances, an array of the type of {@code in} with an element for each
+     *     input pixel, or null
      * @param interp the sub-pixel interpolation scheme
      * @param flags the flags
      * @param tol the largest positional error, in input pixels, a linear fit may introduce, or
@@ -1384,14 +1385,15 @@ public abstract class Mapping extends AstObject {
      * @param ubndOut the highest pixel index of the output grid on each dimension
      * @param lbnd the lowest pixel index of the output region on each dimension
      * @param ubnd the highest pixel index of the output region on each dimension
-     * @param out the output data, an array of the type of {@code in} with one element per output
-     *     pixel
-     * @param outVar the output variances, an array of the type and length of {@code out}, or null
+     * @param out the output data, an array of the type of {@code in} with an element for each
+     *     output pixel
+     * @param outVar the output variances, an array of the type of {@code in} with an element for
+     *     each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws IllegalArgumentException if the arrays are not all of the same primitive type, or
      *     {@code badval} is not of the matching {@code Number} class
      * @throws AstException if an argument is invalid, for example with status {@code AST__DIMIN}
-     *     if a data or variance array does not have one element per pixel of its grid, or a bound
+     *     if a data or variance array has fewer elements than its grid has pixels, or a bound
      *     array has fewer values than its grid has dimensions, {@code AST__GBDIN} if the output
      *     region does not lie within the output grid, or {@code AST__TRNND} if the Mapping has no
      *     inverse transformation
@@ -1569,8 +1571,8 @@ public abstract class Mapping extends AstObject {
      * @param ndimIn the number of dimensions of the input grid
      * @param lbndIn the lowest pixel index of the input grid on each dimension
      * @param ubndIn the highest pixel index of the input grid on each dimension
-     * @param in the input data, one element per input pixel
-     * @param inVar the input variances, one element per input pixel, or null
+     * @param in the input data, an element for each input pixel
+     * @param inVar the input variances, an element for each input pixel, or null
      * @param interp the sub-pixel interpolation scheme
      * @param flags the flags
      * @param tol the largest positional error, in input pixels, a linear fit may introduce
@@ -1581,8 +1583,8 @@ public abstract class Mapping extends AstObject {
      * @param ubndOut the highest pixel index of the output grid on each dimension
      * @param lbnd the lowest pixel index of the output region on each dimension
      * @param ubnd the highest pixel index of the output region on each dimension
-     * @param out the output data, one element per output pixel
-     * @param outVar the output variances, one element per output pixel, or null
+     * @param out the output data, an element for each output pixel
+     * @param outVar the output variances, an element for each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws AstException if an argument is invalid, as for {@link #resample}
      */
@@ -1631,8 +1633,8 @@ public abstract class Mapping extends AstObject {
      * @param ndimIn the number of dimensions of the input grid
      * @param lbndIn the lowest pixel index of the input grid on each dimension
      * @param ubndIn the highest pixel index of the input grid on each dimension
-     * @param in the input data, one element per input pixel
-     * @param inVar the input variances, one element per input pixel, or null
+     * @param in the input data, an element for each input pixel
+     * @param inVar the input variances, an element for each input pixel, or null
      * @param interp the sub-pixel interpolation scheme
      * @param flags the flags
      * @param tol the largest positional error, in input pixels, a linear fit may introduce
@@ -1643,8 +1645,8 @@ public abstract class Mapping extends AstObject {
      * @param ubndOut the highest pixel index of the output grid on each dimension
      * @param lbnd the lowest pixel index of the output region on each dimension
      * @param ubnd the highest pixel index of the output region on each dimension
-     * @param out the output data, one element per output pixel
-     * @param outVar the output variances, one element per output pixel, or null
+     * @param out the output data, an element for each output pixel
+     * @param outVar the output variances, an element for each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws AstException if an argument is invalid, as for {@link #resample}
      */
@@ -1693,8 +1695,8 @@ public abstract class Mapping extends AstObject {
      * @param ndimIn the number of dimensions of the input grid
      * @param lbndIn the lowest pixel index of the input grid on each dimension
      * @param ubndIn the highest pixel index of the input grid on each dimension
-     * @param in the input data, one element per input pixel
-     * @param inVar the input variances, one element per input pixel, or null
+     * @param in the input data, an element for each input pixel
+     * @param inVar the input variances, an element for each input pixel, or null
      * @param interp the sub-pixel interpolation scheme
      * @param flags the flags
      * @param tol the largest positional error, in input pixels, a linear fit may introduce
@@ -1705,8 +1707,8 @@ public abstract class Mapping extends AstObject {
      * @param ubndOut the highest pixel index of the output grid on each dimension
      * @param lbnd the lowest pixel index of the output region on each dimension
      * @param ubnd the highest pixel index of the output region on each dimension
-     * @param out the output data, one element per output pixel
-     * @param outVar the output variances, one element per output pixel, or null
+     * @param out the output data, an element for each output pixel
+     * @param outVar the output variances, an element for each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws AstException if an argument is invalid, as for {@link #resample}
      */
@@ -1755,8 +1757,8 @@ public abstract class Mapping extends AstObject {
      * @param ndimIn the number of dimensions of the input grid
      * @param lbndIn the lowest pixel index of the input grid on each dimension
      * @param ubndIn the highest pixel index of the input grid on each dimension
-     * @param in the input data, one element per input pixel
-     * @param inVar the input variances, one element per input pixel, or null
+     * @param in the input data, an element for each input pixel
+     * @param inVar the input variances, an element for each input pixel, or null
      * @param interp the sub-pixel interpolation scheme
      * @param flags the flags
      * @param tol the largest positional error, in input pixels, a linear fit may introduce
@@ -1767,8 +1769,8 @@ public abstract class Mapping extends AstObject {
      * @param ubndOut the highest pixel index of the output grid on each dimension
      * @param lbnd the lowest pixel index of the output region on each dimension
      * @param ubnd the highest pixel index of the output region on each dimension
-     * @param out the output data, one element per output pixel
-     * @param outVar the output variances, one element per output pixel, or null
+     * @param out the output data, an element for each output pixel
+     * @param outVar the output variances, an element for each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws AstException if an argument is invalid, as for {@link #resample}
      */
@@ -1817,8 +1819,8 @@ public abstract class Mapping extends AstObject {
      * @param ndimIn the number of dimensions of the input grid
      * @param lbndIn the lowest pixel index of the input grid on each dimension
      * @param ubndIn the highest pixel index of the input grid on each dimension
-     * @param in the input data, one element per input pixel
-     * @param inVar the input variances, one element per input pixel, or null
+     * @param in the input data, an element for each input pixel
+     * @param inVar the input variances, an element for each input pixel, or null
      * @param interp the sub-pixel interpolation scheme
      * @param flags the flags
      * @param tol the largest positional error, in input pixels, a linear fit may introduce
@@ -1829,8 +1831,8 @@ public abstract class Mapping extends AstObject {
      * @param ubndOut the highest pixel index of the output grid on each dimension
      * @param lbnd the lowest pixel index of the output region on each dimension
      * @param ubnd the highest pixel index of the output region on each dimension
-     * @param out the output data, one element per output pixel
-     * @param outVar the output variances, one element per output pixel, or null
+     * @param out the output data, an element for each output pixel
+     * @param outVar the output variances, an element for each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws AstException if an argument is invalid, as for {@link #resample}
      */
@@ -1879,8 +1881,8 @@ public abstract class Mapping extends AstObject {
      * @param ndimIn the number of dimensions of the input grid
      * @param lbndIn the lowest pixel index of the input grid on each dimension
      * @param ubndIn the highest pixel index of the input grid on each dimension
-     * @param in the input data, one element per input pixel
-     * @param inVar the input variances, one element per input pixel, or null
+     * @param in the input data, an element for each input pixel
+     * @param inVar the input variances, an element for each input pixel, or null
      * @param interp the sub-pixel interpolation scheme
      * @param flags the flags
      * @param tol the largest positional error, in input pixels, a linear fit may introduce
@@ -1891,8 +1893,8 @@ public abstract class Mapping extends AstObject {
      * @param ubndOut the highest pixel index of the output grid on each dimension
      * @param lbnd the lowest pixel index of the output region on each dimension
      * @param ubnd the highest pixel index of the output region on each dimension
-     * @param out the output data, one element per output pixel
-     * @param outVar the output variances, one element per output pixel, or null
+     * @param out the output data, an element for each output pixel
+     * @param outVar the output variances, an element for each output pixel, or null
      * @return the number of output values and variances given the bad value
      * @throws AstException if an argument is invalid, as for {@link #resample}
      */

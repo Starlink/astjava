@@ -13,9 +13,11 @@ import uk.ac.starlink.ast.internal.pal.Dmat;
  * section is then resampled in blocks of at most {@link #MXPIX} output pixels, whose input
  * positions come from the fit or from the Mapping.
  *
- * <p>The Mapping given is never changed, so several threads may resample through it at once: C
- * inverts the Mapping in place while it fits its inverse, where this class fits the inverse
- * transformation directly.
+ * <p>C inverts the Mapping in place while it fits its inverse; this class fits the inverse
+ * transformation directly, leaving the Mapping's Invert attribute alone. As in C, simplifying the
+ * Mapping for a region of more than 1024 pixels can set the Mapping's own IsSimple flag. A Mapping
+ * is used by one thread at a time, as every AST object is; each thread copies the FrameSet it
+ * resamples through.
  *
  * <p>Ported from Rust {@code mappings/resample/mod.rs} and C {@code mapping.c} ({@code
  * Resample<X>}, {@code ResampleAdaptively}, {@code ResampleWithBlocking}, {@code ResampleSection},
@@ -94,9 +96,10 @@ final class Resample {
      * region from {@code lbnd} to {@code ubnd} of {@code out} (and {@code outVar}) on the output
      * grid, through the inverse of {@code map}.
      *
-     * <p>Besides C's checks, a data or variance array must have one element per pixel of its grid,
-     * and each bound array at least as many elements as its grid has dimensions, which C cannot
-     * check; these give {@code AST__DIMIN}, with the messages of Rust's {@code resample}.
+     * <p>Besides C's checks, a data or variance array must have at least one element per pixel of
+     * its grid, and each bound array at least as many elements as its grid has dimensions, which C
+     * cannot check; these give {@code AST__DIMIN}, with the messages of Rust's {@code resample}. A
+     * longer array is accepted and its leading elements used, as in C and jniast.
      *
      * @param method C's name of the function, such as {@code astResampleD}, for error messages
      * @return the number of output pixels (and variances) given the bad value
@@ -245,9 +248,9 @@ final class Resample {
         }
     }
 
-    /** Rust's check that a data or variance array, if given, has one element per pixel of its grid. */
+    /** Rust's check that a data or variance array, if given, has an element for each pixel of its grid. */
     private static void checkLength(String prefix, String what, PixelArray a, long want) {
-        if (a != null && a.length() != want) {
+        if (a != null && a.length() < want) {
             throw Ast.err(
                     AstException.AST__DIMIN,
                     prefix + "The " + what + " array has " + a.length() + " elements but its grid has " + want + ".");
