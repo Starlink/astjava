@@ -67,7 +67,9 @@ class DeferredTest {
         assertEquals(
                 "needs SpecFrame",
                 Deferred.unavailableReason("FitsChan: the spectral axis 3 (CTYPE 'FREQ') needs SpecFrame"));
-        assertEquals("needs MathMap", Deferred.unavailableReason("FitsChan: axis 1 (CTYPE 'X-LOG') needs MathMap"));
+        assertEquals(
+                "needs FitsTable",
+                Deferred.unavailableReason("FitsChan: the -TAB table in extension 'WCS-TAB' needs FitsTable"));
         assertEquals(
                 "encoding FITS-IRAF",
                 Deferred.unavailableReason("FitsChan: reading the FITS-IRAF encoding is not available"));
