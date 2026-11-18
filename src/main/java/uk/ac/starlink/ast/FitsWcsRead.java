@@ -4,10 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The FITS-WCS read of a FitsChan: the FrameSet its cards describe in the FITS-WCS encoding (C's
- * {@code FitsToStore} and {@code FsetFromStore} for that encoding).
+ * The FITS-WCS read of a FitsChan: the FrameSet its cards describe in the FITS-WCS encoding, or in
+ * an encoding C reads as a variant of it, FITS-PC, FITS-IRAF, FITS-AIPS or FITS-AIPS++ (C's {@code
+ * FitsToStore} and {@code FsetFromStore} for those encodings); and the DSS read, whose one axis
+ * description {@link FitsEncDss#dssToStore} makes from the plate solution, made into a FrameSet in
+ * the same way.
  *
- * <p>The read translates the header ({@code SpecTrans}), sweeps the WCS cards as C's {@code
+ * <p>The read translates the header ({@code SpecTrans}, whose translations depend on the
+ * encoding), sweeps the WCS cards as C's {@code
  * WcsFcRead} does, extracts every axis description into a {@link FitsStore} and makes from them a
  * FrameSet whose base Frame describes pixel coordinates and whose current Frame describes the
  * primary axis description, with a Frame for each alternate description. For each description the
@@ -37,9 +41,9 @@ final class FitsWcsRead {
     // ------------------------------------------------------------------
 
     /**
-     * The FrameSet the cards of {@code fc} describe in the FITS-WCS encoding, or null when they
-     * describe none (C's {@code Read} for a foreign encoding, fitschan.c:26007, through {@code
-     * FitsToStore} and {@code FsetFromStore}).
+     * The FrameSet the cards of {@code fc} describe in {@code encoding}, FITS-WCS or a variant of it
+     * (FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++), or null when they describe none (C's {@code Read} for a foreign
+     * encoding, fitschan.c:26007, through {@code FitsToStore} and {@code FsetFromStore}).
      *
      * <p>The cards the read uses are marked as provisionally used, and the warnings it raises are
      * stored as {@code ASTWARN} cards. {@link FitsChan#read} then makes the marked cards used, or,
@@ -49,15 +53,15 @@ final class FitsWcsRead {
      * @throws UnsupportedOperationException if the header has a spectral axis, a {@code -TAB} axis
      *     with TabOK above zero, or a non-spectral {@code -LOG} axis
      */
-    static FrameSet read(FitsChan fc) {
+    static FrameSet read(FitsChan fc, FitsChan.Encoding encoding) {
         FitsCardList cards = fc.cards();
         boolean defB1950 = fc.getDefB1950();
         // SpecTrans works on a copy of the cards (C's temporary FitsChan), whose warnings are
         // stored on the FitsChan itself.
         int entry = cards.position();
         FitsSpecTrans.TransWarnings transWarnings = new FitsSpecTrans.TransWarnings();
-        FitsCardList trans = FitsSpecTrans.specTrans(
-                cards, FitsChan.Encoding.FITS_WCS, transAttrs(fc), transWarnings, fc.warnList(METHOD));
+        FitsCardList trans =
+                FitsSpecTrans.specTrans(cards, encoding, transAttrs(fc), transWarnings, fc.warnList(METHOD));
         // The cards SpecTrans used, which C marks before WcsFcRead runs.
         List<String> specNames = trans.takeConsumedNames();
         // C's WcsFcRead sweeps the cards before the FrameSet is made, and makes nothing when the
@@ -75,6 +79,50 @@ final class FitsWcsRead {
             }
         }
         return finishForeignRead(fc, decoded, decodeError, swept, readWarnings, cursors, trans, specNames);
+    }
+
+    /**
+     * The FrameSet the DSS plate solution in the cards of {@code fc} describes (C's {@code Read}
+     * for the DSS encoding, through {@code FitsToStore}, which calls {@code DSSToStore}, and
+     * {@code FsetFromStore}). {@link FitsEncDss#dssToStore} makes the axis description, marking
+     * each card it reads as provisionally used; the FrameSet is made from it as for a FITS-WCS
+     * header with that one description, and the warnings that raises are stored as {@code ASTWARN}
+     * cards. {@link FitsChan#read} then makes the marked cards used, or available again, as for the
+     * other encodings.
+     *
+     * @throws AstException as C's read reports it
+     */
+    static FrameSet readDss(FitsChan fc) {
+        FitsCardList cards = fc.cards();
+        FitsCard entry = cards.current();
+        FitsStore store = FitsEncDss.dssToStore(fc, METHOD, fc.astClass());
+        // C's DistortMaps reads the image dimensions from the FitsChan whatever the encoding.
+        for (int i = 0; i < store.naxis; i++) {
+            store.dims[i] = cards.getFloat("NAXIS" + (i + 1));
+        }
+        store.sipReplace = fc.getSipReplace();
+        store.carLin = fc.getCarLin();
+        FitsWcsKeywords.WcsStores stores =
+                new FitsWcsKeywords.WcsStores(store.naxis, store, new ArrayList<>(), new ArrayList<>());
+        FitsWarnings readWarnings = fc.warnList(METHOD);
+        List<int[]> cursors = new ArrayList<>();
+        FrameSet decoded;
+        try {
+            decoded = decodeWcsWithAltsInner(
+                    stores,
+                    fc.getDefB1950(),
+                    fc.getIgnoreBadAlt() != 0,
+                    fc.getIwc(),
+                    cards,
+                    fc.getTabOK(),
+                    readWarnings,
+                    cursors);
+        } catch (AstException e) {
+            pushReadWarnings(fc, readWarnings, cursors, entry);
+            throw e;
+        }
+        pushReadWarnings(fc, readWarnings, cursors, entry);
+        return decoded;
     }
 
     /** The attributes the header translations of a read depend on. */
@@ -186,7 +234,7 @@ final class FitsWcsRead {
         for (String name : extractNames) {
             cards.markAllCards(name);
         }
-        pushReadWarnings(fc, readWarnings, cursors);
+        pushReadWarnings(fc, readWarnings, cursors, null);
         if (decodeError != null) {
             throw decodeError;
         }
@@ -242,10 +290,11 @@ final class FitsWcsRead {
      * Stores the {@code ASTWARN} blocks the decoding raised, each in front of the card current in
      * C when it was raised (see {@link #decodeWcsWithAltsInner} for {@code cursors}). C's {@code
      * DistortMaps} reads NAXIS1 to NAXIS{@code n} as each axis description is read, {@code n} its
-     * number of WCS axes, leaving the cursor {@link #moveCursorToLastNaxis} reproduces; a cursor
-     * of -1 is end-of-file.
+     * number of WCS axes, from the card {@code start} (null for end-of-file, where the sweep of a
+     * FITS-WCS read leaves the cursor), leaving the cursor {@link #moveCursorToLastNaxis}
+     * reproduces; a cursor of -1 is end-of-file.
      */
-    private static void pushReadWarnings(FitsChan fc, FitsWarnings warnings, List<int[]> cursors) {
+    private static void pushReadWarnings(FitsChan fc, FitsWarnings warnings, List<int[]> cursors, FitsCard start) {
         if (fc.getClean()) {
             return;
         }
@@ -263,7 +312,7 @@ final class FitsWcsRead {
             }
             if (!haveCurrent || current != cursor) {
                 if (cursor >= 0) {
-                    moveCursorToLastNaxis(cards, cursor);
+                    moveCursorToLastNaxis(cards, cursor, start);
                 } else {
                     cards.setPosition(cards.len());
                 }
@@ -276,15 +325,17 @@ final class FitsWcsRead {
 
     /**
      * Looks up NAXIS1 to NAXIS{@code naxes} on {@code cards} as C's {@code DistortMaps}'s opening
-     * loop does (fitschan.c:8903-8907), from the end-of-file cursor {@code WcsFcRead}'s card loop
-     * leaves. The values reach the FitsStore through the extraction; what this reproduces is the
+     * loop does (fitschan.c:8903-8907), from the card {@code start}: null for end-of-file, where
+     * {@code WcsFcRead}'s card loop leaves the cursor, or for DSS the card current when the read
+     * started, which C's {@code GetValue} restores after each keyword {@code DSSToStore} reads. The
+     * values reach the FitsStore through the extraction; what this reproduces is the
      * cursor: {@code astGetFitsF} finds its card with {@code SearchCard}, which makes it current,
      * and does not reinstate the original card. The card left current, NAXIS{@code naxes}, or
      * end-of-file when there is none, is where C's {@code Warn} then inserts any {@code ASTWARN}
      * block.
      */
-    private static void moveCursorToLastNaxis(FitsCardList cards, int naxes) {
-        cards.setPosition(cards.len());
+    private static void moveCursorToLastNaxis(FitsCardList cards, int naxes, FitsCard start) {
+        cards.setPosition(start == null ? cards.len() : cards.indexOf(start));
         for (int i = 1; i <= naxes; i++) {
             cards.searchCard("NAXIS" + i, "astGetFitsF");
         }

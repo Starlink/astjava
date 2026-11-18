@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -171,5 +172,118 @@ class FitsChanReadTest {
                 "CDELT2  =                  0.2",
                 "");
         assertEquals("AAAA-BBBB", currentFrame(header).getDomain());
+    }
+
+    /** The FrameSet read from {@code cards}, one card per element. */
+    private static FrameSet readCards(String... cards) {
+        return FitsHeaders.readFrameSet(FitsChan.fromHeader(String.join("\n", cards) + "\n"));
+    }
+
+    @Test
+    void aZeroCdeltTranslationOutranksALaterCardWithItsKeyword() {
+        // C reads its translations after every card of the header (fitschan.c WcsToStore), so the
+        // 1.0 that replaces the zero CDELT1 outranks the 0.25 of the second CDELT1 (C probe dup).
+        FrameSet fs = readCards(
+                "NAXIS   = 1",
+                "NAXIS1  = 10",
+                "CRPIX1  = 1",
+                "CRVAL1  = 0",
+                "CTYPE1  = 'LINEAR'",
+                "CDELT1  = 0.0",
+                "CDELT1  = 0.25");
+        assertEquals(2.0, fs.tran1(1, new double[] {3.0}, true)[0]);
+    }
+
+    @Test
+    void aLogicalFalseCdeltIsTranslatedAsAZero() {
+        FrameSet fs = readCards(
+                "NAXIS   = 1",
+                "NAXIS1  = 10",
+                "CRPIX1  = 1",
+                "CRVAL1  = 0",
+                "CTYPE1  = 'LINEAR'",
+                "CDELT1  = F",
+                "CDELT1  = 0.25");
+        assertEquals(2.0, fs.tran1(1, new double[] {3.0}, true)[0]);
+    }
+
+    @Test
+    void theCdeltsACdMatrixGivesOutrankEveryCdeltCard() {
+        // The CDj_i matrix gives CDELTj 1.0 among C's translations, which outrank all three CDELT2
+        // cards wherever the translation is stored (C probe dup).
+        FrameSet fs = readCards(
+                "NAXIS   = 2",
+                "NAXIS1  = 10",
+                "NAXIS2  = 10",
+                "CRPIX1  = 1",
+                "CRPIX2  = 1",
+                "CRVAL1  = 0",
+                "CRVAL2  = 0",
+                "CTYPE1  = 'LINEAR'",
+                "CTYPE2  = 'LINEAR'",
+                "CDELT2  = 0.5",
+                "CDELT2  = 0.5",
+                "CDELT2  = 0.5",
+                "CD1_1   = 2.0",
+                "CD2_2   = 3.0");
+        double[][] out = fs.tran2(1, new double[] {3.0}, new double[] {3.0}, true);
+        assertEquals(4.0, out[0][0]);
+        assertEquals(6.0, out[1][0]);
+    }
+
+    @Test
+    void aCtypeCardWithoutACommentKeepsTheCommentOfAnEarlierOne() {
+        // C's WcsFcRead stores the comment of each CTYPE card it visits, and SetItemC ignores a
+        // card with none, so the first CTYPE1's comment still labels the axis (C probe dup).
+        Frame f = readCards(
+                        "NAXIS   = 2",
+                        "NAXIS1  = 10",
+                        "NAXIS2  = 10",
+                        "CRPIX1  = 1",
+                        "CRPIX2  = 1",
+                        "CRVAL1  = 0",
+                        "CRVAL2  = 0",
+                        "CTYPE1  = 'XLIN' / Comment one",
+                        "CTYPE1  = 'XLIN'",
+                        "CTYPE2  = 'YLIN' / Comment two",
+                        "CDELT1  = 0.25",
+                        "CDELT2  = 0.5")
+                .getFrame(FrameSet.AST__CURRENT);
+        assertEquals("Comment one", f.getLabel(1));
+        assertEquals("Comment two", f.getLabel(2));
+    }
+
+    @Test
+    void aNaxisOfADescribedAxisThatIsNotANumberFailsTheRead() {
+        // C's DistortMaps reads NAXIS1 to NAXISn, n the number of WCS axes, with astGetFitsF,
+        // which reports a value it cannot convert (C probe dup).
+        for (String naxis1 : new String[] {"'abc'", "(1.0, 2.0)"}) {
+            FitsChan fc = FitsChan.fromHeader(String.join(
+                    "\n",
+                    "NAXIS   = 1",
+                    "NAXIS1  = " + naxis1,
+                    "CRPIX1  = 1",
+                    "CRVAL1  = 0",
+                    "CTYPE1  = 'LINEAR'",
+                    "CDELT1  = 0.25",
+                    ""));
+            AstException e = assertThrows(AstException.class, fc::read, naxis1);
+            assertEquals(AstException.AST__FTCNV, e.getStatus(), naxis1);
+            assertTrue(
+                    e.getMessage().contains("Cannot convert FITS keyword 'NAXIS1' to floating point."), e.getMessage());
+        }
+    }
+
+    @Test
+    void aNaxisBeyondTheWcsAxesIsNotRead() {
+        FrameSet fs = readCards(
+                "NAXIS   = 2",
+                "NAXIS1  = 10",
+                "NAXIS2  = 'abc'",
+                "CRPIX1  = 1",
+                "CRVAL1  = 0",
+                "CTYPE1  = 'LINEAR'",
+                "CDELT1  = 0.25");
+        assertEquals(0.5, fs.tran1(1, new double[] {3.0}, true)[0]);
     }
 }

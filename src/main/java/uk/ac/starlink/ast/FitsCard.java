@@ -256,12 +256,19 @@ final class FitsCard {
         /** Added during the current axis-description pass of a write, C's {@code NEW2}. */
         boolean newVersion;
 
+        /**
+         * A translation a read made of the header's cards: the card is in C's FitsChan of
+         * translations ({@code SpecTrans}'s {@code ret}), not in the header.
+         */
+        boolean translation;
+
         Flags copy() {
             Flags f = new Flags();
             f.consumption = consumption;
             f.retained = retained;
             f.newWrite = newWrite;
             f.newVersion = newVersion;
+            f.translation = translation;
             return f;
         }
 

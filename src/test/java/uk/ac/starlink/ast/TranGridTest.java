@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  *
  * <p>{@code tranmap} needs a TranMap and {@code nonlinear_mathmap_1d} a MathMap, which are outside
  * the first phase. {@code fits_wcs_pixel_to_sky} reads a header with a {@code CROTA1} card, which
- * C's FitsChan guesses to be FITS-AIPS (fitschan.c:12880), an encoding whose read is out of scope.
+ * C's FitsChan guesses to be FITS-AIPS (fitschan.c:12880).
  */
 class TranGridTest {
 
@@ -120,6 +120,21 @@ class TranGridTest {
         CmpMap c4 = new CmpMap(c1, c2, true);
         c4.invert();
         assertGridsRoundTrip(new CmpMap(c3, c4, true), 6, 0.5);
+    }
+
+    @Test
+    void fitsWcsPixelToSky() {
+        FitsChan fc = FitsHeaders.chan(
+                "CTYPE1  = 'RA---TAN'",
+                "CTYPE2  = 'DEC--TAN'",
+                "CRPIX1  = 20",
+                "CRPIX2  = 20",
+                "CRVAL1  = 0.0",
+                "CRVAL2  = 0.0",
+                "CROTA1  = 30.0",
+                "CDELT1  = -0.001",
+                "CDELT2  = 0.001");
+        assertGridsRoundTrip(FitsHeaders.readFrameSet(fc), 8, 0.0001);
     }
 
     /** The results hold one value per grid position for each output, the first axis varying fastest. */

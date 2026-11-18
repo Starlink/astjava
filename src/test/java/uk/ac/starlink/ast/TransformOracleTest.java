@@ -66,10 +66,6 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  * that are not ported. Any other read that gives no FrameSet, or throws {@code AstException}, is a
  * failure the gate reports unless a measured cause is written for it by hand.
  *
- * <p>{@code loads_head_frameset_with_frames} and {@code skyframe_longitude_is_cyclic_pixel_is_not}
- * read {@code wcsconv/inputs/galactic-tan.head} rather than Rust's {@code cobe.head}, which is
- * guessed to be FITS-AIPS, an encoding whose read is out of scope.
- *
  * <p>Single rows may be excused by {@code deferred/oracle-rows.txt}, one line per section, {@code
  * <fixture> <forward|inverse> <rows> | <measured cause>}, for rows that differ from C only because
  * C's oracle was computed with a multiply and an add fused (BAD on one side and finite on the
@@ -1309,12 +1305,8 @@ class TransformOracleTest {
         assertNotEquals("FrameSet", l.map.astClass(), "a bare Mapping has no Frame");
     }
 
-    /**
-     * A celestial header the FitsChan reads as FITS-WCS, used instead of Rust's {@code
-     * wcsconv/inputs/cobe.head}, which the FitsChan guesses to be FITS-AIPS, an encoding whose read
-     * is out of scope.
-     */
-    private static final String CELESTIAL_HEAD = "wcsconv/inputs/galactic-tan.head";
+    /** A celestial header, which the FitsChan guesses to be FITS-AIPS. */
+    private static final String CELESTIAL_HEAD = "wcsconv/inputs/cobe.head";
 
     /**
      * A {@code .head} fixture reads as a FrameSet, whose base-to-current Mapping is transformed and
@@ -1578,12 +1570,12 @@ class TransformOracleTest {
         assertNull(l.failure);
         boolean[] fwd = angularFlags(
                 l,
-                OracleFile.parseText(TOL_LINE + "[galactic-tan.head nin=2 nout=2 dir=forward]\n", "test")
+                OracleFile.parseText(TOL_LINE + "[cobe.head nin=2 nout=2 dir=forward]\n", "test")
                         .get(0));
         assertTrue(fwd[0] || fwd[1], "at least one axis cyclic (sky longitude)");
         boolean[] inv = angularFlags(
                 l,
-                OracleFile.parseText(TOL_LINE + "[galactic-tan.head nin=2 nout=2 dir=inverse]\n", "test")
+                OracleFile.parseText(TOL_LINE + "[cobe.head nin=2 nout=2 dir=inverse]\n", "test")
                         .get(0));
         assertFalse(inv[0] || inv[1], "pixel axes are not cyclic");
     }

@@ -26,9 +26,9 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * follows them, and {@code FITSCHAN_OPTIONS}. None of its tests waits for the FITS-WCS read (Task
  * 23).
  *
- * <p>The tests that write to the FitsChan ({@code native_round_trip_zoommap},
- * {@code native_round_trip_skyframe}, {@code native_rewind_and_reread} and {@code
- * translate_projp_retains_source_cards}) are listed in {@code deferred/rust-tests.txt}.
+ * <p>Of the tests that write to the FitsChan, {@code native_round_trip_zoommap}, {@code
+ * native_round_trip_skyframe}, {@code native_rewind_and_reread} and {@code
+ * translate_projp_retains_source_cards} use the NATIVE encoding and are translated here.
  */
 class FitsChanTest {
 
@@ -161,6 +161,62 @@ class FitsChanTest {
         // C's astFindFits searches forward from the current card only, leaving end-of-file.
         assertNull(fc.findFits("FIRST", true));
         assertEquals(fc.getNcard() + 1, fc.getCard());
+    }
+
+    @Test
+    void nativeRoundTripZoommap() {
+        FitsChan fc = new FitsChan();
+        fc.setEncoding("NATIVE");
+        assertEquals(1, fc.write(new ZoomMap(3, 2.5)));
+        assertTrue(fc.getNcard() > 0, "the FitsChan holds cards after the write");
+
+        fc.clear("Card");
+        AstObject obj = fc.read();
+        assertNotNull(obj, "read should return an object");
+        Mapping mapping = (Mapping) obj;
+        assertEquals(3, mapping.getNin());
+        assertEquals(3, mapping.getNout());
+        double[] out = mapping.tranN(1, 3, new double[] {1.0, 2.0, 3.0}, true, 3);
+        assertTrue(Math.abs(out[0] - 2.5) < 1e-10);
+        assertTrue(Math.abs(out[1] - 5.0) < 1e-10);
+        assertTrue(Math.abs(out[2] - 7.5) < 1e-10);
+    }
+
+    @Test
+    void nativeRoundTripSkyframe() {
+        SkyFrame sky = new SkyFrame();
+        sky.set("System=FK5,Epoch=MJD 51544.0,Equinox=MJD 51544.0");
+
+        FitsChan fc = new FitsChan();
+        fc.setEncoding("NATIVE");
+        assertEquals(1, fc.write(sky));
+        assertTrue(fc.getNcard() > 0);
+
+        fc.clear("Card");
+        AstObject obj = fc.read();
+        assertNotNull(obj, "read should return an object");
+        Frame frame = (Frame) obj;
+        assertEquals(2, frame.getNaxes());
+        assertEquals("FK5", frame.getSystem());
+    }
+
+    /**
+     * A NATIVE read removes the cards it read (C's {@code Read} calls {@code FixUsed} with {@code
+     * remove} set for the NATIVE encoding), so after a rewind there is nothing left to read.
+     */
+    @Test
+    void nativeRewindAndReread() {
+        FitsChan fc = new FitsChan();
+        fc.setEncoding("NATIVE");
+        fc.write(new ZoomMap(2, 3.0));
+
+        fc.clear("Card");
+        AstObject obj1 = fc.read();
+        assertNotNull(obj1, "first read");
+        assertEquals(2, ((Mapping) obj1).getNin());
+
+        fc.clear("Card");
+        assertNull(fc.read(), "second read should find no object");
     }
 
     @Test
@@ -401,5 +457,41 @@ class FitsChanTest {
             buf.write(b, 0, n);
         }
         return new String(buf.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    @Test
+    void translateProjpRetainsSourceCards() {
+        // C reads PROJPm only when the PV values of the longitude axis look incomplete
+        // (fitschan.c:31910-31947); with PV1_0, PV1_1 and PV1_2 it trusts them, so the PROJP cards
+        // are not read, not consumed, and are kept by a later write.
+        String header = String.join(
+                "\n",
+                "SIMPLE  =                    T / Fits standard",
+                "NAXIS   =                    2 / Number of dimensions",
+                "CTYPE1  = 'RA---TAN'           / Axis type",
+                "CTYPE2  = 'DEC--TAN'           / Axis type",
+                "CRVAL1  =                 40.0 / Reference value",
+                "CRVAL2  =                 60.0 / Reference value",
+                "CRPIX1  =                256.0 / Reference pixel",
+                "CRPIX2  =                256.0 / Reference pixel",
+                "CDELT1  =                -0.01 / Pixel size",
+                "CDELT2  =                 0.01 / Pixel size",
+                "PROJP0  =                999.0 / Projection parameter",
+                "PROJP1  =                999.0 / Projection parameter",
+                "PROJP2  =                999.0 / Projection parameter",
+                "PV1_0   =                  0.0 / Standard PV",
+                "PV1_1   =                  0.0 / Standard PV",
+                "PV1_2   =                  0.0 / Standard PV",
+                "END",
+                "");
+        FitsChan fc = FitsChan.fromHeader(header);
+        AstObject obj = fc.read();
+        assertNotNull(obj);
+        fc.setEncoding("NATIVE");
+        assertEquals(1, fc.write(obj));
+        String out = fc.toHeader();
+        for (String key : new String[] {"PROJP0", "PROJP1", "PROJP2"}) {
+            assertTrue(out.contains(key), key + " is kept");
+        }
     }
 }

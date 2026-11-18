@@ -1,6 +1,8 @@
 package uk.ac.starlink.ast;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import uk.ac.starlink.ast.internal.pal.Pal;
 
 /**
@@ -535,6 +537,194 @@ public class PolyMap extends Mapping {
             }
         }
         return out;
+    }
+
+    /**
+     * C's protected {@code astMergeShift} (polymap.c {@code MergeShift}): a new PolyMap equivalent
+     * to {@code shift} and this PolyMap applied in series, the ShiftMap first if {@code before} and
+     * last otherwise. If {@code force} is true the constant terms of the new PolyMap are made zero.
+     * The new PolyMap is simplified, which amalgamates the coefficients of each output that refer
+     * to the same powers and removes zero coefficients; it is inverted if this PolyMap is. While
+     * the coefficients are merged this PolyMap's Invert attribute is cleared and {@code shift} is
+     * inverted, as C does; both are restored afterwards.
+     *
+     * @throws AstException with status {@code AST__INTER} if {@code shift} has the wrong number of
+     *     inputs, or the simplified result is not a PolyMap
+     */
+    PolyMap mergeShift(ShiftMap shift, boolean before, boolean force) {
+        boolean inverted = getInvert();
+        boolean bef = before;
+        if (inverted) {
+            clearInvert();
+            shift.invert();
+            bef = !bef;
+        }
+        try {
+            int nin = getNin();
+            int nout = getNout();
+            int nshift = bef ? nin : nout;
+            if (shift.getNin() != nshift) {
+                throw Ast.err(
+                        AstException.AST__INTER,
+                        "astMergeShift(" + astClass() + "): Supplied ShiftMap has incorrect number of inputs - "
+                                + nshift + " are required (internal AST programming error).");
+            }
+            double[] shifts = shift.getShifts();
+
+            // A copy whose coefficients are replaced, so any record that it is simple, its linear
+            // truncation and its Jacobian no longer apply.
+            PolyMap result = (PolyMap) copy();
+            result.clearIsSimple();
+            result.lintrunc = null;
+            result.jacobian = null;
+
+            result.setForward(mergeShifts(nin, nout, force, ncoeffF, coeffF, powerF, mxpowF, shifts, bef));
+
+            // The inverse of the series is the inverse of the PolyMap and the negated shifts, in
+            // the other order.
+            if (ncoeffI != null) {
+                for (int iin = 0; iin < nshift; iin++) {
+                    shifts[iin] = -shifts[iin];
+                }
+                result.setInverse(mergeShifts(nout, nin, force, ncoeffI, coeffI, powerI, mxpowI, shifts, !bef));
+            }
+
+            Mapping tmap = result.simplify();
+            if (!(tmap instanceof PolyMap)) {
+                throw Ast.err(
+                        AstException.AST__INTER,
+                        "astMergeShift(" + astClass() + "): Result is a " + tmap.astClass()
+                                + " - expected a PolyMap  (internal AST programming error).");
+            }
+            PolyMap merged = (PolyMap) tmap;
+            if (inverted) {
+                merged.invert();
+            }
+            return merged;
+        } finally {
+            if (inverted) {
+                setInvert(true);
+                shift.invert();
+            }
+        }
+    }
+
+    /**
+     * C's {@code MergeShifts} (polymap.c): the coefficient arrays of a polynomial transformation
+     * of {@code nin} inputs and {@code nout} outputs equivalent to the one given and the shifts
+     * {@code shifts} applied in series, added to the inputs first if {@code before}, else to the
+     * outputs afterwards. Shifts added afterwards go into the first constant term of each output,
+     * or a new constant term appended to it. Shifts added first expand each term with {@link
+     * #expandTerm}, the terms of the expansion being appended in order. If {@code force} is true
+     * the constant terms are then set to zero, and left in the arrays. The maximum powers start as
+     * those given.
+     */
+    private static Coeffs mergeShifts(
+            int nin,
+            int nout,
+            boolean force,
+            int[] ncoeff,
+            double[][] coeff,
+            int[][][] power,
+            int[] mxpow,
+            double[] shifts,
+            boolean before) {
+        Coeffs c = new Coeffs(nout, nin);
+        System.arraycopy(mxpow, 0, c.mxpow, 0, nin);
+        if (before) {
+            List<Double> ks = new ArrayList<>();
+            List<int[]> qs = new ArrayList<>();
+            for (int iout = 0; iout < nout; iout++) {
+                for (int ico = 0; ico < ncoeff[iout]; ico++) {
+                    ks.clear();
+                    qs.clear();
+                    expandTerm(nin, coeff[iout][ico], power[iout][ico].clone(), shifts, ks, qs);
+                    for (int iexp = 0; iexp < ks.size(); iexp++) {
+                        addCoeff(iout, ks.get(iexp), qs.get(iexp), c.nco, c.cof, c.pow, c.mxpow);
+                    }
+                }
+            }
+        } else {
+            for (int iout = 0; iout < nout; iout++) {
+                c.nco[iout] = ncoeff[iout];
+                c.cof[iout] = coeff[iout].clone();
+                c.pow[iout] = new int[ncoeff[iout]][];
+                for (int ico = 0; ico < ncoeff[iout]; ico++) {
+                    c.pow[iout][ico] = power[iout][ico].clone();
+                }
+            }
+            for (int iout = 0; iout < nout; iout++) {
+                boolean shiftAdded = false;
+                for (int ico = 0; ico < c.nco[iout]; ico++) {
+                    if (isConstant(c.pow[iout][ico])) {
+                        c.cof[iout][ico] += shifts[iout];
+                        shiftAdded = true;
+                        break;
+                    }
+                }
+                if (!shiftAdded) {
+                    addCoeff(iout, shifts[iout], new int[nin], c.nco, c.cof, c.pow, c.mxpow);
+                }
+            }
+        }
+        if (force) {
+            for (int iout = 0; iout < nout; iout++) {
+                for (int ico = 0; ico < c.nco[iout]; ico++) {
+                    if (isConstant(c.pow[iout][ico])) {
+                        c.cof[iout][ico] = 0.0;
+                    }
+                }
+            }
+        }
+        return c;
+    }
+
+    /** Whether every power of a term is zero. */
+    private static boolean isConstant(int[] pows) {
+        for (int pow : pows) {
+            if (pow != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * C's {@code ExpandTerm} (polymap.c): appends to {@code ks} and {@code qs} the coefficients and
+     * powers of the expansion of {@code c * (x0 + s0)^p0 * (x1 + s1)^p1 * ...} in powers of the
+     * unshifted inputs. The first input {@code i} with a non-zero power is factored out once: each
+     * term {@code k * x^q} of the expansion of the reduced term gives {@code k * x^q * xi} and then
+     * {@code k * si * x^q}, in that order. Terms with the same powers are not combined. {@code p}
+     * is changed while the expansion is made and restored afterwards.
+     */
+    private static void expandTerm(int nin, double c, int[] p, double[] s, List<Double> ks, List<int[]> qs) {
+        int i = -1;
+        for (int iin = 0; iin < nin; iin++) {
+            if (p[iin] > 0) {
+                i = iin;
+                break;
+            }
+        }
+        if (i == -1) {
+            ks.add(c);
+            qs.add(new int[nin]);
+            return;
+        }
+        p[i] -= 1;
+        List<Double> ks1 = new ArrayList<>();
+        List<int[]> qs1 = new ArrayList<>();
+        expandTerm(nin, c, p, s, ks1, qs1);
+        p[i] += 1;
+        for (int ico = 0; ico < ks1.size(); ico++) {
+            double k = ks1.get(ico);
+            int[] q = qs1.get(ico);
+            q[i] += 1;
+            ks.add(k);
+            qs.add(q.clone());
+            q[i] -= 1;
+            ks.add(k * s[i]);
+            qs.add(q.clone());
+        }
     }
 
     // ------------------------------------------------------------------

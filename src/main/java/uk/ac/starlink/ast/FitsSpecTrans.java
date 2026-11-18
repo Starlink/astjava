@@ -1,10 +1,8 @@
 package uk.ac.starlink.ast;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import uk.ac.starlink.ast.internal.pal.Pal;
 
 /**
@@ -13,16 +11,17 @@ import uk.ac.starlink.ast.internal.pal.Pal;
  *
  * <p>C writes the equivalents into a new FitsChan {@code ret}, reads keyword values from {@code
  * ret} in preference to the FitsChan {@code this} ({@code GetValue2}), and marks each card of
- * {@code this} it reads as used. Here the equivalents are written into a copy of the cards, which
- * then holds both, as C's reader sees them; the cards read are recorded as consumed with {@link
- * FitsCardList#recordConsumed}, and no card is removed except where C deletes one.
+ * {@code this} it reads as used. Here the equivalents are added to a copy of the cards as
+ * translations ({@link FitsCardList#setTranslation}), which follow the header's cards, as C's
+ * {@code WcsToStore} reads {@code ret} after {@code this}; the cards read are recorded as consumed
+ * with {@link FitsCardList#recordConsumed}, and no card is removed except where C deletes one.
  *
- * <p>The translations only the FITS-PC, FITS-IRAF and FITS-CLASS encodings make (RADECSYS to
- * RADESYS, LONGPOLE to LONPOLE, PROJPi to PVi_m, CmVALi and its relatives to alternate axis
- * descriptions, CDjjjiii to PCi_j, and C's {@code ClassTrans}) are not available, since those
- * encodings are not read; asking for one of them throws {@link UnsupportedOperationException}. The
- * reads C makes of those keywords under every encoding, and the CmELTi translation C makes under
- * every encoding, are made.
+ * <p>Some translations are made only for some encodings, as in C: RADECSYS to RADESYS, LONGPOLE to
+ * LONPOLE, PROJPi to PVi_m, and CmVALi, CmPIXi, CmYPEi and CmNITi to alternate axis descriptions
+ * for FITS-PC and FITS-IRAF, and CDjjjiii to PCi_j for FITS-IRAF; C reads those keywords under
+ * every encoding, and translates CmELTi under every encoding. C's {@code ClassTrans}, the
+ * translation FITS-CLASS makes, is not available, since that encoding is not read; asking for it
+ * throws {@link UnsupportedOperationException}.
  *
  * <p>Ported from Rust {@code fitschan/spec_trans.rs}, following the order and tests of C's {@code
  * SpecTrans}.
@@ -134,7 +133,7 @@ final class FitsSpecTrans {
      * (those at the entry card first), is thrown as the error C reports; the translations change
      * only the copy, so stopping once they are done ends the read where C's ends.
      *
-     * @throws UnsupportedOperationException for the FITS-PC, FITS-IRAF and FITS-CLASS encodings
+     * @throws UnsupportedOperationException for the FITS-CLASS encoding
      * @throws AstException where C's {@code SpecTrans} reports an error: a keyword it needs is
      *     absent or has no value, or an IRAF WAT string holds a word that is not a number
      */
@@ -160,21 +159,16 @@ final class FitsSpecTrans {
      * The translations of {@link #specTrans}, written into {@code cards} itself. C's {@code this}
      * is {@code cards} as supplied, and its {@code ret} the keywords written here.
      *
-     * @throws UnsupportedOperationException for the FITS-PC, FITS-IRAF and FITS-CLASS encodings
+     * @throws UnsupportedOperationException for the FITS-CLASS encoding
      * @throws AstException as {@link #specTrans} does
      */
     static void specTransInplace(
             FitsCardList cards, FitsChan.Encoding encoding, TransAttrs attrs, TransWarnings warnings) {
-        switch (encoding) {
-            case FITS_PC:
-            case FITS_IRAF:
-            case FITS_CLASS:
-                throw new UnsupportedOperationException(
-                        "FitsChan: reading the " + encoding.cName() + " encoding is not available");
-            default:
-                break;
+        if (encoding == FitsChan.Encoding.FITS_CLASS) {
+            throw new UnsupportedOperationException(
+                    "FitsChan: reading the " + encoding.cName() + " encoding is not available");
         }
-        Translator t = new Translator(cards, attrs, warnings);
+        Translator t = new Translator(cards, encoding, attrs, warnings);
         // The primary axis description, then 'A' to 'Z' (fitschan.c:31558-31559, 32615).
         t.version(' ');
         for (char s = 'A'; s <= 'Z'; s++) {
@@ -510,17 +504,45 @@ final class FitsSpecTrans {
         /** C's {@code this}: the cards as supplied. */
         private final FitsCardList src;
 
-        /** The keywords C's {@code ret} holds, in upper case. */
-        private final Set<String> ret = new HashSet<>();
-
         private final TransAttrs attrs;
         private final TransWarnings warnings;
 
-        Translator(FitsCardList cards, TransAttrs attrs, TransWarnings warnings) {
+        /** Whether the encoding is FITS-PC or FITS-IRAF, which translate the most keywords. */
+        private final boolean pcOrIraf;
+
+        /** Whether the encoding is FITS-IRAF, which alone translates the CDjjjiii matrix. */
+        private final boolean iraf;
+
+        /**
+         * C's {@code CardComm( this )} where C gives it as the comment of a translated card: the
+         * comment of the current card of the cards as supplied, which is the first card not
+         * consumed when a read starts (C's {@code Read} reads only at start-of-file, and {@code
+         * astClearCard} passes over used cards), or empty if there is none or it has no comment.
+         * Every such use precedes the first that moves the current card.
+         */
+        private final String cardComm;
+
+        Translator(FitsCardList cards, FitsChan.Encoding encoding, TransAttrs attrs, TransWarnings warnings) {
             this.cards = cards;
             this.src = cards.copy();
             this.attrs = attrs;
             this.warnings = warnings;
+            this.pcOrIraf = encoding == FitsChan.Encoding.FITS_PC || encoding == FitsChan.Encoding.FITS_IRAF;
+            this.iraf = encoding == FitsChan.Encoding.FITS_IRAF;
+            this.cardComm = currentComment(src);
+        }
+
+        /** The comment of the current card of {@code list}, passing over consumed cards, or empty. */
+        private static String currentComment(FitsCardList list) {
+            List<FitsCard> all = list.cards();
+            for (int k = list.position(); k < all.size(); k++) {
+                FitsCard c = all.get(k);
+                if (!c.isConsumed()) {
+                    String com = c.cComment();
+                    return com == null ? "" : com;
+                }
+            }
+            return "";
         }
 
         // ------------------------------------------------------------------
@@ -562,8 +584,9 @@ final class FitsSpecTrans {
          */
         private FitsCardValue.Got getValue2(String keyword, FitsCardValue.Want want, boolean report) {
             String k = keyword.toUpperCase(Locale.ROOT);
-            if (ret.contains(k)) {
-                FitsCardValue.Got g = getValue(cards, k, want, false);
+            FitsCard t = cards.findTranslation(k);
+            if (t != null) {
+                FitsCardValue.Got g = FitsCardValue.cnvType(t.value, want, 10, k);
                 if (g != null) {
                     return g;
                 }
@@ -604,25 +627,21 @@ final class FitsSpecTrans {
 
         /** C's {@code SetValue( ret, keyword, ... )} of a floating value. */
         private void setFloat(String keyword, double value, String comment) {
-            ret.add(keyword.toUpperCase(Locale.ROOT));
-            cards.setFloat(keyword, value, comment);
+            cards.setTranslation(keyword, FitsCard.Value.ofFloat(value), comment);
         }
 
         /** C's {@code SetValue( ret, keyword, ... )} of a string. */
         private void setString(String keyword, String value, String comment) {
-            ret.add(keyword.toUpperCase(Locale.ROOT));
-            cards.setString(keyword, value, comment);
+            cards.setTranslation(keyword, FitsCard.Value.ofString(value), comment);
         }
 
         /**
          * C's {@code SetValue( ret, keyword, ... )} of a string with no comment, which leaves the
          * comment of the keyword in {@code this} as the one a reader sees ({@code SetItemC} ignores
-         * a null comment): the value replaces the card's and keeps its comment.
+         * a null comment).
          */
         private void replaceString(String keyword, String value) {
-            FitsCard old = cards.find(keyword);
-            String comment = old == null || old.comment == null ? "" : old.comment;
-            setString(keyword, value, comment);
+            setString(keyword, value, null);
         }
 
         /**
@@ -679,8 +698,14 @@ final class FitsSpecTrans {
             if (s == ' ') {
                 // RADECSYS and LONGPOLE are read under every encoding, and translated only for
                 // FITS-PC and FITS-IRAF (fitschan.c:31656-31675).
-                getString2("RADECSYS");
-                getFloat2("LONGPOLE", false);
+                String radecsys = getString2("RADECSYS");
+                if (radecsys != null && pcOrIraf) {
+                    setString("RADESYS", radecsys, cardComm);
+                }
+                Double longpole = getFloat2("LONGPOLE", false);
+                if (longpole != null && pcOrIraf) {
+                    setFloat("LONPOLE", longpole, cardComm);
+                }
             }
             zeroCdelt(s);
             pcFamily(s);
@@ -827,16 +852,36 @@ final class FitsSpecTrans {
 
         /**
          * The conversions that produce PCi_j keywords, made only if there are none
-         * (fitschan.c:31718-31906): CDj_i, and then the 6-digit PCjjjiii or CROTAi. The legacy
-         * CDjjjiii matrix is converted only for FITS-IRAF.
+         * (fitschan.c:31718-31906): the legacy CDjjjiii matrix of the primary description, for
+         * FITS-IRAF only, then CDj_i, and then the 6-digit PCjjjiii or CROTAi.
          */
         private void pcFamily(char s) {
             if (src.keyFields(versioned("PC%d_%d", s), 1).n > 0) {
                 return;
             }
             boolean gotpcij = false;
-            FitsCardList.KeyFields kf = src.keyFields(versioned("CD%d_%d", s), 1);
-            if (kf.n > 0) {
+            FitsCardList.KeyFields kf;
+            // The CDjjjiii cards are read, and so consumed, only under FITS-IRAF, which alone
+            // translates them; the matrix gives PCj_i and a CDELT of 1.0 for each row with an
+            // element (fitschan.c:31727-31760).
+            if (iraf && s == ' ') {
+                kf = src.keyFields("CD%3d%3d", 1);
+                if (kf.n > 0) {
+                    int naxis = kf.hi[0];
+                    for (int j = 0; j < naxis; j++) {
+                        for (int i = 0; i < naxis; i++) {
+                            Double dval = getFloat2(String.format(Locale.ROOT, "CD%03d%03d", j + 1, i + 1), false);
+                            if (dval != null) {
+                                setFloat(key2("PC", j + 1, i + 1, ' '), dval, "");
+                                setFloat(key("CDELT", j + 1, s), 1.0, "");
+                                gotpcij = true;
+                            }
+                        }
+                    }
+                }
+            }
+            kf = src.keyFields(versioned("CD%d_%d", s), 1);
+            if (!gotpcij && kf.n > 0) {
                 int naxis = kf.hi[0];
                 for (int j = 0; j < naxis; j++) {
                     // The CDELT is the length of the row, signed so that the diagonal PC element
@@ -916,7 +961,7 @@ final class FitsSpecTrans {
         /**
          * PROJPi keywords (fitschan.c:31910-31958). When there are PV values for the longitude axis
          * that look complete, C trusts them; otherwise it reads the PROJP values, which it
-         * translates to PV values only for FITS-PC and FITS-IRAF.
+         * translates to PV values of the latitude axis only for FITS-PC and FITS-IRAF.
          */
         private void projp() {
             FitsCardList.KeyFields kf = src.keyFields("PROJP%d", 1);
@@ -941,22 +986,27 @@ final class FitsSpecTrans {
             }
             if (useProjp) {
                 for (int i = kf.lo[0]; i <= kf.hi[0]; i++) {
-                    getFloat2(key("PROJP", i, ' '), false);
+                    Double dval = getFloat2(key("PROJP", i, ' '), false);
+                    if (dval != null && pcOrIraf) {
+                        setFloat(key2("PV", axlat + 1, i, ' '), dval, cardComm);
+                    }
                 }
             }
         }
 
         /**
          * CmVALi, CmPIXi, CmYPEi, CmNITi and CmELTi keywords (fitschan.c:31962-32100). C reads the
-         * first four under every encoding but translates them only for FITS-PC and FITS-IRAF; it
-         * translates CmELTi, and the PCjjjiii matrix with it, into CDELTis and PCj_is under every
-         * encoding.
+         * first four under every encoding but translates them, into CRVALis, CRPIXis, CTYPEis and
+         * CUNITis, only for FITS-PC and FITS-IRAF; it translates CmELTi, and the PCjjjiii matrix
+         * with it, into CDELTis and PCj_is under every encoding. The letter {@code s} is {@code A}
+         * for the lowest {@code m} of each keyword, whatever that is, and the next letter for each
+         * {@code m} after it.
          */
         private void cmxxx() {
-            readCmxxx("C%1dVAL%d", "VAL", FitsCardValue.Want.FLOAT);
-            readCmxxx("C%1dPIX%d", "PIX", FitsCardValue.Want.FLOAT);
-            readCmxxx("C%1dYPE%d", "YPE", FitsCardValue.Want.STRING);
-            readCmxxx("C%1dNIT%d", "NIT", FitsCardValue.Want.STRING);
+            readCmxxx("C%1dVAL%d", "VAL", "CRVAL", FitsCardValue.Want.FLOAT);
+            readCmxxx("C%1dPIX%d", "PIX", "CRPIX", FitsCardValue.Want.FLOAT);
+            readCmxxx("C%1dYPE%d", "YPE", "CTYPE", FitsCardValue.Want.STRING);
+            readCmxxx("C%1dNIT%d", "NIT", "CUNIT", FitsCardValue.Want.STRING);
             FitsCardList.KeyFields kf = src.keyFields("C%1dELT%d", 2);
             if (kf.n == 0) {
                 return;
@@ -974,7 +1024,7 @@ final class FitsSpecTrans {
                             cdeltj = 1.0;
                         }
                     }
-                    setFloat(key("CDELT", j + 1, ss), cdeltj, "");
+                    setFloat(key("CDELT", j + 1, ss), cdeltj, cardComm);
                     for (int i = 0; i < naxis; i++) {
                         Double e = getFloat2(String.format(Locale.ROOT, "PC%03d%03d", j + 1, i + 1), false);
                         double dval;
@@ -990,16 +1040,28 @@ final class FitsSpecTrans {
             }
         }
 
-        /** Reads every {@code C<m><kind><i>} keyword the template's bounds cover, as C does. */
-        private void readCmxxx(String template, String kind, FitsCardValue.Want want) {
+        /**
+         * Reads every {@code C<m><kind><i>} keyword the template's bounds cover, as C does, and for
+         * FITS-PC and FITS-IRAF writes each value found as {@code <root><i><s>}.
+         */
+        private void readCmxxx(String template, String kind, String root, FitsCardValue.Want want) {
             FitsCardList.KeyFields kf = src.keyFields(template, 2);
             if (kf.n == 0) {
                 return;
             }
+            char ss = 'A';
             for (int m = kf.lo[0]; m <= kf.hi[0]; m++) {
                 for (int i = kf.lo[1]; i <= kf.hi[1]; i++) {
-                    getValue2("C" + m + kind + i, want, false);
+                    FitsCardValue.Got g = getValue2("C" + m + kind + i, want, false);
+                    if (g != null && pcOrIraf) {
+                        if (want == FitsCardValue.Want.STRING) {
+                            setString(key(root, i, ss), g.s, cardComm);
+                        } else {
+                            setFloat(key(root, i, ss), g.d, cardComm);
+                        }
+                    }
                 }
+                ss++;
             }
         }
 
@@ -1171,8 +1233,7 @@ final class FitsSpecTrans {
                 cards.recordConsumed(c.keyword);
                 String keyname = "P" + c.keyword.substring(1);
                 if (getValue2(keyname, FitsCardValue.Want.FLOAT, false) == null) {
-                    ret.add(keyname);
-                    cards.setValue(keyname, c.value, c.cComment() == null ? "" : c.cComment());
+                    cards.setTranslation(keyname, c.value, c.cComment());
                 }
             }
         }

@@ -1,6 +1,5 @@
 package uk.ac.starlink.ast;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -26,26 +25,22 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * -Dast.writeDeferred=true} to rewrite the list from what the rows give.
  *
  * <ul>
- *   <li>A row whose output is written with a FITS encoding or DSS needs {@code FitsChan.write} and
- *       cannot run at all; there are {@value #WRITE_ROWS} of them, each listed as {@value #WRITE}.
- *   <li>A {@code native} row's output is the cards {@code FitsChan.write} gives with the NATIVE
- *       encoding, so no {@code native} row can be compared with C's output. Its input is still read
- *       as C reads it: a read that stops at an out-of-scope class or encoding gives that reason
- *       ({@code needs <Class>} or {@code encoding <name>}), and a read that fails otherwise fails the
- *       test, since C reads every input. A row whose read succeeds is listed as {@value #WRITE}.
- *       Reading C's output back instead does not give C's Object: the cards hold numbers rounded to
- *       FitsDigits (the {@code timj} Epoch is 2002.3822 in them, 2002.3821786502001 in the Object).
- *   <li>An {@code ast} row's output is the Object's native text, compared with C's as the Rust test
- *       compares it (numbers to 4 ULP, or to {@code astEQUAL} for an {@code astequal} row).
+ *   <li>A row written with a FITS encoding (any encoding but {@code ast}) has as output the cards
+ *       {@code FitsChan.write} gives with that encoding, written as {@code wcsconverter.c} writes them: to the FitsChan
+ *       the input was read from (or, if the input was read as a native dump, to a new FitsChan
+ *       with the row's attributes), from its first card, the cards then listed from the first by
+ *       {@code astFindFits} with the template {@code %f}. A write that stops at an out-of-scope
+ *       class gives that reason ({@code needs <Class>}).
+ *   <li>An {@code ast} row's output is the Object's native text.
  * </ul>
+ *
+ * <p>Either output is compared with C's as the Rust test compares it (numbers to 4 ULP, or to
+ * {@code astEQUAL} for an {@code astequal} row). Before that the input is read as C reads it: a
+ * read that stops at an out-of-scope class or encoding gives that reason ({@code needs <Class>} or
+ * {@code encoding <name>}), and a read that fails otherwise fails the test, since C reads every
+ * input.
  */
 class WcsconvTest {
-
-    /** The reason of a row whose output needs {@code FitsChan.write}. */
-    static final String WRITE = "out-of-scope method FitsChan.write";
-
-    /** The number of rows whose output is written with a FITS encoding or DSS. */
-    static final int WRITE_ROWS = 85;
 
     /** One row of the manifest. */
     private static final class Row {
@@ -78,10 +73,6 @@ class WcsconvTest {
                     throw new IllegalArgumentException("wcsconv/cases.txt: unknown compare mode " + mode);
             }
         }
-
-        boolean needsWrite() {
-            return !"native".equalsIgnoreCase(encoding) && !"ast".equalsIgnoreCase(encoding);
-        }
     }
 
     /** The rows of {@code wcsconv/cases.txt}, fields separated by '|'. */
@@ -107,15 +98,26 @@ class WcsconvTest {
         return rows;
     }
 
+    /** The Object read from a row's input, and the FitsChan it was read from, if any. */
+    private static final class Input {
+        final AstObject obj;
+        final FitsChan fc;
+
+        Input(AstObject obj, FitsChan fc) {
+            this.obj = obj;
+            this.fc = fc;
+        }
+    }
+
     /**
      * The Object {@code wcsconverter.c} reads from the input of {@code row}: a FITS header through a
      * FitsChan with the row's attributes set first and CDMatrix set to its value, or, if that gives
      * nothing, the file read as a native dump.
      */
-    private static AstObject readInput(Row row) {
+    private static Input readInput(Row row) {
         String text = Fixtures.read(row.input);
         if (row.input.endsWith(".ast")) {
-            return ChannelText.read(text);
+            return new Input(ChannelText.read(text), null);
         }
         FitsChan fc = new FitsChan();
         if (!row.attrs.isEmpty()) {
@@ -129,7 +131,38 @@ class WcsconvTest {
         }
         fc.clear("Card");
         AstObject obj = fc.read();
-        return obj != null ? obj : ChannelText.read(text);
+        return obj != null ? new Input(obj, fc) : new Input(ChannelText.read(text), null);
+    }
+
+    /**
+     * The cards {@code wcsconverter.c} writes for a row written with a FITS encoding: the
+     * Object written with the row's encoding from the first card of the FitsChan it was read from,
+     * or of a new FitsChan with the row's attributes, and then every card from the first, as {@code
+     * astFindFits} with the template {@code %f} gives them, one per line.
+     *
+     * @throws AssertionError if the write fails, since C's succeeds
+     * @throws UnsupportedOperationException if the write needs a class this library lacks
+     */
+    private static String writtenCards(Row row, Input in) {
+        FitsChan fc = in.fc;
+        if (fc == null) {
+            fc = new FitsChan();
+            if (!row.attrs.isEmpty()) {
+                fc.set(row.attrs);
+            }
+        }
+        fc.setEncoding(row.encoding);
+        fc.clear("Card");
+        if (fc.write(in.obj) != 1) {
+            throw new AssertionError("C writes the Object read from " + row.input + ", but here the write fails");
+        }
+        fc.clear("Card");
+        StringBuilder out = new StringBuilder();
+        String card;
+        while ((card = fc.findFits("%f", true)) != null) {
+            out.append(card).append('\n');
+        }
+        return out.toString();
     }
 
     /**
@@ -158,17 +191,13 @@ class WcsconvTest {
     /**
      * What {@code row} gives: null if its output matches C's, otherwise the reason it cannot.
      *
-     * @throws AssertionError if the read fails where C's succeeds, or an {@code ast} row's output
+     * @throws AssertionError if the read or the write fails where C's succeeds, or the output
      *     differs from C's
      */
     private static String outcome(Row row) {
-        boolean ast = "ast".equalsIgnoreCase(row.encoding);
-        if (row.needsWrite() || (!ast && row.input.endsWith(".ast"))) {
-            return WRITE;
-        }
-        AstObject obj;
+        Input in;
         try {
-            obj = readInput(row);
+            in = readInput(row);
         } catch (UnsupportedOperationException e) {
             return FitsHeaders.outOfScope(e);
         } catch (AstException e) {
@@ -178,10 +207,12 @@ class WcsconvTest {
             }
             throw new AssertionError("C reads " + row.input + ", but here the read fails: " + e.getMessage(), e);
         }
-        if (!ast) {
-            return WRITE;
+        String got;
+        try {
+            got = "ast".equalsIgnoreCase(row.encoding) ? ChannelText.dump(in.obj) : writtenCards(row, in);
+        } catch (UnsupportedOperationException e) {
+            return FitsHeaders.outOfScope(e);
         }
-        String got = ChannelText.dump(obj);
         String want = Fixtures.read(row.expected);
         if (!equivalent(row, got, want)) {
             throw new AssertionError("the texts differ:\n--- Java\n" + got + "--- C\n" + want);
@@ -254,18 +285,5 @@ class WcsconvTest {
             }
         }
         assertTrue(stale.isEmpty(), String.join("\n", stale));
-    }
-
-    @Test
-    void writeRowsCannotRunAndArePinned() {
-        Map<String, String> listed = Deferred.load("wcsconv");
-        int n = 0;
-        for (Row row : manifest()) {
-            if (row.needsWrite()) {
-                n++;
-                assertEquals(WRITE, listed.get(row.name), row.name);
-            }
-        }
-        assertEquals(WRITE_ROWS, n, "rows whose output needs FitsChan.write");
     }
 }

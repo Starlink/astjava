@@ -8,9 +8,11 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
@@ -117,6 +119,12 @@ public class FitsChan extends Channel {
     private boolean hasSink;
 
     private FitsCardList cardList = new FitsCardList();
+
+    /**
+     * The last sequence number a NATIVE write used for each keyword base, C's {@code keyseq}
+     * ({@link FitsNativeWriter#createKeyword}).
+     */
+    private Map<String, Integer> keySeq = new HashMap<>();
 
     /** The Encoding attribute, or null if unset. */
     private Encoding encodingSet;
@@ -557,6 +565,7 @@ public class FitsChan extends Channel {
     void deepCopy() {
         super.deepCopy();
         cardList = cardList.copy();
+        keySeq = new HashMap<>(keySeq);
         cardIt = null;
         sourcePending = false;
         sourceSaved = false;
@@ -845,13 +854,14 @@ public class FitsChan extends Channel {
         // MODERN-JAVA(21): switch expression
         switch (enc) {
             case FITS_WCS:
-                return FitsWcsRead.read(this);
             case FITS_PC:
             case FITS_IRAF:
             case FITS_AIPS:
             case FITS_AIPSPP:
-            case FITS_CLASS:
+                return FitsWcsRead.read(this, enc);
             case DSS:
+                return FitsWcsRead.readDss(this);
+            case FITS_CLASS:
                 throw new UnsupportedOperationException(
                         "FitsChan: reading the " + enc.cName() + " encoding is not available");
             default:
@@ -860,15 +870,114 @@ public class FitsChan extends Channel {
     }
 
     /**
-     * Writes an Object to this FitsChan, using the encoding the Encoding attribute gives.
+     * Writes an Object to this FitsChan, using the encoding the Encoding attribute gives. The
+     * warnings of the previous read or write are discarded.
+     *
+     * <p>With the NATIVE encoding any Object can be written, as header cards in front of the
+     * current card, whose keywords are made unique with a two-character suffix ({@code BEGAST_A},
+     * {@code NIN_A}, ...), passing over any keyword a card already has. Unless the Comment
+     * attribute is clear the cards are framed by comment cards, and the Full attribute selects the
+     * default values and markers written, as for a Channel. The current card stays current.
+     *
+     * <p>Any other encoding describes only a FrameSet, and only one the encoding can describe; for
+     * anything else nothing is written and 0 is returned. The cards go after the last card that
+     * describes WCS in any of the encodings, or at the end if there is none, whichever card is
+     * current; a card already present with the keyword of a card written is replaced where it is.
+     * When a FrameSet is written, the FitsChan is left at end-of-file.
+     *
+     * <p>A write that writes nothing, or fails, leaves the cards and the current card as they were,
+     * except that a card the write replaced before it failed is lost, as in C.
      *
      * @param obj the Object to write
-     * @return the number of Objects written
-     * @throws UnsupportedOperationException always: writing Objects to a FitsChan is out of scope
+     * @return the number of Objects written: 1, or 0 if the Object could not be written
      */
     @Override
     public int write(AstObject obj) {
-        throw new UnsupportedOperationException("FitsChan.write is out of scope");
+        // fitschan.c Write, with astWrite's discarding of the warnings (channel.c astWrite_).
+        clearWarnings();
+        readFromSource();
+        int card0 = cardList.position();
+        cardList.beginMarkingNew();
+        int ret = 0;
+        try {
+            Encoding enc = encoding();
+            if (enc == Encoding.NATIVE) {
+                new FitsNativeWriter(this).write(obj);
+                ret = 1;
+            } else if (obj instanceof FrameSet && writeForeign((FrameSet) obj, enc)) {
+                ret = 1;
+                cardList.setCard(Integer.MAX_VALUE);
+            }
+        } finally {
+            // C's FixNew: the cards a write that wrote nothing added are removed, and the card that
+            // was current is current again. A write that throws has its new cards removed in the
+            // same way.
+            boolean remove = ret == 0;
+            cardList.fixNew(FitsCardList.NewScope.WRITE, remove);
+            cardList.fixNew(FitsCardList.NewScope.VERSION, remove);
+            cardList.endMarkingNew();
+            if (remove) {
+                cardList.setPosition(card0);
+            }
+        }
+        return ret;
+    }
+
+    /**
+     * Writes {@code fs} with {@code enc}, an encoding other than NATIVE, as fitschan.c {@code
+     * Write} does from reading the image dimensions on: false, C's failure, if the encoding cannot
+     * describe the FrameSet. The axis descriptions are made from the FrameSet ({@link
+     * FitsFsetToStore#fsetToStore}), raising their warnings, and written as cards by the encoding's
+     * writer ({@link #fitsFromStore}). {@link #write} removes the cards a write that gives false
+     * wrote, as C's {@code FixNew} does, which does not bring back a card one of them replaced,
+     * and leaves end-of-file current after one that gives true.
+     *
+     * @throws UnsupportedOperationException where describing the FrameSet needs a class this
+     *     library lacks
+     */
+    boolean writeForeign(FrameSet fs, Encoding enc) {
+        // The image dimensions, where known.
+        int naxis = fs.getNin();
+        double[] dim = new double[naxis];
+        for (int i = 0; i < naxis; i++) {
+            Double d = getFitsF("NAXIS" + (i + 1));
+            dim[i] = d != null ? d : AST__BAD;
+        }
+
+        // C's Write passes FsetToStore its method and class names in the wrong order, so the
+        // method its warnings name is the class (C-library quirk, kept).
+        FitsPlaneStores store = FitsFsetToStore.fsetToStore(this, fs, naxis, dim, enc, astClass(), "astWrite");
+        return store != null && fitsFromStore(store, enc, dim, fs, "astWrite", astClass());
+    }
+
+    /**
+     * C's {@code FitsFromStore}: puts the current card after the last card describing WCS ({@link
+     * FitsCardList#positionWriteCursor}, C's {@code FindWcs}), and writes the descriptions in
+     * {@code store} with the writer of {@code enc}. The FITS-CLASS writer also takes the image
+     * dimensions {@code dim} and the FrameSet {@code fs} the descriptions were made from.
+     */
+    private boolean fitsFromStore(
+            FitsPlaneStores store, Encoding enc, double[] dim, FrameSet fs, String method, String cls) {
+        cardList.positionWriteCursor();
+        // MODERN-JAVA(21): switch expression
+        switch (enc) {
+            case FITS_WCS:
+                return FitsWcsWrite.wcsFromStore(this, store, method, cls);
+            case FITS_PC:
+                return FitsEncPc.pcFromStore(this, store, method, cls);
+            case FITS_IRAF:
+                return FitsEncIraf.irafFromStore(this, store, method, cls);
+            case FITS_AIPS:
+                return FitsEncAips.aipsFromStore(this, store, method, cls);
+            case FITS_AIPSPP:
+                return FitsEncAips.aipsppFromStore(this, store, method, cls);
+            case FITS_CLASS:
+                return FitsEncClass.classFromStore(this, store, fs, dim, method, cls);
+            case DSS:
+                return FitsEncDss.dssFromStore(this, store, method, cls);
+            default:
+                throw Ast.err(AstException.AST__INTER, "astWrite(FitsChan): unexpected encoding " + enc + ".");
+        }
     }
 
     // ------------------------------------------------------------------
@@ -878,6 +987,11 @@ public class FitsChan extends Channel {
     /** The cards, for the readers of the encodings. */
     FitsCardList cards() {
         return cardList;
+    }
+
+    /** C's {@code keyseq}: the last sequence number a NATIVE write used for each keyword base. */
+    Map<String, Integer> keySequences() {
+        return keySeq;
     }
 
     /**
@@ -1144,6 +1258,7 @@ public class FitsChan extends Channel {
 
     private void emptyFitsInner() {
         cardList = new FitsCardList();
+        keySeq = new HashMap<>();
         tables = null;
     }
 
@@ -1419,6 +1534,11 @@ public class FitsChan extends Channel {
         setValue(name, FitsCard.Value.ofKInt(value), comment, overwrite, "astSetFitsK");
     }
 
+    /** C's {@code astSetFitsI}: stores an integer value. */
+    void setFitsI(String name, long value, String comment, boolean overwrite) {
+        setValue(name, FitsCard.Value.ofInt(value), comment, overwrite, "astSetFitsI");
+    }
+
     /** C's {@code astSetFitsU}: stores a keyword with no value. */
     void setFitsU(String name, String comment, boolean overwrite) {
         setValue(name, FitsCard.Value.UNDEF, comment, overwrite, "astSetFitsU");
@@ -1433,7 +1553,7 @@ public class FitsChan extends Channel {
      * C's {@code SetFitsCom}: stores a commentary card with keyword {@code name}. When overwriting
      * a card with the same keyword, the card keeps its type and value and takes the new comment.
      */
-    private void setFitsCom(String name, String comment, boolean overwrite) {
+    void setFitsCom(String name, String comment, boolean overwrite) {
         readFromSource();
         String lname = splitName(name, "astSetFitsCom")[0];
         String com = comment == null || FitsCard.isBlank(comment) ? null : comment;

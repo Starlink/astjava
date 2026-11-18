@@ -1,5 +1,6 @@
 package uk.ac.starlink.ast;
 
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -208,6 +209,46 @@ final class FitsStore {
         axref = new Double[naxis];
     }
 
+    /**
+     * Lengthens the axis-indexed arrays to hold at least {@code n} axes, keeping their values, as
+     * C's {@code SetItem} lengthens an item to hold the index it is given; {@link #naxis} becomes
+     * the new length. Nothing changes if the store already holds {@code n} axes.
+     */
+    void ensureAxes(int n) {
+        if (n <= naxis) {
+            return;
+        }
+        crpix = Arrays.copyOf(crpix, n);
+        crval = Arrays.copyOf(crval, n);
+        cdelt = Arrays.copyOf(cdelt, n);
+        dims = Arrays.copyOf(dims, n);
+        pc = grow(pc, n, n);
+        cd = grow(cd, n, n);
+        ctype = Arrays.copyOf(ctype, n);
+        ctypeCom = Arrays.copyOf(ctypeCom, n);
+        cunit = Arrays.copyOf(cunit, n);
+        cname = Arrays.copyOf(cname, n);
+        pv = grow(pv, n, MAX_PV_PARAMS);
+        String[][] newPs = new String[n][];
+        for (int i = 0; i < n; i++) {
+            newPs[i] = i < ps.length ? ps[i] : new String[MAX_PV_PARAMS];
+        }
+        ps = newPs;
+        skyref = Arrays.copyOf(skyref, n);
+        skyrefp = Arrays.copyOf(skyrefp, n);
+        axref = Arrays.copyOf(axref, n);
+        naxis = n;
+    }
+
+    /** {@code a} with {@code rows} rows of at least {@code cols} elements, keeping its values. */
+    private static Double[][] grow(Double[][] a, int rows, int cols) {
+        Double[][] g = new Double[rows][];
+        for (int i = 0; i < rows; i++) {
+            g[i] = i < a.length ? Arrays.copyOf(a[i], Math.max(cols, a[i].length)) : new Double[cols];
+        }
+        return g;
+    }
+
     /** A copy of this store, sharing no arrays with it. */
     FitsStore copy() {
         FitsStore c = new FitsStore(naxis);
@@ -284,6 +325,63 @@ final class FitsStore {
             c[i] = a[i].clone();
         }
         return c;
+    }
+
+    /**
+     * C's {@code SetItem} for a table indexed by two numbers, such as the SIP coefficients: {@code
+     * item} with element {@code [i][jm]} set to {@code val}, rows added and lengthened as needed,
+     * new rows empty and new elements {@code AST__BAD}. The table is changed in place unless it
+     * has to gain rows, when a longer copy is returned.
+     *
+     * @throws AstException with status {@code AST__INTER} if {@code i} is outside 0 to 98 or
+     *     {@code jm} outside 0 to 99, as C checks
+     */
+    static double[][] setItem(double[][] item, int i, int jm, double val) {
+        if (i < 0 || i > 98) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    "SetItem(fitschan): AST internal error; intermediate axis index " + i + " is invalid.");
+        }
+        if (jm < 0 || jm > 99) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    "SetItem(fitschan): AST internal error; pixel axis or parameter index " + jm + " is invalid.");
+        }
+        double[][] table = item;
+        if (table.length < i + 1) {
+            int nel = table.length;
+            table = Arrays.copyOf(table, i + 1);
+            for (int el = nel; el <= i; el++) {
+                table[el] = new double[0];
+            }
+        }
+        if (table[i].length < jm + 1) {
+            int nel = table[i].length;
+            table[i] = Arrays.copyOf(table[i], jm + 1);
+            Arrays.fill(table[i], nel, jm + 1, AstObject.AST__BAD);
+        }
+        table[i][jm] = val;
+        return table;
+    }
+
+    /**
+     * C's {@code SetItem( &(store->pv), i, m, ... )}: sets PVi_m (zero-based axis {@code i}) to
+     * {@code val}, null being C's {@code AST__BAD}, lengthening the axis's parameters as C's table
+     * grows when {@code m} is beyond them.
+     *
+     * @throws AstException with status {@code AST__INTER} if {@code m} is outside 0 to 99, as C
+     *     checks
+     */
+    void setPv(int i, int m, Double val) {
+        if (m < 0 || m > 99) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    "SetItem(fitschan): AST internal error; pixel axis or parameter index " + m + " is invalid.");
+        }
+        if (pv[i].length <= m) {
+            pv[i] = Arrays.copyOf(pv[i], m + 1);
+        }
+        pv[i][m] = val;
     }
 
     /** Whether any PC matrix element is set. */
@@ -368,17 +466,18 @@ final class FitsStore {
 
     /**
      * C's {@code FindLonLatSpecAxes} (fitschan.c:10822): the longitude, latitude and spectral axes,
-     * numbered from 0 (-1 for none), among the first WCSAXES (or NAXIS) CTYPE values. A spectral
-     * axis is one {@code IsSpectral} or {@code IsAIPSSpectral} recognises; a celestial axis has
-     * {@code -} as its fifth character, and is a longitude axis for {@code RA--}, {@code AZ--},
-     * {@code xLON} and {@code xyLN}, and a latitude axis for {@code DEC-}, {@code EL--}, {@code
-     * xLAT} and {@code xyLT}. The last axis of each kind is the one given.
+     * numbered from 0 (-1 for none), among the first WCSAXES CTYPE values, or, without WCSAXES,
+     * the first {@code storeNaxis}, C's {@code store->naxis}. A spectral axis is one {@code
+     * IsSpectral} or {@code IsAIPSSpectral} recognises; a celestial axis has {@code -} as its fifth
+     * character, and is a longitude axis for {@code RA--}, {@code AZ--}, {@code xLON} and {@code
+     * xyLN}, and a latitude axis for {@code DEC-}, {@code EL--}, {@code xLAT} and {@code xyLT}. The
+     * last axis of each kind is the one given.
      */
-    int[] lonLatSpecAxes() {
+    int[] lonLatSpecAxes(int storeNaxis) {
         int axlon = -1;
         int axlat = -1;
         int axspec = -1;
-        int n = wcsaxes != null ? wcsaxes : naxis;
+        int n = wcsaxes != null ? wcsaxes : storeNaxis;
         for (int i = 0; i < n; i++) {
             String ct = i < ctype.length ? ctype[i] : null;
             if (ct == null) {
