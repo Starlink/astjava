@@ -1,9 +1,10 @@
 package uk.ac.starlink.ast;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -26,8 +27,8 @@ import org.junit.jupiter.api.Test;
  * through it twenty times, linearly and with variances, then rebins it through it twenty times,
  * with a sinc kernel, variances and a weight limit; the image has more than C's 1024 pixels, so
  * each call simplifies the Mapping, and the MathMap makes the linear fits divide the image. Every
- * result must equal the single-thread result bit for bit, and the original FrameSet's dump must be
- * unchanged.
+ * result must equal the single-thread result bit for bit, which each thread checks as it goes so
+ * that no results are kept, and the original FrameSet's dump must be unchanged.
  */
 class ResampleThreadsTest {
 
@@ -100,6 +101,19 @@ class ResampleThreadsTest {
         return new double[][] {out, outVar};
     }
 
+    /**
+     * How {@code got} differs from {@code want}, compared bit for bit as each array's {@code
+     * what}, or null if it does not.
+     */
+    private static String difference(double[][] want, double[][] got, String[] what) {
+        for (int i = 0; i < what.length; i++) {
+            if (!Arrays.equals(want[i], got[i])) {
+                return what[i] + " differ";
+            }
+        }
+        return null;
+    }
+
     // ExecutorService is not AutoCloseable before Java 19; the pool is shut down in the finally block.
     @SuppressWarnings("PMD.CloseResource")
     @Test
@@ -118,32 +132,30 @@ class ResampleThreadsTest {
         // MODERN-JAVA(19): try-with-resources on the ExecutorService
         ExecutorService pool = Executors.newFixedThreadPool(NTHREAD);
         try {
-            List<Future<List<double[][]>>> futures = new ArrayList<>();
+            String[] resampled = {"output values", "output variances", "bad pixel counts"};
+            String[] rebinned = {"rebinned values", "rebinned variances"};
+            List<Future<String>> futures = new ArrayList<>();
             for (int t = 0; t < NTHREAD; t++) {
                 FrameSet mine = (FrameSet) fs.copy();
-                Callable<List<double[][]>> task = () -> {
-                    List<double[][]> results = new ArrayList<>();
+                Callable<String> task = () -> {
                     for (int r = 0; r < REPEATS; r++) {
-                        results.add(resample(mine, in, var));
+                        String diff = difference(want, resample(mine, in, var), resampled);
+                        if (diff != null) {
+                            return "resampling " + r + ": " + diff;
+                        }
                     }
                     for (int r = 0; r < REPEATS; r++) {
-                        results.add(rebin(mine, in, var));
+                        String diff = difference(wantRebin, rebin(mine, in, var), rebinned);
+                        if (diff != null) {
+                            return "rebinning " + r + ": " + diff;
+                        }
                     }
-                    return results;
+                    return null;
                 };
                 futures.add(pool.submit(task));
             }
-            for (Future<List<double[][]>> f : futures) {
-                List<double[][]> results = f.get();
-                for (double[][] got : results.subList(0, REPEATS)) {
-                    assertArrayEquals(want[2], got[2], "bad pixels");
-                    assertArrayEquals(want[0], got[0], "output values");
-                    assertArrayEquals(want[1], got[1], "output variances");
-                }
-                for (double[][] got : results.subList(REPEATS, 2 * REPEATS)) {
-                    assertArrayEquals(wantRebin[0], got[0], "rebinned values");
-                    assertArrayEquals(wantRebin[1], got[1], "rebinned variances");
-                }
+            for (int t = 0; t < NTHREAD; t++) {
+                assertNull(futures.get(t).get(), "thread " + t);
             }
         } finally {
             pool.shutdown();

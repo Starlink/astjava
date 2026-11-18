@@ -68,6 +68,8 @@ class ResampleTest {
                             new int[] {30},
                             out,
                             null);
+            // Rust's 1e-10 bounds an exact result: no java.lang.Math function is called, and at pixel
+            // centres nearest copies the pixel and linear weighs it by exactly 1 and its neighbour by 0.
             for (int i = 3; i < 27; i++) {
                 assertTrue(Math.abs(out[i] - in[i]) <= 1.0e-10, "scheme " + interp.scheme + " pixel " + i);
             }
@@ -119,6 +121,11 @@ class ResampleTest {
         double[] in = range(1, 30);
         for (Mapping.Interpolator interp : new Mapping.Interpolator[] {SINC, SINCSINC, SINCCOS, SINCGAUSS, SOMBCOS}) {
             double[] out = unit30(in, interp);
+            // Rust's 1e-10: out is sum(w v) / sum(w) over offsets -1 to 2, where offset 0 weighs 1,
+            // SOMBCOS weighs 0.064 at both -1 and 1 (from |offset|) and the others under 4e-17, so
+            // 1 <= sum(w) <= 1.13; with |v - out| <= 2 on these linear data, a last-bit change in each
+            // kernel value (2^-51 relative, at most two Math calls) moves out by at most 4 * 2^-51 * 2,
+            // about 4e-15, and rounding by at most (2 * 4 + 1) * 2^-53 * 1.13 * 30, about 4e-14.
             for (int i = 3; i < 27; i++) {
                 assertTrue(Math.abs(out[i] - in[i]) <= 1.0e-10, "scheme " + interp.scheme + " pixel " + i);
             }
@@ -132,6 +139,9 @@ class ResampleTest {
         Arrays.fill(in, 42.0);
         for (Mapping.Interpolator interp : new Mapping.Interpolator[] {GAUSS, SOMB, BLOCKAVE}) {
             double[] out = unit30(in, interp);
+            // Rust's 1e-10: out is sum(w c) / sum(w), in which the kernel values cancel, so a last-bit
+            // change in them changes nothing beyond rounding; over 4 pixels with sum|w| / |sum w| at
+            // most 1.11 (SOMB), rounding leaves out within (2 * 4 + 1) * 2^-53 * 42 * 1.11, about 5e-14.
             for (int i = 3; i < 27; i++) {
                 assertTrue(Math.abs(out[i] - 42.0) <= 1.0e-10, "scheme " + interp.scheme + " pixel " + i);
             }
@@ -164,6 +174,10 @@ class ResampleTest {
                             new int[] {18, 18},
                             out,
                             null);
+            // Rust's 1e-8: out is sum(w c) / sum(w), in which the kernel values cancel, so a last-bit
+            // change in them changes nothing beyond rounding; over 16 pixels with sum|w| / |sum w| at
+            // most 4 (SINC at offsets of 0.5 and 1.5 on both axes), rounding leaves out within
+            // (2 * 16 + 1) * 2^-53 * 42 * 4, about 6e-13.
             for (int i = 0; i < out.length; i++) {
                 assertTrue(Math.abs(out[i] - 42.0) <= 1.0e-8, "scheme " + interp.scheme + " pixel " + i);
             }
@@ -224,6 +238,8 @@ class ResampleTest {
         for (int iy = 0; iy < 18; iy++) {
             for (int ix = 0; ix < 18; ix++) {
                 double expected = ix + 2 + iy + 2 - 1;
+                // Rust's 1e-10 bounds an exact result: no java.lang.Math function is called, and each
+                // output is a mean of four small integers with weights of exactly 0.5 along each axis.
                 assertTrue(Math.abs(out[iy * 18 + ix] - expected) <= 1.0e-10, "pixel " + ix + ", " + iy);
             }
         }

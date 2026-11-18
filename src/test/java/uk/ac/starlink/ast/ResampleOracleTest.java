@@ -651,13 +651,16 @@ class ResampleOracleTest {
      * differs by (e2 + 2s + 2ns) Q / W^2 + |valVar| (2 (e + 2ns) A / |W| + 4s), Q = sum(w^2 |var|).
      * Flux conservation multiplies by the fit's factor, which is the same in both and at most 1
      * here (1 and 1 / 1.3), with one more rounding, 2s of the result. The bound allowed is twice
-     * this, for the second-order terms. A value of an integer type, rounded to an integer, may then
-     * differ by one where its bound is below a half; and it must not lie within its bound of the
-     * type's range limits, where C would make it bad. A pixel bad in C (outside the grid, in a bad
-     * input pixel, or with no weight) is bad in Java too, and must be equal.
+     * this, for the second-order terms. A value of an integer type is rounded by adding a half
+     * (less a half if negative) in the sum type and truncating, which is monotonic and steps only
+     * where the value lies within s (|val| + 0.5) of a half-integer; so with its bound below a half
+     * it may differ by one only where it lies within its bound plus that of a half-integer, and
+     * must be equal elsewhere. It must not lie within its bound of the type's range limits, where
+     * C would make it bad. A pixel bad in C (outside the grid, in a bad input pixel, or with no
+     * weight) is bad in Java too, and must be equal.
      *
-     * @throws AssertionError if an integer value lies within its bound of a range limit or of a
-     *     half beyond its bound's reach, where the bound cannot decide
+     * @throws AssertionError if an integer value's bound is a half or more, or the value lies
+     *     within its bound of a range limit, where the bound cannot decide
      */
     private static double[][] bounds(Case cs) {
         int nout = npix(cs.lbndOut, cs.ubndOut);
@@ -775,13 +778,13 @@ class ResampleOracleTest {
                     + Math.abs(val) * (e + 2 * n * s) * ratio
                     + 2 * s * Math.abs(val)
                     + (conserve ? 2 * s * Math.abs(val) : 0.0);
-            bound[0][pt] = integerBound(integer, 2 * dv, val, limits, cs, pt, "value");
+            bound[0][pt] = integerBound(integer, 2 * dv, val, s, limits, cs, pt, "value");
             if (cs.useVar && !badVar) {
                 double valVar = sumW2Var / (sum * sum);
                 double dvar = (e2 + 2 * s + 2 * n * s) * sumW2AbsVar / (sum * sum)
                         + Math.abs(valVar) * (2 * (e + 2 * n * s) * ratio + 4 * s)
                         + (conserve ? 2 * s * Math.abs(valVar) : 0.0);
-                bound[1][pt] = integerBound(integer, 2 * dvar, valVar, limits, cs, pt, "variance");
+                bound[1][pt] = integerBound(integer, 2 * dvar, valVar, s, limits, cs, pt, "variance");
             }
         }
         return bound;
@@ -806,12 +809,16 @@ class ResampleOracleTest {
     }
 
     /**
-     * The bound {@code b} for a floating type; for an integer type, 1 where {@code b} is below a
-     * half and {@code val} is further than {@code b} from the range limits, and 0 where it lies
-     * beyond them by more than {@code b} (bad in both).
+     * The bound {@code b} for a floating type; for an integer type, whose sum type has unit
+     * roundoff {@code s}, 1 where {@code val} lies within {@code b + s (|val| + 0.5)} of a
+     * half-integer, where rounding may go either way, and 0 elsewhere or where it lies beyond the
+     * range limits by more than {@code b} (bad in both).
+     *
+     * @throws AssertionError if {@code b} is a half or more, or {@code val} lies within {@code b} of
+     *     a range limit
      */
     private static double integerBound(
-            boolean integer, double b, double val, double[] limits, Case cs, int pt, String what) {
+            boolean integer, double b, double val, double s, double[] limits, Case cs, int pt, String what) {
         if (!integer) {
             return b;
         }
@@ -822,7 +829,11 @@ class ResampleOracleTest {
                     cs.name + " " + cs.type + " " + what + " " + pt + " " + val + " within " + b + " of " + lim);
         }
         boolean overflows = limits.length > 0 && (val <= limits[0] || val >= limits[1]);
-        return overflows ? 0.0 : 1.0;
+        if (overflows) {
+            return 0.0;
+        }
+        double fromHalf = Math.abs(val - (Math.floor(val) + 0.5));
+        return fromHalf <= b + s * (Math.abs(val) + 0.5) ? 1.0 : 0.0;
     }
 
     /**
