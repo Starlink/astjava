@@ -49,7 +49,8 @@ final class LinearApprox {
             throw Ast.err(
                     AstException.AST__NCPIN,
                     "astLinearApprox(" + map.astClass() + "): The bounds give " + lbnd.length + " and " + ubnd.length
-                            + " values; the " + map.astClass() + " has " + ndimIn + " inputs.");
+                            + " values; the " + map.astClass() + " has " + ndimIn
+                            + (forward ? " inputs." : " outputs."));
         }
         if (ndimIn == 0 || ndimOut == 0) {
             return null;
