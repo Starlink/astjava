@@ -606,6 +606,18 @@ class IntraMapTest {
         double[][] p = m2.tranP(2, 2, new double[][] {{1.0, 8.0}, {6.0, 3.0}}, true, 2);
         assertArrayEquals(new double[] {2.0, BAD}, p[0]);
         assertArrayEquals(new double[] {BAD, 4.0}, p[1]);
+        double[][] t2 = m2.tran2(2, new double[] {1.0, 8.0}, new double[] {6.0, 3.0}, true);
+        assertArrayEquals(new double[] {2.0, BAD}, t2[0]);
+        assertArrayEquals(new double[] {BAD, 4.0}, t2[1]);
+
+        // Within the NaN protocol a bad result is NaN, and the protocol returns it as AST__BAD.
+        double[][] nan = new double[2][2];
+        m2.transformIntoNan(new double[][] {{1.0, 8.0}, {6.0, 3.0}}, 2, true, nan);
+        assertArrayEquals(new double[] {2.0, Double.NaN}, nan[0]);
+        assertArrayEquals(new double[] {Double.NaN, 4.0}, nan[1]);
+        double[][] protocol = m2.transformNanProtocol(new double[][] {{1.0, 8.0}, {6.0, 3.0}}, 2, true);
+        assertArrayEquals(new double[] {2.0, BAD}, protocol[0]);
+        assertArrayEquals(new double[] {BAD, 4.0}, protocol[1]);
     }
 
     // ------------------------------------------------------------------
