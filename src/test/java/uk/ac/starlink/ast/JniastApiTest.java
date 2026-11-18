@@ -44,6 +44,7 @@ class JniastApiTest {
             "CmpFrame",
             "CmpMap",
             "DSBSpecFrame",
+            "DssMap",
             "FitsChan",
             "FluxFrame",
             "Frame",

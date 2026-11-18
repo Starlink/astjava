@@ -2,6 +2,5 @@
 # <path relative to ast_tester/fixtures> | <reason>
 # Rewritten by TransformOracleTest with -Dast.writeDeferred=true.
 programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, PointList, PointSet, Prism
-serialisation/c_dssmap.ast | needs DssMap
 serialisation/region_in_cmpframe.ast | needs Box, PointSet
 wcsconv/inputs/lsst2.ast | needs SplineMap

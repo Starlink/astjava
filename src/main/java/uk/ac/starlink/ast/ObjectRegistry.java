@@ -36,6 +36,8 @@ final class ObjectRegistry {
                 return CmpMap::new;
             case "DSBSpecFrame":
                 return DSBSpecFrame::new;
+            case "DssMap":
+                return DssMap::new;
             case "FitsChan":
                 return FitsChan::new;
             case "FluxFrame":

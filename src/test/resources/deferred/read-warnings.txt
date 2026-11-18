@@ -4,7 +4,6 @@
 ./programs/testmocchan/backcompat_json.ast | needs MocChan
 ./programs/testmocchan/backcompat_string.ast | needs MocChan
 ./programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, PointList, PointSet, Prism
-./serialisation/c_dssmap.ast | needs DssMap
 ./serialisation/region_in_cmpframe.ast | needs Box, PointSet
 ./simplify/box_nullregion_merge.map | needs Box, NullRegion, PointSet
 ./simplify/box_nullregion_merge.simp | needs Interval, PointSet
@@ -77,12 +76,6 @@
 ./simplify/defunc_pointlist_origin_axis.simp | needs Box, PointSet
 ./simplify/defunc_prism_box_interval.map | needs Box, PointSet, Prism
 ./simplify/defunc_prism_box_interval.simp | needs Box, PointSet
-./simplify/dssmap_inv_winmap_absorb.map | needs DssMap
-./simplify/dssmap_inv_winmap_absorb.simp | needs DssMap
-./simplify/dssmap_winmap_absorb.map | needs DssMap
-./simplify/dssmap_winmap_absorb.simp | needs DssMap
-./simplify/dssmap_zoom_no_merge.map | needs DssMap
-./simplify/dssmap_zoom_no_merge.simp | needs DssMap
 ./simplify/interval_halfinf_simplify.map | needs Interval, PointSet
 ./simplify/interval_nullregion_merge.map | needs Interval, NullRegion, PointSet
 ./simplify/interval_nullregion_merge.simp | needs Interval, PointSet

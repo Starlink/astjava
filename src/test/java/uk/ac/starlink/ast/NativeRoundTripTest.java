@@ -132,6 +132,18 @@ class NativeRoundTripTest {
     }
 
     @Test
+    void roundTripDssmap() {
+        Mapping m = DssMapTest.dss();
+        m.invert();
+        m.setIdent("plate");
+        Mapping r = (Mapping) assertDoubleRoundTrip(m, "DssMap");
+        assertTrue(r.getInvert());
+        assertEquals("plate", r.getIdent());
+        assertArrayEquals(
+                m.tranN(1, 2, new double[] {2.8, -1.0}, true, 2), r.tranN(1, 2, new double[] {2.8, -1.0}, true, 2));
+    }
+
+    @Test
     void roundTripGrismmap() {
         GrismMap m = new GrismMap();
         m.set("GrismNR=1.5,GrismNRP=0.0,GrismWaveR=5.0E-7,GrismAlpha=0.1,GrismG=1.0E7,GrismM=1,GrismEps=1.0,"

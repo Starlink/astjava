@@ -71,12 +71,6 @@ simplify/defunc_pointlist_origin_axis.map | needs Box, PointSet
 simplify/defunc_pointlist_origin_axis.simp | needs Box, PointSet
 simplify/defunc_prism_box_interval.map | needs Box, PointSet, Prism
 simplify/defunc_prism_box_interval.simp | needs Box, PointSet
-simplify/dssmap_inv_winmap_absorb.map | needs DssMap
-simplify/dssmap_inv_winmap_absorb.simp | needs DssMap
-simplify/dssmap_winmap_absorb.map | needs DssMap
-simplify/dssmap_winmap_absorb.simp | needs DssMap
-simplify/dssmap_zoom_no_merge.map | needs DssMap
-simplify/dssmap_zoom_no_merge.simp | needs DssMap
 simplify/interval_halfinf_simplify.map | needs Interval, PointSet
 simplify/interval_nullregion_merge.map | needs Interval, NullRegion, PointSet
 simplify/interval_nullregion_merge.simp | needs Interval, PointSet

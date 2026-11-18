@@ -574,6 +574,25 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: keeps the code of the error the transformation returns.
 - Java: AST__ITFER, as jniast, with the Transformer's exception as the cause.
 
+### The value of two pi in `platepos`
+
+- C: `platepos` (`dssmap.c`) adds its own `twopi`, 6.28318530717959, to a negative right ascension; it is a little more than the double nearest to two pi, so a wrapped right ascension is about four units in the last place larger (probe `src/test/resources/probes/dssmap_probe.c`, case `tran_pltra_small`, where the round trip through `platepix` comes back 2.4e-10 pixels short).
+- Rust: adds `std::f64::consts::TAU`.
+- Java: as C.
+
+### The side of a DssMap a WinMap merges from
+
+- C: `MapMerge` (`dssmap.c`) merges only a WinMap applied to the pixel coordinates: before the DssMap when the list applies it forward, after it when the list applies it inverted (probe cases `dssmap_then_winmap_4200` and `winmap_then_inverted_dssmap`, which do not merge).
+- Rust (found by reading): `DssMap::try_merge` takes the formula from the DssMap's Invert value alone, and `default_map_merge` offers it the neighbour on either side, so a WinMap after a DssMap applied forward, or before one applied inverted, is folded in as if it were on the other side.
+- Java: as C.
+
+### A DssMap merge leaves the WinMap's Invert attribute changed
+
+- **C quirk**: `MapMerge` (`dssmap.c`) sets the WinMap's Invert attribute to the value the list applies it with, and restores it only when the two do not merge, since it annuls the WinMap's pointer before the restore when they do.
+  Simplifying the inverse of a series CmpMap of an inverted DssMap and an inverted WinMap merges the two and leaves the WinMap, which the CmpMap shares, with Invert 0 (probe case `invert_attr_both_inverted`).
+- Rust: reads the terms of an owned WinMap, so nothing changes.
+- Java: restores the WinMap's Invert attribute, as for a PolyMap ("Cancelling a PolyMap with its inverse").
+
 ## Units
 
 Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follows C in each.

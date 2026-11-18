@@ -26,9 +26,6 @@ nullregion_parallel_merge | needs Box, NullRegion, PointSet
 pointlist_self_simplify | needs PointList, PointSet
 cap_normmap_cmpframe | needs NormMap
 selectormap_region_simplify | needs Box, PointSet, SelectorMap
-dssmap_inv_winmap_absorb | needs DssMap
-dssmap_winmap_absorb | needs DssMap
-dssmap_zoom_no_merge | needs DssMap
 neg_box_asymmetric_2d | needs Box, PointSet
 cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism
 cap_matrixmap_04 | needs ChebyMap

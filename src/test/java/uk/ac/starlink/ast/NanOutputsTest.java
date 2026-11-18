@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test;
  * NaN input is taken to be bad. Each Mapping is given points with a NaN on one input axis at a
  * time, and transformed in each direction it defines.
  *
- * <p>The Rust test's UnitNormMap is a class not yet ported.
+ * <p>The Rust test's UnitNormMap is a class not yet ported. A DssMap, which the Rust test lacks (its
+ * constructor is crate-private, as C's is protected), is read from the C fixture.
  */
 class NanOutputsTest {
 
@@ -43,6 +44,7 @@ class NanOutputsTest {
         grism.set("GrismNR=1.5,GrismNRP=-1.0E-6,GrismWaveR=5000,GrismAlpha=0.1,GrismG=2.0E-4,GrismM=1,"
                 + "GrismEps=0.02,GrismTheta=0.03");
         m.put("GrismMap", grism);
+        m.put("DssMap", DssMapTest.dss());
         m.put("WcsMap", new WcsMap(2, WcsMap.AST__TAN, 1, 2));
         m.put("LutMap", new LutMap(new double[] {1.0, 2.0, 4.0}, 0.0, 1.0));
         m.put("MathMap", new MathMap(2, 2, new String[] {"y1=x1", "y2=x2*2"}, new String[] {"x1=y1", "x2=y2/2"}));
