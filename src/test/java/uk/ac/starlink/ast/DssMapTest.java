@@ -42,7 +42,10 @@ class DssMapTest {
 
     private static final String FIXTURE = Fixtures.read("serialisation/c_dssmap.ast");
 
-    /** The size of the plate pixel coordinates of the image pixels here (CNPix of the fixture). */
+    /**
+     * The size of the plate pixel coordinates of the image pixels here (CNPix of the fixture), to
+     * which {@link #pixelEq} applies {@link CValues#LIBM_RTOL}.
+     */
     private static final double PLATE_PIXELS = 4201.0;
 
     private static String probe(String name) {
@@ -122,7 +125,11 @@ class DssMapTest {
     /**
      * Whether the image pixel coordinate {@code got} matches C's {@code want}. {@code platepix}
      * gives the plate pixel coordinate, about 4200 here, less the corner offset (CNPix), so the
-     * image pixel coordinate is compared to within libm rounding of the plate pixel coordinate.
+     * image pixel coordinate is compared to within libm rounding of the plate pixel coordinate: the
+     * tolerance is {@link CValues#LIBM_RTOL} applied to the plate coordinate, about 4e-10 pixels.
+     * That is too coarse to see an error the size of the one a wrong value of two pi makes, so
+     * {@link #rightAscensionWrapsAsInC} checks the wrapped right ascensions to two units in the last
+     * place.
      */
     private static boolean pixelEq(double got, double want) {
         if (got == BAD || want == BAD) {
@@ -567,22 +574,20 @@ class DssMapTest {
 
     /**
      * The inverse of a series CmpMap of an inverted DssMap and an inverted WinMap applies the WinMap
-     * forward and then the DssMap forward, so the two merge as C merges them. C leaves the WinMap,
-     * which the CmpMap shares, with Invert 0 (dssmap.c {@code MapMerge} annuls its pointer before
-     * the restore); this library restores it (docs/rust-c-differences.md, "A DssMap merge leaves
-     * the WinMap's Invert attribute changed").
+     * forward and then the DssMap forward, so the two merge as C merges them. As in C, the WinMap,
+     * which the CmpMap shares, is left with Invert 0, the value the list applied it with
+     * (dssmap.c {@code MapMerge} annuls its pointer before the restore; docs/rust-c-differences.md,
+     * "A DssMap merge leaves the WinMap's Invert attribute changed").
      */
     @Test
-    void mergingWithAnInvertedWinmapRestoresItsInvertAttribute() {
+    void aMergeLeavesTheWinmapWithTheListsInvertValue() {
         WinMap w = inv(win());
         CmpMap c = series(inv(dss4200()), w);
         c.invert();
-        String want = probe("invert_attr_both_inverted");
-        assertEquals("before 1\nclass DssMap\nafter 0\n", want);
         int before = w.getI("Invert");
         Mapping s = c.simplify();
         String got = "before " + before + "\nclass " + s.astClass() + "\nafter " + w.getI("Invert") + "\n";
-        assertEquals("before 1\nclass DssMap\nafter 1\n", got);
+        assertEquals(probe("invert_attr_both_inverted"), got);
         assertProbe("inverted_dssmap_then_winmap_both_inverted", simp(c, true));
     }
 

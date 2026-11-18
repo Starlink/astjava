@@ -591,7 +591,8 @@ The entries are grouped by area, in the order the Java classes were ported.
 - **C quirk**: `MapMerge` (`dssmap.c`) sets the WinMap's Invert attribute to the value the list applies it with, and restores it only when the two do not merge, since it annuls the WinMap's pointer before the restore when they do.
   Simplifying the inverse of a series CmpMap of an inverted DssMap and an inverted WinMap merges the two and leaves the WinMap, which the CmpMap shares, with Invert 0 (probe case `invert_attr_both_inverted`).
 - Rust: reads the terms of an owned WinMap, so nothing changes.
-- Java: restores the WinMap's Invert attribute, as for a PolyMap ("Cancelling a PolyMap with its inverse").
+- Java: as C.
+  Java sets back the Invert attribute after a failed merge as it was, set or unset, where C's `astSetInvert` leaves it set, so the two differ only in what `test("Invert")` gives afterwards.
 
 ## Units
 

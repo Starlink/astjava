@@ -35,7 +35,7 @@ public class DssMap extends Mapping {
     /** Arcseconds per radian as {@code platepos} and {@code platepix} write it ({@code cons2r}). */
     private static final double CONS2R = 206264.8062470964;
 
-    /** Two pi as {@code platepos} writes it ({@code twopi}), short of the double nearest to two pi. */
+    /** Two pi as {@code platepos} writes it ({@code twopi}), a little more than the double nearest to two pi. */
     private static final double TWOPI = 6.28318530717959;
 
     /** The convergence tolerance (mm) of the Newton iteration in {@code platepix}. */
@@ -625,8 +625,9 @@ public class DssMap extends Mapping {
      * writes with those four cards replaced, so the plate centre passes through its sexagesimal
      * cards; it is applied with the Invert value of the DssMap it replaces.
      *
-     * <p>C sets the WinMap's Invert attribute to the value the list applies it with while it reads
-     * its terms, and does not restore it when the two merge; this library restores it either way
+     * <p>As in C, the WinMap's Invert attribute is set to the value the list applies it with while
+     * its terms are read, and restored only when the two do not merge: when they merge, the WinMap,
+     * which may be shared with the Mapping being simplified, is left with the list's value
      * (docs/rust-c-differences.md, "A DssMap merge leaves the WinMap's Invert attribute changed").
      */
     @Override
@@ -639,13 +640,25 @@ public class DssMap extends Mapping {
             return -1;
         }
         WinMap wm = (WinMap) list.map(wmi);
-        double[][] terms;
         int oldWinv = wm.swapInvert(list.invert(wmi));
+        boolean merged = false;
         try {
-            terms = wm.winTerms();
+            merged = mergeWinMap(list, where, wmi, wm.winTerms());
         } finally {
-            wm.restoreInvert(oldWinv);
+            // C annuls its pointer to the WinMap after a merge, which skips the restore.
+            if (!merged) {
+                wm.restoreInvert(oldWinv);
+            }
         }
+        return merged ? Math.min(wmi, where) : -1;
+    }
+
+    /**
+     * The part of {@link #mapMerge} after the WinMap's terms {@code terms} (shifts, scales) are
+     * read: merges the WinMap at {@code wmi} into the DssMap at {@code where} if C would, and
+     * says whether it did.
+     */
+    private static boolean mergeWinMap(MergeList list, int where, int wmi, double[][] terms) {
         double[] a = terms[0];
         double[] b = terms[1];
         if (a[0] == AST__BAD
@@ -654,7 +667,7 @@ public class DssMap extends Mapping {
                 || a[1] == AST__BAD
                 || b[1] == AST__BAD
                 || b[1] == 0.0) {
-            return -1;
+            return false;
         }
 
         DssMap dm = (DssMap) list.map(where);
@@ -677,7 +690,7 @@ public class DssMap extends Mapping {
         // The CNPIX1 and CNPIX2 cards are integers, so the merge is made only when the new
         // values are whole to within one hundredth of a pixel.
         if (Math.abs(cnpix1 - nint(cnpix1)) >= 0.01 || Math.abs(cnpix2 - nint(cnpix2)) >= 0.01) {
-            return -1;
+            return false;
         }
 
         FitsChan fits = dm.dssFits();
@@ -686,11 +699,11 @@ public class DssMap extends Mapping {
         ok = replaceCard(fits, "XPIXELSZ", xpixelsz) && ok;
         ok = replaceCard(fits, "YPIXELSZ", ypixelsz) && ok;
         if (!ok) {
-            return -1;
+            return false;
         }
         list.set(where, new DssMap(fits), list.invert(where));
         list.removeAt(wmi);
-        return Math.min(wmi, where);
+        return true;
     }
 
     /**
