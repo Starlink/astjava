@@ -24,8 +24,10 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  *
  * <p>For each row the input is read and simplified, after reducing a FrameSet to its base-to-current
  * Mapping unless the reference is itself a FrameSet (the reference was then made by simplifying the
- * FrameSet). The simplified Mapping's native dump is compared with the reference by the row's
- * fourth field:
+ * FrameSet). The simplified Mapping, read back from its native dump, must be equal to the
+ * reference by {@code astEqual}, as C's harness finds it ({@code ast_tester/test_simplify.tap}
+ * runs {@code ast_astequal} on every row). The simplified Mapping's native dump is compared with
+ * the reference by the row's fourth field:
  *
  * <ul>
  *   <li>blank: numbers within 4 units in the last place, every other byte equal;
@@ -146,6 +148,7 @@ class SimplifyRegressionTest {
         Mapping simplified;
         Mapping input;
         String dump;
+        boolean equal;
         try {
             AstObject inObj = ChannelText.read(Fixtures.read(r.input));
             AstObject refObj = ChannelText.read(refText);
@@ -169,6 +172,11 @@ class SimplifyRegressionTest {
             // correction factor it works out, as C's does (specmap.c FrameChange). What the input
             // computed before it was simplified is found from a second reading of it.
             dump = ChannelText.dump(simplified);
+            // C's harness compares the reference and the simplified Mapping, both read from their
+            // dumps, with astEqual (ast_tester/test_simplify.tap, ast_astequal.c), the reference
+            // first: a dump does not carry everything astEqual looks at, such as a base Frame
+            // written only through Frm.
+            equal = refObj.astEqual(ChannelText.read(dump));
             List<double[][]> transformsBefore = inputTransforms(
                     inputMapping(ChannelText.read(Fixtures.read(r.input)), refObj), oracle.get(r.input));
             List<double[][]> transformsAfter = inputTransforms(input, oracle.get(r.input));
@@ -181,6 +189,9 @@ class SimplifyRegressionTest {
             return "read or simplify: " + e.getMessage();
         }
 
+        if (!equal) {
+            return "astEqual finds the simplified Mapping, read from its dump, unequal to C's";
+        }
         boolean sameFile = r.input.equals(r.reference);
         if (sameFile) {
             boolean frame = simplified instanceof Frame;
