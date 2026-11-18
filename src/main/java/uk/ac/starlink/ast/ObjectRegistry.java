@@ -36,6 +36,8 @@ final class ObjectRegistry {
                 return CmpMap::new;
             case "DSBSpecFrame":
                 return DSBSpecFrame::new;
+            case "DssMap":
+                return DssMap::new;
             case "FitsChan":
                 return FitsChan::new;
             case "FluxFrame":
@@ -44,14 +46,26 @@ final class ObjectRegistry {
                 return Frame::new;
             case "FrameSet":
                 return FrameSet::new;
+            case "GrismMap":
+                return GrismMap::new;
+            case "IntraMap":
+                return IntraMap::new;
             case "KeyMap":
                 return KeyMap::new;
+            case "LutMap":
+                return LutMap::new;
+            case "MathMap":
+                return MathMap::new;
             case "MatrixMap":
                 return MatrixMap::new;
+            case "PcdMap":
+                return PcdMap::new;
             case "PermMap":
                 return PermMap::new;
             case "PolyMap":
                 return PolyMap::new;
+            case "RateMap":
+                return RateMap::new;
             case "ShiftMap":
                 return ShiftMap::new;
             case "SkyAxis":
@@ -68,10 +82,14 @@ final class ObjectRegistry {
                 return SpecMap::new;
             case "SphMap":
                 return SphMap::new;
+            case "SwitchMap":
+                return SwitchMap::new;
             case "TimeFrame":
                 return TimeFrame::new;
             case "TimeMap":
                 return TimeMap::new;
+            case "TranMap":
+                return TranMap::new;
             case "UnitMap":
                 return UnitMap::new;
             case "WcsMap":

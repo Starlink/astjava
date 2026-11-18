@@ -885,7 +885,7 @@ public class TimeFrame extends Frame {
             }
             if (testUnit(axis)) {
                 Units.LabelledMapping lm =
-                        Units.relabel(defUnit(system, "astGetLabel", astClass()), getUnit(axis), result);
+                        Units.unitMapperLabel(defUnit(system, "astGetLabel", astClass()), getUnit(axis), result);
                 if (lm != null && lm.label != null) {
                     result = lm.label;
                 }
@@ -927,7 +927,7 @@ public class TimeFrame extends Frame {
         }
         if (testUnit(axis)) {
             Units.LabelledMapping lm =
-                    Units.relabel(defUnit(system, "astGetSymbol", astClass()), getUnit(axis), result);
+                    Units.unitMapperLabel(defUnit(system, "astGetSymbol", astClass()), getUnit(axis), result);
             if (lm != null && lm.label != null) {
                 result = lm.label;
             }

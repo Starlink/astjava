@@ -7,3 +7,5 @@ AstObject.finalize() | releases the C object behind a JNI wrapper; there is no C
 AstObject.getAstConstantI(String) | reads constants from the C library; they are ordinary static final fields
 Channel.finalize() | releases the C channel behind a JNI wrapper; there is no C object
 FitsChan.finalize() | writes the cards to the sink when the garbage collector frees the JNI wrapper; close() does it
+IntraMap.finalize() | frees the JNI global reference to the Transformer behind the C IntraMap; there is no C object
+DssMap.<init>() | the default constructor Java gives jniast's DssMap, which makes a wrapper with no C object; C has no public DssMap constructor, so a DssMap is only read from a dump or made by simplification

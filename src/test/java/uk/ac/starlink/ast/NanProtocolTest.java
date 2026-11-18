@@ -1,6 +1,7 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static uk.ac.starlink.ast.MappingTestData.fromRows;
@@ -15,7 +16,7 @@ import org.junit.jupiter.api.Test;
  * <p>{@code nan_protocol_forward_matches_transform}, {@code
  * nan_protocol_inverse_matches_transform} and {@code nan_protocol_propagates_bad_and_nan_inputs}
  * run through the simplified FrameSet read from {@code wcsconv/inputs/lsst.ast}. The tests of
- * classes outside the first phase are deferred.
+ * classes not yet ported are deferred.
  */
 class NanProtocolTest {
 
@@ -181,6 +182,37 @@ class NanProtocolTest {
         }
         rows[7][0] = BAD;
         rows[11][0] = Double.NaN;
+        assertNanProtocolMatchesTransform(map, fromRows(rows), 32, true, 1e-14);
+    }
+
+    @Test
+    void nanProtocolLutmap() {
+        // A 5-entry table covering x in [0, 4].
+        LutMap map = new LutMap(new double[] {10.0, 12.0, 14.0, 16.0, 18.0}, 0.0, 1.0);
+        map.setI("LutInterp", 0);
+        double[][] rows = new double[32][];
+        for (int i = 0; i < 32; i++) {
+            rows[i] = new double[] {i * 0.1};
+        }
+        rows[3][0] = BAD;
+        rows[10][0] = Double.NaN;
+        assertNanProtocolMatchesTransform(map, fromRows(rows), 32, true, 1e-14);
+    }
+
+    @Test
+    void nanProtocolGrismmap() {
+        // The probe's typical grism (probes/grismmap_probe.c), whose forward transformation is
+        // good over these inputs.
+        GrismMap map = new GrismMap();
+        map.set("GrismNR=1.5,GrismNRP=-1.0E-6,GrismWaveR=5000,GrismAlpha=0.1,GrismG=2.0E-4,GrismM=1,"
+                + "GrismEps=0.02,GrismTheta=0.03");
+        assertNotEquals(BAD, map.tran1(1, new double[] {0.031}, true)[0], "the inputs must transform to good values");
+        double[][] rows = new double[32][];
+        for (int i = 0; i < 32; i++) {
+            rows[i] = new double[] {i * 0.001};
+        }
+        rows[5][0] = BAD;
+        rows[12][0] = Double.NaN;
         assertNanProtocolMatchesTransform(map, fromRows(rows), 32, true, 1e-14);
     }
 

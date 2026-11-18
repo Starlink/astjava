@@ -494,6 +494,39 @@ public class SpecMap extends Mapping {
     // ------------------------------------------------------------------
 
     /**
+     * specmap.c {@code Equal}: {@code that} is a SpecMap with the same numbers of inputs and
+     * outputs and the same Invert attribute, whose conversions are those of this SpecMap, in the
+     * same order, with the same arguments to within {@code astEQUAL}: the first {@code nargs} of
+     * each, not the frequency correction factor. SpecMaps with different Invert attributes are never equal.
+     */
+    @Override
+    boolean equalTo(AstObject that) {
+        if (!(that instanceof SpecMap)) {
+            return false;
+        }
+        SpecMap other = (SpecMap) that;
+        if (other.getNin() != getNin() || other.getNout() != getNout() || getInvert() != other.getInvert()) {
+            return false;
+        }
+        if (steps.size() != other.steps.size()) {
+            return false;
+        }
+        for (int i = 0; i < steps.size(); i++) {
+            Step s1 = steps.get(i);
+            Step s2 = other.steps.get(i);
+            if (s1.cvt != s2.cvt) {
+                return false;
+            }
+            for (int j = 0; j < s1.cvt.nargs; j++) {
+                if (!MappingHelpers.astEqual(s1.args[j], s2.args[j])) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
      * specmap.c {@code MapMerge}. In series, or alone in the list, the SpecMap and the SpecMaps
      * with the same number of axes adjacent to it are condensed into one Mapping: their conversions
      * are gathered in the order they are applied, each SpecMap's in reverse and each conversion

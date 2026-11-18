@@ -103,6 +103,62 @@ class NativeRoundTripTest {
     }
 
     @Test
+    void roundTripLutmap() {
+        double[] lut = new double[20];
+        for (int i = 0; i < lut.length; i++) {
+            lut[i] = i + 0.1 * Math.pow(i, 1.3);
+        }
+        LutMap m = new LutMap(lut, 0.0, 1.0);
+        m.setI("LutInterp", 0);
+        assertDoubleRoundTrip(m, "LutMap");
+    }
+
+    @Test
+    void roundTripMathmap() {
+        MathMap m = new MathMap(
+                2, 2, new String[] {"u = x + y", "v = x - y"}, new String[] {"x = 0.5 * (u + v)", "y = 0.5 * (u - v)"});
+        assertDoubleRoundTrip(m, "MathMap");
+    }
+
+    @Test
+    void roundTripTranmap() {
+        TranMap m = new TranMap(new ZoomMap(2, 2.0), new ShiftMap(new double[] {0.5, 0.5}));
+        assertDoubleRoundTrip(m, "TranMap");
+    }
+
+    @Test
+    void roundTripPcdmap() {
+        assertDoubleRoundTrip(new PcdMap(1.0e-3, new double[] {0.1, -0.2}), "PcdMap");
+    }
+
+    @Test
+    void roundTripDssmap() {
+        Mapping m = DssMapTest.dss();
+        m.invert();
+        m.setIdent("plate");
+        Mapping r = (Mapping) assertDoubleRoundTrip(m, "DssMap");
+        assertTrue(r.getInvert());
+        assertEquals("plate", r.getIdent());
+        assertArrayEquals(
+                m.tranN(1, 2, new double[] {2.8, -1.0}, true, 2), r.tranN(1, 2, new double[] {2.8, -1.0}, true, 2));
+    }
+
+    @Test
+    void roundTripGrismmap() {
+        GrismMap m = new GrismMap();
+        m.set("GrismNR=1.5,GrismNRP=0.0,GrismWaveR=5.0E-7,GrismAlpha=0.1,GrismG=1.0E7,GrismM=1,GrismEps=1.0,"
+                + "GrismTheta=0.0");
+        assertDoubleRoundTrip(m, "GrismMap");
+    }
+
+    @Test
+    void roundTripRatemap() {
+        double[] cofs = {1.0, 1.0, 1.0, 0.0, 0.1, 1.0, 0.0, 1.0, 0.1, 2.0, 1.0, 0.0, 1.0, 2.0, 0.0, 1.0};
+        PolyMap inner = new PolyMap(2, 2, 4, cofs, 0, null);
+        assertDoubleRoundTrip(new RateMap(inner, 1, 1), "RateMap");
+    }
+
+    @Test
     void roundTripPermmap() {
         PermMap m = new PermMap(3, new int[] {2, -1, 1}, 2, new int[] {3, 1}, new double[] {7.5});
         m.setInvert(true);

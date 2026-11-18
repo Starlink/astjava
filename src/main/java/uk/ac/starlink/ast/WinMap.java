@@ -149,6 +149,43 @@ public class WinMap extends Mapping {
         return true;
     }
 
+    /**
+     * winmap.c {@code Equal}: {@code that} is a WinMap with the same number of inputs whose stored
+     * shift and scale terms equal this one's, to within {@code astEQUAL}, and whose Invert
+     * attribute is the same; or, failing that, whose Invert attribute differs and whose terms, each
+     * WinMap's taken as it applies them ({@link #winTerms}), are equal.
+     */
+    @Override
+    boolean equalTo(AstObject that) {
+        if (!(that instanceof WinMap)) {
+            return false;
+        }
+        WinMap other = (WinMap) that;
+        int nin = getNin();
+        if (other.getNin() != nin) {
+            return false;
+        }
+        if (sameTerms(shifts, scales, other.shifts, other.scales, nin)) {
+            return getInvert() == other.getInvert();
+        }
+        if (getInvert() != other.getInvert()) {
+            double[][] thisTerms = winTerms();
+            double[][] thatTerms = other.winTerms();
+            return sameTerms(thisTerms[0], thisTerms[1], thatTerms[0], thatTerms[1], nin);
+        }
+        return false;
+    }
+
+    /** Whether the first {@code n} shift and scale terms of two WinMaps are equal to within {@code astEQUAL}. */
+    private static boolean sameTerms(double[] a1, double[] b1, double[] a2, double[] b2, int n) {
+        for (int i = 0; i < n; i++) {
+            if (!MappingHelpers.astEqual(a1[i], a2[i]) || !MappingHelpers.astEqual(b1[i], b2[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** {@link WinMapMerge#winMapMerge}, winmap.c {@code MapMerge}. */
     @Override
     int mapMerge(MergeList list, int where, boolean series) {

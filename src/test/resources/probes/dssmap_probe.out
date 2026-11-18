@@ -1,0 +1,1206 @@
+== tran
+fwd 1000 2000 -> 2.8083346239617448 -1.0343153598165549
+fwd 1 1 -> 2.8243236575347148 -1.0508322209249645
+fwd 500 500 -> 2.8161439608570813 -1.0467029611634802
+fwd 4000 4000 -> 2.7619802120535324 -1.0170010158886906
+fwd 2000 3000 -> 2.79273848535049 -1.0259086050587363
+fwd -1.7976931348623157e+308 100 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+fwd 100 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 2.8083346239617448 -1.0343153598165549 -> 999.99999999998818 2000.0000000000291
+inv 2.8243236575347148 -1.0508322209249645 -> 1.0000000000118234 1.0000000000254659
+inv 2.8161439608570813 -1.0467029611634802 -> 499.99999999996635 500.00000000001091
+inv 2.7619802120535324 -1.0170010158886906 -> 4000 4000.0000000000018
+inv 2.79273848535049 -1.0259086050587363 -> 1999.9999999999991 2999.9999999999955
+inv -1.7976931348623157e+308 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv -1.7976931348623157e+308 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 2.8300000000000001 -1.05 -> -342.13828458891885 102.2257321518473
+inv 2.7999999999999998 -1 -> 1617.1678235011241 6166.6231601991112
+inv 5.9699999999999998 1.05 -> -245.78731831672849 102.3841654908947
+inv 1.25 0 -> -334276.482090351 1860.1224983535485
+inv -1.7976931348623157e+308 -1 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 2.8500000000000001 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+== tran_inverted
+inv 1000 2000 -> 2.8083346239617448 -1.0343153598165549
+inv 1 1 -> 2.8243236575347148 -1.0508322209249645
+inv 500 500 -> 2.8161439608570813 -1.0467029611634802
+inv 4000 4000 -> 2.7619802120535324 -1.0170010158886906
+inv 2000 3000 -> 2.79273848535049 -1.0259086050587363
+inv -1.7976931348623157e+308 100 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 100 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+fwd 2.8083346239617448 -1.0343153598165549 -> 999.99999999998818 2000.0000000000291
+fwd 2.8243236575347148 -1.0508322209249645 -> 1.0000000000118234 1.0000000000254659
+fwd 2.8161439608570813 -1.0467029611634802 -> 499.99999999996635 500.00000000001091
+fwd 2.7619802120535324 -1.0170010158886906 -> 4000 4000.0000000000018
+fwd 2.79273848535049 -1.0259086050587363 -> 1999.9999999999991 2999.9999999999955
+fwd -1.7976931348623157e+308 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+fwd -1.7976931348623157e+308 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+fwd 2.8300000000000001 -1.05 -> -342.13828458891885 102.2257321518473
+fwd 2.7999999999999998 -1 -> 1617.1678235011241 6166.6231601991112
+fwd 5.9699999999999998 1.05 -> -245.78731831672849 102.3841654908947
+fwd 1.25 0 -> -334276.482090351 1860.1224983535485
+fwd -1.7976931348623157e+308 -1 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+fwd 2.8500000000000001 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+== tran_cnpix_4200
+fwd 1000 2000 -> 2.8083507094891389 -1.0343154939234542
+fwd 1 1 -> 2.8243402112567479 -1.0508322421330032
+fwd 500 500 -> 2.8161603947839868 -1.0467030405683626
+fwd 4000 4000 -> 2.7619957998052245 -1.0170014721586804
+fwd 2000 3000 -> 2.7927543360192209 -1.0259088480898237
+fwd -1.7976931348623157e+308 100 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+fwd 100 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 2.8083507094891389 -1.0343154939234542 -> 1000.0000000000127 2000.0000000000064
+inv 2.8243402112567479 -1.0508322421330032 -> 1.0000000000327418 1.0000000000027285
+inv 2.8161603947839868 -1.0467030405683626 -> 500.00000000001 500.00000000000091
+inv 2.7619957998052245 -1.0170014721586804 -> 4000.0000000000091 4000.0000000000273
+inv 2.7927543360192209 -1.0259088480898237 -> 1999.9999999999891 3000.0000000000082
+inv -1.7976931348623157e+308 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv -1.7976931348623157e+308 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 2.8300000000000001 -1.05 -> -341.13828458891885 102.2257321518473
+inv 2.7999999999999998 -1 -> 1618.1678235011241 6166.6231601991112
+inv 5.9699999999999998 1.05 -> -244.78731831672849 102.3841654908947
+inv 1.25 0 -> -334275.482090351 1860.1224983535485
+inv -1.7976931348623157e+308 -1 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 2.8500000000000001 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+== tran_pltra_small
+fwd 1000 2000 -> 6.2643824655616953 -1.0343153598165549
+fwd 1 1 -> 6.2803714991346649 -1.0508322209249645
+fwd 500 500 -> 6.2721918024570318 -1.0467029611634802
+fwd 4000 4000 -> 6.2180280536534829 -1.0170010158886906
+fwd 2000 3000 -> 6.24878632695044 -1.0259086050587363
+fwd -1.7976931348623157e+308 100 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+fwd 100 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 6.2643824655616953 -1.0343153598165549 -> 999.99999999975535 2000.0000000000291
+inv 6.2803714991346649 -1.0508322209249645 -> 0.99999999978444976 1.0000000000254659
+inv 6.2721918024570318 -1.0467029611634802 -> 499.99999999976535 500.00000000001728
+inv 6.2180280536534829 -1.0170010158886906 -> 3999.9999999997581 4000.0000000000146
+inv 6.24878632695044 -1.0259086050587363 -> 1999.9999999997908 3000.0000000000018
+inv -1.7976931348623157e+308 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv -1.7976931348623157e+308 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 2.8300000000000001 -1.05 -> -18284.114516483853 -100040.14214231048
+inv 2.7999999999999998 -1 -> -21861.721026482424 -103050.9953774332
+inv 5.9699999999999998 1.05 -> -18373.580043042748 -100012.74937664633
+inv 1.25 0 -> -141302.95105078415 40557.046783529462
+inv -1.7976931348623157e+308 -1 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 2.8500000000000001 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+== rate
+rate 1 1 -1.60855225875e-05
+rate 1 2 2.6544782499999998e-07
+rate 2 1 1.3416370000000001e-07
+rate 2 2 8.2207366812499995e-06
+== equal
+same 1
+copy 1
+inverted 0
+both_inverted 1
+winmap 0
+PltRA 2.8272374655684120 1
+PltRA 2.8272374655685 1
+PltDec -1.05 0
+PltScl 60 1
+CNPix1 4200 0
+CNPix2 4200 0
+XPixSz 25.3 0
+YPixSz 25.3 0
+PPO1 1 1
+PPO2 1 1
+PPO3 105990 0
+PPO4 1 1
+PPO5 1 1
+PPO6 105990 0
+AMDX1 67.15 0
+AMDX13 1.5e-12 1
+AMDX14 1 1
+AMDX19 1 1
+AMDY1 67.15 0
+AMDY13 1.4e-12 1
+AMDY14 1 1
+AMDY19 1 1
+== load_missing
+-- PltRA
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'PltRA' object (Plate centre RA) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- PltDec
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'PltDec' object (Plate centre Dec) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- PltScl
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'PltScl' object (Plate scale) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- CNPix1
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'CNPix1' object (X pixel offset) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- CNPix2
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'CNPix2' object (Y pixel offset) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- XPixSz
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'XPixSz' object (X pixel size) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- YPixSz
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'YPixSz' object (Y pixel size) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- PPO1
+class DssMap
+-- PPO2
+class DssMap
+-- PPO3
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'PPO3' object (orientation coefficient 3) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- PPO4
+class DssMap
+-- PPO5
+class DssMap
+-- PPO6
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'PPO6' object (orientation coefficient 6) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- AMDX1
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'AMDX1' object (plate solution X coefficient 1) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- AMDX2
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'AMDX2' object (plate solution X coefficient 2) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- AMDX13
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'AMDX13' object (plate solution X coefficient 13) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- AMDX14
+class DssMap
+-- AMDX19
+class DssMap
+-- AMDY1
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'AMDY1' object (plate solution Y coefficient 1) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- AMDY12
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'AMDY12' object (plate solution Y coefficient 12) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- AMDY13
+!! AST: Error in routine dss at line 78 in file dssmap_probe.c.
+!  astRead(DssMap): 'AMDY13' object (plate solution Y coefficient 13) missing from input.
+!  Error while reading a DssMap from a Channel.
+status 233933650
+-- AMDY14
+class DssMap
+-- AMDY19
+class DssMap
+== load_amdx14_nonzero
+fwd 1000 2000 -> 2.8083346239617448 -1.0343153598165549
+fwd 1 1 -> 2.8243236575347148 -1.0508322209249645
+fwd 500 500 -> 2.8161439608570813 -1.0467029611634802
+fwd 4000 4000 -> 2.7619802120535324 -1.0170010158886906
+fwd 2000 3000 -> 2.79273848535049 -1.0259086050587363
+fwd -1.7976931348623157e+308 100 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+fwd 100 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 2.8083346239617448 -1.0343153598165549 -> 999.99999999998818 2000.0000000000291
+inv 2.8243236575347148 -1.0508322209249645 -> 1.0000000000118234 1.0000000000254659
+inv 2.8161439608570813 -1.0467029611634802 -> 499.99999999996635 500.00000000001091
+inv 2.7619802120535324 -1.0170010158886906 -> 4000 4000.0000000000018
+inv 2.79273848535049 -1.0259086050587363 -> 1999.9999999999991 2999.9999999999955
+inv -1.7976931348623157e+308 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv -1.7976931348623157e+308 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 2.8300000000000001 -1.05 -> -342.13828458891885 102.2257321518473
+inv 2.7999999999999998 -1 -> 1617.1678235011241 6166.6231601991112
+inv 5.9699999999999998 1.05 -> -245.78731831672849 102.3841654908947
+inv 1.25 0 -> -334276.482090351 1860.1224983535485
+inv -1.7976931348623157e+308 -1 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+inv 2.8500000000000001 -1.7976931348623157e+308 -> -1.7976931348623157e+308 -1.7976931348623157e+308
+== alone
+class DssMap
+ Begin DssMap 	# DSS plate fit mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    PltRA = 2.8272374655684112 	# Plate centre RA (radians)
+    PltDec = -1.0518122540502668 	# Plate centre Dec (radians)
+    PltScl = 67.200000000000003 	# Plate scale (arcsec/mm)
+    CNPix1 = 4201 	# X Pixel offset (pixels)
+    CNPix2 = 4201 	# Y Pixel offset (pixels)
+    XPixSz = 25.263000000000002 	# X Pixel size (microns)
+    YPixSz = 25.263000000000002 	# Y Pixel size (microns)
+    PPO1 = 0 	# Orientation coefficients
+    PPO2 = 0 	# Orientation coefficients
+    PPO3 = 105990.5119 	# Orientation coefficients
+    PPO4 = 0 	# Orientation coefficients
+    PPO5 = 0 	# Orientation coefficients
+    PPO6 = 105990.5119 	# Orientation coefficients
+    AMDX1 = 67.152600000000007 	# Plate solution X coefficients
+    AMDX2 = 0.0051200000000000004 	# Plate solution X coefficients
+    AMDX3 = -288.40899999999999 	# Plate solution X coefficients
+    AMDX4 = -8.8400000000000001e-06 	# Plate solution X coefficients
+    AMDX5 = -2.9300000000000001e-05 	# Plate solution X coefficients
+    AMDX6 = 3.9099999999999998e-06 	# Plate solution X coefficients
+    AMDX7 = -4.16e-06 	# Plate solution X coefficients
+    AMDX8 = -9.7500000000000005e-10 	# Plate solution X coefficients
+    AMDX9 = 3.2600000000000001e-10 	# Plate solution X coefficients
+    AMDX10 = 7.78e-10 	# Plate solution X coefficients
+    AMDX11 = 2.0700000000000001e-10 	# Plate solution X coefficients
+    AMDX12 = 5.5500000000000001e-09 	# Plate solution X coefficients
+    AMDX13 = 1.4899999999999999e-12 	# Plate solution X coefficients
+    AMDX14 = 0 	# Plate solution X coefficients
+    AMDX15 = 0 	# Plate solution X coefficients
+    AMDX16 = 0 	# Plate solution X coefficients
+    AMDX17 = 0 	# Plate solution X coefficients
+    AMDX18 = 0 	# Plate solution X coefficients
+    AMDX19 = 0 	# Plate solution X coefficients
+    AMDY1 = 67.154200000000003 	# Plate solution Y coefficients
+    AMDY2 = -0.0038300000000000001 	# Plate solution Y coefficients
+    AMDY3 = 191.56200000000001 	# Plate solution Y coefficients
+    AMDY4 = -2.12e-05 	# Plate solution Y coefficients
+    AMDY5 = -2.9200000000000002e-05 	# Plate solution Y coefficients
+    AMDY6 = -9.4399999999999994e-06 	# Plate solution Y coefficients
+    AMDY7 = -4.1400000000000002e-06 	# Plate solution Y coefficients
+    AMDY8 = 6.6699999999999997e-10 	# Plate solution Y coefficients
+    AMDY9 = 6.9399999999999998e-10 	# Plate solution Y coefficients
+    AMDY10 = -2.0800000000000001e-10 	# Plate solution Y coefficients
+    AMDY11 = -1.2e-09 	# Plate solution Y coefficients
+    AMDY12 = 5.5599999999999998e-09 	# Plate solution Y coefficients
+    AMDY13 = 1.5000000000000001e-12 	# Plate solution Y coefficients
+    AMDY14 = 0 	# Plate solution Y coefficients
+    AMDY15 = 0 	# Plate solution Y coefficients
+    AMDY16 = 0 	# Plate solution Y coefficients
+    AMDY17 = 0 	# Plate solution Y coefficients
+    AMDY18 = 0 	# Plate solution Y coefficients
+    AMDY19 = 0 	# Plate solution Y coefficients
+ End DssMap
+-- transformations
+2.8083346239617448 -1.0343153598165549
+2.8243236575347148 -1.0508322209249645
+2.8161439608570813 -1.0467029611634802
+2.7619802120535324 -1.0170010158886906
+2.79273848535049 -1.0259086050587363
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-- transformations simplified
+2.8083346239617448 -1.0343153598165549
+2.8243236575347148 -1.0508322209249645
+2.8161439608570813 -1.0467029611634802
+2.7619802120535324 -1.0170010158886906
+2.79273848535049 -1.0259086050587363
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+== winmap_then_dssmap_fractional
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = -0.5 	# Shift for axis 1
+          Scl1 = 2 	# Scale factor for axis 1
+          Sft2 = -0.5 	# Shift for axis 2
+          Scl2 = 2 	# Scale factor for axis 2
+       End WinMap
+    MapB = 	# Second component Mapping
+       Begin DssMap 	# DSS plate fit mapping
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          PltRA = 2.8272374655684112 	# Plate centre RA (radians)
+          PltDec = -1.0518122540502668 	# Plate centre Dec (radians)
+          PltScl = 67.200000000000003 	# Plate scale (arcsec/mm)
+          CNPix1 = 4201 	# X Pixel offset (pixels)
+          CNPix2 = 4201 	# Y Pixel offset (pixels)
+          XPixSz = 25.263000000000002 	# X Pixel size (microns)
+          YPixSz = 25.263000000000002 	# Y Pixel size (microns)
+          PPO1 = 0 	# Orientation coefficients
+          PPO2 = 0 	# Orientation coefficients
+          PPO3 = 105990.5119 	# Orientation coefficients
+          PPO4 = 0 	# Orientation coefficients
+          PPO5 = 0 	# Orientation coefficients
+          PPO6 = 105990.5119 	# Orientation coefficients
+          AMDX1 = 67.152600000000007 	# Plate solution X coefficients
+          AMDX2 = 0.0051200000000000004 	# Plate solution X coefficients
+          AMDX3 = -288.40899999999999 	# Plate solution X coefficients
+          AMDX4 = -8.8400000000000001e-06 	# Plate solution X coefficients
+          AMDX5 = -2.9300000000000001e-05 	# Plate solution X coefficients
+          AMDX6 = 3.9099999999999998e-06 	# Plate solution X coefficients
+          AMDX7 = -4.16e-06 	# Plate solution X coefficients
+          AMDX8 = -9.7500000000000005e-10 	# Plate solution X coefficients
+          AMDX9 = 3.2600000000000001e-10 	# Plate solution X coefficients
+          AMDX10 = 7.78e-10 	# Plate solution X coefficients
+          AMDX11 = 2.0700000000000001e-10 	# Plate solution X coefficients
+          AMDX12 = 5.5500000000000001e-09 	# Plate solution X coefficients
+          AMDX13 = 1.4899999999999999e-12 	# Plate solution X coefficients
+          AMDX14 = 0 	# Plate solution X coefficients
+          AMDX15 = 0 	# Plate solution X coefficients
+          AMDX16 = 0 	# Plate solution X coefficients
+          AMDX17 = 0 	# Plate solution X coefficients
+          AMDX18 = 0 	# Plate solution X coefficients
+          AMDX19 = 0 	# Plate solution X coefficients
+          AMDY1 = 67.154200000000003 	# Plate solution Y coefficients
+          AMDY2 = -0.0038300000000000001 	# Plate solution Y coefficients
+          AMDY3 = 191.56200000000001 	# Plate solution Y coefficients
+          AMDY4 = -2.12e-05 	# Plate solution Y coefficients
+          AMDY5 = -2.9200000000000002e-05 	# Plate solution Y coefficients
+          AMDY6 = -9.4399999999999994e-06 	# Plate solution Y coefficients
+          AMDY7 = -4.1400000000000002e-06 	# Plate solution Y coefficients
+          AMDY8 = 6.6699999999999997e-10 	# Plate solution Y coefficients
+          AMDY9 = 6.9399999999999998e-10 	# Plate solution Y coefficients
+          AMDY10 = -2.0800000000000001e-10 	# Plate solution Y coefficients
+          AMDY11 = -1.2e-09 	# Plate solution Y coefficients
+          AMDY12 = 5.5599999999999998e-09 	# Plate solution Y coefficients
+          AMDY13 = 1.5000000000000001e-12 	# Plate solution Y coefficients
+          AMDY14 = 0 	# Plate solution Y coefficients
+          AMDY15 = 0 	# Plate solution Y coefficients
+          AMDY16 = 0 	# Plate solution Y coefficients
+          AMDY17 = 0 	# Plate solution Y coefficients
+          AMDY18 = 0 	# Plate solution Y coefficients
+          AMDY19 = 0 	# Plate solution Y coefficients
+       End DssMap
+ End CmpMap
+-- transformations
+2.7932160884189003 -1.0177004481235701
+2.8243154023073029 -1.0508280978270057
+2.8080734286818534 -1.0425413240805228
+2.7064609247333031 -0.98176109163331693
+2.7637124571539498 -1.0006201529549985
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-- transformations simplified
+2.7932160884189003 -1.0177004481235701
+2.8243154023073029 -1.0508280978270057
+2.8080734286818534 -1.0425413240805228
+2.7064609247333031 -0.98176109163331693
+2.7637124571539498 -1.0006201529549985
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+== winmap_then_dssmap_fractional_cnpix2
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = -0.5 	# Shift for axis 1
+          Scl1 = 2 	# Scale factor for axis 1
+          Sft2 = -0.5 	# Shift for axis 2
+          Scl2 = 2 	# Scale factor for axis 2
+       End WinMap
+    MapB = 	# Second component Mapping
+       Begin DssMap 	# DSS plate fit mapping
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          PltRA = 2.8272374655684112 	# Plate centre RA (radians)
+          PltDec = -1.0518122540502668 	# Plate centre Dec (radians)
+          PltScl = 67.200000000000003 	# Plate scale (arcsec/mm)
+          CNPix1 = 4200 	# X Pixel offset (pixels)
+          CNPix2 = 4201 	# Y Pixel offset (pixels)
+          XPixSz = 25.263000000000002 	# X Pixel size (microns)
+          YPixSz = 25.263000000000002 	# Y Pixel size (microns)
+          PPO1 = 0 	# Orientation coefficients
+          PPO2 = 0 	# Orientation coefficients
+          PPO3 = 105990.5119 	# Orientation coefficients
+          PPO4 = 0 	# Orientation coefficients
+          PPO5 = 0 	# Orientation coefficients
+          PPO6 = 105990.5119 	# Orientation coefficients
+          AMDX1 = 67.152600000000007 	# Plate solution X coefficients
+          AMDX2 = 0.0051200000000000004 	# Plate solution X coefficients
+          AMDX3 = -288.40899999999999 	# Plate solution X coefficients
+          AMDX4 = -8.8400000000000001e-06 	# Plate solution X coefficients
+          AMDX5 = -2.9300000000000001e-05 	# Plate solution X coefficients
+          AMDX6 = 3.9099999999999998e-06 	# Plate solution X coefficients
+          AMDX7 = -4.16e-06 	# Plate solution X coefficients
+          AMDX8 = -9.7500000000000005e-10 	# Plate solution X coefficients
+          AMDX9 = 3.2600000000000001e-10 	# Plate solution X coefficients
+          AMDX10 = 7.78e-10 	# Plate solution X coefficients
+          AMDX11 = 2.0700000000000001e-10 	# Plate solution X coefficients
+          AMDX12 = 5.5500000000000001e-09 	# Plate solution X coefficients
+          AMDX13 = 1.4899999999999999e-12 	# Plate solution X coefficients
+          AMDX14 = 0 	# Plate solution X coefficients
+          AMDX15 = 0 	# Plate solution X coefficients
+          AMDX16 = 0 	# Plate solution X coefficients
+          AMDX17 = 0 	# Plate solution X coefficients
+          AMDX18 = 0 	# Plate solution X coefficients
+          AMDX19 = 0 	# Plate solution X coefficients
+          AMDY1 = 67.154200000000003 	# Plate solution Y coefficients
+          AMDY2 = -0.0038300000000000001 	# Plate solution Y coefficients
+          AMDY3 = 191.56200000000001 	# Plate solution Y coefficients
+          AMDY4 = -2.12e-05 	# Plate solution Y coefficients
+          AMDY5 = -2.9200000000000002e-05 	# Plate solution Y coefficients
+          AMDY6 = -9.4399999999999994e-06 	# Plate solution Y coefficients
+          AMDY7 = -4.1400000000000002e-06 	# Plate solution Y coefficients
+          AMDY8 = 6.6699999999999997e-10 	# Plate solution Y coefficients
+          AMDY9 = 6.9399999999999998e-10 	# Plate solution Y coefficients
+          AMDY10 = -2.0800000000000001e-10 	# Plate solution Y coefficients
+          AMDY11 = -1.2e-09 	# Plate solution Y coefficients
+          AMDY12 = 5.5599999999999998e-09 	# Plate solution Y coefficients
+          AMDY13 = 1.5000000000000001e-12 	# Plate solution Y coefficients
+          AMDY14 = 0 	# Plate solution Y coefficients
+          AMDY15 = 0 	# Plate solution Y coefficients
+          AMDY16 = 0 	# Plate solution Y coefficients
+          AMDY17 = 0 	# Plate solution Y coefficients
+          AMDY18 = 0 	# Plate solution Y coefficients
+          AMDY19 = 0 	# Plate solution Y coefficients
+       End DssMap
+ End CmpMap
+-- transformations
+2.793231724129992 -1.0177006866582459
+2.8243319559095421 -1.0508281190939217
+2.8080897422809477 -1.0425414606130279
+2.7064755617912351 -0.98176191523115552
+2.7637276358882721 -1.000620592699879
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-- transformations simplified
+2.793231724129992 -1.0177006866582459
+2.8243319559095421 -1.0508281190939217
+2.8080897422809477 -1.0425414606130279
+2.7064755617912351 -0.98176191523115552
+2.7637276358882721 -1.000620592699879
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+== winmap_then_dssmap_4200
+class DssMap
+ Begin DssMap 	# DSS plate fit mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    PltRA = 2.8272374655684112 	# Plate centre RA (radians)
+    PltDec = -1.0518122540502668 	# Plate centre Dec (radians)
+    PltScl = 67.200000000000003 	# Plate scale (arcsec/mm)
+    CNPix1 = 2100 	# X Pixel offset (pixels)
+    CNPix2 = 2100 	# Y Pixel offset (pixels)
+    XPixSz = 50.526000000000003 	# X Pixel size (microns)
+    YPixSz = 50.526000000000003 	# Y Pixel size (microns)
+    PPO1 = 0 	# Orientation coefficients
+    PPO2 = 0 	# Orientation coefficients
+    PPO3 = 105990.5119 	# Orientation coefficients
+    PPO4 = 0 	# Orientation coefficients
+    PPO5 = 0 	# Orientation coefficients
+    PPO6 = 105990.5119 	# Orientation coefficients
+    AMDX1 = 67.152600000000007 	# Plate solution X coefficients
+    AMDX2 = 0.0051200000000000004 	# Plate solution X coefficients
+    AMDX3 = -288.40899999999999 	# Plate solution X coefficients
+    AMDX4 = -8.8400000000000001e-06 	# Plate solution X coefficients
+    AMDX5 = -2.9300000000000001e-05 	# Plate solution X coefficients
+    AMDX6 = 3.9099999999999998e-06 	# Plate solution X coefficients
+    AMDX7 = -4.16e-06 	# Plate solution X coefficients
+    AMDX8 = -9.7500000000000005e-10 	# Plate solution X coefficients
+    AMDX9 = 3.2600000000000001e-10 	# Plate solution X coefficients
+    AMDX10 = 7.78e-10 	# Plate solution X coefficients
+    AMDX11 = 2.0700000000000001e-10 	# Plate solution X coefficients
+    AMDX12 = 5.5500000000000001e-09 	# Plate solution X coefficients
+    AMDX13 = 1.4899999999999999e-12 	# Plate solution X coefficients
+    AMDX14 = 0 	# Plate solution X coefficients
+    AMDX15 = 0 	# Plate solution X coefficients
+    AMDX16 = 0 	# Plate solution X coefficients
+    AMDX17 = 0 	# Plate solution X coefficients
+    AMDX18 = 0 	# Plate solution X coefficients
+    AMDX19 = 0 	# Plate solution X coefficients
+    AMDY1 = 67.154200000000003 	# Plate solution Y coefficients
+    AMDY2 = -0.0038300000000000001 	# Plate solution Y coefficients
+    AMDY3 = 191.56200000000001 	# Plate solution Y coefficients
+    AMDY4 = -2.12e-05 	# Plate solution Y coefficients
+    AMDY5 = -2.9200000000000002e-05 	# Plate solution Y coefficients
+    AMDY6 = -9.4399999999999994e-06 	# Plate solution Y coefficients
+    AMDY7 = -4.1400000000000002e-06 	# Plate solution Y coefficients
+    AMDY8 = 6.6699999999999997e-10 	# Plate solution Y coefficients
+    AMDY9 = 6.9399999999999998e-10 	# Plate solution Y coefficients
+    AMDY10 = -2.0800000000000001e-10 	# Plate solution Y coefficients
+    AMDY11 = -1.2e-09 	# Plate solution Y coefficients
+    AMDY12 = 5.5599999999999998e-09 	# Plate solution Y coefficients
+    AMDY13 = 1.5000000000000001e-12 	# Plate solution Y coefficients
+    AMDY14 = 0 	# Plate solution Y coefficients
+    AMDY15 = 0 	# Plate solution Y coefficients
+    AMDY16 = 0 	# Plate solution Y coefficients
+    AMDY17 = 0 	# Plate solution Y coefficients
+    AMDY18 = 0 	# Plate solution Y coefficients
+    AMDY19 = 0 	# Plate solution Y coefficients
+ End DssMap
+-- transformations
+2.793231260829788 -1.0177088969714392
+2.8243319128812465 -1.0508363439936359
+2.8080894695840812 -1.042549683267664
+2.7064740214574168 -0.98177004370681353
+2.7637267965791148 -1.0006287797893743
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-- transformations simplified
+2.793231260829788 -1.0177088969714392
+2.8243319128812465 -1.0508363439936359
+2.8080894695840812 -1.042549683267664
+2.7064740214574168 -0.98177004370681353
+2.7637267965791148 -1.0006287797893743
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+== inverted_winmap_then_dssmap_4200
+class DssMap
+ Begin DssMap 	# DSS plate fit mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    PltRA = 2.8272374655684112 	# Plate centre RA (radians)
+    PltDec = -1.0518122540502668 	# Plate centre Dec (radians)
+    PltScl = 67.200000000000003 	# Plate scale (arcsec/mm)
+    CNPix1 = 8400 	# X Pixel offset (pixels)
+    CNPix2 = 8400 	# Y Pixel offset (pixels)
+    XPixSz = 12.631500000000001 	# X Pixel size (microns)
+    YPixSz = 12.631500000000001 	# Y Pixel size (microns)
+    PPO1 = 0 	# Orientation coefficients
+    PPO2 = 0 	# Orientation coefficients
+    PPO3 = 105990.5119 	# Orientation coefficients
+    PPO4 = 0 	# Orientation coefficients
+    PPO5 = 0 	# Orientation coefficients
+    PPO6 = 105990.5119 	# Orientation coefficients
+    AMDX1 = 67.152600000000007 	# Plate solution X coefficients
+    AMDX2 = 0.0051200000000000004 	# Plate solution X coefficients
+    AMDX3 = -288.40899999999999 	# Plate solution X coefficients
+    AMDX4 = -8.8400000000000001e-06 	# Plate solution X coefficients
+    AMDX5 = -2.9300000000000001e-05 	# Plate solution X coefficients
+    AMDX6 = 3.9099999999999998e-06 	# Plate solution X coefficients
+    AMDX7 = -4.16e-06 	# Plate solution X coefficients
+    AMDX8 = -9.7500000000000005e-10 	# Plate solution X coefficients
+    AMDX9 = 3.2600000000000001e-10 	# Plate solution X coefficients
+    AMDX10 = 7.78e-10 	# Plate solution X coefficients
+    AMDX11 = 2.0700000000000001e-10 	# Plate solution X coefficients
+    AMDX12 = 5.5500000000000001e-09 	# Plate solution X coefficients
+    AMDX13 = 1.4899999999999999e-12 	# Plate solution X coefficients
+    AMDX14 = 0 	# Plate solution X coefficients
+    AMDX15 = 0 	# Plate solution X coefficients
+    AMDX16 = 0 	# Plate solution X coefficients
+    AMDX17 = 0 	# Plate solution X coefficients
+    AMDX18 = 0 	# Plate solution X coefficients
+    AMDX19 = 0 	# Plate solution X coefficients
+    AMDY1 = 67.154200000000003 	# Plate solution Y coefficients
+    AMDY2 = -0.0038300000000000001 	# Plate solution Y coefficients
+    AMDY3 = 191.56200000000001 	# Plate solution Y coefficients
+    AMDY4 = -2.12e-05 	# Plate solution Y coefficients
+    AMDY5 = -2.9200000000000002e-05 	# Plate solution Y coefficients
+    AMDY6 = -9.4399999999999994e-06 	# Plate solution Y coefficients
+    AMDY7 = -4.1400000000000002e-06 	# Plate solution Y coefficients
+    AMDY8 = 6.6699999999999997e-10 	# Plate solution Y coefficients
+    AMDY9 = 6.9399999999999998e-10 	# Plate solution Y coefficients
+    AMDY10 = -2.0800000000000001e-10 	# Plate solution Y coefficients
+    AMDY11 = -1.2e-09 	# Plate solution Y coefficients
+    AMDY12 = 5.5599999999999998e-09 	# Plate solution Y coefficients
+    AMDY13 = 1.5000000000000001e-12 	# Plate solution Y coefficients
+    AMDY14 = 0 	# Plate solution Y coefficients
+    AMDY15 = 0 	# Plate solution Y coefficients
+    AMDY16 = 0 	# Plate solution Y coefficients
+    AMDY17 = 0 	# Plate solution Y coefficients
+    AMDY18 = 0 	# Plate solution Y coefficients
+    AMDY19 = 0 	# Plate solution Y coefficients
+ End DssMap
+-- transformations
+2.8162353425781337 -1.0425972229107545
+2.8243442961243943 -1.050842528541726
+2.8202395599888272 -1.0487815202301161
+2.7922669873347568 -1.0341307895452183
+2.8082129118871975 -1.0384322808795139
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-- transformations simplified
+2.8162353425781337 -1.0425972229107545
+2.8243442961243943 -1.050842528541726
+2.8202395599888272 -1.0487815202301161
+2.7922669873347568 -1.0341307895452183
+2.8082129118871975 -1.0384322808795139
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+== winmap_no_shift_then_dssmap_4200
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Second component Mapping
+       Begin DssMap 	# DSS plate fit mapping
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          PltRA = 2.8272374655684112 	# Plate centre RA (radians)
+          PltDec = -1.0518122540502668 	# Plate centre Dec (radians)
+          PltScl = 67.200000000000003 	# Plate scale (arcsec/mm)
+          CNPix1 = 4200 	# X Pixel offset (pixels)
+          CNPix2 = 4200 	# Y Pixel offset (pixels)
+          XPixSz = 25.263000000000002 	# X Pixel size (microns)
+          YPixSz = 25.263000000000002 	# Y Pixel size (microns)
+          PPO1 = 0 	# Orientation coefficients
+          PPO2 = 0 	# Orientation coefficients
+          PPO3 = 105990.5119 	# Orientation coefficients
+          PPO4 = 0 	# Orientation coefficients
+          PPO5 = 0 	# Orientation coefficients
+          PPO6 = 105990.5119 	# Orientation coefficients
+          AMDX1 = 67.152600000000007 	# Plate solution X coefficients
+          AMDX2 = 0.0051200000000000004 	# Plate solution X coefficients
+          AMDX3 = -288.40899999999999 	# Plate solution X coefficients
+          AMDX4 = -8.8400000000000001e-06 	# Plate solution X coefficients
+          AMDX5 = -2.9300000000000001e-05 	# Plate solution X coefficients
+          AMDX6 = 3.9099999999999998e-06 	# Plate solution X coefficients
+          AMDX7 = -4.16e-06 	# Plate solution X coefficients
+          AMDX8 = -9.7500000000000005e-10 	# Plate solution X coefficients
+          AMDX9 = 3.2600000000000001e-10 	# Plate solution X coefficients
+          AMDX10 = 7.78e-10 	# Plate solution X coefficients
+          AMDX11 = 2.0700000000000001e-10 	# Plate solution X coefficients
+          AMDX12 = 5.5500000000000001e-09 	# Plate solution X coefficients
+          AMDX13 = 1.4899999999999999e-12 	# Plate solution X coefficients
+          AMDX14 = 0 	# Plate solution X coefficients
+          AMDX15 = 0 	# Plate solution X coefficients
+          AMDX16 = 0 	# Plate solution X coefficients
+          AMDX17 = 0 	# Plate solution X coefficients
+          AMDX18 = 0 	# Plate solution X coefficients
+          AMDX19 = 0 	# Plate solution X coefficients
+          AMDY1 = 67.154200000000003 	# Plate solution Y coefficients
+          AMDY2 = -0.0038300000000000001 	# Plate solution Y coefficients
+          AMDY3 = 191.56200000000001 	# Plate solution Y coefficients
+          AMDY4 = -2.12e-05 	# Plate solution Y coefficients
+          AMDY5 = -2.9200000000000002e-05 	# Plate solution Y coefficients
+          AMDY6 = -9.4399999999999994e-06 	# Plate solution Y coefficients
+          AMDY7 = -4.1400000000000002e-06 	# Plate solution Y coefficients
+          AMDY8 = 6.6699999999999997e-10 	# Plate solution Y coefficients
+          AMDY9 = 6.9399999999999998e-10 	# Plate solution Y coefficients
+          AMDY10 = -2.0800000000000001e-10 	# Plate solution Y coefficients
+          AMDY11 = -1.2e-09 	# Plate solution Y coefficients
+          AMDY12 = 5.5599999999999998e-09 	# Plate solution Y coefficients
+          AMDY13 = 1.5000000000000001e-12 	# Plate solution Y coefficients
+          AMDY14 = 0 	# Plate solution Y coefficients
+          AMDY15 = 0 	# Plate solution Y coefficients
+          AMDY16 = 0 	# Plate solution Y coefficients
+          AMDY17 = 0 	# Plate solution Y coefficients
+          AMDY18 = 0 	# Plate solution Y coefficients
+          AMDY19 = 0 	# Plate solution Y coefficients
+       End DssMap
+ End CmpMap
+-- transformations
+2.7932236745708341 -1.0177046725594903
+2.8243236575347148 -1.0508322209249645
+2.8080814490748809 -1.0425455036877651
+2.7064674730485061 -0.98176556767793721
+2.7637196268159423 -1.0006244663824764
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-- transformations simplified
+2.7932236745708341 -1.0177046725594903
+2.8243236575347148 -1.0508322209249645
+2.8080814490748809 -1.0425455036877651
+2.7064674730485061 -0.98176556767793721
+2.7637196268159423 -1.0006244663824764
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+== dssmap_then_winmap_4200
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin DssMap 	# DSS plate fit mapping
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          PltRA = 2.8272374655684112 	# Plate centre RA (radians)
+          PltDec = -1.0518122540502668 	# Plate centre Dec (radians)
+          PltScl = 67.200000000000003 	# Plate scale (arcsec/mm)
+          CNPix1 = 4200 	# X Pixel offset (pixels)
+          CNPix2 = 4200 	# Y Pixel offset (pixels)
+          XPixSz = 25.263000000000002 	# X Pixel size (microns)
+          YPixSz = 25.263000000000002 	# Y Pixel size (microns)
+          PPO1 = 0 	# Orientation coefficients
+          PPO2 = 0 	# Orientation coefficients
+          PPO3 = 105990.5119 	# Orientation coefficients
+          PPO4 = 0 	# Orientation coefficients
+          PPO5 = 0 	# Orientation coefficients
+          PPO6 = 105990.5119 	# Orientation coefficients
+          AMDX1 = 67.152600000000007 	# Plate solution X coefficients
+          AMDX2 = 0.0051200000000000004 	# Plate solution X coefficients
+          AMDX3 = -288.40899999999999 	# Plate solution X coefficients
+          AMDX4 = -8.8400000000000001e-06 	# Plate solution X coefficients
+          AMDX5 = -2.9300000000000001e-05 	# Plate solution X coefficients
+          AMDX6 = 3.9099999999999998e-06 	# Plate solution X coefficients
+          AMDX7 = -4.16e-06 	# Plate solution X coefficients
+          AMDX8 = -9.7500000000000005e-10 	# Plate solution X coefficients
+          AMDX9 = 3.2600000000000001e-10 	# Plate solution X coefficients
+          AMDX10 = 7.78e-10 	# Plate solution X coefficients
+          AMDX11 = 2.0700000000000001e-10 	# Plate solution X coefficients
+          AMDX12 = 5.5500000000000001e-09 	# Plate solution X coefficients
+          AMDX13 = 1.4899999999999999e-12 	# Plate solution X coefficients
+          AMDX14 = 0 	# Plate solution X coefficients
+          AMDX15 = 0 	# Plate solution X coefficients
+          AMDX16 = 0 	# Plate solution X coefficients
+          AMDX17 = 0 	# Plate solution X coefficients
+          AMDX18 = 0 	# Plate solution X coefficients
+          AMDX19 = 0 	# Plate solution X coefficients
+          AMDY1 = 67.154200000000003 	# Plate solution Y coefficients
+          AMDY2 = -0.0038300000000000001 	# Plate solution Y coefficients
+          AMDY3 = 191.56200000000001 	# Plate solution Y coefficients
+          AMDY4 = -2.12e-05 	# Plate solution Y coefficients
+          AMDY5 = -2.9200000000000002e-05 	# Plate solution Y coefficients
+          AMDY6 = -9.4399999999999994e-06 	# Plate solution Y coefficients
+          AMDY7 = -4.1400000000000002e-06 	# Plate solution Y coefficients
+          AMDY8 = 6.6699999999999997e-10 	# Plate solution Y coefficients
+          AMDY9 = 6.9399999999999998e-10 	# Plate solution Y coefficients
+          AMDY10 = -2.0800000000000001e-10 	# Plate solution Y coefficients
+          AMDY11 = -1.2e-09 	# Plate solution Y coefficients
+          AMDY12 = 5.5599999999999998e-09 	# Plate solution Y coefficients
+          AMDY13 = 1.5000000000000001e-12 	# Plate solution Y coefficients
+          AMDY14 = 0 	# Plate solution Y coefficients
+          AMDY15 = 0 	# Plate solution Y coefficients
+          AMDY16 = 0 	# Plate solution Y coefficients
+          AMDY17 = 0 	# Plate solution Y coefficients
+          AMDY18 = 0 	# Plate solution Y coefficients
+          AMDY19 = 0 	# Plate solution Y coefficients
+       End DssMap
+    MapB = 	# Second component Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = -0.5 	# Shift for axis 1
+          Scl1 = 2 	# Scale factor for axis 1
+          Sft2 = -0.5 	# Shift for axis 2
+          Scl2 = 2 	# Scale factor for axis 2
+       End WinMap
+ End CmpMap
+-- transformations
+5.1167008885247238 -2.5686474293276396
+5.1486803366937961 -2.601680934066037
+5.1323204707205958 -2.5934225295085351
+5.0239898278578679 -2.5340193392401651
+5.0855077194351503 -2.551834124764091
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-- transformations simplified
+5.1167008885247238 -2.5686474293276396
+5.1486803366937961 -2.601680934066037
+5.1323204707205958 -2.5934225295085351
+5.0239898278578679 -2.5340193392401651
+5.0855077194351503 -2.551834124764091
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+== inverted_dssmap_then_winmap
+class DssMap
+ Begin DssMap 	# DSS plate fit mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+    Invert = 1 	# Mapping inverted
+ IsA Mapping 	# Mapping between coordinate systems
+    PltRA = 2.8272374655684112 	# Plate centre RA (radians)
+    PltDec = -1.0518122540502668 	# Plate centre Dec (radians)
+    PltScl = 67.200000000000003 	# Plate scale (arcsec/mm)
+    CNPix1 = 8400 	# X Pixel offset (pixels)
+    CNPix2 = 8400 	# Y Pixel offset (pixels)
+    XPixSz = 12.631500000000001 	# X Pixel size (microns)
+    YPixSz = 12.631500000000001 	# Y Pixel size (microns)
+    PPO1 = 0 	# Orientation coefficients
+    PPO2 = 0 	# Orientation coefficients
+    PPO3 = 105990.5119 	# Orientation coefficients
+    PPO4 = 0 	# Orientation coefficients
+    PPO5 = 0 	# Orientation coefficients
+    PPO6 = 105990.5119 	# Orientation coefficients
+    AMDX1 = 67.152600000000007 	# Plate solution X coefficients
+    AMDX2 = 0.0051200000000000004 	# Plate solution X coefficients
+    AMDX3 = -288.40899999999999 	# Plate solution X coefficients
+    AMDX4 = -8.8400000000000001e-06 	# Plate solution X coefficients
+    AMDX5 = -2.9300000000000001e-05 	# Plate solution X coefficients
+    AMDX6 = 3.9099999999999998e-06 	# Plate solution X coefficients
+    AMDX7 = -4.16e-06 	# Plate solution X coefficients
+    AMDX8 = -9.7500000000000005e-10 	# Plate solution X coefficients
+    AMDX9 = 3.2600000000000001e-10 	# Plate solution X coefficients
+    AMDX10 = 7.78e-10 	# Plate solution X coefficients
+    AMDX11 = 2.0700000000000001e-10 	# Plate solution X coefficients
+    AMDX12 = 5.5500000000000001e-09 	# Plate solution X coefficients
+    AMDX13 = 1.4899999999999999e-12 	# Plate solution X coefficients
+    AMDX14 = 0 	# Plate solution X coefficients
+    AMDX15 = 0 	# Plate solution X coefficients
+    AMDX16 = 0 	# Plate solution X coefficients
+    AMDX17 = 0 	# Plate solution X coefficients
+    AMDX18 = 0 	# Plate solution X coefficients
+    AMDX19 = 0 	# Plate solution X coefficients
+    AMDY1 = 67.154200000000003 	# Plate solution Y coefficients
+    AMDY2 = -0.0038300000000000001 	# Plate solution Y coefficients
+    AMDY3 = 191.56200000000001 	# Plate solution Y coefficients
+    AMDY4 = -2.12e-05 	# Plate solution Y coefficients
+    AMDY5 = -2.9200000000000002e-05 	# Plate solution Y coefficients
+    AMDY6 = -9.4399999999999994e-06 	# Plate solution Y coefficients
+    AMDY7 = -4.1400000000000002e-06 	# Plate solution Y coefficients
+    AMDY8 = 6.6699999999999997e-10 	# Plate solution Y coefficients
+    AMDY9 = 6.9399999999999998e-10 	# Plate solution Y coefficients
+    AMDY10 = -2.0800000000000001e-10 	# Plate solution Y coefficients
+    AMDY11 = -1.2e-09 	# Plate solution Y coefficients
+    AMDY12 = 5.5599999999999998e-09 	# Plate solution Y coefficients
+    AMDY13 = 1.5000000000000001e-12 	# Plate solution Y coefficients
+    AMDY14 = 0 	# Plate solution Y coefficients
+    AMDY15 = 0 	# Plate solution Y coefficients
+    AMDY16 = 0 	# Plate solution Y coefficients
+    AMDY17 = 0 	# Plate solution Y coefficients
+    AMDY18 = 0 	# Plate solution Y coefficients
+    AMDY19 = 0 	# Plate solution Y coefficients
+ End DssMap
+-- transformations
+2.8162353425781337 -1.0425972229107545
+2.8243442961243943 -1.050842528541726
+2.8202395599888272 -1.0487815202301161
+2.7922669873347568 -1.0341307895452183
+2.8082129118871975 -1.0384322808795139
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-- transformations simplified
+2.8162353425781337 -1.0425972229107545
+2.8243442961243943 -1.050842528541726
+2.8202395599888272 -1.0487815202301161
+2.7922669873347568 -1.0341307895452183
+2.8082129118871975 -1.0384322808795139
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+== winmap_then_inverted_dssmap
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = -0.5 	# Shift for axis 1
+          Scl1 = 2 	# Scale factor for axis 1
+          Sft2 = -0.5 	# Shift for axis 2
+          Scl2 = 2 	# Scale factor for axis 2
+       End WinMap
+    MapB = 	# Second component Mapping
+       Begin DssMap 	# DSS plate fit mapping
+          Nin = 2 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          PltRA = 2.8272374655684112 	# Plate centre RA (radians)
+          PltDec = -1.0518122540502668 	# Plate centre Dec (radians)
+          PltScl = 67.200000000000003 	# Plate scale (arcsec/mm)
+          CNPix1 = 4200 	# X Pixel offset (pixels)
+          CNPix2 = 4200 	# Y Pixel offset (pixels)
+          XPixSz = 25.263000000000002 	# X Pixel size (microns)
+          YPixSz = 25.263000000000002 	# Y Pixel size (microns)
+          PPO1 = 0 	# Orientation coefficients
+          PPO2 = 0 	# Orientation coefficients
+          PPO3 = 105990.5119 	# Orientation coefficients
+          PPO4 = 0 	# Orientation coefficients
+          PPO5 = 0 	# Orientation coefficients
+          PPO6 = 105990.5119 	# Orientation coefficients
+          AMDX1 = 67.152600000000007 	# Plate solution X coefficients
+          AMDX2 = 0.0051200000000000004 	# Plate solution X coefficients
+          AMDX3 = -288.40899999999999 	# Plate solution X coefficients
+          AMDX4 = -8.8400000000000001e-06 	# Plate solution X coefficients
+          AMDX5 = -2.9300000000000001e-05 	# Plate solution X coefficients
+          AMDX6 = 3.9099999999999998e-06 	# Plate solution X coefficients
+          AMDX7 = -4.16e-06 	# Plate solution X coefficients
+          AMDX8 = -9.7500000000000005e-10 	# Plate solution X coefficients
+          AMDX9 = 3.2600000000000001e-10 	# Plate solution X coefficients
+          AMDX10 = 7.78e-10 	# Plate solution X coefficients
+          AMDX11 = 2.0700000000000001e-10 	# Plate solution X coefficients
+          AMDX12 = 5.5500000000000001e-09 	# Plate solution X coefficients
+          AMDX13 = 1.4899999999999999e-12 	# Plate solution X coefficients
+          AMDX14 = 0 	# Plate solution X coefficients
+          AMDX15 = 0 	# Plate solution X coefficients
+          AMDX16 = 0 	# Plate solution X coefficients
+          AMDX17 = 0 	# Plate solution X coefficients
+          AMDX18 = 0 	# Plate solution X coefficients
+          AMDX19 = 0 	# Plate solution X coefficients
+          AMDY1 = 67.154200000000003 	# Plate solution Y coefficients
+          AMDY2 = -0.0038300000000000001 	# Plate solution Y coefficients
+          AMDY3 = 191.56200000000001 	# Plate solution Y coefficients
+          AMDY4 = -2.12e-05 	# Plate solution Y coefficients
+          AMDY5 = -2.9200000000000002e-05 	# Plate solution Y coefficients
+          AMDY6 = -9.4399999999999994e-06 	# Plate solution Y coefficients
+          AMDY7 = -4.1400000000000002e-06 	# Plate solution Y coefficients
+          AMDY8 = 6.6699999999999997e-10 	# Plate solution Y coefficients
+          AMDY9 = 6.9399999999999998e-10 	# Plate solution Y coefficients
+          AMDY10 = -2.0800000000000001e-10 	# Plate solution Y coefficients
+          AMDY11 = -1.2e-09 	# Plate solution Y coefficients
+          AMDY12 = 5.5599999999999998e-09 	# Plate solution Y coefficients
+          AMDY13 = 1.5000000000000001e-12 	# Plate solution Y coefficients
+          AMDY14 = 0 	# Plate solution Y coefficients
+          AMDY15 = 0 	# Plate solution Y coefficients
+          AMDY16 = 0 	# Plate solution Y coefficients
+          AMDY17 = 0 	# Plate solution Y coefficients
+          AMDY18 = 0 	# Plate solution Y coefficients
+          AMDY19 = 0 	# Plate solution Y coefficients
+       End DssMap
+ End CmpMap
+-- transformations
+1.654175222131181 -0.26716185733190989
+1.662170084173449 -0.27542023351650924
+1.658080117680149 -0.27335563237713378
+1.630997456964467 -0.25850483481004127
+1.6463769298587876 -0.26295853119102275
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-- transformations simplified
+1.654175222131181 -0.26716185733190989
+1.662170084173449 -0.27542023351650924
+1.658080117680149 -0.27335563237713378
+1.630997456964467 -0.25850483481004127
+1.6463769298587876 -0.26295853119102275
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+== zoommap_then_dssmap
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 2 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Second component Mapping
+       Begin DssMap 	# DSS plate fit mapping
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          PltRA = 2.8272374655684112 	# Plate centre RA (radians)
+          PltDec = -1.0518122540502668 	# Plate centre Dec (radians)
+          PltScl = 67.200000000000003 	# Plate scale (arcsec/mm)
+          CNPix1 = 4200 	# X Pixel offset (pixels)
+          CNPix2 = 4200 	# Y Pixel offset (pixels)
+          XPixSz = 25.263000000000002 	# X Pixel size (microns)
+          YPixSz = 25.263000000000002 	# Y Pixel size (microns)
+          PPO1 = 0 	# Orientation coefficients
+          PPO2 = 0 	# Orientation coefficients
+          PPO3 = 105990.5119 	# Orientation coefficients
+          PPO4 = 0 	# Orientation coefficients
+          PPO5 = 0 	# Orientation coefficients
+          PPO6 = 105990.5119 	# Orientation coefficients
+          AMDX1 = 67.152600000000007 	# Plate solution X coefficients
+          AMDX2 = 0.0051200000000000004 	# Plate solution X coefficients
+          AMDX3 = -288.40899999999999 	# Plate solution X coefficients
+          AMDX4 = -8.8400000000000001e-06 	# Plate solution X coefficients
+          AMDX5 = -2.9300000000000001e-05 	# Plate solution X coefficients
+          AMDX6 = 3.9099999999999998e-06 	# Plate solution X coefficients
+          AMDX7 = -4.16e-06 	# Plate solution X coefficients
+          AMDX8 = -9.7500000000000005e-10 	# Plate solution X coefficients
+          AMDX9 = 3.2600000000000001e-10 	# Plate solution X coefficients
+          AMDX10 = 7.78e-10 	# Plate solution X coefficients
+          AMDX11 = 2.0700000000000001e-10 	# Plate solution X coefficients
+          AMDX12 = 5.5500000000000001e-09 	# Plate solution X coefficients
+          AMDX13 = 1.4899999999999999e-12 	# Plate solution X coefficients
+          AMDX14 = 0 	# Plate solution X coefficients
+          AMDX15 = 0 	# Plate solution X coefficients
+          AMDX16 = 0 	# Plate solution X coefficients
+          AMDX17 = 0 	# Plate solution X coefficients
+          AMDX18 = 0 	# Plate solution X coefficients
+          AMDX19 = 0 	# Plate solution X coefficients
+          AMDY1 = 67.154200000000003 	# Plate solution Y coefficients
+          AMDY2 = -0.0038300000000000001 	# Plate solution Y coefficients
+          AMDY3 = 191.56200000000001 	# Plate solution Y coefficients
+          AMDY4 = -2.12e-05 	# Plate solution Y coefficients
+          AMDY5 = -2.9200000000000002e-05 	# Plate solution Y coefficients
+          AMDY6 = -9.4399999999999994e-06 	# Plate solution Y coefficients
+          AMDY7 = -4.1400000000000002e-06 	# Plate solution Y coefficients
+          AMDY8 = 6.6699999999999997e-10 	# Plate solution Y coefficients
+          AMDY9 = 6.9399999999999998e-10 	# Plate solution Y coefficients
+          AMDY10 = -2.0800000000000001e-10 	# Plate solution Y coefficients
+          AMDY11 = -1.2e-09 	# Plate solution Y coefficients
+          AMDY12 = 5.5599999999999998e-09 	# Plate solution Y coefficients
+          AMDY13 = 1.5000000000000001e-12 	# Plate solution Y coefficients
+          AMDY14 = 0 	# Plate solution Y coefficients
+          AMDY15 = 0 	# Plate solution Y coefficients
+          AMDY16 = 0 	# Plate solution Y coefficients
+          AMDY17 = 0 	# Plate solution Y coefficients
+          AMDY18 = 0 	# Plate solution Y coefficients
+          AMDY19 = 0 	# Plate solution Y coefficients
+       End DssMap
+ End CmpMap
+-- transformations
+2.7932236745708341 -1.0177046725594903
+2.8243236575347148 -1.0508322209249645
+2.8080814490748809 -1.0425455036877651
+2.7064674730485061 -0.98176556767793721
+2.7637196268159423 -1.0006244663824764
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-- transformations simplified
+2.7932236745708341 -1.0177046725594903
+2.8243236575347148 -1.0508322209249645
+2.8080814490748809 -1.0425455036877651
+2.7064674730485061 -0.98176556767793721
+2.7637196268159423 -1.0006244663824764
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+== parallel
+class CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 4 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Series = 0 	# Component Mappings applied in parallel
+    MapA = 	# First component Mapping
+       Begin WinMap 	# Map one window on to another
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Sft1 = -0.5 	# Shift for axis 1
+          Scl1 = 2 	# Scale factor for axis 1
+          Sft2 = -0.5 	# Shift for axis 2
+          Scl2 = 2 	# Scale factor for axis 2
+       End WinMap
+    MapB = 	# Second component Mapping
+       Begin DssMap 	# DSS plate fit mapping
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          PltRA = 2.8272374655684112 	# Plate centre RA (radians)
+          PltDec = -1.0518122540502668 	# Plate centre Dec (radians)
+          PltScl = 67.200000000000003 	# Plate scale (arcsec/mm)
+          CNPix1 = 4200 	# X Pixel offset (pixels)
+          CNPix2 = 4200 	# Y Pixel offset (pixels)
+          XPixSz = 25.263000000000002 	# X Pixel size (microns)
+          YPixSz = 25.263000000000002 	# Y Pixel size (microns)
+          PPO1 = 0 	# Orientation coefficients
+          PPO2 = 0 	# Orientation coefficients
+          PPO3 = 105990.5119 	# Orientation coefficients
+          PPO4 = 0 	# Orientation coefficients
+          PPO5 = 0 	# Orientation coefficients
+          PPO6 = 105990.5119 	# Orientation coefficients
+          AMDX1 = 67.152600000000007 	# Plate solution X coefficients
+          AMDX2 = 0.0051200000000000004 	# Plate solution X coefficients
+          AMDX3 = -288.40899999999999 	# Plate solution X coefficients
+          AMDX4 = -8.8400000000000001e-06 	# Plate solution X coefficients
+          AMDX5 = -2.9300000000000001e-05 	# Plate solution X coefficients
+          AMDX6 = 3.9099999999999998e-06 	# Plate solution X coefficients
+          AMDX7 = -4.16e-06 	# Plate solution X coefficients
+          AMDX8 = -9.7500000000000005e-10 	# Plate solution X coefficients
+          AMDX9 = 3.2600000000000001e-10 	# Plate solution X coefficients
+          AMDX10 = 7.78e-10 	# Plate solution X coefficients
+          AMDX11 = 2.0700000000000001e-10 	# Plate solution X coefficients
+          AMDX12 = 5.5500000000000001e-09 	# Plate solution X coefficients
+          AMDX13 = 1.4899999999999999e-12 	# Plate solution X coefficients
+          AMDX14 = 0 	# Plate solution X coefficients
+          AMDX15 = 0 	# Plate solution X coefficients
+          AMDX16 = 0 	# Plate solution X coefficients
+          AMDX17 = 0 	# Plate solution X coefficients
+          AMDX18 = 0 	# Plate solution X coefficients
+          AMDX19 = 0 	# Plate solution X coefficients
+          AMDY1 = 67.154200000000003 	# Plate solution Y coefficients
+          AMDY2 = -0.0038300000000000001 	# Plate solution Y coefficients
+          AMDY3 = 191.56200000000001 	# Plate solution Y coefficients
+          AMDY4 = -2.12e-05 	# Plate solution Y coefficients
+          AMDY5 = -2.9200000000000002e-05 	# Plate solution Y coefficients
+          AMDY6 = -9.4399999999999994e-06 	# Plate solution Y coefficients
+          AMDY7 = -4.1400000000000002e-06 	# Plate solution Y coefficients
+          AMDY8 = 6.6699999999999997e-10 	# Plate solution Y coefficients
+          AMDY9 = 6.9399999999999998e-10 	# Plate solution Y coefficients
+          AMDY10 = -2.0800000000000001e-10 	# Plate solution Y coefficients
+          AMDY11 = -1.2e-09 	# Plate solution Y coefficients
+          AMDY12 = 5.5599999999999998e-09 	# Plate solution Y coefficients
+          AMDY13 = 1.5000000000000001e-12 	# Plate solution Y coefficients
+          AMDY14 = 0 	# Plate solution Y coefficients
+          AMDY15 = 0 	# Plate solution Y coefficients
+          AMDY16 = 0 	# Plate solution Y coefficients
+          AMDY17 = 0 	# Plate solution Y coefficients
+          AMDY18 = 0 	# Plate solution Y coefficients
+          AMDY19 = 0 	# Plate solution Y coefficients
+       End DssMap
+ End CmpMap
+== invert_attr_both_inverted
+before 1
+class DssMap
+after 0
+== inverted_dssmap_then_winmap_both_inverted
+class DssMap
+ Begin DssMap 	# DSS plate fit mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    PltRA = 2.8272374655684112 	# Plate centre RA (radians)
+    PltDec = -1.0518122540502668 	# Plate centre Dec (radians)
+    PltScl = 67.200000000000003 	# Plate scale (arcsec/mm)
+    CNPix1 = 2100 	# X Pixel offset (pixels)
+    CNPix2 = 2100 	# Y Pixel offset (pixels)
+    XPixSz = 50.526000000000003 	# X Pixel size (microns)
+    YPixSz = 50.526000000000003 	# Y Pixel size (microns)
+    PPO1 = 0 	# Orientation coefficients
+    PPO2 = 0 	# Orientation coefficients
+    PPO3 = 105990.5119 	# Orientation coefficients
+    PPO4 = 0 	# Orientation coefficients
+    PPO5 = 0 	# Orientation coefficients
+    PPO6 = 105990.5119 	# Orientation coefficients
+    AMDX1 = 67.152600000000007 	# Plate solution X coefficients
+    AMDX2 = 0.0051200000000000004 	# Plate solution X coefficients
+    AMDX3 = -288.40899999999999 	# Plate solution X coefficients
+    AMDX4 = -8.8400000000000001e-06 	# Plate solution X coefficients
+    AMDX5 = -2.9300000000000001e-05 	# Plate solution X coefficients
+    AMDX6 = 3.9099999999999998e-06 	# Plate solution X coefficients
+    AMDX7 = -4.16e-06 	# Plate solution X coefficients
+    AMDX8 = -9.7500000000000005e-10 	# Plate solution X coefficients
+    AMDX9 = 3.2600000000000001e-10 	# Plate solution X coefficients
+    AMDX10 = 7.78e-10 	# Plate solution X coefficients
+    AMDX11 = 2.0700000000000001e-10 	# Plate solution X coefficients
+    AMDX12 = 5.5500000000000001e-09 	# Plate solution X coefficients
+    AMDX13 = 1.4899999999999999e-12 	# Plate solution X coefficients
+    AMDX14 = 0 	# Plate solution X coefficients
+    AMDX15 = 0 	# Plate solution X coefficients
+    AMDX16 = 0 	# Plate solution X coefficients
+    AMDX17 = 0 	# Plate solution X coefficients
+    AMDX18 = 0 	# Plate solution X coefficients
+    AMDX19 = 0 	# Plate solution X coefficients
+    AMDY1 = 67.154200000000003 	# Plate solution Y coefficients
+    AMDY2 = -0.0038300000000000001 	# Plate solution Y coefficients
+    AMDY3 = 191.56200000000001 	# Plate solution Y coefficients
+    AMDY4 = -2.12e-05 	# Plate solution Y coefficients
+    AMDY5 = -2.9200000000000002e-05 	# Plate solution Y coefficients
+    AMDY6 = -9.4399999999999994e-06 	# Plate solution Y coefficients
+    AMDY7 = -4.1400000000000002e-06 	# Plate solution Y coefficients
+    AMDY8 = 6.6699999999999997e-10 	# Plate solution Y coefficients
+    AMDY9 = 6.9399999999999998e-10 	# Plate solution Y coefficients
+    AMDY10 = -2.0800000000000001e-10 	# Plate solution Y coefficients
+    AMDY11 = -1.2e-09 	# Plate solution Y coefficients
+    AMDY12 = 5.5599999999999998e-09 	# Plate solution Y coefficients
+    AMDY13 = 1.5000000000000001e-12 	# Plate solution Y coefficients
+    AMDY14 = 0 	# Plate solution Y coefficients
+    AMDY15 = 0 	# Plate solution Y coefficients
+    AMDY16 = 0 	# Plate solution Y coefficients
+    AMDY17 = 0 	# Plate solution Y coefficients
+    AMDY18 = 0 	# Plate solution Y coefficients
+    AMDY19 = 0 	# Plate solution Y coefficients
+ End DssMap
+-- transformations
+2.793231260829788 -1.0177088969714392
+2.8243319128812465 -1.0508363439936359
+2.8080894695840812 -1.042549683267664
+2.7064740214574168 -0.98177004370681353
+2.7637267965791148 -1.0006287797893743
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-- transformations simplified
+2.793231260829788 -1.0177088969714392
+2.8243319128812465 -1.0508363439936359
+2.8080894695840812 -1.042549683267664
+2.7064740214574168 -0.98177004370681353
+2.7637267965791148 -1.0006287797893743
+-1.7976931348623157e+308 -1.7976931348623157e+308
+-1.7976931348623157e+308 -1.7976931348623157e+308
+== invert_attr_no_merge
+before 1
+class CmpMap
+after 1

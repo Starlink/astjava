@@ -38,7 +38,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * <p>Cases whose scripts read from the FitsChan ({@code R}, {@code RN}, {@code PW}, and {@code
  * RW}, {@code RCIW} and {@code RSW}, which write what they read back into it) run when their reads
  * and writes need only the classes of this library. A read or write that stops at an out-of-scope
- * class (such as {@code needs MathMap}) must be in {@link #EXCLUDED} with that reason, measured
+ * class (such as {@code needs FitsTable}) must be in {@link #EXCLUDED} with that reason, measured
  * from the exception. Cases whose scripts write an Object they make ({@code W},
  * {@code WF}, {@code WFT}, {@code WC} and {@code WCF}) run; {@code native_full_1}, whose Object
  * parts C writes with counts this library does not keep, is excluded and compared without them.
@@ -67,10 +67,6 @@ class FitsChanCursorOracleTest {
 
     private static Map<String, String> excludedCases() {
         Map<String, String> m = new LinkedHashMap<>();
-        // The absolute description of the offset SkyFrame passes C's LogAxis test on its first
-        // axis, so C builds the -LOG Mapping, which holds a MathMap; the description then fails
-        // MakeIntWorld and is not written (lldb probe s2 of the final review fixes).
-        m.put("alt_axes_alt_offset", "needs MathMap");
         // The Mapping C's FitLine fits for the offset coordinates, written without a projection,
         // is the same as this library's (probe s1, dumps equal); of the 101 points of each grid
         // axis, 81 and 67 differ, each first at a SphMap, SphMap inverse or TAN WcsMap inverse
@@ -86,6 +82,21 @@ class FitsChanCursorOracleTest {
         // compares them.
         m.put("alt_axes_offset", RUNTIME_MATH + " SphMap and TAN WcsMap transforms 1 ULP from C's libm");
         m.put("alt_axes_offset_none", RUNTIME_MATH + " SphMap and TAN WcsMap transforms 1 ULP from C's libm");
+        // The absolute description of the offset SkyFrame of alternate description B passes C's
+        // LogAxis test on its first axis and fails MakeIntWorld with the -LOG Mapping, so C writes
+        // the offset description SKY_POLE, fitted to the Mapping from pixel coordinates to the
+        // offset SkyFrame. Probe probes/alt_offset_probe.c: the simplified Mapping (a WinMap, an
+        // inverse TAN WcsMap, SphMaps and a MatrixMap) dumps as C's does; at its 101 x 11 grid
+        // over the image, 484 of the 1111 first outputs and 493 of the second differ from C's,
+        // by at most 2.2e-16 rad, 1 ULP of a unit-vector component, the SphMap and WcsMap
+        // evaluation difference traced for alt_axes_offset. Plane fits through the two sets of
+        // values differ by about 1e-20 rad per pixel in each slope: 4e-16 of the diagonal slope
+        // (CDELT1B differs from C's by 1.5e-15 of its value) and 5e-10 of the cross slope
+        // (-2.6e-11), whose ratio to the diagonal is PC2_1B (-1.5e-6; the card differs by
+        // 2.3e-15, 1.5e-9 of its value). PC2_1B passes withinLibmRounding only because a PC
+        // element is compared relative to 1. runtimeMathCasesMatchCButForLicensedCards compares
+        // the cards.
+        m.put("alt_axes_alt_offset", RUNTIME_MATH + " SphMap and TAN WcsMap transforms 1 ULP from C's libm");
         // Its transcript shows the FrameSet read. The rotation of the alternate description
         // (fitschan.c WcsNative, three astMtrRot calls) takes the sine of 2 deg - pi/2, for which
         // java.lang.Math gives -0x1.ffb0278bf0566p-1 and C's libm -0x1.ffb0278bf0567p-1 (measured
@@ -638,6 +649,7 @@ class FitsChanCursorOracleTest {
         Map<String, List<String>> m = new LinkedHashMap<>();
         m.put("alt_axes_offset", Arrays.asList("CDELT2", "CDELT2A"));
         m.put("alt_axes_offset_none", Arrays.asList("CDELT2"));
+        m.put("alt_axes_alt_offset", Arrays.asList("CDELT1B", "PC2_1B"));
         m.put("sky_offset_system_rw", Arrays.asList("CDELT1", "CDELT2", "PC1_2", "PC2_1"));
         return Collections.unmodifiableMap(m);
     }

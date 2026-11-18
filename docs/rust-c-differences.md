@@ -105,10 +105,10 @@ The entries are grouped by area, in the order the Java classes were ported.
 
 ### Cancelling a PolyMap with its inverse
 
-- **C quirk**: when `MapMerge` cancels a nominated PolyMap with its inverse it annuls the PolyMap before restoring its Invert attribute (`polymap.c:4004-4006`), so the PolyMap is left with the value the list applied it with: simplifying the inverse of a series CmpMap of a PolyMap and an inverted copy of it gives a UnitMap and leaves the copy with Invert unset.
-  Confirmed with the pinned library.
+- **C quirk**: when `MapMerge` cancels a nominated PolyMap with its inverse it annuls the PolyMap before restoring its Invert attribute (`polymap.c` `MapMerge`), so the PolyMap is left with the value the list applied it with, set: simplifying the inverse of a series CmpMap of a PolyMap and an inverted copy of it gives a UnitMap and leaves the copy, which the CmpMap shares, with Invert set to 0 (probe `src/test/resources/probes/polymap_cancel_probe.c`, case `inverted_series`).
 - Rust: not compared.
-- Java: restores the PolyMap's Invert attribute.
+- Java: as C.
+  Java sets back the neighbour's Invert attribute after the comparison as it was, set or unset, where C's `astSetInvert` leaves it set, so the two differ only in what `test("Invert")` gives afterwards.
 
 ### Cancelling WcsMaps whose projection parameters differ
 
@@ -183,6 +183,13 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: as C.
 - Java: as C.
 
+### Comparing two MatrixMaps changes them
+
+- **C quirk**: `Equal` (`matrixmap.c`) stores both MatrixMaps in full form for the comparison and then compresses them (`CompressMatrix`), which sets to zero each off-diagonal element no larger than sqrt(DBL_EPSILON) times the largest in its row and in its column, and stores a matrix that is then diagonal in diagonal form.
+  A MatrixMap that was never compressed, such as one read from a dump, can therefore be changed by being compared, and with it what the merge in the entry above does with it; the recursion guard of `Simplify` (`cmpmap.c`) compares the components of CmpMaps, which may share such a MatrixMap with the Mapping being simplified.
+- Rust: `equal` (`mappings/matrix.rs`) compares without changing either MatrixMap.
+- Java: as C.
+
 ### Array arguments longer than needed
 
 - C and jniast: accept them and use the leading elements (WinMap corners, MatrixMap matrices, PermMap permutations).
@@ -195,7 +202,7 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: refuses it at construction.
 - Java: as C.
 
-### A CmpMap dump with a missing or non-Mapping component
+### A CmpMap, TranMap or RateMap dump with a missing or non-Mapping component
 
 - C: leaves a NULL component.
 - Rust: raises AST__LDERR.
@@ -302,6 +309,290 @@ The entries are grouped by area, in the order the Java classes were ported.
 - **C quirk**: `astInitSpecMap` refuses a number of axes other than 1 or 3 with a message saying "it should be 1 or 2".
 - Rust: gives its own message.
 - Java: keeps C's message.
+
+### The last value a LutMap transformed
+
+- **C quirk**: `Transform` (`lutmap.c`) keeps the last input and output of each direction in the LutMap, and gives the kept output for the same input in a later call, even after LutInterp has changed; a copy keeps them too, and only the constructor and the loader reset them (probe `src/test/resources/probes/lutmap_probe.c`, cases `cache` and `cache_copy`).
+- Rust: keeps nothing, so each transformation uses the current LutInterp (`lutmap_interp_change_applies_to_a_repeated_value`).
+- Java: as C.
+
+### Cancelling a LutMap with its inverse
+
+- **C quirk**: `MapMerge` (`lutmap.c`) compares the nominated LutMap, with its own Invert attribute, with the inverse of its neighbour applied as the list says; it does not use the Invert value the list gives the nominated LutMap.
+  In an inverted series CmpMap a LutMap followed by an inverted copy of itself is kept, and a LutMap followed by a copy of itself is replaced by a UnitMap, which changes the transformation (probe cases `inverted_cmp_lut_lutinv` and `inverted_cmp_lut_lut`).
+- Rust: applies the list's Invert value to both LutMaps before comparing them.
+- Java: as C.
+
+### A linear LutMap whose first and last entries are equal
+
+- C: `MapMerge` (`lutmap.c`) tries the cancellation with a neighbouring LutMap only for a table `GetLinear` finds not linear, so a constant table, or one linear within LutEpsilon whose ends are equal, is neither replaced by a WinMap nor cancelled (probe cases `flat_linear_lutinv` and `constant_lutinv`).
+- Rust: `linear_equivalent` gives nothing for such a table, and the cancellation is then tried.
+- Java: as C.
+
+### The number of entries of a loaded LutMap
+
+- C: `astLoadLutMap` takes 2 entries when the dump has no `Nlut` item.
+- Rust: takes 0.
+- Java: as C.
+
+### A CmpMap comparison changes a shared component's Invert attribute
+
+- **C quirk**: `Equal` (`cmpmap.c`), without its expanded lists, saves the Invert attribute of the two components it compares, sets each to the value its list gives, compares, and restores them in the same order.
+  When the two components are the same object, the value it saves for the second is the one it has just set for the first, so the object is left with the first (`this`) list's value instead of its own.
+  `Simplify` (`cmpmap.c`) compares CmpMaps this way, so simplifying `simplify/brad.map` changes the Invert attribute of its WcsMap, which the simplified CmpMap shares, from 1 to 0 (traced in the pinned library), and `brad.simp` records 0.
+  A CmpMap applies each component with the Invert value it recorded when made (`cmpmap.c` `Transform`), so neither the original Mapping nor the simplified one transforms differently: brad.map and brad.simp give the same values in C and in Java.
+  The change is seen by anything that uses the WcsMap on its own afterwards, and in dumps.
+- Rust: compares owned copies, so nothing changes.
+- Java: as C, and the recursion guard of the simplification compares Mappings with `astEqual` as C's does: simplifying `brad.map` gives `brad.simp` and leaves the Mapping read with the WcsMap not inverted (probe `src/test/resources/probes/simplify_input_probe.c`).
+  The `brad` row of `simplify/cases.txt` matches C; its gate compares the input's dump after simplification with the one the probe records.
+  Java restores each component's Invert attribute as it was, set or unset, where C's `astSetInvert` leaves it set, so the two differ only in what `test("Invert")` gives afterwards.
+
+### The status of a MathMap with no outputs
+
+- **C quirk**: `astInitMathMap` reports a bad number of outputs with AST__BADNO and then its second line, "This number should be one or more.", with AST__BADNI, which replaces the status, so a caller sees AST__BADNI (probe `src/test/resources/probes/mathmap_probe.c`, case `count_errors`).
+- Rust: reports AST__BADNO.
+- Java: as C.
+
+### The messages of a MathMap's errors
+
+- C: each error names the method and class, quotes the expression up to the character where reading stopped, and adds a line naming the transformation function, as "Error in forward transformation function 3." (probe cases `expression_errors` and `function_errors`).
+- Rust: has its own messages, with the same statuses.
+- Java: as C.
+
+### The MathMap constant `<dig>`
+
+- C: loads `AST__DBL_DIG`, which is 17 (probe case `evaluate`).
+- Rust: loads 15, `DBL_DIG`.
+- Java: as C.
+
+### Maths library errors in a MathMap
+
+- C: traps the errors of `exp`, `cosh`, `sinh`, `tan`, `pow` and `ldexp` (in `<<` and `>>`) through `errno`, giving a bad value for an overflow and for an argument outside the domain (a negative number to a fractional power); `csch` and `sech` are then 0.
+  The macOS maths library sets no `errno`, so C built there gives the infinity or NaN instead, and a later operator acts on it: `!x**2` at 1e300 is 0 there (probe case `evaluate`).
+- Rust: gives a bad value for any of these results that is not finite.
+- Java: as C with a library that sets `errno` (glibc): a result that is not finite from finite arguments is bad.
+
+### A NaN made inside a MathMap expression
+
+- C: passes a NaN that an expression makes (such as `1e999-1e999`, whose constant overflows to infinity) to the output.
+- Rust: replaces a NaN output by AST__BAD.
+- Java: as C; an input that is not finite is bad, the rule for every Mapping.
+
+### The second value of a Gaussian pair
+
+- **C quirk**: `Gauss` (mathmap.c) keeps the second value of each pair it makes, and the flag saying it has one, in static variables shared by every MathMap, so the next `gauss` of any MathMap whose generator is active takes it.
+  A MathMap and its copy therefore give different Gaussian sequences, and two MathMaps used in turn take each other's values (probe cases `random_copies` and `gauss_two_mathmaps`); two threads using MathMaps at once race on it.
+- Rust: keeps the value in each MathMap's random-number context.
+- Java: as Rust, so a copy gives its original's sequence and a MathMap's sequence does not depend on other MathMaps; with one MathMap, or MathMaps whose generators are not yet active, the values are C's.
+
+### A MathMap Seed below 1
+
+- **C quirk**: `Rand` makes a seed below 1 positive by adding `LONG_MAX`, which on a 64-bit `long` leaves the generators outside their ranges, so `rand(0,1)` gives values far outside 0 to 1 for several calls (Seed -7 gives -308527335.2 first; probe case `random_seeds`).
+- Rust: the same.
+- Java: as C.
+
+### A MathMap dump with fewer functions than its outputs or inputs
+
+- C: `astLoadMathMap` reads the counts `Nfwd` and `Ninv` (defaults the numbers of outputs and inputs) and compiles with them; a smaller count reads before the start of the function arrays.
+- Rust: takes a count that is not positive as the default, and refuses a smaller one with AST__INNTF.
+- Java: refuses a count smaller than the number of outputs or inputs with AST__INNTF and the message of `astInitMathMap`, naming `astLoadMathMap`.
+
+### The precedence of unary operators and `**` in a MathMap
+
+- **C quirk**: the `astMathMap` prologue, and jniast's MathMap Javadoc taken from it, list the unary operators `+ - ! .not.` above `**`, which says that `-x**2` is `(-x)**2`; `EvaluationSort` (mathmap.c) binds `**` tighter, so `-x**2` is `-(x**2)` and `x**-2` is `x**(-2)` (probe `src/test/resources/probes/mathmap_probe.c`, case `evaluate`).
+  The difference is in the documentation only.
+- Rust: the parser follows the code, and its documentation lists `**` above the unary operators.
+- Java: as Rust; MathMap's Javadoc lists `**` above the unary operators, as the code binds them.
+
+### Comparing two MathMaps
+
+- **C quirk**: `Equal` (mathmap.c) compares the compiled functions of the effective forward and inverse directions, but its loop over a function's opcode array starts at element 0, which holds the number of opcodes, and stops before the last opcode.
+  The last operation of a function is therefore never compared, so `y=x+1` equals `y=x-1` and `y=max(x,1)` equals `y=min(x,1)` (probe `src/test/resources/probes/mathmap_simplify_probe.c`, case `equal`).
+  A number of opcodes equal to the code of an operation that consumes a constant (0, 1, 62 or 63) consumes one as well; for a function of one operation that loads no constant, such as `y=<pi>`, C reads a list of constants that does not exist and crashes.
+- Rust: `equal` compares the function texts and the Invert flags.
+- Java: as C; where C reads past the end of the constants, a constant neither function has matches and one only one function has does not.
+
+### Simplifying a CmpMap clears AlSimp on the components it shares
+
+- C: `Simplify` (cmpmap.c) clears the flag that lets a restricted simplification use a Mapping on each component it joins into a new CmpMap; those components are shared with the input, so the input's components lose the flag too (probe case `simplify_input_after`, from `simplify/cap_restricted_component_flags.map`).
+- Rust: copies the components, so the input keeps the flag.
+- Java: as C.
+
+### A TranMap whose equal components were inverted when it was made
+
+- **C quirk**: `MapMerge` (`tranmap.c`) replaces a TranMap whose first component, in series with the inverse of its second, simplifies to a UnitMap with a copy of the first component.
+  The copy keeps the Invert value recorded when the TranMap was made, but the list entry it replaces stays applied forward, and the list's value is the one the result is given.
+  A TranMap of two equal Mappings that were inverted when it was made therefore becomes the first Mapping not inverted, which transforms the other way (probe `src/test/resources/probes/tranmap_probe.c`, cases `simp_equal_inverted_mathmaps`, and `simp_equal_inverted_lutmaps` at 3).
+  Two inverted ZoomMaps do not show it, because each simplifies on its own to a ZoomMap of the reciprocal factor first (case `simp_equal_inverted_components`).
+- Rust: applies the copy inverted, so the transformation is kept.
+- Java: as C.
+
+### Comparing two TranMaps
+
+- C: `Equal` (`tranmap.c`) sets each component to the Invert value its TranMap recorded and compares the components with `astEqual`, the `Equal` of their class.
+- Rust: compares them with each class's `equal`.
+- Java: as C.
+
+### The directions of a loaded TranMap
+
+- C: `astLoadTranMap` leaves TranForward and TranInverse to the Mapping part of the dump (`Fwd` and `Inv`, which a TranMap never writes, so both are defined).
+- Rust: recomputes them from the components and the recorded Invert values.
+- Java: as C.
+
+### The series flag of a decomposed TranMap
+
+- C: `Decompose` (`tranmap.c`) does not set the series flag, which its documentation gives as zero for a TranMap; the probe's `decompose` case gets back the value it set beforehand, and jniast's `decompose` passes an uninitialised one.
+- Rust: its `Decomposition` has no series flag.
+- Java: false.
+
+### The split of a TranMap of all its inputs, permuted
+
+- C: the base `MapSplit` (`mapping.c`) simplifies a PermMap and the TranMap in series; the TranMap's equal components make it a ZoomMap, which `astSimplify` records as simplified, so its dump has `IsSimp = 1` (oracle `map_split.json`, case `tranmap_full_permuted`).
+- Rust: dumps the ZoomMap without that item, and its oracle test compares the case without `IsSimp` items.
+- Java: as C.
+
+### The orientation in which RateMaps compare their Mappings
+
+- C: `Equal` (`ratemap.c`) sets each encapsulated Mapping to the Invert value its RateMap recorded when it was made and compares them with `astEqual`; `MapMerge` does the same before cancelling a RateMap with a neighbouring RateMap applied the other way.
+  A RateMap whose Mapping was inverted after the RateMap was made therefore equals, and cancels with, one made from a Mapping that was not (probe `src/test/resources/probes/ratemap_probe.c`, cases `equal` (`mapping_inverted_after`) and `cancel_mapping_inverted_after`).
+- Rust: compares the encapsulated Mappings in their current orientations.
+- Java: as C.
+
+### Cancelling a RateMap with its inverse
+
+- **C quirk**: `MapMerge` (`ratemap.c`) replaces a RateMap and a neighbouring RateMap of the same indices and an equal Mapping, applied in series the other way, with two UnitMaps, so that a series CmpMap of the two, which defines neither direction (a RateMap defines only one direction, so the pair defines neither), simplifies to a UnitMap that defines both.
+  For a Mapping of two inputs the RateMap followed by its inverse becomes a UnitMap of two axes, and the inverse followed by the RateMap a UnitMap of one (probe cases `cancel_two_inputs_upper` and `cancel_two_inputs_lower`).
+- Rust: as C.
+- Java: as C.
+
+### Comparing two ZoomMaps
+
+- **C quirk**: `Equal` (`zoommap.c`) compares the factors as stored, which is zero once the Zoom attribute has been cleared, though the factor is then 1: a ZoomMap whose Zoom is cleared does not equal a ZoomMap of factor 1.
+  For ZoomMaps with different Invert attributes it compares one factor with the reciprocal of the other, which for a cleared Zoom is infinite, and `astEQUAL` finds an infinite value equal to any finite value that is not bad (probe `src/test/resources/probes/equal_probe.c`, case `zoommap_cleared_zoom`).
+- Rust: compares the factors in use, and, for different Invert attributes, their product with 1.
+- Java: as C.
+
+### The attributes of a new GrismMap
+
+- C: `astGrismMap` leaves all eight attributes unset, so a new GrismMap's dump writes each as a comment holding its default; each can be tested and cleared, and setting `AST__BAD` (`INT_MAX` for GrismM) leaves it unset (`grismmap.c`).
+  The setters discard the records of simplification only when the value changes, and the loader re-applies each value read through them, so a dumped `IsSimp` card survives a read (probe `src/test/resources/probes/grismmap_probe.c`, case `dump_simplified`).
+- Rust: `GrismMap::new` sets all eight attributes, and only `default_map` leaves them unset; there are no test or clear methods, the setters given the unset values acting as a clear.
+  Its loader keeps the `IsSimp` card as C's does, though `docs/issues/c-library-quirks.md` ("The `IsSimp` card does not survive being read back") counts GrismMap among the classes whose loaders discard it.
+- Java: as C; jniast's constructor makes a GrismMap with no attribute set.
+
+### Comparing two GrismMaps
+
+- **C quirk**: `Equal` (`grismmap.c`) compares the attributes as stored, `AST__BAD` (or `INT_MAX` for GrismM) when unset, so a GrismMap with no attribute set does not equal one with each attribute set to its default, though the two transform alike (probe `src/test/resources/probes/grismmap_probe.c`, case `equal`, `default_vs_set_to_defaults`).
+- Rust: compares the values in use.
+- Java: as C.
+
+### Merging a GrismMap with a ZoomMap whose own Invert attribute is set
+
+- **C quirk**: `CanMerge` (`grismmap.c`) merges a GrismMap applied forward with a following ZoomMap, and a GrismMap applied inverted with a preceding one, scaling GrismG, GrismNRP and GrismWaveR by the ZoomMap's factor.
+  It takes the factor as the Zoom attribute, or its reciprocal when the ZoomMap's own Invert attribute differs from (following) or equals (preceding) the Invert value the simplification applies it with, so the factor is the right one only while the ZoomMap's own Invert attribute is unset or zero.
+  A GrismMap followed by a ZoomMap of factor 2 that was inverted before the two were combined therefore merges into a GrismMap for wavelengths scaled by 2 rather than by 1/2, and so does a ZoomMap inverted after the CmpMap was made, on either side: the simplified Mapping does not transform as the original (probe `src/test/resources/probes/grismmap_probe.c`, cases `inverted_zoom_after_forward`, `zoom_inverted_after_combining` and `zoom_inverted_after_combining_before`).
+  A ZoomMap inverted before it is combined that precedes the GrismMap is merged correctly, because the ZoomMap's own merge, which comes first, replaces it with a ZoomMap that is not inverted (case `inverted_zoom_before_inverted`).
+- Rust: `grism_zoom_merge_at` in `mappings/simplify.rs` holds every Mapping of the list with its Invert attribute unset and takes the factor from the list's Invert value alone, so it merges these pairs correctly.
+- Java: as C.
+
+### Comparing two PcdMaps
+
+- **C quirk**: `Equal` (`pcdmap.c`) compares Disco and the two PcdCen values as stored, `AST__BAD` when unset, so a PcdMap whose centre is unset does not equal one whose centre is set to zero, though the two transform alike (probe `src/test/resources/probes/pcdmap_probe.c`, case `equal`, `zero_vs_unset` and `small_vs_unset_disco`).
+- Rust: compares the values in use.
+- Java: as C.
+
+### When a PcdMap's coefficient is zero, and when two PcdMaps cancel
+
+- C: `MapMerge` and `CanMerge` (`pcdmap.c`) compare with the file's own `EQUAL` macro, whose floor is `1e5 * DBL_MIN` (about `2e-303`), not with `astEQUAL`, whose floor is `1e-12`.
+  So a PcdMap with a coefficient of `1e-13` is not replaced by a UnitMap (probe `src/test/resources/probes/pcdmap_probe.c`, case `small_disco`), though `astEqual` finds it equal to one with a coefficient of zero (case `equal`, `small_vs_zero_disco`), while one of `1e-310` is replaced (case `tiny_disco`); and PcdMaps applied in opposite directions whose centres differ by `1e-13` do not cancel (case `inverse_small_centre_offset`).
+- Rust: `pcd_map_merge` (`mappings/simplify.rs`) and `PcdMap::try_merge` (`mappings/pcdmap.rs`) compare with `ast_equal`, which has `astEQUAL`'s floor, so they replace the PcdMap of coefficient `1e-13` with a UnitMap and cancel the pair whose centres differ by `1e-13`.
+- Java: as C.
+
+### A SwitchMap selector value beyond the range of `int`
+
+- C: `GetRoute` and `Transform` (`switchmap.c`) exclude only `AST__BAD` and then take `(int) round( sel ) - 1` as the route index, so a selector value beyond the range of `int`, an infinity or a NaN makes the conversion undefined, and a conversion giving `INT_MIN` makes the `- 1` overflow, a second undefined step.
+  C's documented contract is that a nearest integer below 1 or above the number of routes picks no route.
+  The pinned library built on macOS aarch64 keeps to that contract for such values: `2147483648.5`, `4294967297`, `4294967298`, `±1e30` and `±DBL_MAX` pick no route, so there is no modular wrap into the routes (probe `src/test/resources/probes/switchmap_probe.c`, case `selector_values`); the probe cannot tell whether the conversion saturates or gives `INT_MIN`.
+- Rust: compares the rounded value with 1 and the number of routes before converting, so such a value picks no route by definition.
+- Java: converts as C does; Java's conversion is defined, giving 0 for a NaN and the nearest `int` for any other value, and `Integer.MIN_VALUE - 1` wraps to `Integer.MAX_VALUE`, so every such value gives an index outside the routes and picks no route, as the contract says and the probe shows.
+
+### Simplifying a SwitchMap that holds one Mapping twice
+
+- **C quirk**: `MapMerge` (`switchmap.c`) saves the Invert attribute of the forward selector, the inverse selector and each route Mapping in turn while setting each to the value the SwitchMap recorded, and sets them back in the same order, not the reverse.
+  When one Mapping is held twice, as when it is both selectors (`testswitchmap.c` section 2) or two routes, the value saved for its second place is the one just set for its first, so it is left with the value recorded for its first place instead of its own: a MathMap held as both selectors and inverted after the SwitchMap was made is no longer inverted after the SwitchMap is simplified (probe cases `simp_section2_shared_selector`, `simp_section2_shared_selector_inverted` and `simp_shared_route`).
+  The SwitchMap applies each Mapping with the value it recorded, so it transforms as before; anything that uses the Mapping on its own afterwards sees the change.
+- Rust: holds its own copies, so nothing changes.
+- Java: as C.
+  Java sets back each Invert attribute as it was, set or unset, where C's `astSetInvert` leaves it set, so the two differ only in what `test("Invert")` gives afterwards.
+
+### A SwitchMap round trip when only the forward selector was inverted
+
+- **C bug**: `Dump` (`switchmap.c`) writes `ISInv` with its set flag equal to its value and not as a helpful value, so `Channel` writes `ISInv = 0` not at all at Full 0, and only as a comment, which is never read back, at a higher Full; C's own dump therefore never carries `ISInv = 0`.
+  `astLoadSwitchMap` takes an absent `ISInv` to be the value of `FSInv`, so a SwitchMap whose forward selector was inverted when it was made and whose inverse selector was not reloads with its inverse selector inverted, its inverse transformation changed and `astEqual` false (probe `src/test/resources/probes/switchmap_probe.c`, case `dump_fsinv_set_isinv_unset`: the inverse transformation of 1000 is 1 before the round trip and 47.454545454545453 after).
+  An absent `RInv<n>` is 0, and a dump without `RMap1` loads a SwitchMap of no route Mappings, which gives bad values everywhere.
+- Rust: takes an absent `ISInv` to be 0, so its round trips keep the SwitchMap, and refuses a dump without route Mappings with AST__LDERR.
+- Java: as C; a component that is not a Mapping is AST__LDERR, as for a CmpMap, TranMap or RateMap.
+
+### The messages of SwitchMap's constructor
+
+- **C quirk**: `astInitSwitchMap` reports a route Mapping with a different number of outputs from the first with the two numbers of inputs, as "Route Mapping number 2 has 1 output(s) but the first route Mapping has 1 output(s)." (probe case `error_route_nout`).
+  The public `astSwitchMap` reports no route Mappings with two spaces after the colon, the library's own with one.
+- Rust: has its own messages, with the same statuses.
+- Java: as C, the public constructor giving the public function's message.
+
+### The directions of a loaded IntraMap
+
+- C: `astLoadIntraMap` leaves TranForward and TranInverse to the Mapping part of the dump (`Fwd` and `Inv`); the registered function's AST__NOFWD and AST__NOINV flags decide them only when an IntraMap is made (`astInitIntraMap`).
+- Rust: `has_forward` and `has_inverse` read the transformation's flags each time, so a dump whose `Fwd` or `Inv` disagrees with them reads back with the transformation's directions.
+- Java: as C.
+
+### Registering a transformation function a second time
+
+- C: `IntraReg` accepts a second registration of a name only if the numbers of coordinates, the function, the flags and the purpose, author and contact strings are all the same, and otherwise reports AST__MRITF.
+  Its table is process-wide.
+- Rust: `IntraRegistry::register` accepts a second registration of the same `Arc`, whatever else differs; the registry belongs to a Channel.
+- Java: as C, comparing the Transformer object as C compares the function pointer.
+  Functions are registered with a Channel for its reads, and the process-wide table holds the Transformer of each IntraMap made in the process, weakly; a read looks in the Channel's first.
+  The process-wide names are made from identity hash codes, which two Transformers may share, so where C would refuse a name held by another function, making an IntraMap takes the next free name instead (`#1`, `#2`, ... added); the same Transformer with other details is still AST__MRITF.
+
+### Concurrent calls of an IntraMap's transformation function
+
+- C: `Transform` (`intramap.c`) holds `LOCK_MUTEX2` around each call of a registered function, so no two run at once; jniast's calls were serialised too, through its global `AstLock`.
+- Rust: holds no lock, and requires `IntraTransform: Send + Sync`.
+- Java: holds no lock; the Javadoc of Transformer and IntraMap says a Transformer must be thread-safe, since copies of an IntraMap share it (a user decision).
+
+### The numbers of coordinates `astLoadIntraMap` checks
+
+- **C quirk**: `astLoadIntraMap` compares the numbers of input and output coordinates the Mapping class's `GetNin` and `GetNout` give, which take account of the Invert attribute already loaded, with those registered.
+  An inverted IntraMap of a function with different numbers of inputs and outputs therefore cannot be read back: AST__BADNI (probe `src/test/resources/probes/intramap_load_probe.c`, case `inverted`).
+- Rust: `IntraMap::from_node` does not compare the numbers of coordinates with the transformation's.
+- Java: as C.
+
+### The status of an error from an IntraMap's transformation function
+
+- C: `Transform` (`intramap.c`) keeps the status the function set; jniast's `tranWrap` sets AST__ITFER for any exception the Transformer throws or any result of the wrong shape.
+- Rust: keeps the code of the error the transformation returns.
+- Java: AST__ITFER, as jniast, with the Transformer's exception as the cause.
+
+### The value of two pi in `platepos`
+
+- C: `platepos` (`dssmap.c`) adds its own `twopi`, 6.28318530717959, to a negative right ascension; it is a little more than the double nearest to two pi, so a wrapped right ascension is about four units in the last place larger (probe `src/test/resources/probes/dssmap_probe.c`, case `tran_pltra_small`, where the round trip through `platepix` comes back 2.4e-10 pixels short).
+- Rust: adds `std::f64::consts::TAU`.
+- Java: as C.
+
+### The side of a DssMap a WinMap merges from
+
+- C: `MapMerge` (`dssmap.c`) merges only a WinMap applied to the pixel coordinates: before the DssMap when the list applies it forward, after it when the list applies it inverted (probe cases `dssmap_then_winmap_4200` and `winmap_then_inverted_dssmap`, which do not merge).
+- Rust (found by reading): `DssMap::try_merge` takes the formula from the DssMap's Invert value alone, and `default_map_merge` offers it the neighbour on either side, so a WinMap after a DssMap applied forward, or before one applied inverted, is folded in as if it were on the other side.
+- Java: as C.
+
+### A DssMap merge leaves the WinMap's Invert attribute changed
+
+- **C quirk**: `MapMerge` (`dssmap.c`) sets the WinMap's Invert attribute to the value the list applies it with, and restores it only when the two do not merge, since it annuls the WinMap's pointer before the restore when they do.
+  Simplifying the inverse of a series CmpMap of an inverted DssMap and an inverted WinMap merges the two and leaves the WinMap, which the CmpMap shares, with Invert 0 (probe case `invert_attr_both_inverted`).
+- Rust: reads the terms of an owned WinMap, so nothing changes.
+- Java: as C.
+  Java sets back the Invert attribute after a failed merge as it was, set or unset, where C's `astSetInvert` leaves it set, so the two differ only in what `test("Invert")` gives afterwards.
 
 ## Units
 
@@ -453,12 +744,20 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: gives the whole Title.
 - Java: as Rust.
 
+### SpecFluxFrames whose SpecFrames do not convert
+
+- C: `MakeMap2`, `MakeMap3`, `MakeMapF` and `MakeMapI` (specfluxframe.c) find each component conversion with `astConvert`, which returns NULL when the Frames do not convert (SpecFrames in different Domains, say), so `MakeSFMapping` gives no match and the SpecFluxFrames do not convert.
+  `MakeSFMapping` gives a UnitMap when both components are `astEqual` (specfluxframe.c:1141-1163).
+- Rust: `make_map2`, `make_map3`, `make_map_f` and `make_map_i` (`frames/specfluxframe.rs`) call `make_spec_mapping` and `make_flux_mapping` directly; `make_spec_mapping` (`frames/specframe.rs`) runs no Domain check and turns no Mapping into an AST__BADUN error.
+  Its comment calls the `astEqual` short-circuit a deliberate divergence from C, which it is not for the pinned C.
+- Java: as C (`SpecFluxFrameTest.spectralDomainsThatDifferDoNotConvert`).
+
 ### Casting between a CmpFrame and a SpecFluxFrame
 
 - C: `Cast` (cmpframe.c) copies a CmpFrame or SpecFluxFrame as an instance of any class of the CmpFrame family, a subclass included (`astCastCopy`), so a SpecFluxFrame template that matches no CmpFrame is cast into a plain CmpFrame and matched again, and a plain CmpFrame template that matches no SpecFluxFrame (the CmpFrame `ConvertX` gets from matching a SpecFluxFrame against a FluxFrame or SpecFrame) is cast into a SpecFluxFrame holding copies of its components, whose `Match` reaches `MakeSFMapping`.
   **C quirk**: `Cast` compares the classes through CmpFrame's own `class_vtab`, which is initialised only when a plain CmpFrame is first made, so in a process that has made SpecFluxFrames but no CmpFrame a SpecFluxFrame match that fails dereferences null in `astClassCompare` (probed: SIGSEGV converting a SpecFluxFrame whose SpecFrame has Domain `FOO` to a default one).
 - Rust: SpecFluxFrame has no `cast`, and `CmpFrame::cast` in `frames/cmpframe.rs` copies a CmpFrame only into a CmpFrame, so neither becomes the other and these conversions find nothing.
-- Java: as C once a CmpFrame has been made: a FluxFrame or SpecFrame that does not match a SpecFluxFrame directly converts through `MakeSFMapping`, so it throws `needs RateMap` (or C's error, such as AST__ATSER from `GetSpecFrame`).
+- Java: as C once a CmpFrame has been made: a FluxFrame or SpecFrame that does not match a SpecFluxFrame directly converts through `MakeSFMapping` (or gives C's error, such as AST__ATSER from `GetSpecFrame`).
 
 ## FitsChan
 
@@ -945,7 +1244,6 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: `SpectralAxes` tries each System of the `-X2P` algorithm (FREQ, WAVE, AWAV and VELO, the axis's own System among them) and of the grism algorithm (WAVE and AWAV in m) by setting it, and clearing or setting the Unit, through the FrameSet being written, which remaps its current Frame, and sets the original System and the linear Unit back after each, so the FrameSet's Mapping goes through each conversion and back, and a Unit that was not set is left set; it gives `IsMapTab1D` no unit (`fitschan.c` `SpectralAxes`).
 - Rust: `try_x2p_cascade` and `try_grism_cascade` in `fitschan/fset_to_store/spectral_axes.rs` convert clones of the SpecFrame and join the conversion to the pixel to world Mapping themselves, leaving the FrameSet unchanged; they skip the axis's own System, and pass to the next System when the reference value or the rate does not convert; `is_map_tab_1d` is given the linear Unit.
 - Java: as C (`FitsSpectralAxes`).
-  A FrameSet of this library's classes holds no GrismMap, so C's grism algorithm finds none, and only the attribute changes are made.
 
 ### The keywords `SpectralAxes` stores
 
@@ -960,6 +1258,22 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
   It also has the fixes the same file lists as upstream 85e75a4e (`IsMapLinear` centres the values it fits, as d2c047eb) and 7f4ba71d (`AddVersion` takes the pixel to world Mapping again after the axes are described, as 12e9ed4a).
 - Rust: as C.
 - Java: as C (`FitsSpectralAxes`, `FitsIsMapLinear`, `FitsFsetToStore.addVersion`).
+
+### `SpectralAxes` changes Hz to GHz for a narrow spectral range
+
+**C quirk.**
+
+- C: `SpectralAxes` keeps the SpecFrame's Unit only if `IsMapLinear` finds the conversion from it to the default Unit linear over the spectral range of the image (`fitschan.c` `SpectralAxes`), and `IsMapLinear` requires every residual of its fit to be within 1e-7 of the range.
+  For a range that is narrow beside its values the conversion fails the test although it is a ZoomMap: the axis of `wcsconv/inputs/freq-log.head` spans about 1 Hz at 1.4204e9 Hz, so its values in GHz are rounded to about 2e-7 of their range, and C clears the Unit and writes the axis as `FREQ` in GHz (`CRVAL1 = 1.4204`, `CDELT1 = 1.000000023045475E-12`), where a range of 1e8 Hz keeps Hz.
+  The Unit is cleared on the FrameSet the write describes, which is not the caller's, so the caller's FrameSet keeps its Unit.
+- Rust: as C (`is_map_linear` has the same tolerance, and `spectral_axes` makes the same test).
+- Java: as C (`FitsSpectralAxes`, `FitsIsMapLinear`); probe `src/test/resources/probes/fitslog_probe.c` cases `freq_log_head` and `freq_log_head_unit`.
+
+### The MathMap of `LogAxis`
+
+- C: `LogAxis` makes the MathMap `logs=log(s)`, inverse `s=exp(logs)`, with SimpFI and SimpIF set, tests the axis with it and puts the same MathMap in the `-LOG` Mapping it returns; it tests neither the axis index nor whether the reference value is finite (`fitschan.c` `LogAxis`).
+- Rust: `log_axis` in `fitschan/fset_to_store/log_axis.rs` makes the MathMap without SimpFI and SimpIF, and returns `None` for an axis index out of range or a reference value that is not finite.
+- Java: as C (`FitsOtherAxes.logAxis`).
 
 ## Test harness
 

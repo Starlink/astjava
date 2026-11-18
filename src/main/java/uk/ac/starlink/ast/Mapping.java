@@ -399,6 +399,47 @@ public abstract class Mapping extends AstObject {
         return false;
     }
 
+    /**
+     * mapping.c {@code Equal}: every concrete Mapping class compares Mappings in its own way, so
+     * reaching this for two Mappings of the same class, which the base Object class's {@code
+     * Equal} finds equivalent, is an internal error.
+     *
+     * @throws AstException with status {@code AST__INTER} if {@code that} is of this Mapping's
+     *     class
+     */
+    @Override
+    boolean equalTo(AstObject that) {
+        if (super.equalTo(that)) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    "astEqual(Mapping): The " + astClass() + " class does not override the abstract astEqual method "
+                            + "inherited from the base Mapping class (internal AST programming error).");
+        }
+        return false;
+    }
+
+    /**
+     * The Invert attributes of {@code a} and {@code b}, each as {@link #swapInvert} returns it,
+     * after setting them to {@code invertA} and {@code invertB} in that order, as C's {@code Equal}
+     * functions do with {@code astGetInvert} and {@code astSetInvert} before comparing two Mappings
+     * in given orientations; {@link #restoreInverts} puts them back in the same order.
+     */
+    static int[] swapInverts(Mapping a, boolean invertA, Mapping b, boolean invertB) {
+        int savedA = a.swapInvert(invertA);
+        int savedB = b.swapInvert(invertB);
+        return new int[] {savedA, savedB};
+    }
+
+    /**
+     * Puts back the Invert attributes {@link #swapInverts} returned, {@code a}'s first, as C's
+     * {@code Equal} functions restore them, so that when {@code a} and {@code b} are the same object
+     * it is left with the value {@code swapInverts} gave {@code a}.
+     */
+    static void restoreInverts(Mapping a, Mapping b, int[] saved) {
+        a.restoreInvert(saved[0]);
+        b.restoreInvert(saved[1]);
+    }
+
     // ------------------------------------------------------------------
     // Report
     // ------------------------------------------------------------------

@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
  * Translation of the FluxFrame tests of Rust {@code tests/test_fluxframe.rs}, of Rust {@code
@@ -28,9 +29,8 @@ import org.junit.jupiter.api.Test;
  * the constructor.
  *
  * <p>{@code test_fluxframe_equal_same}, {@code test_fluxframe_equal_different_system} and {@code
- * test_fluxframe_equal_different_specval_is_equal} test {@code astEqual}, which this library does
- * not have, and are listed in {@code deferred/rust-tests.txt}. The SpecFluxFrame tests of {@code
- * test_fluxframe.rs} are in {@link SpecFluxFrameTest}, and {@code
+ * test_fluxframe_equal_different_specval_is_equal} call {@link AstObject#astEqual}. The
+ * SpecFluxFrame tests of {@code test_fluxframe.rs} are in {@link SpecFluxFrameTest}, and {@code
  * system_from_unit_matches_the_c_library} is in {@link FluxUnitSystemOracleTest}.
  */
 class FluxFrameTest {
@@ -543,13 +543,38 @@ class FluxFrameTest {
         assertInstanceOf(UnitMap.class, map);
     }
 
-    /** A logarithmic Unit is converted by a MathMap, which this library does not have. */
+    /**
+     * A logarithmic Unit is converted by the MathMap of the units conversion, after the ZoomMap
+     * to the default Unit, as C's is (probe {@code mathmap_simplify_probe.c}, case {@code
+     * flux_log_conversion}); the values agree with C's to within the last bits of the maths
+     * library.
+     */
     @Test
-    void logarithmicConversionNeedsMathMap() {
+    void logarithmicConversionUsesAMathMap() {
         FluxFrame jy = flux(AstObject.AST__BAD, "Unit=Jy");
         FluxFrame log = flux(AstObject.AST__BAD, "Unit=log(W/m^2/Hz)");
-        UnsupportedOperationException e = assertThrows(UnsupportedOperationException.class, () -> jy.convert(log, ""));
-        assertTrue(e.getMessage().endsWith("needs MathMap"), e.getMessage());
+        FrameSet fs = jy.convert(log, "");
+        assertNotNull(fs);
+        Mapping map = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT).simplify();
+        String[] want = ProbeOutput.load("mathmap_simplify_probe")
+                .get("flux_log_conversion")
+                .split("\n", -1);
+        String dump = ChannelText.dump(map);
+        int ndump = dump.split("\n", -1).length - 1;
+        StringBuilder wantDump = new StringBuilder();
+        for (int i = 1; i <= ndump; i++) {
+            wantDump.append(want[i]).append('\n');
+        }
+        assertEquals(want[0], map.astClass());
+        assertEquals(wantDump.toString(), dump);
+        double[] vals = {1.0, 1000.0, 0.5};
+        double[] fwd = fs.tran1(vals.length, vals, true);
+        double[] inv = fs.tran1(vals.length, fwd, false);
+        for (int i = 0; i < vals.length; i++) {
+            String[] parts = want[ndump + 1 + i].split(" -> ", -1);
+            assertEquals(Double.parseDouble(parts[1]), fwd[i], 1e-14 * Math.abs(fwd[i]), "forward " + vals[i]);
+            assertEquals(Double.parseDouble(parts[2]), inv[i], 1e-14 * Math.abs(inv[i]), "inverse " + vals[i]);
+        }
     }
 
     // ------------------------------------------------------------------
@@ -999,5 +1024,28 @@ class FluxFrameTest {
         assertEquals(123.0, ff.getSpecVal());
         ff.setSpecVal(5.0);
         assertEquals(5.0, ff.getSpecVal());
+    }
+
+    // ------------------------------------------------------------------
+    // Equality (frame.c Equal: the conversion simplifies to a UnitMap)
+    // ------------------------------------------------------------------
+
+    @Test
+    void testFluxframeEqualSame() {
+        assertTrue(new FluxFrame().astEqual(new FluxFrame()));
+    }
+
+    @Test
+    void testFluxframeEqualDifferentSystem() {
+        assertFalse(new FluxFrame().astEqual(flux(AstObject.AST__BAD, "System=FLXDNW")));
+    }
+
+    @Test
+    void testFluxframeEqualDifferentSpecvalIsEqual() {
+        FluxFrame ff1 = new FluxFrame();
+        FluxFrame ff2 = new FluxFrame();
+        ff1.setSpecVal(1.0e9);
+        ff2.setSpecVal(2.0e9);
+        assertTrue(ff1.astEqual(ff2));
     }
 }

@@ -303,6 +303,48 @@ public class MatrixMap extends Mapping {
         return true;
     }
 
+    /**
+     * matrixmap.c {@code Equal}: {@code that} is a MatrixMap with the same numbers of inputs and
+     * outputs and, with both stored in full form for the duration, the same elements, to within
+     * {@code astEQUAL}, in the matrices each applies forward: the inverse matrix of an inverted
+     * MatrixMap. If either of those matrices is missing, the matrices each applies in the inverse
+     * direction are compared instead, and if either of those is missing too the MatrixMaps are
+     * taken to be equal. Both are compressed again afterwards ({@link #compressMatrix()}), which,
+     * as in C, may zero negligible elements of a matrix stored in full form.
+     */
+    @Override
+    boolean equalTo(AstObject that) {
+        if (!(that instanceof MatrixMap)) {
+            return false;
+        }
+        MatrixMap other = (MatrixMap) that;
+        int nin = getNin();
+        int nout = getNout();
+        if (other.getNout() != nout || other.getNin() != nin) {
+            return false;
+        }
+        boolean result = true;
+        expandMatrix();
+        other.expandMatrix();
+        double[] thisMatrix = getInvert() ? iMatrix : fMatrix;
+        double[] thatMatrix = other.getInvert() ? other.iMatrix : other.fMatrix;
+        if (thisMatrix == null || thatMatrix == null) {
+            thisMatrix = getInvert() ? fMatrix : iMatrix;
+            thatMatrix = other.getInvert() ? other.fMatrix : other.iMatrix;
+        }
+        if (thisMatrix != null && thatMatrix != null) {
+            for (int i = 0; i < nin * nout; i++) {
+                if (!MappingHelpers.astEqual(thisMatrix[i], thatMatrix[i])) {
+                    result = false;
+                    break;
+                }
+            }
+        }
+        compressMatrix();
+        other.compressMatrix();
+        return result;
+    }
+
     /** {@link MatrixMapMerge#matrixMapMerge}, matrixmap.c {@code MapMerge}. */
     @Override
     int mapMerge(MergeList list, int where, boolean series) {

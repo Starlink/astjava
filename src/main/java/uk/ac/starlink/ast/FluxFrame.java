@@ -315,12 +315,10 @@ public class FluxFrame extends Frame {
 
     /**
      * Whether values in units {@code from} can be converted to units {@code to}, as C finds by
-     * asking {@code astUnitMapper} for the Mapping. The conversion is found without making the
-     * Mapping, which for some units, such as logarithmic ones, needs a class this library does
-     * not have.
+     * asking {@code astUnitMapper} for the Mapping.
      */
     private static boolean unitsConvert(String from, String to) {
-        return Units.relabel(from, to, null) != null;
+        return Units.unitMapper(from, to) != null;
     }
 
     /**
@@ -544,7 +542,8 @@ public class FluxFrame extends Frame {
         int system = systemValue();
         String result = capitalised(system);
         if (testUnit(axis)) {
-            Units.LabelledMapping lm = Units.relabel(defUnit(system, "astGetLabel", astClass()), getUnit(axis), result);
+            Units.LabelledMapping lm =
+                    Units.unitMapperLabel(defUnit(system, "astGetLabel", astClass()), getUnit(axis), result);
             if (lm != null && lm.label != null) {
                 result = lm.label;
             }
@@ -585,7 +584,7 @@ public class FluxFrame extends Frame {
         }
         if (testUnit(axis)) {
             Units.LabelledMapping lm =
-                    Units.relabel(defUnit(system, "astGetSymbol", astClass()), getUnit(axis), result);
+                    Units.unitMapperLabel(defUnit(system, "astGetSymbol", astClass()), getUnit(axis), result);
             if (lm != null && lm.label != null) {
                 result = lm.label;
             }
@@ -630,7 +629,6 @@ public class FluxFrame extends Frame {
      * @return the Mapping, or null if there is none
      * @throws AstException with status {@code AST__BADUN} if either System follows from a Unit
      *     that suits no flux System
-     * @throws UnsupportedOperationException if a units conversion needs a MathMap
      */
     Mapping makeFluxMapping(FluxFrame result) {
         int rsysIn = systemValue();

@@ -12,8 +12,7 @@ import org.junit.jupiter.api.Test;
  * Translation of Rust {@code tests/test_tran1_tran2.rs}: {@code tran1} and {@code tran2}, with the
  * checks of C's {@code ValidateMapping} (mapping.c) they make.
  *
- * <p>{@code tran_rejects_an_undefined_direction} uses a RateMap, which is outside the first phase; here a
- * Mapping whose inverse is undefined, as a RateMap's is, stands in for it. The Java methods take
+ * <p>The Java methods take
  * the number of points as jniast's do, so the arrays may be longer than it; one shorter than it is
  * C's {@code AST__DIMIN} (mapping.c {@code TranN}), where the Rust test of arrays of different
  * lengths expects its own {@code AST__NPTIN}.
@@ -132,9 +131,9 @@ class Tran1Tran2Test {
 
     @Test
     void tranRejectsAnUndefinedDirection() {
-        Mapping rate = new NoInverseMap();
+        Mapping rate = new RateMap(new ZoomMap(1, 2.0), 1, 1);
         assertTrue(rate.getTranForward());
-        assertFalse(rate.getTranInverse(), "the stand-in has no inverse transform");
+        assertFalse(rate.getTranInverse(), "a RateMap has no inverse transform");
 
         AstException e = assertThrows(AstException.class, () -> rate.tran1(1, new double[] {1.0}, false));
         assertEquals(AstException.AST__TRNND, e.getStatus());

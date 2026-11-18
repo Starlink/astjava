@@ -25,10 +25,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * to a FitsChan holding the case's NAXIS cards; the value the write returns and the cards written
  * are compared with C's.
  *
- * <p>The read of the cube is checked for every case. A case can stop at something not available:
- * a logarithmic Unit set through the FrameSet needs the MathMap that converts to it ({@code needs
- * MathMap}). Such cases are listed with their reason in {@link #UNAVAILABLE}, and the list is checked both ways: a listed case must stop with the reason
- * listed, and every other case must match C.
+ * <p>The read of the cube is checked for every case. A case that stops at something not available
+ * ({@code needs <Class>}) is listed with its reason in {@link #UNAVAILABLE}, and the list is
+ * checked both ways: a listed case must stop with the reason listed, and every other case must
+ * match C.
  */
 class FitsChanSpecUnitOracleTest {
 
@@ -59,8 +59,6 @@ class FitsChanSpecUnitOracleTest {
 
     private static Map<String, String> unavailableCases() {
         Map<String, String> m = new TreeMap<>();
-        m.put("unit_log", "needs MathMap");
-        m.put("unit_log_no_dims", "needs MathMap");
         return Collections.unmodifiableMap(m);
     }
 

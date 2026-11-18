@@ -12,9 +12,7 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * keyword-card form of the NATIVE encoding ({@code BEGAST_xx}, {@code ENDAST_xx} and data-keyword
  * cards).
  *
- * <p>{@code polco.head} and {@code polco2.head} hold a MathMap, a class out of scope, so {@code
- * polco_loads} and {@code polco2_loads} are listed in {@code deferred/rust-tests.txt}, and {@code
- * native_read_consumes_its_cards} is translated for {@code specflux.head} and {@code
+ * <p>{@code native_read_consumes_its_cards} is translated for {@code specflux.head} and {@code
  * timeplot.head}.
  */
 class FitsChanNativeKeywordTest {
@@ -27,6 +25,16 @@ class FitsChanNativeKeywordTest {
     void specfluxLoads() {
         AstObject obj = header("specflux.head").read();
         assertNotNull(obj, "specflux.head: read returned null");
+    }
+
+    @Test
+    void polcoLoads() {
+        assertNotNull(header("polco.head").read(), "polco.head: read returned null");
+    }
+
+    @Test
+    void polco2Loads() {
+        assertNotNull(header("polco2.head").read(), "polco2.head: read returned null");
     }
 
     @Test

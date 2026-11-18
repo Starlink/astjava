@@ -1,6 +1,7 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
 import uk.ac.starlink.ast.testsupport.NativeClasses;
 import uk.ac.starlink.ast.testsupport.OracleFile;
 import uk.ac.starlink.ast.testsupport.OracleSection;
+import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
  * Translation of Rust {@code tests/test_simplify_regression.rs::simplify_regression}: the rows of
@@ -23,8 +25,10 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  *
  * <p>For each row the input is read and simplified, after reducing a FrameSet to its base-to-current
  * Mapping unless the reference is itself a FrameSet (the reference was then made by simplifying the
- * FrameSet). The simplified Mapping's native dump is compared with the reference by the row's
- * fourth field:
+ * FrameSet). The simplified Mapping, read back from its native dump, must be equal to the
+ * reference by {@code astEqual}, as C's harness finds it ({@code ast_tester/test_simplify.tap}
+ * runs {@code ast_astequal} on every row). The simplified Mapping's native dump is compared with
+ * the reference by the row's fourth field:
  *
  * <ul>
  *   <li>blank: numbers within 4 units in the last place, every other byte equal;
@@ -38,7 +42,10 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  *
  * <p>Simplifying must leave the input as C leaves it: its dump, apart from the records of
  * simplification C also writes on it ({@code IsSimp}, {@code ReSimp}), and what it computes for the
- * inputs of its oracle sections, are unchanged.
+ * inputs of its oracle sections, are unchanged. Where the probe {@code
+ * probes/simplify_input_probe.c} records C's dump of a row's input after simplification, the
+ * input's dump, apart from those records, must be that instead: C's comparisons of CmpMaps can
+ * change the Invert attribute of a component shared with the input (row {@code brad}).
  *
  * <p>The simplified Mapping must also transform the inputs of the input file's sections of {@code
  * oracle/simplify_fixtures.oracle} to C's recorded outputs, within the file's tolerances, as the
@@ -111,6 +118,12 @@ class SimplifyRegressionTest {
     static final String SIMPLIFY = "needs simplification";
 
     /**
+     * C's dumps of rows' inputs after simplification, as {@code <row>/input_after} cases of the
+     * probe {@code probes/simplify_input_probe.c}.
+     */
+    private static final Map<String, String> INPUT_AFTER = ProbeOutput.load("simplify_input_probe");
+
+    /**
      * The reason a failing row is listed with: the out-of-scope classes its input or reference
      * names, or {@value #SIMPLIFY} if there are none, since the row then fails in a part of the
      * simplifier not yet ported.
@@ -136,6 +149,7 @@ class SimplifyRegressionTest {
         Mapping simplified;
         Mapping input;
         String dump;
+        boolean equal;
         try {
             AstObject inObj = ChannelText.read(Fixtures.read(r.input));
             AstObject refObj = ChannelText.read(refText);
@@ -143,9 +157,15 @@ class SimplifyRegressionTest {
             if (input == null) {
                 return "input is a " + inObj.getClass().getSimpleName() + ", not a Mapping";
             }
-            String inputBefore = withoutRecords(ChannelText.dump(input));
+            List<String> inputBefore = withoutRecords(ChannelText.dump(input));
             simplified = input.simplify();
-            if (!inputBefore.equals(withoutRecords(ChannelText.dump(input)))) {
+            List<String> inputAfter = withoutRecords(ChannelText.dump(input));
+            String cAfter = INPUT_AFTER.get(r.name + "/input_after");
+            if (cAfter != null) {
+                if (!withoutRecords(cAfter).equals(inputAfter)) {
+                    return "simplify() left the input's dump other than C leaves it";
+                }
+            } else if (!sameButForClearedAlSimp(inputBefore, inputAfter)) {
                 return "simplify() changed the input's dump";
             }
             // Both dumps are taken before anything is transformed, since a transformation can
@@ -153,6 +173,7 @@ class SimplifyRegressionTest {
             // correction factor it works out, as C's does (specmap.c FrameChange). What the input
             // computed before it was simplified is found from a second reading of it.
             dump = ChannelText.dump(simplified);
+            equal = equalToReference(refObj, dump);
             List<double[][]> transformsBefore = inputTransforms(
                     inputMapping(ChannelText.read(Fixtures.read(r.input)), refObj), oracle.get(r.input));
             List<double[][]> transformsAfter = inputTransforms(input, oracle.get(r.input));
@@ -165,6 +186,9 @@ class SimplifyRegressionTest {
             return "read or simplify: " + e.getMessage();
         }
 
+        if (!equal) {
+            return "astEqual finds the simplified Mapping, read from its dump, unequal to C's";
+        }
         boolean sameFile = r.input.equals(r.reference);
         if (sameFile) {
             boolean frame = simplified instanceof Frame;
@@ -200,6 +224,16 @@ class SimplifyRegressionTest {
     }
 
     /**
+     * Whether astEqual finds the reference {@code refObj} equal to the simplified Mapping read
+     * from its dump {@code dump}. C's harness compares the two, both read from their dumps, with
+     * astEqual (ast_tester/test_simplify.tap, ast_astequal.c), the reference first: a dump does not
+     * carry everything astEqual looks at, such as a base Frame written only through Frm.
+     */
+    static boolean equalToReference(AstObject refObj, String dump) {
+        return refObj.astEqual(ChannelText.read(dump));
+    }
+
+    /**
      * The Mapping a row simplifies: the input itself, or a FrameSet's base-to-current Mapping when
      * the reference is not a FrameSet; null if the input is not a Mapping.
      */
@@ -214,18 +248,37 @@ class SimplifyRegressionTest {
     }
 
     /**
-     * A dump without its records of simplification, {@code IsSimp} and {@code ReSimp}, which C's
-     * {@code astSimplify} also writes on the Mapping it is given and on its shared components.
+     * The lines of a dump without its records of simplification, {@code IsSimp} and {@code
+     * ReSimp}, which C's {@code astSimplify} also writes on the Mapping it is given and on its
+     * shared components.
      */
-    private static String withoutRecords(String dump) {
-        StringBuilder sb = new StringBuilder();
+    private static List<String> withoutRecords(String dump) {
+        List<String> out = new ArrayList<>();
         for (String line : CValues.lines(dump)) {
             String t = line.trim();
             if (!t.startsWith("IsSimp =") && !t.startsWith("ReSimp =")) {
-                sb.append(line).append('\n');
+                out.add(line);
             }
         }
-        return sb.toString();
+        return out;
+    }
+
+    /**
+     * Whether the dump {@code after} is the dump {@code before} with no change but {@code AlSimp}
+     * lines removed: cmpmap.c {@code Simplify} clears AllowSimplify on each component it joins
+     * into a new CmpMap, among them components it shares with the input (probe {@code
+     * mathmap_probe.c}, case {@code simplify_input_after}), but sets it on none of them.
+     */
+    private static boolean sameButForClearedAlSimp(List<String> before, List<String> after) {
+        int j = 0;
+        for (String line : before) {
+            if (j < after.size() && line.equals(after.get(j))) {
+                j++;
+            } else if (!line.trim().startsWith("AlSimp =")) {
+                return false;
+            }
+        }
+        return j == after.size();
     }
 
     /**
@@ -320,6 +373,20 @@ class SimplifyRegressionTest {
             }
         }
         return null;
+    }
+
+    /**
+     * The astEqual check accepts a row's own simplification and rejects a wrong one: row {@code
+     * zoom_series_merge} simplifies two ZoomMaps in series to C's ZoomMap of factor 6, and a ZoomMap
+     * of factor 5 or the unsimplified CmpMap is not that.
+     */
+    @Test
+    void theAstEqualCheckRejectsAWrongSimplification() {
+        AstObject ref = ChannelText.read(Fixtures.read("simplify/zoom_series_merge.simp"));
+        Mapping input = (Mapping) ChannelText.read(Fixtures.read("simplify/zoom_series_merge.map"));
+        assertTrue(equalToReference(ref, ChannelText.dump(input.simplify())));
+        assertFalse(equalToReference(ref, ChannelText.dump(new ZoomMap(2, 5.0))));
+        assertFalse(equalToReference(ref, ChannelText.dump(input)));
     }
 
     @Test

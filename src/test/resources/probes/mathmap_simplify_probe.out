@@ -1,0 +1,798 @@
+== fwd_inv_simpfi_unset_simpif_unset
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+       End MathMap
+ End CmpMap
+== inv_fwd_simpfi_unset_simpif_unset
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+       End MathMap
+ End CmpMap
+== fwd_inv_simpfi_unset_simpif_0
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpIF = 0 	# Inverse-forward pairs do not simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpIF = 0 	# Inverse-forward pairs do not simplify
+       End MathMap
+ End CmpMap
+== inv_fwd_simpfi_unset_simpif_0
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpIF = 0 	# Inverse-forward pairs do not simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpIF = 0 	# Inverse-forward pairs do not simplify
+       End MathMap
+ End CmpMap
+== fwd_inv_simpfi_unset_simpif_1
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+ End CmpMap
+== inv_fwd_simpfi_unset_simpif_1
+UnitMap 1 1
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== fwd_inv_simpfi_0_simpif_unset
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 0 	# Forward-inverse pairs do not simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 0 	# Forward-inverse pairs do not simplify
+       End MathMap
+ End CmpMap
+== inv_fwd_simpfi_0_simpif_unset
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 0 	# Forward-inverse pairs do not simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 0 	# Forward-inverse pairs do not simplify
+       End MathMap
+ End CmpMap
+== fwd_inv_simpfi_0_simpif_0
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 0 	# Forward-inverse pairs do not simplify
+          SimpIF = 0 	# Inverse-forward pairs do not simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 0 	# Forward-inverse pairs do not simplify
+          SimpIF = 0 	# Inverse-forward pairs do not simplify
+       End MathMap
+ End CmpMap
+== inv_fwd_simpfi_0_simpif_0
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 0 	# Forward-inverse pairs do not simplify
+          SimpIF = 0 	# Inverse-forward pairs do not simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 0 	# Forward-inverse pairs do not simplify
+          SimpIF = 0 	# Inverse-forward pairs do not simplify
+       End MathMap
+ End CmpMap
+== fwd_inv_simpfi_0_simpif_1
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 0 	# Forward-inverse pairs do not simplify
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 0 	# Forward-inverse pairs do not simplify
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+ End CmpMap
+== inv_fwd_simpfi_0_simpif_1
+UnitMap 1 1
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== fwd_inv_simpfi_1_simpif_unset
+UnitMap 1 1
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== inv_fwd_simpfi_1_simpif_unset
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+       End MathMap
+ End CmpMap
+== fwd_inv_simpfi_1_simpif_0
+UnitMap 1 1
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== inv_fwd_simpfi_1_simpif_0
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvA = 1 	# First Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+          SimpIF = 0 	# Inverse-forward pairs do not simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+          SimpIF = 0 	# Inverse-forward pairs do not simplify
+       End MathMap
+ End CmpMap
+== fwd_inv_simpfi_1_simpif_1
+UnitMap 1 1
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== inv_fwd_simpfi_1_simpif_1
+UnitMap 1 1
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== consent_of_both
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+ End CmpMap
+== equal_functions
+UnitMap 1 1
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== unequal_functions
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=2*x" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "y=x*2" 	# Forward function 1
+          Inv1 = "x=y/2" 	# Inverse function 1
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+ End CmpMap
+== nin_nout_fwd_inv
+UnitMap 2 2
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== nin_nout_inv_fwd
+UnitMap 1 1
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== intermediate_functions
+UnitMap 2 2
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== pair_then_zoommap
+ZoomMap 2 2
+ Begin ZoomMap 	# Zoom about the origin
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Zoom = 3 	# Zoom factor
+ End ZoomMap
+== pair_in_parallel
+CmpMap 4 4
+ Begin CmpMap 	# Compound Mapping
+    Nin = 4 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Series = 0 	# Component Mappings applied in parallel
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nfwd = 3 	# Number of forward transformation functions
+          Fwd1 = "t=x+1" 	# Forward function 1
+          Fwd2 = "u=y*t" 	# Forward function 2
+          Fwd3 = "v=x-y" 	# Forward function 3
+          Inv1 = "x=u+v" 	# Inverse function 1
+          Inv2 = "y=u-v" 	# Inverse function 2
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 2 	# Number of input coordinates
+          Invert = 1 	# Mapping inverted
+       IsA Mapping 	# Mapping between coordinate systems
+          Nfwd = 3 	# Number of forward transformation functions
+          Fwd1 = "t=x+1" 	# Forward function 1
+          Fwd2 = "u=y*t" 	# Forward function 2
+          Fwd3 = "v=x-y" 	# Forward function 3
+          Inv1 = "x=u+v" 	# Inverse function 1
+          Inv2 = "y=u-v" 	# Inverse function 2
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+ End CmpMap
+== same_twice
+CmpMap 2 2
+ Begin CmpMap 	# Compound Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nfwd = 3 	# Number of forward transformation functions
+          Fwd1 = "t=x+1" 	# Forward function 1
+          Fwd2 = "u=y*t" 	# Forward function 2
+          Fwd3 = "v=x-y" 	# Forward function 3
+          Inv1 = "x=u+v" 	# Inverse function 1
+          Inv2 = "y=u-v" 	# Inverse function 2
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 2 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Nfwd = 3 	# Number of forward transformation functions
+          Fwd1 = "t=x+1" 	# Forward function 1
+          Fwd2 = "u=y*t" 	# Forward function 2
+          Fwd3 = "v=x-y" 	# Forward function 3
+          Inv1 = "x=u+v" 	# Inverse function 1
+          Inv2 = "y=u-v" 	# Inverse function 2
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+ End CmpMap
+== parallel_with_inverted_series
+CmpMap 2 2
+ Begin CmpMap 	# Compound Mapping
+    Nin = 2 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    Series = 0 	# Component Mappings applied in parallel
+    MapA = 	# First component Mapping
+       Begin CmpMap 	# Compound Mapping
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          InvA = 1 	# First Mapping used in inverse direction
+          InvB = 1 	# Second Mapping used in inverse direction
+          MapA = 	# First component Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=2*x" 	# Forward function 1
+                Inv1 = "x=0.5*y" 	# Inverse function 1
+                SimpFI = 1 	# Forward-inverse pairs may simplify
+                SimpIF = 1 	# Inverse-forward pairs may simplify
+             End MathMap
+          MapB = 	# Second component Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=2*x" 	# Forward function 1
+                Inv1 = "x=0.5*y" 	# Inverse function 1
+                SimpFI = 1 	# Forward-inverse pairs may simplify
+                SimpIF = 1 	# Inverse-forward pairs may simplify
+             End MathMap
+       End CmpMap
+    MapB = 	# Second component Mapping
+       Begin CmpMap 	# Compound Mapping
+          Nin = 1 	# Number of input coordinates
+          IsSimp = 1 	# Mapping has been simplified
+       IsA Mapping 	# Mapping between coordinate systems
+          MapA = 	# First component Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=2*x" 	# Forward function 1
+                Inv1 = "x=0.5*y" 	# Inverse function 1
+                SimpFI = 1 	# Forward-inverse pairs may simplify
+                SimpIF = 1 	# Inverse-forward pairs may simplify
+             End MathMap
+          MapB = 	# Second component Mapping
+             Begin MathMap 	# Transformation using mathematical functions
+                Nin = 1 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Fwd1 = "y=2*x" 	# Forward function 1
+                Inv1 = "x=0.5*y" 	# Inverse function 1
+                SimpFI = 1 	# Forward-inverse pairs may simplify
+                SimpIF = 1 	# Inverse-forward pairs may simplify
+             End MathMap
+       End CmpMap
+ End CmpMap
+== equal
+same_object 1
+same_functions 1
+different_constant 0
+last_opcode_differs 1
+inverted_copy 0
+both_inverted 1
+renamed_variables 1
+max_min 1
+max_constant 0
+max_argument_count 0
+no_forward_both 1
+no_forward_one 0
+forward_one 0
+neither_direction 1
+operand_order 0
+variable_index 0
+nin_differs 0
+function_count_differs 0
+opcode_count_differs 0
+zoommap 0
+== units_log_hz_to_hz
+label exp( Frequency )
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "output_units=exp(2.3025850929940459*input_units)" 	# Forward function 1
+    Inv1 = "input_units=log10(output_units)" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+0 -> 1 -> 0
+2 -> 100.00000000000004 -> 2
+-1.5 -> 0.031622776601683784 -> -1.5000000000000002
+== units_sqrt_hz_to_hz
+label ( Frequency )**2
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "output_units=input_units**2" 	# Forward function 1
+    Inv1 = "input_units=sqrt(output_units)" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+2 -> 4 -> 2
+0.25 -> 0.0625 -> 0.25
+100 -> 10000 -> 100
+== units_log_kms_to_ms
+label exp( Frequency )
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "output_units=1000*exp(2.3025850929940459*input_units)" 	# Forward function 1
+    Inv1 = "input_units=log10(0.001*output_units)" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+0 -> 1000 -> 0
+2 -> 100000.00000000004 -> 2
+-1.5 -> 31.622776601683785 -> -1.5000000000000002
+== units_hz_to_log_hz
+label log( Frequency )
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "output_units=log10(input_units)" 	# Forward function 1
+    Inv1 = "input_units=exp(2.3025850929940459*output_units)" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+2 -> 0.3010299956639812 -> 2
+0.25 -> -0.6020599913279624 -> 0.24999999999999994
+100 -> 2 -> 100.00000000000004
+== units_hz_to_sqrt_hz
+label sqrt( Frequency )
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "output_units=sqrt(input_units)" 	# Forward function 1
+    Inv1 = "input_units=output_units**2" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+2 -> 1.4142135623730951 -> 2.0000000000000004
+0.25 -> 0.5 -> 0.25
+100 -> 10 -> 100
+== units_ln_hz_to_mhz
+label exp( Frequency )
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "output_units=9.9999999999999995e-07*exp(input_units)" 	# Forward function 1
+    Inv1 = "input_units=log(1000000*output_units)" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+0 -> 9.9999999999999995e-07 -> 0
+2 -> 7.3890560989306502e-06 -> 2
+-1.5 -> 2.231301601484298e-07 -> -1.5000000000000002
+== units_exp_hz_to_hz
+label ln( Frequency )
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "output_units=log(input_units)" 	# Forward function 1
+    Inv1 = "input_units=exp(output_units)" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+2 -> 0.69314718055994529 -> 2
+0.25 -> -1.3862943611198906 -> 0.25
+100 -> 4.6051701859880918 -> 100.00000000000004
+== units_log_mhz_to_log_hz
+label log((9.9999999999999995e-07*exp( Frequency ))**-1)
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "output_units=log10((9.9999999999999995e-07*exp(-2.3025850929940459*input_units))**-1)" 	# Forward function 1
+    Inv1 = "input_units=log10((1000000*exp(-2.3025850929940459*output_units))**-1)" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+0 -> 6 -> 5.7859647993197191e-16
+2 -> 8 -> 2.0000000000000009
+-1.5 -> 4.5 -> -1.4999999999999993
+== units_hz_to_per_hz
+label ( Frequency )**-1
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "output_units=input_units**-1" 	# Forward function 1
+    Inv1 = "input_units=output_units**-1" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+2 -> 0.5 -> 2
+0.25 -> 4 -> 0.25
+100 -> 0.01 -> 100
+== units_hz15_to_hz
+label ( Frequency )**0.66666666666666663
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "output_units=input_units**0.66666666666666663" 	# Forward function 1
+    Inv1 = "input_units=output_units**1.5" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+2 -> 1.5874010519681994 -> 1.9999999999999998
+0.25 -> 0.3968502629920499 -> 0.25
+100 -> 21.544346900318832 -> 99.999999999999957
+== units_m2_to_cm
+label sqrt( Frequency )
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "output_units=sqrt(10000*input_units)" 	# Forward function 1
+    Inv1 = "input_units=(0.01*output_units)**2" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+2 -> 141.42135623730951 -> 2.0000000000000004
+0.25 -> 50 -> 0.25
+100 -> 1000 -> 100
+== units_log_jy_to_w
+label exp( Frequency )
+ Begin MathMap 	# Transformation using mathematical functions
+    Nin = 1 	# Number of input coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fwd1 = "output_units=1.0000000000000002e-26*exp(2.3025850929940459*input_units)" 	# Forward function 1
+    Inv1 = "input_units=log10(9.9999999999999988e+25*output_units)" 	# Inverse function 1
+    SimpFI = 1 	# Forward-inverse pairs may simplify
+    SimpIF = 1 	# Inverse-forward pairs may simplify
+ End MathMap
+0 -> 1.0000000000000002e-26 -> 0
+2 -> 1.0000000000000007e-24 -> 2.0000000000000004
+-1.5 -> 3.1622776601683789e-28 -> -1.5000000000000002
+== units_there_and_back
+CmpMap 1 1
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "output_units=exp(2.3025850929940459*input_units)" 	# Forward function 1
+          Inv1 = "input_units=log10(output_units)" 	# Inverse function 1
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "output_units=log10(input_units)" 	# Forward function 1
+          Inv1 = "input_units=exp(2.3025850929940459*output_units)" 	# Inverse function 1
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+ End CmpMap
+== units_with_inverse
+UnitMap 1 1
+ Begin UnitMap 	# Unit (null) Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+ End UnitMap
+== flux_log_conversion
+CmpMap
+ Begin CmpMap 	# Compound Mapping
+    Nin = 1 	# Number of input coordinates
+    IsSimp = 1 	# Mapping has been simplified
+ IsA Mapping 	# Mapping between coordinate systems
+    InvB = 1 	# Second Mapping used in inverse direction
+    MapA = 	# First component Mapping
+       Begin ZoomMap 	# Zoom about the origin
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Zoom = 1.0000000000000002e-26 	# Zoom factor
+       End ZoomMap
+    MapB = 	# Second component Mapping
+       Begin MathMap 	# Transformation using mathematical functions
+          Nin = 1 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Fwd1 = "output_units=exp(2.3025850929940459*input_units)" 	# Forward function 1
+          Inv1 = "input_units=log10(output_units)" 	# Inverse function 1
+          SimpFI = 1 	# Forward-inverse pairs may simplify
+          SimpIF = 1 	# Inverse-forward pairs may simplify
+       End MathMap
+ End CmpMap
+1 -> -26 -> 0.99999999999999245
+1000 -> -23 -> 999.99999999999216
+0.5 -> -26.301029995663981 -> 0.49999999999999528
+== end status 0

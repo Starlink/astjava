@@ -197,6 +197,23 @@ public class SphMap extends Mapping {
         polarLong = AST__BAD;
     }
 
+    /**
+     * sphmap.c {@code Equal}: {@code that} is a SphMap with the same numbers of inputs and outputs,
+     * the same Invert attribute, PolarLong values as stored equal to within {@code astEQUAL}, and the
+     * same UnitRadius value as stored, unset values included.
+     */
+    @Override
+    boolean equalTo(AstObject that) {
+        if (!(that instanceof SphMap)) {
+            return false;
+        }
+        SphMap other = (SphMap) that;
+        if (other.getNin() != getNin() || other.getNout() != getNout() || getInvert() != other.getInvert()) {
+            return false;
+        }
+        return MappingHelpers.astEqual(polarLong, other.polarLong) && unitRadius == other.unitRadius;
+    }
+
     // ------------------------------------------------------------------
     // Attribute strings (sphmap.c GetAttrib, SetAttrib, TestAttrib, ClearAttrib)
     // ------------------------------------------------------------------

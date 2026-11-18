@@ -388,4 +388,35 @@ class PermMapTest {
                 assertThrows(AstException.class, () -> new PermMap(2, null, 2, new int[] {1}, null))
                         .getStatus());
     }
+
+    // ------------------------------------------------------------------
+    // Equality (permmap.c Equal compares the constants each permutation selects)
+    // ------------------------------------------------------------------
+
+    @Test
+    void permEqualSameConstantIndexDifferingValues() {
+        assertFalse(perm(new int[] {-1}, new int[] {1}, 5.0).astEqual(perm(new int[] {-1}, new int[] {1}, 7.0)));
+    }
+
+    @Test
+    void permEqualSameConstantIndexSameValue() {
+        assertTrue(perm(new int[] {-1}, new int[] {1}, 5.0).astEqual(perm(new int[] {-1}, new int[] {1}, 5.0)));
+    }
+
+    @Test
+    void permEqualDifferentIndexSameReferencedValue() {
+        assertTrue(
+                perm(new int[] {-1}, new int[] {1}, 9.0, 0.0).astEqual(perm(new int[] {-2}, new int[] {1}, 0.0, 9.0)));
+    }
+
+    @Test
+    void permEqualDifferentIndexDifferentReferencedValue() {
+        assertFalse(
+                perm(new int[] {-1}, new int[] {1}, 9.0, 0.0).astEqual(perm(new int[] {-2}, new int[] {1}, 0.0, 4.0)));
+    }
+
+    @Test
+    void permEqualIgnoresUnreferencedSurplusConstants() {
+        assertTrue(perm(new int[] {1}, new int[] {1}, 1.0).astEqual(perm(new int[] {1}, new int[] {1}, 2.0)));
+    }
 }

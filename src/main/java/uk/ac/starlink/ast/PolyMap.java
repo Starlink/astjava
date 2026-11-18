@@ -896,12 +896,13 @@ public class PolyMap extends Mapping {
     // ------------------------------------------------------------------
 
     /**
-     * Whether {@code that} is a PolyMap equivalent to this one, as C's {@code Equal} (polymap.c)
-     * decides it: the same numbers of inputs and outputs, the same Invert attribute, and, for each
-     * original transformation, either no coefficients in both or the same coefficient counts,
-     * maximum powers and powers, and coefficients equal to within {@code astEQUAL}.
+     * polymap.c {@code Equal}: {@code that} is a PolyMap with the same numbers of inputs and
+     * outputs, the same Invert attribute, and, for each original transformation, either no
+     * coefficients in both or the same coefficient counts, maximum powers and powers, and
+     * coefficients equal to within {@code astEQUAL}.
      */
-    boolean equalTo(Mapping that) {
+    @Override
+    boolean equalTo(AstObject that) {
         if (!(that instanceof PolyMap)) {
             return false;
         }
@@ -1134,7 +1135,10 @@ public class PolyMap extends Mapping {
      * the one after) that is a PolyMap applied in the other direction is applied in {@code
      * pmap0}'s direction and compared with it; the first equal one and {@code pmap0} are replaced
      * by UnitMaps applied forward, of {@code pmap0}'s output count if the neighbour comes first and
-     * its input count otherwise. The Invert attributes set for the comparison are restored.
+     * its input count otherwise. As in C, the neighbour's Invert attribute is restored after the
+     * comparison, and {@code pmap0}'s only when the pair does not cancel: a cancelled {@code pmap0},
+     * which may be shared with the Mapping being simplified, is left with the list's value
+     * (docs/rust-c-differences.md, "Cancelling a PolyMap with its inverse").
      *
      * @return the index of the first entry changed: the lower of the pair if they cancel, and
      *     {@code result} otherwise
@@ -1142,6 +1146,7 @@ public class PolyMap extends Mapping {
     private static int cancelWithNeighbour(MergeList list, int where, Mapping pmap0, int result) {
         boolean inv0 = list.invert(where);
         int saved0 = pmap0.swapInvert(inv0);
+        boolean cancelled = false;
         try {
             int nin = pmap0.getNin();
             int nout = pmap0.getNout();
@@ -1153,7 +1158,7 @@ public class PolyMap extends Mapping {
                 int saved1 = pmap1.swapInvert(inv0);
                 boolean ok;
                 try {
-                    ok = astEqual(pmap0, pmap1);
+                    ok = pmap0.astEqual(pmap1);
                 } finally {
                     pmap1.restoreInvert(saved1);
                 }
@@ -1161,24 +1166,17 @@ public class PolyMap extends Mapping {
                     int n = i < where ? nout : nin;
                     list.set(where, new UnitMap(n), false);
                     list.set(i, new UnitMap(n), false);
+                    cancelled = true;
                     return Math.min(i, where);
                 }
             }
         } finally {
-            pmap0.restoreInvert(saved0);
+            // C annuls its pointer to a cancelled pmap0, which skips the restore.
+            if (!cancelled) {
+                pmap0.restoreInvert(saved0);
+            }
         }
         return result;
-    }
-
-    /**
-     * C's {@code astEqual(pmap0, pmap1)} for a PolyMap {@code pmap1}: the same object, or, through
-     * the {@code Equal} of {@code pmap0}'s class, an equal PolyMap. The {@code Equal} of every other
-     * class {@code pmap0} can be here (those the linear replacement makes) finds no PolyMap equal.
-     */
-    // C compares the pointers first (object.c astEqual_): the same object is equal.
-    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
-    private static boolean astEqual(Mapping pmap0, PolyMap pmap1) {
-        return pmap0 == pmap1 || (pmap0 instanceof PolyMap && ((PolyMap) pmap0).equalTo(pmap1));
     }
 
     // ------------------------------------------------------------------

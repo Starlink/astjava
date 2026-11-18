@@ -21,8 +21,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * followed by the change of variant, simplified; the link then records the Invert of the result.
  * Each case adds a variant to Frame A or B and selects the Frame's own variant again.
  *
- * <p>The cases whose A -> B link is a MathMap need a class outside the first phase and are skipped.
- * {@code selecting_a_variant_matches_c} compares the transformations after adding the variant and
+ * <p>The A -> B link is a ShiftMap or a MathMap. {@code selecting_a_variant_matches_c} compares the transformations after adding the variant and
  * after selecting the Frame's own variant again. Its comparisons of the dumps are left out, as they
  * need simplification: C's {@code AddVariant} (frameset.c:1824) and {@code SetVariant}
  * (frameset.c:10075) store the Mappings {@code astSimplify} makes. The C dumps are each read back
@@ -61,11 +60,23 @@ class FrameSetVariantLinkOracleTest {
         }
     }
 
+    /** The A -> B link of a case. */
+    private static Mapping link(String link) {
+        switch (link) {
+            case "shift":
+                return new ShiftMap(new double[] {10.0});
+            case "mathmap":
+                return new MathMap(1, 1, new String[] {"y=x+10"}, new String[] {"x=y-10"});
+            default:
+                throw new IllegalArgumentException("link " + link);
+        }
+    }
+
     /** The outer FrameSet of a case, with the variant added. */
-    private static FrameSet build(int current, String variant) {
+    private static FrameSet build(int current, String link, String variant) {
         FrameSet outer = new FrameSet(frame("GRID"));
         FrameSet inner = new FrameSet(frame("A"));
-        inner.addFrame(FrameSet.AST__BASE, new ShiftMap(new double[] {10.0}), frame("B"));
+        inner.addFrame(FrameSet.AST__BASE, link(link), frame("B"));
         outer.addFrame(FrameSet.AST__BASE, new ZoomMap(1, 2.0), inner);
         outer.setCurrent(current);
         outer.addVariant(variantMap(variant), "V2");
@@ -80,30 +91,21 @@ class FrameSetVariantLinkOracleTest {
         return out;
     }
 
-    /** The cases whose A -> B link is a ShiftMap, those the first phase can build. */
-    private static List<JsonNode> shiftCases() {
+    /** The cases, six with each link. */
+    private static List<JsonNode> allCases() {
         List<JsonNode> out = new ArrayList<>();
-        int skipped = 0;
         for (JsonNode c : CASES) {
-            String link = c.get(2).asText();
-            if ("shift".equals(link)) {
-                out.add(c);
-            } else if ("mathmap".equals(link)) {
-                skipped++;
-            } else {
-                throw new IllegalStateException("link " + link);
-            }
+            out.add(c);
         }
-        assertEquals(6, out.size());
-        assertEquals(6, skipped);
+        assertEquals(12, out.size());
         return out;
     }
 
     @Test
     void selectingAVariantMatchesC() {
-        for (JsonNode c : shiftCases()) {
+        for (JsonNode c : allCases()) {
             String name = c.get(0).asText();
-            FrameSet outer = build(c.get(1).asInt(), c.get(3).asText());
+            FrameSet outer = build(c.get(1).asInt(), c.get(2).asText(), c.get(3).asText());
             assertArrayEquals(doubles(c.get(5)), transforms(outer), name + ": added");
 
             outer.setVariant(outer.getDomain());
@@ -113,7 +115,7 @@ class FrameSetVariantLinkOracleTest {
 
     @Test
     void cDumpsReadBackUnchanged() {
-        for (JsonNode c : shiftCases()) {
+        for (JsonNode c : allCases()) {
             String name = c.get(0).asText();
             for (int i : new int[] {4, 6}) {
                 String text = c.get(i).asText();

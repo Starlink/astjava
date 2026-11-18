@@ -110,6 +110,12 @@ public class Channel extends AstObject {
     private List<String> warningList = new ArrayList<>();
 
     /**
+     * The transformation functions registered with this Channel for the IntraMaps it reads (C's
+     * {@code astIntraReg}), or null if none is.
+     */
+    private IntraRegistry intraRegistry;
+
+    /**
      * Creates a Channel that reads from {@code in} and writes to {@code out}.
      *
      * @param in the stream to read Objects from, or null for standard input
@@ -227,6 +233,26 @@ public class Channel extends AstObject {
         fdOut = null;
         fileReturned = new ArrayDeque<>();
         warningList = new ArrayList<>(warningList);
+        if (intraRegistry != null) {
+            intraRegistry = intraRegistry.copy();
+        }
+    }
+
+    /**
+     * Registers {@code trans} as the transformation function called {@code name}, so that an
+     * IntraMap this Channel reads whose function has that name uses it, in preference to the
+     * process-wide table: C's {@code astIntraReg}, whose registrations are process-wide where
+     * these belong to the Channel. See {@link IntraRegistry#register}.
+     *
+     * @param nin the number of input coordinates of the function, or {@link IntraRegistry#AST__ANY}
+     * @param nout the number of output coordinates of the function, or {@link
+     *     IntraRegistry#AST__ANY}
+     */
+    void registerIntra(String name, int nin, int nout, Transformer trans) {
+        if (intraRegistry == null) {
+            intraRegistry = new IntraRegistry();
+        }
+        intraRegistry.register(name, nin, nout, trans);
     }
 
     // ------------------------------------------------------------------
@@ -367,6 +393,9 @@ public class Channel extends AstObject {
      * are discarded, and {@link #warnings} gives those of this one: each item in the description
      * that no class recognises is reported, as a warning or, with Strict set, as an error.
      *
+     * <p>An Object read that implements {@link NeedsChannelizing} has its {@code unChannelize}
+     * method called, as jniast's Channel calls it; an exception it throws is passed on unchanged.
+     *
      * @return the Object read, or null if there are no more Objects to read
      * @throws IOException if {@link #source} throws it
      * @throws AstException with status {@code AST__BADIN} if a line cannot be interpreted while
@@ -381,12 +410,15 @@ public class Channel extends AstObject {
         warningList.clear();
         NativeStream reader = new NativeStream(this::readLine, astClass(), getStrict(), getReportLevel());
         List<String> returned = new ArrayList<>();
+        AstObject obj;
         try {
-            return readObject(reader, mark -> returned.addAll(reader.lines.subList(mark, reader.lines.size())));
+            obj = readObject(reader, mark -> returned.addAll(reader.lines.subList(mark, reader.lines.size())));
         } finally {
             warningList = new ArrayList<>(reader.warnings);
             returnLines(returned);
         }
+        unChannelize(obj);
+        return obj;
     }
 
     /**
@@ -400,6 +432,17 @@ public class Channel extends AstObject {
         if (object == null) {
             return null;
         }
+        // The IntraMap loader finds the functions registered with this Channel while it reads.
+        IntraRegistry previous = IntraRegistry.enter(intraRegistry);
+        try {
+            return load(object, reader, rewind, cls);
+        } finally {
+            IntraRegistry.restore(previous);
+        }
+    }
+
+    /** The Object {@code object} describes, loaded as {@link #readObject} loads it. */
+    private static AstObject load(NativeStream.ReadObject object, NativeStream reader, IntConsumer rewind, String cls) {
         AstObject loaded;
         try {
             loaded = ObjectRegistry.load(object.node);
@@ -435,12 +478,18 @@ public class Channel extends AstObject {
      * Writes an Object to this Channel, after any written before, as AST's native text. The
      * warnings of the previous read or write are discarded.
      *
+     * <p>An Object that implements {@link NeedsChannelizing} has its {@code channelize} method
+     * called before it is written, and its {@code unChannelize} method after, as jniast's Channel
+     * calls them; an exception either throws is passed on unchanged, and one from {@code
+     * channelize} stops the write before anything is written.
+     *
      * @param obj the Object to write
      * @return the number of Objects written: 1
      * @throws IOException if {@link #sink} throws it
      * @throws AstException with status {@code AST__WRERR} if the SinkFile cannot be opened
      */
     public int write(AstObject obj) throws IOException {
+        channelize(obj);
         warningList.clear();
         String text = NativeWriter.render(NativeNode.of(obj), options());
         for (String line : NativeReader.lines(text)) {
@@ -449,7 +498,53 @@ public class Channel extends AstObject {
         if (fdOut != null) {
             fdOut.flush();
         }
+        unChannelize(obj);
         return 1;
+    }
+
+    /**
+     * Calls the {@code channelize} method of {@code obj} if it implements {@link
+     * NeedsChannelizing}, as jniast's Channel and FitsChan writes do (jni/Channel.c and
+     * jni/FitsChan.c {@code write}), passing on any exception unchanged, as the JNI code does
+     * whether or not the calling method declares it.
+     */
+    // NeedsChannelizing.channelize is declared to throw any Exception.
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    static void channelize(AstObject obj) {
+        if (obj instanceof NeedsChannelizing) {
+            try {
+                ((NeedsChannelizing) obj).channelize();
+            } catch (Exception e) {
+                throw Channel.<RuntimeException>passOn(e);
+            }
+        }
+    }
+
+    /**
+     * Calls the {@code unChannelize} method of {@code obj} if it implements {@link
+     * NeedsChannelizing}, as jniast's Channel and FitsChan reads and writes do, passing on any
+     * exception unchanged.
+     */
+    // NeedsChannelizing.unChannelize is declared to throw any Exception.
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    static void unChannelize(AstObject obj) {
+        if (obj instanceof NeedsChannelizing) {
+            try {
+                ((NeedsChannelizing) obj).unChannelize();
+            } catch (Exception e) {
+                throw Channel.<RuntimeException>passOn(e);
+            }
+        }
+    }
+
+    /**
+     * Throws {@code e} as it is, checked or not, as an exception pending in jniast's JNI code
+     * reaches the Java caller whatever the native method declares.
+     */
+    // The cast is unchecked by design: the compiler takes E to be unchecked, and e is thrown as it is.
+    @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"})
+    private static <E extends Exception> RuntimeException passOn(Exception e) throws E {
+        throw (E) e;
     }
 
     /** The options this Channel writes with. */

@@ -479,4 +479,17 @@ class SpecMapTest {
                 () -> ChannelText.read(head + ChannelText.text("    Spec2 = \"XXTOYY\"", " End SpecMap")));
         assertEquals(AstException.AST__BADIN, e.getStatus());
     }
+
+    /** specmap.c {@code Equal} compares the conversions and their arguments. */
+    @Test
+    void equality() {
+        SpecMap spec1 = spec("FRTOWV");
+        spec1.specAdd("LKF2HL", new double[] {1.0, 0.5});
+        SpecMap spec2 = spec("FRTOWV");
+        spec2.specAdd("LKF2HL", new double[] {1.0, 0.5});
+        assertTrue(spec1.astEqual(spec2));
+        SpecMap spec3 = spec("FRTOWV");
+        spec3.specAdd("LKF2HL", new double[] {2.0, 0.5});
+        assertFalse(spec1.astEqual(spec3));
+    }
 }

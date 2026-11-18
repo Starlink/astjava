@@ -1,6 +1,7 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,7 +22,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * tools/oracle_fixtures/mapping_load_probe.c}).
  *
  * <p>{@code loads_match_the_c_library} runs every case: PermMap, MatrixMap and WcsMap. {@code
- * a_dssmap_dump_needs_its_plate_solution} needs a DssMap, which is outside the first phase.
+ * a_dssmap_dump_needs_its_plate_solution} reads the C fixture {@code serialisation/c_dssmap.ast}
+ * with one item removed; {@code DssMapTest} compares every such load with C's messages.
  */
 class MappingLoadTest {
 
@@ -116,5 +118,22 @@ class MappingLoadTest {
             }
         }
         assertTrue(failures.isEmpty(), String.join("\n", failures));
+    }
+
+    /**
+     * A DssMap dump missing a plate parameter, PPO3, PPO6 or one of the first 13 plate solution
+     * coefficients on an axis is AST__RDERR; the other items default to zero (dssmap.c {@code
+     * astLoadDssMap}).
+     */
+    @Test
+    void aDssmapDumpNeedsItsPlateSolution() {
+        assertEquals("DssMap", DssMapTest.dss().astClass());
+        for (String key : new String[] {"PltRA", "YPixSz", "PPO3", "PPO6", "AMDX1", "AMDY13"}) {
+            AstException e = assertThrows(AstException.class, () -> DssMapTest.dss(key, null, null), key);
+            assertEquals(AstException.AST__RDERR, e.getStatus(), key);
+        }
+        for (String key : new String[] {"PPO1", "AMDX14", "AMDY19"}) {
+            assertEquals("DssMap", DssMapTest.dss(key, null, null).astClass(), key);
+        }
     }
 }

@@ -2,6 +2,7 @@ package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -395,5 +396,18 @@ class TimeMapTest {
         tm.timeAdd("LMSTTOGMST", new double[] {0.0, 0.0, 8.0});
         tm.timeAdd("TCBTOTDB", new double[] {2000.0});
         assertInstanceOf(UnitMap.class, tm.simplify());
+    }
+
+    /** timemap.c {@code Equal} compares the conversions and their arguments. */
+    @Test
+    void equality() {
+        TimeMap tm1 = time("MJDTOJD", 0.0, 0.0);
+        tm1.timeAdd("UTCTOTAI", new double[] {0.0, 32.0});
+        TimeMap tm2 = time("MJDTOJD", 0.0, 0.0);
+        tm2.timeAdd("UTCTOTAI", new double[] {0.0, 32.0});
+        assertTrue(tm1.astEqual(tm2));
+        TimeMap tm3 = time("MJDTOJD", 0.0, 0.0);
+        tm3.timeAdd("UTCTOTAI", new double[] {0.0, 33.0});
+        assertFalse(tm1.astEqual(tm3));
     }
 }

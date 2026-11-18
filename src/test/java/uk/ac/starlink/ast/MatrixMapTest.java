@@ -559,4 +559,16 @@ class MatrixMapTest {
             assertEquals(AstException.AST__MTRML, e.getStatus());
         }
     }
+
+    /** An inverted MatrixMap without an inverse matrix compares its forward matrices (C {@code Equal}). */
+    @Test
+    void anInvertedNonSquareMatrixmapEqualsItsCopy() {
+        MatrixMap m = full(new double[] {1.0, 2.0, 3.0}, new double[] {4.0, 5.0, 6.0});
+        m.invert();
+        assertFalse(m.getTranForward());
+        assertTrue(m.astEqual(m.copy()));
+        MatrixMap other = full(new double[] {1.0, 2.0, 3.0}, new double[] {4.0, 5.0, 7.0});
+        other.invert();
+        assertFalse(m.astEqual(other));
+    }
 }

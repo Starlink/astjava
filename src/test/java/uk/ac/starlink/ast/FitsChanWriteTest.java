@@ -276,7 +276,11 @@ class FitsChanWriteTest {
      * linearly in frequency or wavelength, C writes with the {@code -X2P} algorithm, the reference
      * at pixel 1 and a CDELT from the numerical rate of the conversion there, so that the cards
      * read back give velocities up to 1e-3 m/s from those of the header, the same values as C's
-     * read of C's cards: C probe {@code roundtrip_probe} of Task 8), or C's read of the cards written fails (skyref, whose alternate description,
+     * read of C's cards: C probe {@code roundtrip_probe} of Task 8; and freq-log, whose axis
+     * spans so narrow a range (1 Hz at 1.42e9 Hz) that it is linear, and C's IsMapLinear rejects
+     * the conversion from Hz to GHz over it, so that C writes the axis in GHz and the cards read
+     * back give GHz where the header gives Hz: case {@code freq_log_head} of {@code
+     * probes/fitslog_probe.c}), or C's read of the cards written fails (skyref, whose alternate description,
      * CTYPE1A {@code RA} and CTYPE2A {@code Dec}, C's read rejects as a longitude axis without a
      * latitude axis).
      */
@@ -308,6 +312,7 @@ class FitsChanWriteTest {
                 "programs/joye_car_headers/cmap_3years_GP_D2.head",
                 "wcsconv/inputs/car1.head",
                 "wcsconv/inputs/car2.head",
+                "wcsconv/inputs/freq-log.head",
                 "wcsconv/inputs/offset-sky-pole.head",
                 "wcsconv/inputs/offset-sky.head",
                 "wcsconv/inputs/offset-sref.head",

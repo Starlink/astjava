@@ -43,34 +43,6 @@ class FitsWriteUnsupportedTest {
         assertEquals(before, fc.toHeader());
     }
 
-    /** A 1-D FrameSet whose world axis is the Taylor series to degree 20 of {@code 10 exp(0.01 p)}. */
-    private static FrameSet exponential() {
-        double[] coeffs = new double[21 * 3];
-        double term = 10.0;
-        for (int k = 0; k <= 20; k++) {
-            coeffs[3 * k] = term;
-            coeffs[3 * k + 1] = 1;
-            coeffs[3 * k + 2] = k;
-            term = term * 0.01 / (k + 1);
-        }
-        PolyMap pm = new PolyMap(1, 1, 21, coeffs, 0, new double[0]);
-        pm.set("IterInverse=1");
-        Frame pixel = new Frame(1);
-        pixel.setDomain("GRID");
-        Frame wcs = new Frame(1);
-        wcs.setDomain("WORLD");
-        FrameSet fs = new FrameSet(pixel);
-        fs.addFrame(FrameSet.AST__BASE, pm, wcs);
-        return fs;
-    }
-
-    @Test
-    void aLogarithmicAxisIsUnsupported() {
-        // C's LogAxis finds the logarithm of the axis linear and describes it with the -LOG
-        // algorithm, whose Mapping holds a MathMap (C probe loglin.c: written as WORL-LOG).
-        assertNeeds("MathMap", chan(""), exponential());
-    }
-
     @Test
     void aNonLinearAxisThatIsNotLogarithmicIsNotWritten() {
         // C's LogAxis finds the logarithm of this quadratic not linear, and the axis described as

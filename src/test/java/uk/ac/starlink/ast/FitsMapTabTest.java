@@ -51,6 +51,31 @@ class FitsMapTabTest {
         assertFalse(win.getInvert());
     }
 
+    /**
+     * A grid to WCS Mapping holding a LutMap applied forward: C takes the table from the LutMap,
+     * and its interpolation method, whether or not the grid dimension is known, and makes a
+     * FitsTable for it, which needs FitsTable. An inverted LutMap is not used, so with the
+     * dimension unknown the axis is not tabulated.
+     */
+    @Test
+    void aLutMapIsTabulatedWithoutTheGridDimension() {
+        LutMap lut = new LutMap(new double[] {0.0, 1.0, 4.0, 9.0}, 1.0, 1.0);
+        lut.setI("LutInterp", 1);
+        CmpMap map = new CmpMap(new ZoomMap(1, 2.0), lut, true);
+        int[] interp = {5};
+        UnsupportedOperationException e = assertThrows(
+                UnsupportedOperationException.class,
+                () -> FitsMapTab.isMapTab1D(
+                        map, 1.0, null, new Frame(1), new double[] {BAD}, 0, 0, new int[1], new int[1], interp));
+        assertTrue(e.getMessage().endsWith("needs FitsTable"), e.getMessage());
+        assertEquals(1, interp[0]);
+        assertFalse(map.getInvert());
+
+        LutMap inv = new LutMap(new double[] {0.0, 1.0, 4.0, 9.0}, 1.0, 1.0);
+        inv.invert();
+        assertNull(isMapTab1D(new CmpMap(new ZoomMap(1, 2.0), inv, true), new double[] {BAD}, 0));
+    }
+
     /** An output that depends on two grid axes cannot be split off, so is not tabulated. */
     @Test
     void aNonSeparableAxisIsNotTabulated() {

@@ -781,4 +781,27 @@ class WcsMapTest {
                 assertThrows(AstException.class, () -> w.setPVi_m(1.0f)).getStatus());
         assertSame(WcsMap.class, w.getClass());
     }
+
+    // ------------------------------------------------------------------
+    // Equality (wcsmap.c Equal compares the projection parameters)
+    // ------------------------------------------------------------------
+
+    @Test
+    void wcsmapEqualDifferentParams() {
+        WcsMap w1 = wcs(2, WcsMap.AST__ZPN, 1, 2);
+        WcsMap w2 = wcs(2, WcsMap.AST__ZPN, 1, 2);
+        assertTrue(w1.astEqual(w2));
+        w1.setD("PV2_1", 0.5);
+        w2.setD("PV2_1", 0.7);
+        assertFalse(w1.astEqual(w2));
+    }
+
+    @Test
+    void wcsmapEqualSameParams() {
+        WcsMap w1 = wcs(2, WcsMap.AST__ZPN, 1, 2);
+        WcsMap w2 = wcs(2, WcsMap.AST__ZPN, 1, 2);
+        w1.setD("PV2_1", 0.5);
+        w2.setD("PV2_1", 0.5);
+        assertTrue(w1.astEqual(w2));
+    }
 }

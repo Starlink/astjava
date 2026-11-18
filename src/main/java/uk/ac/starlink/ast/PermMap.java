@@ -410,6 +410,55 @@ public class PermMap extends Mapping {
     }
 
     // ------------------------------------------------------------------
+    // Equality
+    // ------------------------------------------------------------------
+
+    /**
+     * permmap.c {@code Equal}: {@code that} is a PermMap with the same numbers of inputs and
+     * outputs whose permutations, as each PermMap applies them, feed every input in the inverse
+     * transformation and every output in the forward one from the same coordinate, or, where both
+     * feed it a constant, from constants of the same value (two bad values being the same), whatever
+     * their indices. A null permutation feeds each coordinate from the one with the same number, if
+     * there is one, and otherwise from the first constant (C's {@code SAFE_PERMVAL}).
+     */
+    @Override
+    boolean equalTo(AstObject that) {
+        if (!(that instanceof PermMap)) {
+            return false;
+        }
+        PermMap other = (PermMap) that;
+        int nin = getNin();
+        int nout = getNout();
+        if (other.getNout() != nout || other.getNin() != nin) {
+            return false;
+        }
+        boolean inv = getInvert();
+        boolean thatInv = other.getInvert();
+        return samePerm(inv ? outperm : inperm, other, thatInv ? other.outperm : other.inperm, nin, nout)
+                && samePerm(inv ? inperm : outperm, other, thatInv ? other.inperm : other.outperm, nout, nin);
+    }
+
+    /**
+     * Whether {@code n} coordinates are fed alike by this PermMap's permutation {@code perm1} and
+     * {@code that}'s {@code perm2}, each of whose values is below {@code valmax}, as permmap.c
+     * {@code Equal} compares them.
+     */
+    private boolean samePerm(int[] perm1, PermMap that, int[] perm2, int n, int valmax) {
+        for (int i = 0; i < n; i++) {
+            int p1 = permVal(perm1, i, valmax);
+            int p2 = permVal(perm2, i, valmax);
+            if (p1 >= 0 || p2 >= 0) {
+                if (p1 != p2) {
+                    return false;
+                }
+            } else if (constantFor(p1) != that.constantFor(p2)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // ------------------------------------------------------------------
     // Simplification
     // ------------------------------------------------------------------
 

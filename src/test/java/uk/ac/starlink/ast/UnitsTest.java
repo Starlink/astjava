@@ -11,21 +11,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.UnitsTree.Node;
 import uk.ac.starlink.ast.UnitsTree.Oper;
+import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
  * Translation of the unit tests in Rust {@code src/units/} ({@code tests.rs}, {@code table.rs},
  * {@code parser.rs}, {@code simplify.rs} and {@code dim_anal.rs}), with Java-only tests of C
  * behaviour the Rust port does not share.
  *
- * <p>The four {@code tests.rs} tests of conversions that need a MathMap ({@code
- * log_hz_to_hz_is_mathmap}, {@code sqrt_hz_to_hz_is_mathmap}, {@code log_kms_to_ms_is_mathmap},
- * {@code hz_to_log_hz_is_mathmap}) are deferred until MathMap is ported; {@link
- * #conversionsNeedingMathMapThrow} checks that they report it.
+ * <p>The MathMaps of conversions that need one are checked against the C probe {@code
+ * probes/mathmap_simplify_probe.c}.
  */
 class UnitsTest {
+
+    /** The cases of the probe that pins the MathMaps of units conversions. */
+    private static final Map<String, String> UNITS_PROBE = ProbeOutput.load("mathmap_simplify_probe");
 
     // ---------------------------------------------------------------- tests.rs
 
@@ -40,6 +43,35 @@ class UnitsTest {
         double got = forwardOne(map, 1.0);
         double tol = Math.abs(expected) * 1e-12;
         assertTrue(Math.abs(got - expected) <= tol, "expected zoom factor " + expected + ", got " + got);
+    }
+
+    @Test
+    void logHzToHzIsMathmap() {
+        Mapping map = Units.unitMapper("log(Hz)", "Hz");
+        assertInstanceOf(MathMap.class, map);
+        assertEquals(1.0, forwardOne(map, 0.0), 1e-12);
+        assertEquals(100.0, forwardOne(map, 2.0), 1e-9);
+    }
+
+    @Test
+    void sqrtHzToHzIsMathmap() {
+        Mapping map = Units.unitMapper("sqrt(Hz)", "Hz");
+        assertInstanceOf(MathMap.class, map);
+        assertEquals(4.0, forwardOne(map, 2.0), 1e-12);
+    }
+
+    @Test
+    void logKmsToMsIsMathmap() {
+        Mapping map = Units.unitMapper("log(km/s)", "m/s");
+        assertInstanceOf(MathMap.class, map);
+        assertEquals(1000.0, forwardOne(map, 0.0), 1e-9);
+    }
+
+    @Test
+    void hzToLogHzIsMathmap() {
+        Mapping map = Units.unitMapper("Hz", "log(Hz)");
+        assertInstanceOf(MathMap.class, map);
+        assertEquals(2.0, forwardOne(map, 100.0), 1e-12);
     }
 
     @Test
@@ -402,15 +434,79 @@ class UnitsTest {
 
     // ---------------------------------------------------------------- Java-only
 
-    /** A conversion C builds as a MathMap (unit.c {@code MakeMapping}) is not available. */
+    /**
+     * The conversions C makes with a MathMap (unit.c {@code MakeMapping}) give C's MathMap, with
+     * its functions, SimpFI and SimpIF set, and the label C gives for "Frequency"; the MathMap
+     * transforms the probe's values forward and back as C's does, to within the last bits of the
+     * maths library.
+     */
     @Test
-    void conversionsNeedingMathMapThrow() {
-        String[][] pairs = {{"log(Hz)", "Hz"}, {"sqrt(Hz)", "Hz"}, {"log(km/s)", "m/s"}, {"Hz", "log(Hz)"}};
-        for (String[] p : pairs) {
-            UnsupportedOperationException e =
-                    assertThrows(UnsupportedOperationException.class, () -> Units.unitMapper(p[0], p[1]));
-            assertTrue(e.getMessage().contains("MathMap"), e.getMessage());
+    void conversionsNeedingMathMapGiveCsMathMap() {
+        String[][] cases = {
+            {"units_log_hz_to_hz", "log(Hz)", "Hz", "v1"},
+            {"units_sqrt_hz_to_hz", "sqrt(Hz)", "Hz", "v2"},
+            {"units_log_kms_to_ms", "log(km/s)", "m/s", "v1"},
+            {"units_hz_to_log_hz", "Hz", "log(Hz)", "v2"},
+            {"units_hz_to_sqrt_hz", "Hz", "sqrt(Hz)", "v2"},
+            {"units_ln_hz_to_mhz", "ln(Hz)", "MHz", "v1"},
+            {"units_exp_hz_to_hz", "exp(Hz)", "Hz", "v2"},
+            {"units_log_mhz_to_log_hz", "log(MHz)", "log(Hz)", "v1"},
+            {"units_hz_to_per_hz", "Hz", "1/Hz", "v2"},
+            {"units_hz15_to_hz", "Hz**1.5", "Hz", "v2"},
+            {"units_m2_to_cm", "m**2", "cm", "v2"},
+            {"units_log_jy_to_w", "log(Jy)", "W/m**2/Hz", "v1"},
+        };
+        double[] v1 = {0.0, 2.0, -1.5};
+        double[] v2 = {2.0, 0.25, 100.0};
+        for (String[] c : cases) {
+            String want = UNITS_PROBE.get(c[0]);
+            Units.LabelledMapping lm = Units.unitMapperLabel(c[1], c[2], "Frequency");
+            assertNotNull(lm, c[0]);
+            assertInstanceOf(MathMap.class, lm.mapping, c[0]);
+            String[] lines = want.split("\n", -1);
+            assertEquals(lines[0], "label " + lm.label, c[0]);
+            String dump = ChannelText.dump(lm.mapping);
+            int ndump = dump.split("\n", -1).length - 1;
+            StringBuilder wantDump = new StringBuilder();
+            for (int i = 1; i <= ndump; i++) {
+                wantDump.append(lines[i]).append('\n');
+            }
+            assertEquals(wantDump.toString(), dump, c[0]);
+            double[] vals = "v1".equals(c[3]) ? v1 : v2;
+            double[] fwd = lm.mapping.tran1(vals.length, vals, true);
+            double[] inv = lm.mapping.tran1(vals.length, fwd, false);
+            for (int i = 0; i < vals.length; i++) {
+                String[] parts = lines[ndump + 1 + i].split(" -> ", -1);
+                assertClose(Double.parseDouble(parts[1]), fwd[i], c[0] + " forward " + vals[i]);
+                assertClose(Double.parseDouble(parts[2]), inv[i], c[0] + " inverse " + vals[i]);
+            }
         }
+    }
+
+    /** Asserts that {@code got} is {@code want} to within the last bits of the maths library. */
+    private static void assertClose(double want, double got, String what) {
+        double tol = 1e-14 * Math.max(1.0, Math.abs(want));
+        assertTrue(Math.abs(got - want) <= tol, what + ": expected " + want + ", got " + got);
+    }
+
+    /**
+     * A conversion and its reverse in series do not cancel, as their functions are not each
+     * other's inverse functions as text; a conversion and its inverse do.
+     */
+    @Test
+    void unitsMathMapsSimplifyAsC() {
+        Mapping m1 = Units.unitMapper("log(Hz)", "Hz");
+        Mapping m2 = Units.unitMapper("Hz", "log(Hz)");
+        Mapping s = new CmpMap(m1, m2, true).simplify();
+        assertEquals(
+                UNITS_PROBE.get("units_there_and_back"),
+                s.astClass() + " " + s.getNin() + " " + s.getNout() + "\n" + ChannelText.dump(s));
+        Mapping m3 = (Mapping) m1.copy();
+        m3.invert();
+        s = new CmpMap(m1, m3, true).simplify();
+        assertEquals(
+                UNITS_PROBE.get("units_with_inverse"),
+                s.astClass() + " " + s.getNin() + " " + s.getNout() + "\n" + ChannelText.dump(s));
     }
 
     /**

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
  * a compound Mapping, after C's {@code ast_tester/testrate.c}, with its error numbers in the
  * assertion messages. The tolerance of 1e-6 is the program's own, for the rates C compares to it.
  *
- * <p>{@code tran_map} needs a TranMap, which is outside the first phase. As in C, the unit
+ * <p>As in C, the unit
  * MatrixMap is made in its unit form. The Rust test builds the CmpMap's components in the
  * orientation they had when C composed them; here, as in C, the components are inverted after the
  * CmpMap is made, which, as the CmpMap records each component's Invert value when it is made,
@@ -169,6 +169,17 @@ class RateTest {
         assertEquals(0.0, m.rate(AT, 2, 1), "Error 41");
         assertEquals(1.0, m.rate(AT, 2, 2), "Error 43");
         assertEquals(0.0, m.rate(AT, 1, 2), "Error 44");
+    }
+
+    @Test
+    void tranMap() {
+        TranMap m = new TranMap(winMap(), fullMatrix());
+        assertEquals(2.0, m.rate(AT, 1, 1), "Error 46");
+        assertEquals(0.0, m.rate(AT, 2, 1), "Error 47");
+        assertEquals(2.0, m.rate(AT, 2, 2), "Error 48");
+        assertEquals(0.0, m.rate(AT, 1, 2), "Error 49");
+        m.invert();
+        assertInverseFullMatrixRates(m, new int[] {51, 52, 53, 54});
     }
 
     @Test

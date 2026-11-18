@@ -19,7 +19,9 @@ import static uk.ac.starlink.ast.PolyTerms.term;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
  * Translation of Rust {@code tests/test_polymap.rs}, which ports C's {@code testpolymap.c}:
@@ -38,6 +40,8 @@ import org.junit.jupiter.api.Test;
 class PolyMapTest {
 
     private static final double BAD = AstObject.AST__BAD;
+
+    private static final Map<String, String> POLYMAP_CANCEL_PROBE = ProbeOutput.load("polymap_cancel_probe");
 
     private static void assertClose(double want, double got, double tol, String what) {
         assertTrue(Math.abs(got - want) < tol, what + ": got " + got + ", want " + want);
@@ -601,7 +605,7 @@ class PolyMapTest {
         PolyMap pm = cPoly(2, C_COEFF2);
         Mapping simp = pm.simplify();
         assertInstanceOf(PolyMap.class, simp, "Error 3002");
-        assertTrue(((PolyMap) simp).equalTo(pm), "Error 3003");
+        assertTrue(simp.astEqual(pm), "Error 3003");
     }
 
     /**
@@ -619,24 +623,43 @@ class PolyMapTest {
     }
 
     /**
-     * A PolyMap that cancels against its neighbour is left with the Invert attribute it had. The
-     * inverted series CmpMap applies the second PolyMap forward, so the merge sets that PolyMap's
-     * Invert attribute while it compares the pair; C does not restore it when the pair cancels
-     * (polymap.c {@code MapMerge} restores only a PolyMap that was not replaced), which the merge
-     * here does.
+     * The series CmpMap of a PolyMap and an inverted copy of it, itself inverted if {@code
+     * invertCmp}, simplified, with the Invert attributes of the two PolyMaps, which the CmpMap
+     * shares, before and after, as probe {@code polymap_cancel_probe.c} writes them.
      */
-    @Test
-    void aCancelledPolymapKeepsItsInvert() {
-        double[][] fwd = {term(1.0, 1, 2), term(3.0, 1, 1)};
-        double[][] inv = {term(0.5, 1, 1)};
-        PolyMap p = poly(1, 1, fwd, inv);
+    private static String cancel(boolean invertCmp) {
+        PolyMap p = poly(1, 1, new double[][] {term(1.0, 1, 2), term(3.0, 1, 1)}, new double[][] {term(0.5, 1, 1)});
         PolyMap q = (PolyMap) p.copy();
         q.invert();
         CmpMap c = new CmpMap(p, q, true);
-        c.invert();
-        assertInstanceOf(UnitMap.class, c.simplify());
-        assertFalse(p.getInvert());
-        assertTrue(q.getInvert());
+        if (invertCmp) {
+            c.invert();
+        }
+        String before = invertAttrs("before", p, q);
+        Mapping s = c.simplify();
+        return before + "class " + s.astClass() + "\n" + invertAttrs("after", p, q);
+    }
+
+    private static String invertAttrs(String when, Mapping p, Mapping q) {
+        return when + " p " + p.getI("Invert") + " set " + (p.test("Invert") ? 1 : 0) + " q " + q.getI("Invert")
+                + " set " + (q.test("Invert") ? 1 : 0) + "\n";
+    }
+
+    /**
+     * A PolyMap that cancels against its neighbour is left with the Invert attribute the list
+     * applied it with, as in C: polymap.c {@code MapMerge} sets the nominated PolyMap's Invert
+     * attribute to the list's value and sets it back only when the pair does not cancel. The
+     * inverted series CmpMap applies the copy, which is inverted, forward, so the copy is left with
+     * Invert 0 (docs/rust-c-differences.md, "Cancelling a PolyMap with its inverse"). The neighbour's
+     * Invert attribute is put back as it was, set or unset, where C's {@code astSetInvert} leaves it
+     * set, so the PolyMap compared with the copy is not set afterwards.
+     */
+    @Test
+    void aCancelledPolymapIsLeftWithTheListsInvertValue() {
+        assertEquals(POLYMAP_CANCEL_PROBE.get("series"), cancel(false));
+        String want = POLYMAP_CANCEL_PROBE.get("inverted_series");
+        assertTrue(want.contains("after p 0 set 1 q 0 set 1\n"), want);
+        assertEquals(want.replace("after p 0 set 1", "after p 0 set 0"), cancel(true));
     }
 
     @Test
@@ -872,5 +895,46 @@ class PolyMapTest {
         AstException nan = assertThrows(AstException.class, () -> m.transformIntoNan(in, 2, false, nanOut));
         assertEquals(plain.getStatus(), nan.getStatus());
         assertArrayEquals(new double[2], nanOut[0], "no outputs written");
+    }
+
+    // ------------------------------------------------------------------
+    // Equality (polymap.c Equal)
+    // ------------------------------------------------------------------
+
+    @Test
+    void polymapEqualComparesTheInverseCoefficients() {
+        double[][] fwd = {term(1.0, 1, 2)};
+        double[][] half = {term(0.5, 1, 1)};
+        double[][] seven = {term(0.7, 1, 1)};
+        PolyMap a = poly(1, 1, fwd, half);
+        PolyMap same = poly(1, 1, fwd, half);
+        assertTrue(a.astEqual(same), "identical PolyMaps compare equal");
+        assertTrue(same.astEqual(a), "equality is symmetric");
+        PolyMap differ = poly(1, 1, fwd, seven);
+        assertFalse(a.astEqual(differ), "the inverse coefficient values differ, so the two are not equal");
+        assertFalse(differ.astEqual(a), "in either direction");
+        differ.invert();
+        Mapping s = new CmpMap(poly(1, 1, fwd, half), differ, true).simplify();
+        assertFalse(s instanceof UnitMap, "the inverse transformations differ, so the pair stands");
+        PolyMap sameInv = poly(1, 1, fwd, half);
+        sameInv.invert();
+        s = new CmpMap(poly(1, 1, fwd, half), sameInv, true).simplify();
+        assertInstanceOf(UnitMap.class, s, "identical PolyMaps in opposite directions cancel");
+    }
+
+    @Test
+    void polymapWithMoreOutputsThanInputsEqualsItsCopy() {
+        int nwide = 8;
+        double[][] fwd = new double[nwide][];
+        for (int io = 1; io <= nwide; io++) {
+            fwd[io - 1] = term(io, io, 1);
+        }
+        int[] ones = new int[nwide];
+        Arrays.fill(ones, 1);
+        double[][] inv = {term(1.0, 1, ones)};
+        PolyMap wide = poly(1, nwide, fwd, inv);
+        PolyMap copy = (PolyMap) wide.copy();
+        assertTrue(wide.astEqual(copy), "a PolyMap equals its own copy");
+        assertTrue(copy.astEqual(wide), "in either direction");
     }
 }

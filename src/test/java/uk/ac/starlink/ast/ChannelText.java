@@ -25,9 +25,14 @@ final class ChannelText {
         return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
 
-    /** A Channel reading {@code text}. */
+    /**
+     * A Channel reading {@code text}, with the transformation functions the C test programs
+     * register for the IntraMap fixtures ({@link FixtureIntraTransformers}).
+     */
     static Channel reader(String text) {
-        return new Channel(new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8)), null);
+        Channel ch = new Channel(new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8)), null);
+        FixtureIntraTransformers.register(ch);
+        return ch;
     }
 
     /**

@@ -27,8 +27,7 @@ import uk.ac.starlink.ast.testsupport.FreshThread;
  * C probe of the pinned library gives ({@code c1.c} beside the task report): where C's test accepts
  * either of two outcomes, the one C gives.
  *
- * <p>Listed in {@code deferred/rust-tests.txt}: {@code log_spectral_axis_writes_freq_log}, whose
- * FrameSet is built with a MathMap, and {@code show_fits_succeeds} (jniast has no {@code
+ * <p>Listed in {@code deferred/rust-tests.txt}: {@code show_fits_succeeds} (jniast has no {@code
  * showFits}).
  */
 class FitsChanCInlineTest {
@@ -616,6 +615,38 @@ class FitsChanCInlineTest {
                         "Error " + (500 + is * encodings.length + ie) + ": " + systems[is] + " with " + encodings[ie]);
             }
         }
+    }
+
+    /**
+     * 680-683: a frequency axis exponential in the pixel axis, made with a MathMap, writes as
+     * {@code FREQ-LOG} and reads back to a FrameSet that transforms as the original.
+     */
+    @Test
+    void logSpectralAxisWritesFreqLog() {
+        MathMap logmap = new MathMap(
+                1, 1, new String[] {"s = 1.4204e9 * exp( p * 1.0e-4 )"}, new String[] {"p = 1.0e4 * log( s / 1.4204e9 )"
+                });
+        SpecFrame spec = new SpecFrame();
+        spec.setC("System", "FREQ");
+        spec.setUnit(1, "Hz");
+        spec.setC("StdOfRest", "Barycentric");
+        spec.setD("RestFreq", 1.4204e9);
+        Frame pixel = new Frame(1);
+        pixel.setDomain("GRID");
+        FrameSet fs = new FrameSet(pixel);
+        fs.addFrame(FrameSet.AST__BASE, logmap, spec);
+
+        FitsChan fc = new FitsChan();
+        fc.setEncoding("FITS-WCS");
+        put(fc, "NAXIS   = 1", "NAXIS1  = 1024");
+        assertEquals(1, fc.write(fs), "Error 680");
+        fc.clear("Card");
+        assertEquals("FREQ-LOG", fc.getFitsS("CTYPE1"), "Error 681-682");
+        fc.clear("Card");
+        FrameSet fs2 = FitsHeaders.readFrameSet(fc);
+        double a = fs.tran1(1, new double[] {512.0}, true)[0];
+        double b = fs2.tran1(1, new double[] {512.0}, true)[0];
+        assertTrue(Math.abs(a - b) <= Math.abs(1e-6 * a), "Error 683: " + a + " vs " + b);
     }
 
     /**

@@ -388,6 +388,41 @@ public class WcsMap extends Mapping {
         }
     }
 
+    /**
+     * wcsmap.c {@code Equal}: {@code that} is a WcsMap with the same numbers of inputs and
+     * outputs, the same Invert attribute, projection and longitude and latitude axes, and, on each
+     * axis, projection parameters equal to within {@code astEQUAL}, an unset parameter being bad,
+     * so that it differs from one set to zero.
+     */
+    @Override
+    boolean equalTo(AstObject that) {
+        if (!(that instanceof WcsMap)) {
+            return false;
+        }
+        WcsMap other = (WcsMap) that;
+        int nout = getNout();
+        if (other.getNin() != getNin() || other.getNout() != nout || getInvert() != other.getInvert()) {
+            return false;
+        }
+        if (proj != other.proj || axes[0] != other.axes[0] || axes[1] != other.axes[1]) {
+            return false;
+        }
+        for (int i = 0; i < nout; i++) {
+            double[] p1 = pv == null ? null : pv[i];
+            double[] p2 = other.pv == null ? null : other.pv[i];
+            int n1 = p1 == null ? 0 : p1.length;
+            int n2 = p2 == null ? 0 : p2.length;
+            for (int j = 0; j < n1 || j < n2; j++) {
+                double v1 = j < n1 ? p1[j] : AST__BAD;
+                double v2 = j < n2 ? p2[j] : AST__BAD;
+                if (!MappingHelpers.astEqual(v1, v2)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     /** Gives the copy its own projection parameters, as C's {@code Copy} (wcsmap.c) does. */
     @Override
     void deepCopy() {

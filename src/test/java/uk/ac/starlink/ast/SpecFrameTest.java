@@ -1305,4 +1305,27 @@ class SpecFrameTest {
             assertTrue(pool.awaitTermination(1, TimeUnit.MINUTES), "threads finished");
         }
     }
+
+    // ------------------------------------------------------------------
+    // Equality (frame.c Equal: the conversion simplifies to a UnitMap)
+    // ------------------------------------------------------------------
+
+    @Test
+    void testEqualSame() {
+        assertTrue(frame("FREQ").astEqual(frame("FREQ")));
+    }
+
+    @Test
+    void testNotEqualDifferentSystem() {
+        assertFalse(frame("FREQ").astEqual(frame("WAVE")));
+    }
+
+    @Test
+    void testNotEqualDifferentSor() {
+        SpecFrame sf1 = frame("FREQ");
+        sf1.setStdOfRest("Heliocentric");
+        SpecFrame sf2 = frame("FREQ");
+        sf2.setStdOfRest("LSRK");
+        assertFalse(sf1.astEqual(sf2));
+    }
 }

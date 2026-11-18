@@ -19,9 +19,12 @@ import org.junit.jupiter.api.Test;
  * flag must survive it. The loader re-applies attributes through the same setters, which discard a
  * record only when the value changes, so a dumped {@code IsSimp} card survives a read.
  *
- * <p>The cases of LutMap, MathMap, SplineMap, PcdMap and GrismMap are listed in {@code
- * deferred/rust-tests.txt} (out of scope), and the same classes are left out of {@link
- * #loadPreservesTheRecordForEveryClearOnSetClass}.
+ * <p>The cases of SplineMap are listed in {@code deferred/rust-tests.txt} (class not yet
+ * ported), and the same class is left out of {@link
+ * #loadPreservesTheRecordForEveryClearOnSetClass}. Rust's {@code GrismMap::new}, which sets every
+ * attribute, is {@link #grismMap}, through the jniast setters. LutInterp and LutEpsilon, which have no jniast
+ * methods, are set through the generic attribute methods, as are the clearing of a MathMap's Seed
+ * and its test.
  */
 class ClearOnSetTest {
 
@@ -39,6 +42,28 @@ class ClearOnSetTest {
 
     private static PermMap permMap() {
         return new PermMap(2, new int[] {1, 2}, 2, new int[] {1, 2}, null);
+    }
+
+    private static LutMap lutMap() {
+        return new LutMap(new double[] {0.0, 1.0, 4.0, 9.0}, 0.0, 1.0);
+    }
+
+    private static MathMap mathMap() {
+        return new MathMap(1, 1, new String[] {"y=2*x"}, new String[] {"x=0.5*y"});
+    }
+
+    /** A GrismMap with every attribute set, as Rust's {@code GrismMap::new} makes it. */
+    private static GrismMap grismMap(double nr, double nrp, double waveR, double alpha, double g, int m) {
+        GrismMap map = new GrismMap();
+        map.setGrismNR(nr);
+        map.setGrismNRP(nrp);
+        map.setGrismWaveR(waveR);
+        map.setGrismAlpha(alpha);
+        map.setGrismG(g);
+        map.setGrismM(m);
+        map.setGrismEps(0.0);
+        map.setGrismTheta(0.0);
+        return map;
     }
 
     private static WcsMap wcsMap() {
@@ -93,6 +118,160 @@ class ClearOnSetTest {
     @Test
     void clearingPermSplitDiscardsTheRecord() {
         assertDiscards(permMap(), "PermMap.clearPermSplit", PermMap::clearPermSplit);
+    }
+
+    @Test
+    void lutInterpDiscardsTheRecord() {
+        assertDiscards(lutMap(), "LutMap LutInterp", m -> m.setI("LutInterp", 1));
+    }
+
+    @Test
+    void lutEpsilonDiscardsTheRecord() {
+        assertDiscards(lutMap(), "LutMap LutEpsilon", m -> m.setD("LutEpsilon", 1e-7));
+    }
+
+    @Test
+    void mathSimpFiDiscardsTheRecord() {
+        assertDiscards(mathMap(), "MathMap.setSimpFI", m -> m.setSimpFI(true));
+    }
+
+    @Test
+    void mathSimpIfDiscardsTheRecord() {
+        assertDiscards(mathMap(), "MathMap.setSimpIF", m -> m.setSimpIF(true));
+    }
+
+    @Test
+    void mathSeedDiscardsTheRecord() {
+        assertDiscards(mathMap(), "MathMap.setSeed", m -> m.setSeed(1234));
+    }
+
+    @Test
+    void clearingMathSeedDiscardsTheRecord() {
+        assertDiscards(mathMap(), "MathMap Seed cleared", m -> m.clear("Seed"));
+    }
+
+    /**
+     * Seed carries a separate set flag, so setting an unset Seed to the value it already holds is
+     * still a change (mathmap.c {@code SetSeed} tests {@code seed_set} before comparing values).
+     */
+    @Test
+    void settingAnUnsetSeedToItsOwnDefaultDiscardsTheRecord() {
+        MathMap m = mathMap();
+        assertFalse(m.test("Seed"), "a new MathMap must not report Seed as set, or the case proves nothing");
+        int defaultSeed = m.getSeed();
+        m.setIsSimple();
+        m.setSeed(defaultSeed);
+        assertTrue(m.test("Seed"), "setting the default Seed did not make it set");
+        assertFalse(m.getIsSimple(), "setting an unset Seed to its own default kept the simplified record");
+    }
+
+    /** Setting a set Seed to the value it already holds is not a change. */
+    @Test
+    void reSettingAnExplicitSeedToTheSameValueKeepsTheRecord() {
+        MathMap m = mathMap();
+        m.setSeed(4242);
+        m.setIsSimple();
+        m.setSeed(4242);
+        assertTrue(m.getIsSimple(), "re-setting Seed to the value it already held discarded the record");
+    }
+
+    /*
+     * GrismMap's eight setters come from grismmap.c's own MAKE_SET, which discards both records
+     * when the value changes and recalculates the constants the transformation uses.
+     */
+
+    @Test
+    void grismNrDiscardsTheRecord() {
+        assertDiscards(new GrismMap(), "GrismMap.setGrismNR", m -> m.setGrismNR(1.5));
+    }
+
+    @Test
+    void grismNrpDiscardsTheRecord() {
+        assertDiscards(new GrismMap(), "GrismMap.setGrismNRP", m -> m.setGrismNRP(1e-5));
+    }
+
+    @Test
+    void grismWaveRDiscardsTheRecord() {
+        assertDiscards(new GrismMap(), "GrismMap.setGrismWaveR", m -> m.setGrismWaveR(6000.0));
+    }
+
+    @Test
+    void grismAlphaDiscardsTheRecord() {
+        assertDiscards(new GrismMap(), "GrismMap.setGrismAlpha", m -> m.setGrismAlpha(0.1));
+    }
+
+    @Test
+    void grismGDiscardsTheRecord() {
+        assertDiscards(new GrismMap(), "GrismMap.setGrismG", m -> m.setGrismG(1000.0));
+    }
+
+    @Test
+    void grismMDiscardsTheRecord() {
+        assertDiscards(new GrismMap(), "GrismMap.setGrismM", m -> m.setGrismM(1));
+    }
+
+    @Test
+    void grismEpsDiscardsTheRecord() {
+        assertDiscards(new GrismMap(), "GrismMap.setGrismEps", m -> m.setGrismEps(0.01));
+    }
+
+    @Test
+    void grismThetaDiscardsTheRecord() {
+        assertDiscards(new GrismMap(), "GrismMap.setGrismTheta", m -> m.setGrismTheta(0.02));
+    }
+
+    /**
+     * The setters recompute the derived constants, as C's {@code MAKE_SET} does ({@code
+     * UpdateConstants}): a GrismMap made with no attribute set, whose forward transformation is
+     * bad everywhere, has every attribute set afterwards and must then transform as C's GrismMap
+     * with the same attributes (probe {@code probes/grismmap_probe.c}, case {@code
+     * transformations}). Constants left from construction would give bad values.
+     */
+    @Test
+    void grismSettersRecomputeTheConstants() {
+        GrismMap set = new GrismMap();
+        set.setGrismNR(1.5);
+        set.setGrismNRP(-1e-6);
+        set.setGrismWaveR(5000.0);
+        set.setGrismAlpha(0.1);
+        set.setGrismG(2e-4);
+        set.setGrismM(1);
+        set.setGrismEps(0.02);
+        set.setGrismTheta(0.03);
+        String c = uk.ac.starlink.ast.testsupport.ProbeOutput.load("grismmap_probe")
+                .get("transformations");
+        double[] pts = {0.0, 0.01, -0.01, 0.05};
+        double[] got = set.tran1(pts.length, pts, true);
+        for (int i = 0; i < pts.length; i++) {
+            String head = "fwd " + CFormat.format("%.17g", pts[i]) + " -> ";
+            int at = c.indexOf(head);
+            assertTrue(at >= 0, "the probe has no line " + head);
+            double want = Double.parseDouble(c.substring(at + head.length(), c.indexOf('\n', at)));
+            assertTrue(
+                    uk.ac.starlink.ast.testsupport.CValues.withinLibmRounding(got[i], want),
+                    "point " + i + ": got " + got[i] + ", C gives " + want + "; the setters left stale constants");
+        }
+    }
+
+    /**
+     * C stores a GrismMap attribute as given and reads it back through a getter that gives the
+     * default for the {@code AST__BAD} unset value, so setting {@code AST__BAD} restores the
+     * default and leaves the attribute unset, which the dump shows by writing it commented out.
+     */
+    @Test
+    void grismSentinelRestoresTheDefaultAndUntestsTheAttribute() {
+        GrismMap m = grismMap(1.5, 0.0, 6000.0, 0.0, 1000.0, 1);
+        assertTrue(ChannelText.dump(m).contains("GrmNR = 1.5"), "a GrismMap with GrismNR set should write it");
+        m.setGrismNR(AstObject.AST__BAD);
+        assertEquals(1.0, m.getGrismNR(), "the sentinel should restore the default");
+        String dump = ChannelText.dump(m);
+        assertTrue(dump.contains("#   GrmNR = 1 "), "the sentinel should leave GrmNR unset; got:\n" + dump);
+    }
+
+    /** PcdMap's Disco setter comes from {@code astMAKE_SET1}, which discards both records when the value changes. */
+    @Test
+    void pcdDiscoDiscardsTheRecord() {
+        assertDiscards(new PcdMap(1e-6, new double[] {0.0, 0.0}), "PcdMap.setDisco", m -> m.setDisco(2e-6));
     }
 
     @Test
@@ -159,6 +338,12 @@ class ClearOnSetTest {
         zoom.setIsSimple();
         assertLoadPreserves(zoom, "ZoomMap Zoom");
 
+        MathMap math = mathMap();
+        math.setSimpFI(true);
+        math.setSimpIF(true);
+        math.setSeed(77);
+        assertLoadPreserves(math, "MathMap SimpFI");
+
         PolyMap poly = polyMap();
         poly.setIterInverse(true);
         poly.setNiterInverse(7);
@@ -178,5 +363,23 @@ class ClearOnSetTest {
         PermMap perm = permMap();
         perm.setPermSplit(true);
         assertLoadPreserves(perm, "PermMap PermSplit");
+
+        PcdMap pcd = new PcdMap(0.01, new double[] {1.0, 2.0});
+        pcd.setDisco(0.02);
+        assertLoadPreserves(pcd, "PcdMap Disco");
+
+        PcdMap pcdCen = new PcdMap(0.01, new double[] {1.0, 2.0});
+        pcdCen.setPcdCen(1, 3.0);
+        assertLoadPreserves(pcdCen, "PcdMap PcdCen");
+
+        LutMap lut = lutMap();
+        lut.setI("LutInterp", 1);
+        assertLoadPreserves(lut, "LutMap LutInterp");
+
+        LutMap lutEps = lutMap();
+        lutEps.setD("LutEpsilon", 1e-10);
+        assertLoadPreserves(lutEps, "LutMap LutEpsilon");
+
+        assertLoadPreserves(grismMap(1.5, -1e-6, 5000.0, 0.1, 2e-4, 1), "GrismMap GrismNR");
     }
 }

@@ -12,33 +12,33 @@ class NativeClassesTest {
     private static final String DUMP = " Begin FrameSet \t# Set of inter-related coordinate systems\n"
             + " IsA Object\n"
             + "    Frm1 = \t# Frame number 1\n"
-            + "       Begin GrismMap \t# Grism Mapping\n"
+            + "       Begin XphMap \t# Xph Mapping\n"
             + "          Ax1 = \n"
-            + "             Begin LutMap\n"
-            + "             End LutMap\n"
-            + "       End GrismMap\n"
+            + "             Begin SplineMap\n"
+            + "             End SplineMap\n"
+            + "       End XphMap\n"
             + "    Map2 = \n"
             + "       Begin CmpMap\n"
             + "          MapA = \n"
             + "             Begin ZoomMap\n"
             + "             End ZoomMap\n"
             + "          MapB = \n"
-            + "             Begin GrismMap\n"
-            + "             End GrismMap\n"
+            + "             Begin XphMap\n"
+            + "             End XphMap\n"
             + "       End CmpMap\n"
             + " End FrameSet\n";
 
     @Test
     void listsTheBegunClassesInOrder() {
         assertEquals(
-                Arrays.asList("FrameSet", "GrismMap", "LutMap", "CmpMap", "ZoomMap", "GrismMap"),
+                Arrays.asList("FrameSet", "XphMap", "SplineMap", "CmpMap", "ZoomMap", "XphMap"),
                 NativeClasses.begun(DUMP));
     }
 
     @Test
     void missingClassesAreSortedWithoutRepeats() {
-        assertEquals(Arrays.asList("GrismMap", "LutMap"), NativeClasses.missing(DUMP));
-        assertEquals("needs GrismMap, LutMap", NativeClasses.needs(DUMP));
+        assertEquals(Arrays.asList("SplineMap", "XphMap"), NativeClasses.missing(DUMP));
+        assertEquals("needs SplineMap, XphMap", NativeClasses.needs(DUMP));
     }
 
     @Test
@@ -52,11 +52,11 @@ class NativeClassesTest {
     void aFitsHeaderNeedsTheClassesOfItsBegastCards() {
         String header = "BEGAST_A= 'FrameSet'           / Set of inter-related coordinate systems\n"
                 + "BEGAST_B= 'Frame   '           / Coordinate system description\n"
-                + "BEGAST_C= 'MathMap '           / Transformation using mathematical functions\n"
-                + "BEGAST_D= 'LutMap  '\n"
-                + "BEGAST_E= 'MathMap '\n"
+                + "BEGAST_C= 'ChebyMap'           / Chebyshev polynomial transformation\n"
+                + "BEGAST_D= 'SplineMap'\n"
+                + "BEGAST_E= 'ChebyMap'\n"
                 + "CTYPE1  = 'RA---TAN'\n";
-        assertEquals("needs LutMap, MathMap", NativeClasses.needsInFitsHeader(header));
+        assertEquals("needs ChebyMap, SplineMap", NativeClasses.needsInFitsHeader(header));
         assertNull(NativeClasses.needsInFitsHeader("BEGAST_A= 'ZoomMap '\nZOOM_A  =                  2.0\n"));
     }
 }

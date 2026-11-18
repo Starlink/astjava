@@ -301,7 +301,7 @@ final class FitsWcsCelestial {
      * them, so those raised before an error are kept.
      *
      * <p>Rust's {@code tab} argument (the look-up of {@code -TAB} axes) is not taken: with TabOK
-     * above zero a {@code -TAB} axis needs LutMap and the read stops before this is reached, and
+     * above zero a {@code -TAB} axis needs a table and the read stops before this is reached, and
      * otherwise there is no look-up, so C's {@code tabmap} is always null here, and neither its
      * projectionless {@code AST__WCSBAD} axes nor its modification of the look-up arise.
      *

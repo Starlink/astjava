@@ -1,7 +1,3 @@
 # Fixtures of fixtures/oracle/headers.oracle whose sections do not all match C:
 # <path relative to ast_tester/fixtures> | <reason>
 # Rewritten by TransformOracleTest with -Dast.writeDeferred=true.
-wcsconv/inputs/freq-log.head | needs MathMap
-wcsconv/inputs/grism.head | needs GrismMap
-wcsconv/inputs/polco.head | needs MathMap
-wcsconv/inputs/polco2.head | needs MathMap

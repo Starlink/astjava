@@ -11,6 +11,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
 import static uk.ac.starlink.ast.MappingTestData.transformRows;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -18,11 +23,10 @@ import org.junit.jupiter.api.Test;
  * gives, which Rust, copying its components, has no counterpart for. Rust's {@code then} and
  * {@code alongside} are the constructor with {@code series} true and false.
  *
- * <p>{@code
- * series_inverse_pair_of_mathmaps_cancels_to_unitmap} and {@code
- * parallel_with_inverted_cmpmap_child_canonicalises_for_serialisation} need a MathMap, and {@code
- * cmpmap_equality_compares_components_as_applied} tests {@code astEqual}: all are outside the first
- * phase. {@code cmpmap_simplified_two_unitmaps_series} and {@code
+ * <p>Also the translation of the three nested-series tests of Rust {@code
+ * tests/test_transform_memory.rs}, which a child JVM runs ({@link CmpMapSeriesMemoryChild}).
+ *
+ * <p>{@code cmpmap_simplified_two_unitmaps_series} and {@code
  * cmpmap_simplified_two_unitmaps_parallel} check only how the simplified Mapping transforms, which
  * holds of a Mapping that is not restructured.
  */
@@ -296,5 +300,142 @@ class CmpMapTest {
                 "       End UnitMap",
                 " End CmpMap");
         assertEquals(want, ChannelText.dump(cmp));
+    }
+
+    @Test
+    void seriesInversePairOfMathmapsCancelsToUnitmap() {
+        MathMap mFwd = new MathMap(1, 1, new String[] {"y=2*x"}, new String[] {"x=0.5*y"});
+        mFwd.setSimpFI(true);
+        mFwd.setSimpIF(true);
+        MathMap mInv = (MathMap) mFwd.copy();
+        mInv.invert();
+        Mapping simp = new CmpMap(mFwd, mInv, true).simplify();
+        assertInstanceOf(UnitMap.class, simp);
+    }
+
+    /**
+     * A simplified parallel CmpMap whose first component is an inverted series CmpMap is written
+     * with the inversion in the inner CmpMap's InvA and InvB, not as an InvA of the outer one or an
+     * Invert of the inner one ({@code MathMapTest.aParallelCmpMapWithAnInvertedSeriesSimplifiesAsC}
+     * compares the whole dump with C's).
+     */
+    @Test
+    void parallelWithInvertedCmpmapChildCanonicalisesForSerialisation() {
+        CmpMap first = makeInnerSeries();
+        first.invert();
+        CmpMap second = makeInnerSeries();
+        Mapping simp = new CmpMap(first, second, false).simplify();
+        assertInstanceOf(CmpMap.class, simp);
+        String s = ChannelText.dump(simp);
+        String[] lines = s.split("\n", -1);
+        int outerIndent = -1;
+        for (String l : lines) {
+            if (l.contains("Begin CmpMap")) {
+                outerIndent = l.length() - l.trim().length();
+                break;
+            }
+        }
+        boolean outerInva = false;
+        int innerInva = 0;
+        int innerInvb = 0;
+        for (String l : lines) {
+            int ind = l.length() - l.replaceAll("^\\s+", "").length();
+            if (ind == outerIndent + 3 && l.trim().startsWith("InvA = 1")) {
+                outerInva = true;
+            }
+            if (l.contains("InvA = 1")) {
+                innerInva++;
+            }
+            if (l.contains("InvB = 1")) {
+                innerInvb++;
+            }
+            assertFalse(l.contains("Invert = 1"), "no CmpMap should carry Invert = 1:\n" + s);
+        }
+        assertFalse(outerInva, "outer parallel must not have InvA:\n" + s);
+        assertTrue(innerInva >= 1 && innerInvb >= 1, "inner CmpMap must carry InvA = 1 and InvB = 1:\n" + s);
+    }
+
+    private static CmpMap makeInnerSeries() {
+        MathMap a = new MathMap(1, 1, new String[] {"y=2*x"}, new String[] {"x=0.5*y"});
+        a.setSimpFI(true);
+        a.setSimpIF(true);
+        return new CmpMap(a, (Mapping) a.copy(), true);
+    }
+
+    /** cmpmap.c {@code Equal} compares the components as the CmpMaps apply them. */
+    @Test
+    void cmpmapEqualityComparesComponentsAsApplied() {
+        UnitMap u = new UnitMap(1);
+        u.invert();
+        assertTrue(new CmpMap(u, new ZoomMap(1, 2.0), true)
+                .astEqual(new CmpMap(new UnitMap(1), new ZoomMap(1, 2.0), true)));
+        ZoomMap z = new ZoomMap(1, 2.0);
+        z.invert();
+        assertTrue(new CmpMap(z, new ShiftMap(new double[] {1.0}), true)
+                .astEqual(new CmpMap(new ZoomMap(1, 0.5), new ShiftMap(new double[] {1.0}), true)));
+        assertFalse(new CmpMap(new ZoomMap(1, 2.0), new ShiftMap(new double[] {1.0}), true)
+                .astEqual(new CmpMap(new ZoomMap(1, 0.5), new ShiftMap(new double[] {1.0}), true)));
+    }
+
+    // ------------------------------------------------------------------
+    // tests/test_transform_memory.rs: nested series hold no full-size intermediates
+    // ------------------------------------------------------------------
+
+    /**
+     * The heap {@link CmpMapSeriesMemoryChild} runs in: the points given and their result, each 32
+     * MiB, and beyond them half of that and 8 MiB for the JVM's own use. A series CmpMap passes the
+     * points between its components 8192 at a time (cmpmap.c {@code Transform}), so eight ZoomMaps
+     * in nested series need a few batches of 8192 points beyond the result, whatever the number of
+     * points; holding the points between the components would need a full-size intermediate per
+     * level, seven in all, and one alone does not fit. Rust bounds the peak beyond the input by the
+     * size of the result and 2 MiB of batches.
+     */
+    private static final String HEAP_MIB = Integer.toString(2 * 32 + 16 + 8);
+
+    private static String readAll(InputStream in) throws IOException {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        byte[] chunk = new byte[4096];
+        for (int n = in.read(chunk); n >= 0; n = in.read(chunk)) {
+            buf.write(chunk, 0, n);
+        }
+        return new String(buf.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Runs {@link CmpMapSeriesMemoryChild} with {@code mode} in a JVM of the heap {@link #HEAP_MIB}
+     * describes, with the serial collector and a small young generation, so that the old
+     * generation, which holds the large arrays, has nearly all of it.
+     */
+    private static void assertFitsTheHeap(String mode) throws IOException, InterruptedException {
+        String java = Paths.get(System.getProperty("java.home"), "bin", "java").toString();
+        ProcessBuilder pb = new ProcessBuilder(
+                java,
+                "-XX:+UseSerialGC",
+                "-Xmn4m",
+                "-Xmx" + HEAP_MIB + "m",
+                "-cp",
+                System.getProperty("java.class.path"),
+                CmpMapSeriesMemoryChild.class.getName(),
+                mode);
+        pb.redirectErrorStream(true);
+        Process p = pb.start();
+        String out = readAll(p.getInputStream());
+        assertEquals(0, p.waitFor(), mode + ": " + out);
+        assertTrue(out.contains("passed"), mode + ": " + out);
+    }
+
+    @Test
+    void nestedSeriesHoldsNoFullSizeIntermediates() throws IOException, InterruptedException {
+        assertFitsTheHeap("transform");
+    }
+
+    @Test
+    void nestedSeriesTransformIntoHoldsNoFullSizeIntermediates() throws IOException, InterruptedException {
+        assertFitsTheHeap("transformInto");
+    }
+
+    @Test
+    void nestedSeriesTransformIntoNanHoldsNoFullSizeIntermediates() throws IOException, InterruptedException {
+        assertFitsTheHeap("transformIntoNan");
     }
 }

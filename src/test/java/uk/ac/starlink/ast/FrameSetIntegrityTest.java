@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
@@ -23,9 +22,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * RestoreIntegrity}): it converts the recorded state of the current Frame to its new state with
  * {@code astConvert}, and reports {@code AST__ILOST} when no conversion exists.
  *
- * <p>The probe's SpecFluxFrame cases need a class this version does not have yet and are skipped.
- * Every value is compared within libm rounding, which is no wider than the Rust test's comparison.
- * {@code unit_change_leaves_mappings_alone} reads a FrameSet holding a LutMap and is deferred.
+ * <p>Every value is compared within libm rounding, which is no wider than the Rust test's comparison.
+ * {@code unit_change_leaves_mappings_alone} runs Rust's integrity routine with no change; here the
+ * change sets an attribute of the current Frame to the value it already has, which marks the
+ * integrity as lost, as any setting through the FrameSet does.
  */
 class FrameSetIntegrityTest {
 
@@ -36,18 +36,6 @@ class FrameSetIntegrityTest {
 
     /** RefDec of the probe's SpecFrames ({@code integrity_probe.c REF_DEC}). */
     private static final double REF_DEC = 0.5235987755982988;
-
-    /** The prefixes of the cases that need a class this version does not have. */
-    private static final List<String> SKIPPED_PREFIXES = Arrays.asList("specflux_");
-
-    private static boolean skipped(String name) {
-        for (String p : SKIPPED_PREFIXES) {
-            if (name.startsWith(p)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private static SkyFrame sky(String settings) {
         SkyFrame f = new SkyFrame();
@@ -109,6 +97,12 @@ class FrameSetIntegrityTest {
                 DSBSpecFrame d = new DSBSpecFrame();
                 d.set("System=FREQ,Unit=GHz,DSBCentre=230.0,IF=4.0,SideBand=LSB");
                 return d;
+            case "specflux_unit2_jy":
+            case "specflux_unit1_mhz": {
+                FluxFrame ff = new FluxFrame(AstObject.AST__BAD, null);
+                ff.set("System=FLXDN");
+                return new SpecFluxFrame(spec("System=FREQ,Unit=GHz"), ff);
+            }
             case "flux_unit_jy":
             case "flux_system_sfcbr": {
                 FluxFrame ff = new FluxFrame(1.4e9, null);
@@ -167,6 +161,10 @@ class FrameSetIntegrityTest {
                 return new String[][] {{"Unit(1)", "Jy"}};
             case "flux_system_sfcbr":
                 return new String[][] {{"System", "SFCBR"}};
+            case "specflux_unit2_jy":
+                return new String[][] {{"Unit(2)", "Jy"}};
+            case "specflux_unit1_mhz":
+                return new String[][] {{"Unit(1)", "MHz"}};
             default:
                 throw new IllegalArgumentException("no case " + name);
         }
@@ -185,6 +183,9 @@ class FrameSetIntegrityTest {
         }
         if (name.startsWith("spec_") || name.startsWith("dsb_")) {
             return new double[][] {{230.0, 345.0}};
+        }
+        if (name.startsWith("specflux_")) {
+            return new double[][] {{1.0, 2.0}, {1.0e-26, 3.0e-26}};
         }
         if (name.startsWith("cmp_")) {
             return new double[][] {{1.0, 4.2}, {0.5, -0.9}, {1.0, 2.0}};
@@ -247,16 +248,13 @@ class FrameSetIntegrityTest {
         int checked = 0;
         for (JsonNode c : PROBE.get("CASES")) {
             String name = c.get(0).asText();
-            if (skipped(name)) {
-                continue;
-            }
             checked++;
             String failure = compare(name, c.get(1));
             if (failure != null) {
                 failures.add(failure);
             }
         }
-        assertEquals(21, checked, "the cases with classes this version has");
+        assertEquals(23, checked, "the cases");
         assertTrue(
                 failures.isEmpty(),
                 failures.size() + " of " + checked + " cases differ from C:\n" + String.join("\n", failures));
@@ -324,5 +322,18 @@ class FrameSetIntegrityTest {
         assertTrue(first.contains("\"x0\""), "the dump records the label");
         assertEquals(nodeCount(first), nodeCount(last), "nodes after the first and last settings");
         assertEquals(first.replace("\"x0\"", "\"x199\""), last);
+    }
+    /**
+     * A change to the current Frame that leaves the conversion from its old state a UnitMap does
+     * not remap the Frame, as C's {@code RestoreIntegrity} does not, so the FrameSet's Mappings,
+     * one of which holds a LutMap and simplifies further than it stands in {@code
+     * programs/testfitschan/sparse.ast}, are left as they are rather than re-simplified.
+     */
+    @Test
+    void unitChangeLeavesMappingsAlone() {
+        FrameSet fs = (FrameSet) ChannelText.read(Fixtures.read("programs/testfitschan/sparse.ast"));
+        String before = ChannelText.dump(fs);
+        fs.setC("System(1)", "FK5");
+        assertEquals(before, ChannelText.dump(fs));
     }
 }

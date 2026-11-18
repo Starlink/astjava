@@ -14,9 +14,8 @@ import org.junit.jupiter.api.Test;
  * FITS-WCS read sets, each test isolating one decision of C's {@code WcsSkyFrame} or {@code
  * WcsOthers}.
  *
- * <p>Listed in {@code deferred/rust-tests.txt}: {@code log_suffix_is_stripped_from_the_domain_and_symbol}
- * (a {@code -LOG} axis, which C maps with a MathMap) and {@code
- * unset_system_still_leaves_system_unset} (a constructor of the Rust port's own).
+ * <p>Listed in {@code deferred/rust-tests.txt}: {@code unset_system_still_leaves_system_unset} (a
+ * constructor of the Rust port's own).
  */
 class FitsChanReadTest {
 
@@ -134,6 +133,16 @@ class FitsChanReadTest {
         Frame f = currentFrame(oneAxisHeader("CTYPE1  = 'XXXX-WAV'\n"));
         assertEquals("XXXX-WAV", f.getDomain());
         assertTrue(f.test("Domain"), "Domain is set");
+    }
+
+    @Test
+    void logSuffixIsStrippedFromTheDomainAndSymbol() {
+        // C's WcsOthers removes a trailing "-LOG" from the CTYPE before using it as the Domain
+        // and the Symbol (fitschan.c:39352-39358).
+        Frame f = currentFrame(oneAxisHeader("CTYPE1  = 'ZZZZ-LOG'\n"));
+        assertEquals("ZZZZ", f.getDomain());
+        assertEquals(Frame.class, f.getClass(), "a linear axis gives a plain Frame");
+        assertEquals("ZZZZ", f.getSymbol(1));
     }
 
     @Test

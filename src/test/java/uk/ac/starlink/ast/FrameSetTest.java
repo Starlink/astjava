@@ -835,6 +835,36 @@ class FrameSetTest {
         }
     }
 
+    /** A FrameSet X -> A (a MathMap with no inverse), X -> B (zoom 3), and one A -> B (unit). */
+    private static FrameSet[] firstDomainPair() {
+        FrameSet from = new FrameSet(named(1, "X"));
+        from.addFrame(1, new MathMap(1, 1, new String[] {"y=2*x"}, new String[] {"x"}), named(1, "A"));
+        from.addFrame(1, new ZoomMap(1, 3.0), named(1, "B"));
+        from.setCurrent(1);
+        FrameSet to = new FrameSet(named(1, "A"));
+        to.addFrame(1, new UnitMap(1), named(1, "B"));
+        to.setCurrent(1);
+        return new FrameSet[] {from, to};
+    }
+
+    /**
+     * The conversion is found through the first domain of the list that gives one, and leaves each
+     * FrameSet's Base at the Frame used.
+     */
+    @Test
+    void convertStopsAtTheFirstDomainThatGivesAConversion() {
+        FrameSet[] pair = firstDomainPair();
+        FrameSet cvt = pair[0].convert(pair[1], "A,B");
+        assertArrayEquals(new int[] {2, 1}, new int[] {pair[0].getBase(), pair[1].getBase()});
+        assertTrue(cvt.getTranForward() && !cvt.getTranInverse());
+        assertEquals(2.0, tranOne(cvt), 1e-15);
+
+        pair = firstDomainPair();
+        cvt = pair[0].convert(pair[1], "B,A");
+        assertArrayEquals(new int[] {3, 2}, new int[] {pair[0].getBase(), pair[1].getBase()});
+        assertEquals(3.0, tranOne(cvt), 1e-15);
+    }
+
     @Test
     void failedConvertLeavesTheBaseAlone() {
         FrameSet fs = fourDomains();

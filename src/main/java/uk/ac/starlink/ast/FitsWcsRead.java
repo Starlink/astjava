@@ -19,9 +19,9 @@ import java.util.List;
  * to intermediate world coordinate Mapping, then one Mapping over every axis for each class of
  * axis (celestial, spectral, the others) and any {@code -TAB} look-ups, all in series.
  *
- * <p>Spectral axes are described by {@link FitsWcsSpectral}. The Mappings of {@code -TAB} axes when
- * TabOK is above zero (LutMap), of {@code -LOG} axes (MathMap) and of grism axes (GrismMap) are
- * not available: a header using them makes the read throw {@link UnsupportedOperationException}.
+ * <p>Spectral axes are described by {@link FitsWcsSpectral}, grism axes with a GrismMap. A {@code
+ * -TAB} axis when TabOK is above zero needs a table,
+ * which a FitsChan here holds only when read from a dump (see {@link #tabMapping}).
  *
  * <p>Ported from Rust {@code fitschan/wcs_read.rs} and the FITS-WCS branch of {@code
  * fitschan/mod.rs}'s {@code read}.
@@ -51,7 +51,7 @@ final class FitsWcsRead {
      *
      * @throws AstException as C's read reports it
      * @throws UnsupportedOperationException if the header has a {@code -TAB} axis with TabOK above
-     *     zero, a {@code -LOG} axis with a non-zero CRVAL, or a {@code -GRI} or {@code -GRA} axis
+     *     zero whose table the FitsChan holds, or a {@code -GRI} or {@code -GRA} axis
      */
     static FrameSet read(FitsChan fc, FitsChan.Encoding encoding) {
         FitsCardList cards = fc.cards();
@@ -109,14 +109,7 @@ final class FitsWcsRead {
         FrameSet decoded;
         try {
             decoded = decodeWcsWithAltsInner(
-                    stores,
-                    fc.getDefB1950(),
-                    fc.getIgnoreBadAlt() != 0,
-                    fc.getIwc(),
-                    cards,
-                    fc.getTabOK(),
-                    readWarnings,
-                    cursors);
+                    stores, fc.getDefB1950(), fc.getIgnoreBadAlt() != 0, fc.getIwc(), cards, fc, readWarnings, cursors);
         } catch (AstException e) {
             pushReadWarnings(fc, readWarnings, cursors, entry);
             throw e;
@@ -154,7 +147,7 @@ final class FitsWcsRead {
             st.carLin = carLin;
         }
         return decodeWcsWithAltsInner(
-                stores, defB1950, fc.getIgnoreBadAlt() != 0, fc.getIwc(), fc.cards(), fc.getTabOK(), warnings, cursors);
+                stores, defB1950, fc.getIgnoreBadAlt() != 0, fc.getIwc(), fc.cards(), fc, warnings, cursors);
     }
 
     /**
@@ -380,7 +373,7 @@ final class FitsWcsRead {
      * axes}}, which decide where C writes those warnings.
      *
      * @param cards the FitsChan's own cards, from which C reads RFVAL and NAXIS
-     * @param tabOk the FitsChan's TabOK attribute
+     * @param fc the FitsChan, whose TabOK attribute and tables the {@code -TAB} look-ups use
      * @return the FrameSet, or null with no pixel axes, when C's {@code FsetFromStore} makes
      *     nothing
      */
@@ -390,7 +383,7 @@ final class FitsWcsRead {
             boolean ignoreBadAlt,
             boolean iwc,
             FitsCardList cards,
-            int tabOk,
+            FitsChan fc,
             FitsWarnings warnings,
             List<int[]> cursors) {
         int npix = stores.npix;
@@ -401,7 +394,7 @@ final class FitsWcsRead {
         int pixel = ret.getCurrent();
         if (stores.primary != null) {
             cursors.add(new int[] {warnings.size(), stores.primary.naxis});
-            MapFrm mf = wcsMapFrm(stores.primary, defB1950, iwc, cards, ' ', tabOk, warnings, cursors);
+            MapFrm mf = wcsMapFrm(stores.primary, defB1950, iwc, cards, ' ', fc, warnings, cursors);
             addFrame(ret, pixel, npix, mf);
         }
         int physical = ret.getCurrent();
@@ -411,7 +404,7 @@ final class FitsWcsRead {
             cursors.add(new int[] {warnings.size(), alt.naxis});
             MapFrm mf;
             try {
-                mf = wcsMapFrm(alt, defB1950, iwc, cards, letter, tabOk, warnings, cursors);
+                mf = wcsMapFrm(alt, defB1950, iwc, cards, letter, fc, warnings, cursors);
             } catch (AstException e) {
                 if (!ignoreBadAlt) {
                     throw e;
@@ -441,10 +434,10 @@ final class FitsWcsRead {
             boolean iwc,
             FitsCardList cards,
             char s,
-            int tabOk,
+            FitsChan fc,
             FitsWarnings warnings,
             List<int[]> cursors) {
-        MapFrm mf = wcsMapFrm(store, defB1950, iwc, cards, s, tabOk, warnings, cursors);
+        MapFrm mf = wcsMapFrm(store, defB1950, iwc, cards, s, fc, warnings, cursors);
         FrameSet fs = new FrameSet(pixelFrame(npix));
         addFrame(fs, 1, npix, mf);
         fs.setBase(1);
@@ -469,11 +462,11 @@ final class FitsWcsRead {
             boolean iwc,
             FitsCardList cards,
             char s,
-            int tabOk,
+            FitsChan fc,
             FitsWarnings warnings,
             List<int[]> cursors) {
         FitsStore store = store0.copy();
-        tabMapping(store, tabOk);
+        tabMapping(fc, store, s);
         Mapping map1 = FitsWcsMatrix.buildPixelToIwc(store, cards, warnings, cursors);
         FitsWcsCelestial.CelestialResult celestial = FitsWcsCelestial.buildCelestialWithDefB1950(
                 store, s, defB1950, readRfval(cards, store.naxis, s), warnings);
@@ -525,24 +518,63 @@ final class FitsWcsRead {
     }
 
     /**
-     * C's {@code TabMapping} (fitschan.c:33898), which makes the look-up Mapping of every {@code
-     * -TAB} axis when TabOK is above zero; with TabOK at most zero it makes none, a non-spectral
-     * {@code -TAB} axis is read as linear, and a spectral one is refused by {@code WcsSpectral}.
+     * C's {@code TabMapping} (fitschan.c), which makes the look-up Mapping of every {@code -TAB}
+     * axis of axis description {@code s} when the TabOK attribute of {@code fc} is above zero; with
+     * TabOK at most zero it makes none, a non-spectral {@code -TAB} axis is read as linear, and a
+     * spectral one is refused by {@code WcsSpectral}.
      *
-     * @throws UnsupportedOperationException for a {@code -TAB} axis with TabOK above zero, whose
-     *     look-up needs LutMap
+     * <p>For the first {@code -TAB} axis C reads the name of the extension holding its table
+     * (PS{@code i}_0, which has no default), the extension version and level (PV{@code i}_1 and
+     * PV{@code i}_2, default 1), and fetches the table ({@code GetNamedTable}). The table's columns
+     * then give the LutMaps of the look-up. No table source can be registered with a FitsChan here,
+     * as jniast offers none, so the table is one the FitsChan holds.
+     *
+     * @throws AstException with status {@code AST__NOFTS} if PS{@code i}_0 is not given, or
+     *     {@code AST__NOTAB} if the FitsChan holds no table of that name
+     * @throws UnsupportedOperationException if the FitsChan holds a table of that name, whose use
+     *     needs FitsTable
      */
-    private static void tabMapping(FitsStore store, int tabOk) {
-        if (tabOk <= 0) {
+    private static void tabMapping(FitsChan fc, FitsStore store, char s) {
+        if (fc.getTabOK() <= 0) {
             return;
         }
+        // store.naxis is C's wcsaxes here: WCSAXES, or the number of pixel axes without it.
         for (int iaxis = 0; iaxis < store.naxis; iaxis++) {
             String ctype = store.ctype[iaxis];
             if (ctype != null && ctype.length() > 4 && ctype.startsWith("-TAB", 4)) {
-                throw new UnsupportedOperationException(
-                        "FitsChan: the -TAB axis " + (iaxis + 1) + " (CTYPE '" + ctype + "') needs LutMap");
+                String extname = store.ps[iaxis][0];
+                if (extname == null) {
+                    throw Ast.err(
+                            AstException.AST__NOFTS,
+                            METHOD + "(" + fc.astClass() + "): No value can be found for PS" + (iaxis + 1) + "_0" + s
+                                    + ".");
+                }
+                Double dval = store.pv[iaxis][1];
+                int extver = dval != null ? (int) (double) dval : 1;
+                dval = store.pv[iaxis][2];
+                int extlevel = dval != null ? (int) (double) dval : 1;
+                namedTable(fc, extname, extver, extlevel);
             }
         }
+    }
+
+    /**
+     * C's {@code GetNamedTable} (fitschan.c) with errors reported: the table the FitsChan holds
+     * under {@code extname}.
+     *
+     * @throws AstException with status {@code AST__NOTAB} if there is none
+     * @throws UnsupportedOperationException if there is one, whose use needs FitsTable
+     */
+    private static void namedTable(FitsChan fc, String extname, int extver, int extlevel) {
+        KeyMap tables = fc.getTables();
+        if (tables == null || !tables.mapHasKey(extname)) {
+            throw Ast.err(
+                    AstException.AST__NOTAB,
+                    METHOD + "(" + fc.astClass() + "): Failed to read FITS binary table from extension '" + extname
+                            + "' (extver=" + extver + ", extlevel=" + extlevel + ").");
+        }
+        throw new UnsupportedOperationException(
+                "FitsChan: the -TAB table in extension '" + extname + "' needs FitsTable");
     }
 
     /**
@@ -655,25 +687,18 @@ final class FitsWcsRead {
     }
 
     /**
-     * The IWC to WCS Mapping C's {@code WcsOthers} makes for an axis no other stage describes
-     * (fitschan.c:39355-39368): {@code LogWcs} for a CTYPE ending in {@code -LOG}, and otherwise
-     * {@code LinearWcs}, a ShiftMap adding CRVAL, or a UnitMap when CRVAL is zero or absent. A
-     * {@code -LOG} axis with a zero CRVAL has no logarithmic form, and {@code WcsOthers} gives it
-     * a UnitMap.
-     *
-     * @throws UnsupportedOperationException for a {@code -LOG} axis with a non-zero CRVAL, whose
-     *     Mapping needs MathMap
+     * The IWC to WCS Mapping C's {@code WcsOthers} makes for an axis no other stage describes:
+     * {@code LogWcs} ({@link FitsWcsSpectral#logWcs}) for a CTYPE ending in {@code -LOG}, or a
+     * UnitMap when CRVAL is zero, which has no logarithmic form; and otherwise {@code LinearWcs},
+     * a ShiftMap adding CRVAL, or a UnitMap when CRVAL is zero or absent.
      */
     private static Mapping othersAxisMap(FitsStore store, int axis) {
-        double crval = store.crval[axis] != null ? store.crval[axis] : 0.0;
         String ctype = store.ctype[axis] != null ? store.ctype[axis] : "AXIS" + (axis + 1);
         if (ctype.length() > 3 && ctype.endsWith("-LOG")) {
-            if (crval != 0.0) {
-                throw new UnsupportedOperationException(
-                        "FitsChan: the logarithmic axis " + (axis + 1) + " (CTYPE '" + ctype + "') needs MathMap");
-            }
-            return new UnitMap(1);
+            Mapping map1 = FitsWcsSpectral.logWcs(store, axis);
+            return map1 != null ? map1 : new UnitMap(1);
         }
+        double crval = store.crval[axis] != null ? store.crval[axis] : 0.0;
         return crval != 0.0 ? new ShiftMap(new double[] {crval}) : new UnitMap(1);
     }
 

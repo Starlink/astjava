@@ -783,6 +783,9 @@ public class FitsChan extends Channel {
      * <p>When the read fails or finds no Object, the cards it looked at are made available again,
      * unless the Clean attribute is set, when they are removed as after a successful read.
      *
+     * <p>An Object read that implements {@link NeedsChannelizing} has its {@code unChannelize}
+     * method called, as for a {@link Channel}.
+     *
      * @return the Object read, or null if there is none
      * @throws AstException as {@link Channel#read} does for the NATIVE encoding, with status {@code
      *     AST__BADIN} also if a long string has a {@code CONTINUE} card missing; or the error of
@@ -822,6 +825,7 @@ public class FitsChan extends Channel {
                 cardList.fixUsed(true, remove);
             }
         }
+        unChannelize(obj);
         return obj;
     }
 
@@ -886,11 +890,19 @@ public class FitsChan extends Channel {
      * <p>A write that writes nothing, or fails, leaves the cards and the current card as they were,
      * except that a card the write replaced before it failed is lost, as in C.
      *
+     * <p>An Object that implements {@link NeedsChannelizing} has its {@code channelize} and {@code
+     * unChannelize} methods called before and after it is written, as for a {@link Channel}; an
+     * exception either throws is passed on unchanged, although this method does not declare it, as
+     * jniast's FitsChan passes it on. An exception from {@code channelize} stops the write before
+     * anything is written.
+     *
      * @param obj the Object to write
      * @return the number of Objects written: 1, or 0 if the Object could not be written
      */
     @Override
     public int write(AstObject obj) {
+        // jniast's FitsChan write (jni/FitsChan.c) channelizes the Object first.
+        channelize(obj);
         // fitschan.c Write, with astWrite's discarding of the warnings (channel.c astWrite_).
         clearWarnings();
         readFromSource();
@@ -918,6 +930,7 @@ public class FitsChan extends Channel {
                 cardList.setPosition(card0);
             }
         }
+        unChannelize(obj);
         return ret;
     }
 
@@ -1888,6 +1901,14 @@ public class FitsChan extends Channel {
     /** The IgnoreBadAlt attribute, as C stores it (default 0). */
     int getIgnoreBadAlt() {
         return ignoreBadAlt == null ? 0 : ignoreBadAlt;
+    }
+
+    /**
+     * The FitsTables a {@code -TAB} read looks for its tables in, keyed by extension name, C's
+     * {@code tables}, or null if none was stored.
+     */
+    KeyMap getTables() {
+        return tables;
     }
 
     /** The TabOK attribute (default 0). */

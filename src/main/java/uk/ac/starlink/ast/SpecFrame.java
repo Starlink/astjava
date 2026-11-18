@@ -1335,7 +1335,8 @@ public class SpecFrame extends Frame {
             result = result + " offset from " + format(1, orig);
         }
         if (testUnit(axis)) {
-            Units.LabelledMapping lm = Units.relabel(defUnit(system, "astGetLabel", astClass()), getUnit(axis), result);
+            Units.LabelledMapping lm =
+                    Units.unitMapperLabel(defUnit(system, "astGetLabel", astClass()), getUnit(axis), result);
             if (lm != null && lm.label != null) {
                 result = lm.label;
             }
@@ -1364,7 +1365,7 @@ public class SpecFrame extends Frame {
         }
         if (testUnit(axis)) {
             Units.LabelledMapping lm =
-                    Units.relabel(defUnit(system, "astGetSymbol", astClass()), getUnit(axis), result);
+                    Units.unitMapperLabel(defUnit(system, "astGetSymbol", astClass()), getUnit(axis), result);
             if (lm != null && lm.label != null) {
                 result = lm.label;
             }

@@ -9,7 +9,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
  * Translates the unit tests of Rust {@code fitschan/wcs_read.rs} ({@code mod tests}), which build
@@ -36,7 +39,15 @@ class FitsWcsReadTest {
     /** Rust's test helper {@code decode_wcs}: the primary description of {@code store} alone. */
     private static FrameSet decodeWcs(FitsStore store) {
         return FitsWcsRead.decodeWcsInner(
-                store, store.naxis, false, false, new FitsCardList(), ' ', 0, new FitsWarnings(), new ArrayList<>());
+                store,
+                store.naxis,
+                false,
+                false,
+                new FitsCardList(),
+                ' ',
+                new FitsChan(),
+                new FitsWarnings(),
+                new ArrayList<>());
     }
 
     @Test
@@ -56,15 +67,119 @@ class FitsWcsReadTest {
         assertEquals(Math.toRadians(45.0), out[1][0], 1e-4);
     }
 
+    /**
+     * With TabOK above zero C's {@code TabMapping} needs the name of the table holding a {@code
+     * -TAB} axis's coordinates, PS{@code i}_0, and reports AST__NOFTS without it.
+     */
     @Test
-    void tabAxisNeedsLutMapWhenTabOkIsPositive() {
+    void tabAxisNeedsItsTableName() {
         FitsStore store = new FitsStore(1);
         store.ctype[0] = "WAVE-TAB";
-        UnsupportedOperationException e = assertThrows(
-                UnsupportedOperationException.class,
+        FitsChan fc = new FitsChan();
+        fc.setI("TabOK", 1);
+        AstException e = assertThrows(
+                AstException.class,
                 () -> FitsWcsRead.decodeWcsInner(
-                        store, 1, false, false, new FitsCardList(), ' ', 1, new FitsWarnings(), new ArrayList<>()));
-        assertTrue(e.getMessage().endsWith(" needs LutMap"), e.getMessage());
+                        store, 1, false, false, new FitsCardList(), ' ', fc, new FitsWarnings(), new ArrayList<>()));
+        assertEquals(AstException.AST__NOFTS, e.getStatus());
+        assertEquals("astRead(FitsChan): No value can be found for PS1_0 .", e.getMsgText());
+    }
+
+    /**
+     * With TabOK above zero and the table named, C's {@code GetNamedTable} looks for the table in
+     * the FitsChan, which holds none, and reports AST__NOTAB with the extension version and level
+     * of PV{@code i}_1 and PV{@code i}_2 (default 1).
+     */
+    @Test
+    void tabAxisNeedsItsTable() {
+        FitsStore store = new FitsStore(1);
+        store.ctype[0] = "WAVE-TAB";
+        store.ps[0][0] = "WCS-TAB";
+        store.pv[0][1] = 3.0;
+        FitsChan fc = new FitsChan();
+        fc.setI("TabOK", 1);
+        AstException e = assertThrows(
+                AstException.class,
+                () -> FitsWcsRead.decodeWcsInner(
+                        store, 1, false, false, new FitsCardList(), ' ', fc, new FitsWarnings(), new ArrayList<>()));
+        assertEquals(AstException.AST__NOTAB, e.getStatus());
+        assertEquals(
+                "astRead(FitsChan): Failed to read FITS binary table from extension 'WCS-TAB' (extver=3,"
+                        + " extlevel=1).",
+                e.getMsgText());
+    }
+
+    /**
+     * The reads of {@code -TAB} headers in the probe {@code probes/lutmap_probe.c}: with TabOK set
+     * and no tables C's read fails, with the status and message the probe prints, for a spectral
+     * axis, an axis of another kind, and an alternate description (IgnoreBadAlt being unset); with
+     * TabOK unset an axis of another kind is read as linear.
+     */
+    @Test
+    void tabHeadersReadAsC() {
+        Map<String, String> probe = ProbeOutput.load("lutmap_probe");
+        String[] common = {
+            "NAXIS   = 1", "NAXIS1  = 10", "CRPIX1  = 1", "CDELT1  = 1.0E6", "CTYPE1  = 'WAVE-TAB'", "CRVAL1  = 1.4E9"
+        };
+        String[][] h1 = {common, {"PS1_0   = 'WCS-TAB'"}};
+        String[] other = {
+            "NAXIS   = 2",
+            "NAXIS1  = 10",
+            "NAXIS2  = 10",
+            "CRPIX1  = 1",
+            "CRPIX2  = 1",
+            "CDELT1  = 1.0",
+            "CDELT2  = 1.0",
+            "CTYPE1  = 'XPOS'",
+            "CTYPE2  = 'YPOS-TAB'",
+            "CRVAL1  = 0.0",
+            "CRVAL2  = 0.0",
+            "PS2_0   = 'TABLE2'",
+            "PV2_1   = 3",
+            "PV2_2   = 2"
+        };
+        String[] alternate = {
+            "NAXIS   = 1",
+            "NAXIS1  = 10",
+            "CRPIX1  = 1",
+            "CDELT1  = 1.0",
+            "CTYPE1  = 'XPOS'",
+            "CRVAL1  = 0.0",
+            "CRPIX1A = 1",
+            "CDELT1A = 1.0E6",
+            "CTYPE1A = 'WAVE-TAB'",
+            "CRVAL1A = 1.4E9",
+            "PS1_0A  = 'WCS-TAB'"
+        };
+        assertEquals(probe.get("tab_spectral"), tabRead(concat(h1), 1));
+        assertEquals(probe.get("tab_no_extname"), tabRead(common, 1));
+        assertEquals(probe.get("tab_other_extver"), tabRead(other, 1));
+        assertEquals(probe.get("tab_other_tabok0"), tabRead(other, 0));
+        assertEquals(probe.get("tab_alternate"), tabRead(alternate, 1));
+    }
+
+    private static String[] concat(String[][] parts) {
+        List<String> all = new ArrayList<>();
+        for (String[] p : parts) {
+            all.addAll(Arrays.asList(p));
+        }
+        return all.toArray(new String[0]);
+    }
+
+    /** What the probe's {@code tabread} prints for a read of {@code cards} with TabOK {@code tabOk}. */
+    private static String tabRead(String[] cards, int tabOk) {
+        FitsChan fc = FitsHeaders.chan(cards);
+        if (tabOk != 0) {
+            fc.setI("TabOK", tabOk);
+        }
+        AstObject obj;
+        try {
+            obj = fc.read();
+        } catch (AstException e) {
+            return "!  AST: Error in routine tabread at line 75 in file lutmap_probe.c.\n!  " + e.getMsgText()
+                    + "\nread status " + e.getStatus() + "\n";
+        }
+        return "nframe " + ((FrameSet) obj).getNframe() + "\n";
     }
 
     @Test
@@ -130,13 +245,20 @@ class FitsWcsReadTest {
         assertEquals(83.6, Math.toDegrees(out[2]), 1e-9);
     }
 
+    /**
+     * fitschan.c WcsOthers maps an axis whose CTYPE ends in "-LOG" with LogWcs's MathMap {@code
+     * s=Sr*exp(w/Sr)}, Sr the CRVAL; with CRPIX 0 and CDELT 1 the intermediate world coordinate is
+     * the pixel coordinate.
+     */
     @Test
-    void logAxisNeedsMathMap() {
+    void logAxisIsExponentialInTheIntermediateWorldCoordinate() {
         FitsStore store = new FitsStore(1);
         store.ctype[0] = "X-LOG";
         store.crval[0] = 2.0;
-        UnsupportedOperationException e = assertThrows(UnsupportedOperationException.class, () -> decodeWcs(store));
-        assertTrue(e.getMessage().endsWith(" needs MathMap"), e.getMessage());
+        FrameSet fs = decodeWcs(store);
+        double[] out = FitsHeaders.tran(fs, new double[] {3.0}, true);
+        assertEquals(2.0 * Math.exp(1.5), out[0], 1e-15);
+        assertEquals(3.0, FitsHeaders.tran(fs, out, false)[0], 1e-14);
     }
 
     @Test

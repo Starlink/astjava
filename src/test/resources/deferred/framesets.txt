@@ -1,13 +1,6 @@
 # Fixtures of fixtures/oracle/framesets.oracle whose sections do not all match C:
 # <path relative to ast_tester/fixtures> | <reason>
 # Rewritten by TransformOracleTest with -Dast.writeDeferred=true.
-programs/testcmpmap/splittest1.ast | needs LutMap
-programs/testfitschan/sparse.ast | needs LutMap
 programs/teststcschan/stcschan-test1-doc3.ast | needs Box, Circle, PointList, PointSet, Prism
-serialisation/c_dssmap.ast | needs DssMap
 serialisation/region_in_cmpframe.ast | needs Box, PointSet
-wcsconv/framesets/freq-log-head.ast | needs MathMap
-wcsconv/framesets/grism-head.ast | needs GrismMap
-wcsconv/framesets/polco-head.ast | needs MathMap
-wcsconv/framesets/polco2-head.ast | needs MathMap
 wcsconv/inputs/lsst2.ast | needs SplineMap

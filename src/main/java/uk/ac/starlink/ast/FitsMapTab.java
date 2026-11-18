@@ -1,6 +1,8 @@
 package uk.ac.starlink.ast;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Whether WCS axes of a pixel to WCS Mapping can be described by the {@code -TAB} algorithm of
@@ -8,9 +10,9 @@ import java.util.Arrays;
  * ChangePermSplit} (fitschan.c).
  *
  * <p>C decides with the Mapping alone whether an axis can be tabulated, and then writes the table
- * into a FitsTable. This library has neither FitsTable nor LutMap, so the decision is ported as C
- * makes it, and where C would create or use a FitsTable an {@link UnsupportedOperationException}
- * is thrown instead.
+ * into a FitsTable. This library has no FitsTable, so the decision is ported as C makes it, and
+ * where C would create or use a FitsTable an {@link UnsupportedOperationException} is thrown
+ * instead.
  *
  * <p>Ported from Rust {@code fitschan/fset_to_store/map_tab.rs}, following fitschan.c.
  */
@@ -29,9 +31,9 @@ final class FitsMapTab {
      * failing that, by splitting off each input of {@code map} in turn until one feeds the output;
      * and failing that, by splitting the inverse again with every PermMap using its alternative
      * split. The output can be tabulated if exactly one grid axis feeds it and either the Mapping
-     * from the grid axis holds a LutMap (which no Mapping of this library does) or the number of
-     * pixels on the grid axis is known; C then samples the Mapping and stores the samples in a
-     * FitsTable.
+     * from the grid axis holds a LutMap applied forward in series, whose table C uses, or the
+     * number of pixels on the grid axis is known, when C samples the Mapping; either way C stores
+     * the table in a FitsTable.
      *
      * <p>When the inverse split gives more than one grid axis, C returns the split Mapping as it
      * is, with no table columns; that is kept.
@@ -48,7 +50,8 @@ final class FitsMapTab {
      * @param icolmain receives -1 in its first element: the main column C adds, which there is none of
      * @param icolindex receives -1 in its first element: the index column C adds, which there is
      *     none of
-     * @param interp receives 0 in its first element: the interpolation method of a LutMap
+     * @param interp receives in its first element the LutInterp attribute of the LutMap whose table
+     *     C uses, or 0
      * @return C's Mapping, or null where C returns NULL (the output cannot be tabulated)
      * @throws UnsupportedOperationException where C would create a FitsTable to hold the table,
      *     which needs FitsTable
@@ -121,10 +124,28 @@ final class FitsMapTab {
             // From the grid axis to the WCS axis.
             ret.invert();
 
-            // C searches the Mappings in series for a non-inverted LutMap, whose table it would
-            // use; this library has no LutMap. Without one, C samples the Mapping when the number
-            // of pixels along the grid axis is known.
-            if (dim[ins[0]] != AST__BAD) {
+            // C searches the Mappings in series for a LutMap applied forward, whose table it
+            // uses, transformed by the Mappings after it, with the grid positions of its entries
+            // given by the inverse of the Mappings before it.
+            List<Mapping> maps = new ArrayList<>();
+            List<Boolean> inverts = new ArrayList<>();
+            ret.mapList(true, ret.getInvert(), maps, inverts);
+            int ilut = -1;
+            for (int imap = 0; imap < maps.size(); imap++) {
+                if (maps.get(imap) instanceof LutMap && !inverts.get(imap)) {
+                    ilut = imap;
+                    break;
+                }
+            }
+            if (ilut >= 0) {
+                interp[0] = ((LutMap) maps.get(ilut)).getLutInterp();
+                // C combines the Mappings either side of the LutMap and takes its table, which are
+                // used only to fill the FitsTable it makes next.
+                throw new UnsupportedOperationException("IsMapTab1D(FitsChan): the look-up table for FITS-WCS axis "
+                        + (iwcs + 1) + " (unit '" + colunit + "') needs FitsTable");
+            } else if (dim[ins[0]] != AST__BAD) {
+                // Without a LutMap, C samples the Mapping, the number of pixels along the grid
+                // axis being known.
                 double[] x = {1.0, dim[ins[0]]};
                 double[] v = ret.tran1(2, x, true);
                 double[][] work = {{x[0]}, {v[0]}};
