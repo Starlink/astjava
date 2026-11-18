@@ -69,9 +69,13 @@ final class ResampleMemoryChild {
                 out,
                 null);
         // The inverse takes every output pixel into the input grid, and the kernel keeps constant
-        // data constant.
+        // data constant: the centre's value is sum(w 3) / sum(w), exactly 3 whatever the weights
+        // w, but for the float roundings of the 16 terms and partial sums of each sum, at most
+        // 16 * 2 * 2^-24 of sum(|w|) * 3 each, and of the quotient; with sum(|w|) / sum(w) at most
+        // 2 * 2 for sinc with two pixels either side (at most 2 along each axis), that is below
+        // 3 * 4 * (2 * 32 + 1) * 2^-24 = 4.7e-5.
         check(nbad == 0, "bad pixels " + nbad);
         int centre = SIZE / 2 + SIZE * (SIZE / 2);
-        check(Math.abs(out[centre] - 3.0f) < 1.0e-5f, "centre " + out[centre]);
+        check(Math.abs(out[centre] - 3.0f) < 1.0e-4f, "centre " + out[centre]);
     }
 }

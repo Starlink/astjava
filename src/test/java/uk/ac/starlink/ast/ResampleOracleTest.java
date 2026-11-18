@@ -22,7 +22,12 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  *
  * <p>{@code resamplingMatchesC} runs every case of the types jniast has (D, F, L, I, S, B); the
  * cases of C's unsigned types have no jniast method. The probe's caller's kernel and interpolator
- * are {@link ResampleCallbackTest.TriKernel} and {@link ResampleCallbackTest.ProbeUinterpAll}.
+ * are {@link ResampleCallbackTest.TriKernel} and {@link ResampleCallbackTest.ProbeUinterpAll}. A
+ * case whose kernel calls sin, cos or exp may differ from C in the last bits, since Java's {@code
+ * Math} and C's library may; where its hash differs it is compared value by value with {@code
+ * probes/resample_kernel_probe.out} within a bound worked out for each pixel ({@link #bounds}), and
+ * {@code kernelCasesAreWithinTheirBounds} makes that comparison for every such case on every
+ * platform.
  * {@code errorsMatchC} runs the probe's fifteen invalid-argument cases. {@code
  * too_few_params_is_an_error} is listed in {@code deferred/rust-tests.txt}: jniast's Interpolator
  * factories fix the parameters.
@@ -510,46 +515,6 @@ class ResampleOracleTest {
     private static final Map<String, String> KERNEL_VALUES = ProbeOutput.load("resample_kernel_probe");
 
     /**
-     * The largest difference from C's value allowed for a case of {@code type} whose kernel calls
-     * sin, cos or exp, where the hash differs. Java's {@code Math.sin}, {@code cos} and {@code exp}
-     * and C's are each within an ulp of the exact value, so they differ by at most 4u relative (u =
-     * 2^-53). A kernel value, at most 1 in size and made from at most two such calls with a
-     * quotient and a product, then differs by at most 16u; a pixel's weight w, the product of at
-     * most three kernel values, by at most 64u. An output value is sum(w v) / sum(w) over at most
-     * 64 pixels (the probe's largest block, 4 by 4 by 4), with |v| at most 56 (the probe's data)
-     * and sum(|w|) / |sum(w)| at most 20 for these kernels with at most a few pixels of a block
-     * left out as bad. Its difference is then at most 64u * 20 * 2 * 56 from the weights, and the
-     * same again from the roundings of the 64 terms of each sum taking different paths: together
-     * 3.2e-11, and a variance, sum(w^2 var) / sum(w)^2 with |var| at most 4, no more.
-     *
-     * <ul>
-     *   <li>D: 1e-10, the bound above.
-     *   <li>F: the sums are in float, so a weight rounded to float may differ by an ulp of float
-     *       (2^-23 relative), and each of the 64 float roundings of each sum may then differ by
-     *       2^-24 of the sum: at most 2^-23 * 20 * 112 + 2 * 64 * 2^-24 * 20 * 56, under 1e-2.
-     *   <li>L, I, S, B: an integer whose value before rounding differs by less than a half, by the
-     *       bounds above, can differ only by one, where that value is near a half.
-     * </ul>
-     *
-     * <p>A bad or untouched pixel (120 or 77) must be bad or untouched in both.
-     */
-    private static double tolerance(String type) {
-        switch (type) {
-            case "D":
-                return 1.0e-10;
-            case "F":
-                return 1.0e-2;
-            case "L":
-            case "I":
-            case "S":
-            case "B":
-                return 1.0;
-            default:
-                throw new IllegalArgumentException("no type " + type);
-        }
-    }
-
-    /**
      * The values after {@code label} in the text of a probe case of {@code type}, up to the next
      * label or the end. The probe writes a float with nine significant digits, which reads back to
      * the float, not to the double it equals.
@@ -574,32 +539,6 @@ class ResampleOracleTest {
             a[i] = v.get(i);
         }
         return a;
-    }
-
-    /**
-     * How the outputs of {@code r} differ from the probe's beyond {@link #tolerance}, or null if
-     * none does.
-     */
-    private static String valueDifference(Result r, Case cs, String probe) {
-        double tol = tolerance(cs.type);
-        double[][] got = cs.useVar ? new double[][] {r.out, r.outVar} : new double[][] {r.out};
-        double[][] want = cs.useVar
-                ? new double[][] {probeValues(probe, "out", cs.type), probeValues(probe, "var", cs.type)}
-                : new double[][] {probeValues(probe, "out", cs.type)};
-        for (int a = 0; a < got.length; a++) {
-            if (got[a].length != want[a].length) {
-                return "probe has " + want[a].length + " values, not " + got[a].length;
-            }
-            for (int k = 0; k < got[a].length; k++) {
-                double g = got[a][k];
-                double w = want[a][k];
-                boolean fixed = w == 120.0 || w == 77.0 || g == 120.0 || g == 77.0;
-                if (fixed ? g != w : Double.isNaN(g - w) || Math.abs(g - w) > tol) {
-                    return (a == 0 ? "value " : "variance ") + k + " is " + g + ", C's " + w;
-                }
-            }
-        }
-        return null;
     }
 
     /** Whether the case {@code c} is of a type jniast has a method for. */
@@ -633,6 +572,307 @@ class ResampleOracleTest {
         }
         assertTrue(failures.isEmpty(), failures.size() + " cases differ:\n" + String.join("\n", failures));
         assertEquals(222, ran, "cases run");
+    }
+
+    /** Records the input position of each output pixel the resampling interpolates. */
+    private static final class PositionRecorder extends UinterpCalculator {
+        final double[][] position;
+
+        PositionRecorder(int nout) {
+            position = new double[nout][];
+        }
+
+        @Override
+        public int uinterpD(
+                int ndimIn,
+                int[] lbndIn,
+                int[] ubndIn,
+                double[] in,
+                double[] inVar,
+                int npoint,
+                int[] offset,
+                double[][] coords,
+                ResampleFlags flags,
+                double badval,
+                double[] out,
+                double[] outVar) {
+            for (int point = 0; point < npoint; point++) {
+                double[] x = new double[ndimIn];
+                for (int i = 0; i < ndimIn; i++) {
+                    x[i] = coords[i][point];
+                }
+                position[offset[point]] = x;
+            }
+            return 0;
+        }
+    }
+
+    private static final double U = 0x1p-53;
+    private static final double UF = 0x1p-24;
+
+    /**
+     * The largest relative difference between Java's and C's weight for a pixel, worked out in
+     * {@link #bounds}.
+     */
+    private static final double RHO_W = 164 * U;
+
+    /**
+     * The largest differences from C's outputs allowed for the kernel case {@code cs}, for each
+     * output value ([0]) and variance ([1]), worked out pixel by pixel from the weights C's {@code
+     * InterpolateKernel1<X>} gives it; zero where the output must equal C's exactly. The input
+     * positions are those the case's resampling gives a caller's interpolator (the Mapping, fits
+     * and blocks are the same for every scheme, and use only arithmetic, so the positions are C's
+     * on every platform); the blocks, bad pixels and weights are {@code InterpolateKernel1<X>}'s,
+     * computed here in double.
+     *
+     * <p>The bound. Let u = 2^-53. Java's {@code Math.sin}, {@code cos}, {@code exp} and {@code
+     * log} and C's are each within an ulp (at most 2u relative) of the exact value, so they differ
+     * by at most 4u relative; two correct roundings of an operation on inputs differing by d
+     * relative differ by at most d + 2u (one ulp each way); an operation on equal inputs gives
+     * equal results. To first order the kernel values then differ by at most: sinc, sin(x) / x:
+     * 6u; SincCos: 6u + 4u + 2u = 12u; SincSinc: 14u; Somb and SombCos: J1 uses its rational
+     * approximation, plain arithmetic, for |x| below 8, and the cases' offsets are at most 2
+     * pixels (|x| at most 2 pi), so 0 and 4u + 2u = 6u; the Gaussians: k = 4 log(2) / fwhm^2 differs
+     * by 6u, the argument a = k o o by 10u, and exp(-a) by 10u a + 4u, where a is at most k
+     * neighb^2 = 11.1 (Gauss with fwhm 1 and 2 pixels), so Gauss 115u and SincGauss (a at most
+     * 4.93) 6u + 53u + 2u = 61u. The default reaches, ceil(sqrt(-log(0.01) / k)) = ceil(3.87) and
+     * ceil(1.93), are far from integers, so are the same. A weight is the product of one kernel
+     * value per axis, with a rounding for each product: at most 115u in 1-D (Gauss), 2 * 81u + 2u =
+     * 164u in 2-D (Gauss with fwhm 1.2, a at most 7.70, 81u), and 3 * 6u + 4u = 22u in 3-D: RHO_W
+     * = 164u.
+     *
+     * <p>With s the unit roundoff of the sum type (u, or 2^-24 for F, S and B), e the relative
+     * difference of a weight as summed (RHO_W, or RHO_W + 2s where it is rounded to float), and n
+     * the number of pixels summed: a term w v differs by (e + 2s)|w v|; the running sum, whose
+     * partial sums each round to within an ulp of each other, by (e + 2s + 2ns) P with P =
+     * sum(|w v|); the sum of weights W by (e + 2ns) A with A = sum(|w|); so the value, S / W, by
+     * dV = (e + 2s + 2ns) P / |W| + |val| (e + 2ns) A / |W| + 2s |val|. A variance sum(w^2 var) /
+     * W^2, whose squared weights differ by e2 = 2 RHO_W + 2u (and 2s more if rounded to float),
+     * differs by (e2 + 2s + 2ns) Q / W^2 + |valVar| (2 (e + 2ns) A / |W| + 4s), Q = sum(w^2 |var|).
+     * Flux conservation multiplies by the fit's factor, which is the same in both and at most 1
+     * here (1 and 1 / 1.3), with one more rounding, 2s of the result. The bound allowed is twice
+     * this, for the second-order terms. A value of an integer type, rounded to an integer, may then
+     * differ by one where its bound is below a half; and it must not lie within its bound of the
+     * type's range limits, where C would make it bad. A pixel bad in C (outside the grid, in a bad
+     * input pixel, or with no weight) is bad in Java too, and must be equal.
+     *
+     * @throws AssertionError if an integer value lies within its bound of a range limit or of a
+     *     half beyond its bound's reach, where the bound cannot decide
+     */
+    private static double[][] bounds(Case cs) {
+        int nout = npix(cs.lbndOut, cs.ubndOut);
+        PositionRecorder rec = new PositionRecorder(nout);
+        double[][] input = cs.input();
+        cs.map.resampleD(
+                cs.lbndIn.length,
+                cs.lbndIn,
+                cs.ubndIn,
+                input[0],
+                cs.useVar ? input[1] : null,
+                Mapping.Interpolator.uinterp(rec),
+                cs.flags,
+                cs.tol,
+                cs.maxpix,
+                120.0,
+                cs.lbndOut.length,
+                cs.lbndOut,
+                cs.ubndOut,
+                cs.lbnd,
+                cs.ubnd,
+                new double[nout],
+                cs.useVar ? new double[nout] : null);
+        boolean floatSum = "F".equals(cs.type) || "S".equals(cs.type) || "B".equals(cs.type);
+        boolean integer = !"D".equals(cs.type) && !"F".equals(cs.type);
+        double s = floatSum ? UF : U;
+        double e = RHO_W + (floatSum ? 2 * s : 0.0);
+        double e2 = 2 * RHO_W + 2 * U + (floatSum ? 2 * s : 0.0);
+        double[] limits = integerLimits(cs.type);
+        ResampleKernels.Setup setup = ResampleKernels.setup(cs.interp.scheme, cs.interp.params);
+        boolean usebad = cs.flags.getUseBad();
+        boolean conserve = cs.flags.getConserveFlux();
+        int ndim = cs.lbndIn.length;
+        long[] stride = new long[ndim];
+        long st = 1;
+        for (int i = 0; i < ndim; i++) {
+            stride[i] = st;
+            st *= cs.ubndIn[i] - cs.lbndIn[i] + 1;
+        }
+        double[][] bound = new double[2][nout];
+        for (int pt = 0; pt < nout; pt++) {
+            double[] x = rec.position[pt];
+            if (x == null) {
+                continue;
+            }
+            boolean bad = false;
+            long pixel = 0;
+            long[] lo = new long[ndim];
+            long[] hi = new long[ndim];
+            double[][] k = new double[ndim][];
+            for (int i = 0; i < ndim && !bad; i++) {
+                bad = x[i] < cs.lbndIn[i] - 0.5 || x[i] >= cs.ubndIn[i] + 0.5 || x[i] == AstObject.AST__BAD;
+                if (!bad) {
+                    pixel += stride[i] * ((long) Math.floor(x[i] + 0.5) - cs.lbndIn[i]);
+                    long ix = (long) Math.floor(x[i]);
+                    lo[i] = Math.max(ix - setup.neighb + 1, cs.lbndIn[i]);
+                    hi[i] = Math.min(ix + setup.neighb, cs.ubndIn[i]);
+                    k[i] = new double[(int) (hi[i] - lo[i] + 1)];
+                    for (long j = lo[i]; j <= hi[i]; j++) {
+                        k[i][(int) (j - lo[i])] = setup.kernel.value(j - x[i], setup.params);
+                    }
+                }
+            }
+            if (bad || (usebad && input[0][(int) pixel] == 120.0)) {
+                continue;
+            }
+            double sumAbs = 0.0;
+            double sum = 0.0;
+            double sumV = 0.0;
+            double sumAbsV = 0.0;
+            double sumW2Var = 0.0;
+            double sumW2AbsVar = 0.0;
+            boolean badVar = false;
+            int n = 0;
+            long[] j = lo.clone();
+            while (true) {
+                int off = 0;
+                double w = 1.0;
+                for (int i = 0; i < ndim; i++) {
+                    off += (int) (stride[i] * (j[i] - cs.lbndIn[i]));
+                    w *= k[i][(int) (j[i] - lo[i])];
+                }
+                double v = "F".equals(cs.type) ? (float) input[0][off] : input[0][off];
+                if (!usebad || v != 120.0) {
+                    n++;
+                    sumAbs += Math.abs(w);
+                    sum += w;
+                    sumV += w * v;
+                    sumAbsV += Math.abs(w * v);
+                    double var = "F".equals(cs.type) ? (float) input[1][off] : input[1][off];
+                    badVar = badVar || (usebad && var == 120.0) || var < 0.0;
+                    sumW2Var += w * w * var;
+                    sumW2AbsVar += w * w * Math.abs(var);
+                }
+                // The next pixel of the block, first axis fastest; done when every axis returns.
+                boolean done = true;
+                for (int i = 0; i < ndim; i++) {
+                    if (j[i] < hi[i]) {
+                        j[i]++;
+                        done = false;
+                        break;
+                    }
+                    j[i] = lo[i];
+                }
+                if (done) {
+                    break;
+                }
+            }
+            if (sum == 0.0) {
+                continue;
+            }
+            double val = sumV / sum;
+            double ratio = sumAbs / Math.abs(sum);
+            double dv = (e + 2 * s + 2 * n * s) * sumAbsV / Math.abs(sum)
+                    + Math.abs(val) * (e + 2 * n * s) * ratio
+                    + 2 * s * Math.abs(val)
+                    + (conserve ? 2 * s * Math.abs(val) : 0.0);
+            bound[0][pt] = integerBound(integer, 2 * dv, val, limits, cs, pt, "value");
+            if (cs.useVar && !badVar) {
+                double valVar = sumW2Var / (sum * sum);
+                double dvar = (e2 + 2 * s + 2 * n * s) * sumW2AbsVar / (sum * sum)
+                        + Math.abs(valVar) * (2 * (e + 2 * n * s) * ratio + 4 * s)
+                        + (conserve ? 2 * s * Math.abs(valVar) : 0.0);
+                bound[1][pt] = integerBound(integer, 2 * dvar, valVar, limits, cs, pt, "variance");
+            }
+        }
+        return bound;
+    }
+
+    /** The values at which an interpolated value overflows an integer type (C's LO and HI). */
+    private static double[] integerLimits(String type) {
+        switch (type) {
+            case "B":
+                return new double[] {-128.5, 127.5};
+            case "S":
+                return new double[] {-32768.5, 32767.5};
+            case "I":
+                return new double[] {-2147483648.5, 2147483647.5};
+            case "L":
+            case "D":
+            case "F":
+                return new double[0];
+            default:
+                throw new IllegalArgumentException("no type " + type);
+        }
+    }
+
+    /**
+     * The bound {@code b} for a floating type; for an integer type, 1 where {@code b} is below a
+     * half and {@code val} is further than {@code b} from the range limits, and 0 where it lies
+     * beyond them by more than {@code b} (bad in both).
+     */
+    private static double integerBound(
+            boolean integer, double b, double val, double[] limits, Case cs, int pt, String what) {
+        if (!integer) {
+            return b;
+        }
+        assertTrue(b < 0.5, cs.name + " " + cs.type + " " + what + " " + pt + ": bound " + b);
+        for (double lim : limits) {
+            assertTrue(
+                    Math.abs(val - lim) > b,
+                    cs.name + " " + cs.type + " " + what + " " + pt + " " + val + " within " + b + " of " + lim);
+        }
+        boolean overflows = limits.length > 0 && (val <= limits[0] || val >= limits[1]);
+        return overflows ? 0.0 : 1.0;
+    }
+
+    /**
+     * How the outputs of {@code r} differ from the probe's by more than {@link #bounds} allows, or
+     * null if none does.
+     */
+    private static String valueDifference(Result r, Case cs, String probe) {
+        double[][] bound = bounds(cs);
+        double[][] got = cs.useVar ? new double[][] {r.out, r.outVar} : new double[][] {r.out};
+        double[][] want = cs.useVar
+                ? new double[][] {probeValues(probe, "out", cs.type), probeValues(probe, "var", cs.type)}
+                : new double[][] {probeValues(probe, "out", cs.type)};
+        for (int a = 0; a < got.length; a++) {
+            if (got[a].length != want[a].length) {
+                return "probe has " + want[a].length + " values, not " + got[a].length;
+            }
+            for (int k = 0; k < got[a].length; k++) {
+                double g = got[a][k];
+                double w = want[a][k];
+                if (Double.isNaN(g - w) || Math.abs(g - w) > bound[a][k]) {
+                    return (a == 0 ? "value " : "variance ") + k + " is " + g + ", C's " + w + ", allowed "
+                            + bound[a][k];
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Every case of the kernel probe is within {@link #bounds} of C's values, whether or not its
+     * hash matches, so that the bound is checked on every platform.
+     */
+    @Test
+    void kernelCasesAreWithinTheirBounds() {
+        List<String> failures = new ArrayList<>();
+        int ran = 0;
+        for (JsonNode c : ProbeData.load("resample").get("CASES")) {
+            String probe = KERNEL_VALUES.get(c.get(0).asText() + " " + c.get(2).asText());
+            if (probe == null) {
+                continue;
+            }
+            Case cs = new Case(c);
+            String diff = valueDifference(run(cs), cs, probe);
+            if (diff != null) {
+                failures.add(cs.name + " " + cs.type + ": " + diff);
+            }
+            ran++;
+        }
+        assertTrue(failures.isEmpty(), String.join("\n", failures));
+        assertEquals(78, ran, "cases run");
     }
 
     /** The kernel probe's values reproduce the oracle's hash of each of its cases. */

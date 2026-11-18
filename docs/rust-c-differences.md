@@ -1320,7 +1320,7 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: the kernels call the C library's `sin`, `cos` and `exp`.
 - Rust: as C (the `f64` methods, which call the platform's library).
 - Java: the kernels call `java.lang.Math`, which can differ from C's library in the last bit; eight `double` cases of the resample oracle miss their hash on AArch64 macOS by at most 7.1e-15.
-  `ResampleOracleTest` compares every case whose kernel calls these functions value by value with probe `src/test/resources/probes/resample_kernel_probe.c` where its hash differs, within a bound worked out in the test (1e-10 for `double`, 1e-2 for `float`, 1 for an integer type).
+  `ResampleOracleTest` compares every case whose kernel calls these functions value by value with probe `src/test/resources/probes/resample_kernel_probe.c`, within a bound worked out for each output pixel from its weights (about 1e-12 for `double`; one for an integer type, whose value must also lie clear of the type's range limits).
 
 ### Resampling with the `AST__GAUSS` scheme
 
