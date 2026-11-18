@@ -34,7 +34,7 @@ class RebinTest {
                 case INT:
                     return Integer.MAX_VALUE;
                 default:
-                    throw new IllegalStateException(name());
+                    throw Ast.err(AstException.AST__INTER, "Unexpected type " + name());
             }
         }
 
@@ -48,7 +48,7 @@ class RebinTest {
                 case INT:
                     return Integer.MIN_VALUE;
                 default:
-                    throw new IllegalStateException(name());
+                    throw Ast.err(AstException.AST__INTER, "Unexpected type " + name());
             }
         }
 
@@ -62,7 +62,7 @@ class RebinTest {
                 case INT:
                     return (int) v;
                 default:
-                    throw new IllegalStateException(name());
+                    throw Ast.err(AstException.AST__INTER, "Unexpected type " + name());
             }
         }
 
@@ -80,7 +80,7 @@ class RebinTest {
                 case INT:
                     return a == b;
                 default:
-                    throw new IllegalStateException(name());
+                    throw Ast.err(AstException.AST__INTER, "Unexpected type " + name());
             }
         }
     }
@@ -213,7 +213,7 @@ class RebinTest {
             case Mapping.AST__GAUSS:
                 return Mapping.Spreader.gauss(npix, params[1]);
             default:
-                throw new IllegalArgumentException("no scheme " + spread);
+                throw Ast.err(AstException.AST__INTER, "Unexpected spreading scheme " + spread);
         }
     }
 
@@ -316,7 +316,7 @@ class RebinTest {
                 break;
             }
             default:
-                throw new IllegalStateException(type.name());
+                throw Ast.err(AstException.AST__INTER, "Unexpected type " + type.name());
         }
         return new double[][] {out, outVar};
     }

@@ -97,7 +97,7 @@ final class Rebin {
     /** The sum of the weights given to each output pixel, or null when {@code wlim} is not positive. */
     private final double[] work;
 
-    /** What spreads each block in place of the scheme's spreading function, or null. */
+    /** What spreads each block: the scheme's spreading function, unless a test gives another. */
     private final BlockSpreading spreading;
 
     /**
@@ -148,7 +148,7 @@ final class Rebin {
         this.out = out;
         this.outVar = outVar;
         this.work = work;
-        this.spreading = spreading;
+        this.spreading = spreading == null ? this::spreadBlock : spreading;
         // RebinSection's set-up of the scheme; C makes it for each section, always the same.
         switch (scheme) {
             case Mapping.AST__NEAREST:
@@ -183,7 +183,8 @@ final class Rebin {
      * its grid, and each bound array at least as many elements as its grid has dimensions, which C
      * cannot check; these give {@code AST__DIMIN}, with the messages of Rust's {@code rebin}, and
      * leave the output alone. A longer array is accepted and its leading elements used, as in C
-     * and jniast. As in C, an error in the axis counts, bounds, tolerance or region sets the first
+     * and jniast. As in C, an error in the axis counts, bounds, tolerance, {@code maxpix} or region
+     * sets the first
      * output value (and variance) to zero, and a later error the whole output.
      *
      * @param method C's name of the function, such as {@code astRebinD}, for error messages
@@ -742,11 +743,7 @@ final class Rebin {
             }
             ptrOut = map.transform(ptrIn, npoint, true);
         }
-        if (spreading == null) {
-            spreadBlock(npoint, offset, ptrOut);
-        } else {
-            spreading.spread(npoint, offset, ptrOut);
-        }
+        spreading.spread(npoint, offset, ptrOut);
     }
 
     /** {@code RebinSection}'s call of the spreading function for the scheme. */
