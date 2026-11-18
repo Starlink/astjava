@@ -161,8 +161,25 @@ Where C's behaviour is undefined, Java defines it: a negative `Nlut` loads an em
 
 ## Final review
 
-The final review follows.
-The controller fills this section in once the reviewer's report arrives.
+The whole-branch review (`c5468a2..423be1e`) found no Critical or Important issue and judged the branch ready to merge.
+It read the cross-cutting changes, IntraMap and the FITS code in full, and judged LutMap, PcdMap, GrismMap, DssMap, TranMap and the MathMap parser mainly by differential fuzzing against the pinned C build, about 16,600 cases:
+
+- 11,000 MathMap expressions, valid and malformed: every status and message as C's; values as C's except 8 last-bit libm differences, once the C driver was linked with `exp`, `cosh`, `sinh`, `pow` and `ldexp` that set `errno` as glibc does (all 134 macOS inf/NaN-against-BAD differences then went away, so Java implements the Task 2 ruling exactly).
+- 2,356 random Mappings mixing every new class: native dumps, simplified dumps and `astEqual` results identical.
+- 293 objects through a NATIVE FitsChan: identical cards, and C's cards read back identically.
+- 766 SpecFluxFrame conversions: identical.
+- 2,200 mutated `-LOG` and grism headers: identical reads, warnings and errors; written grism values differ only through libm.
+
+Its five Minor findings are deferred:
+
+- A RateMap loaded from a dump without `Inv = 0` returns the forward rate when asked for the inverse, where C refuses it with AST__INTER (`RateMap.java:193-197`); AST always writes `Inv = 0`.
+- After a failed transformation C leaves a SwitchMap's selector and route Invert attributes swapped and Java restores them; not yet in `docs/rust-c-differences.md`.
+- For a RateMap's undefined direction C ends with AST__INTER after AST__TRNND and Java with AST__TRNND; not yet recorded.
+- `IntraMap` wraps a Transformer's `Exception` but lets an `Error` through, as jniast did; its Javadoc does not say so.
+- The minors carried in the rulings file.
+
+The fuzzing also found three C crashes, now in the PR #104 defect report with probes run against an ASan build of the PR tip: `mathmap.c` `Equal` reads through a NULL constant list for a one-opcode function such as `y=<pi>`; `astLoadMathMap` reads past its function array when `Nfwd` is below `Nout`; and RateMap `Transform` dereferences the result PointSet after its parent has failed, which a SwitchMap with an inverted RateMap route reaches from `astTran1`.
+A fourth, the SpecFluxFrame dump overflow, is the FluxFrame `comm[50]` overflow already reported.
 
 ## Gaps and risks
 
