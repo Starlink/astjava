@@ -17,8 +17,9 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
 /**
  * Translation of Rust {@code tests/test_equal.rs} and {@code tests/test_equal_oracle.rs} (C's
  * {@code astEqual}, {@link AstObject#astEqual}), with the cases of the C probe {@code
- * probes/equal_probe.c}, which also gives C's answer for every comparison the Rust tests make:
- * comparisons where C's {@code Equal} and a comparison of native text disagree, a CmpMap comparison
+ * probes/equal_probe.c}, which also gives C's answer for every comparison the Rust tests make: each
+ * translated test compares its results with the probe's case of the Rust test's name. The probe's
+ * own cases are comparisons where C's {@code Equal} and a comparison of native text disagree, a CmpMap comparison
  * that changes the Invert attribute of a shared component, CmpMaps with Ident set, FrameSets, and
  * Objects of classes without their own {@code Equal}.
  *
@@ -38,6 +39,14 @@ class EqualTest {
             throw new IllegalStateException("no probe case " + name);
         }
         return text;
+    }
+
+    /**
+     * Asserts that the results of a sequence of comparisons are C's, as the probe's case {@code
+     * name} records them; a translated Rust test of that name makes the same comparisons.
+     */
+    static void assertAsC(String name, boolean... results) {
+        assertEquals(probe(name), equalLines(results), name);
     }
 
     /** The probe's lines for a sequence of comparisons. */
@@ -86,27 +95,29 @@ class EqualTest {
 
     @Test
     void floatToleranceWithin() {
-        assertTrue(zoom(2, 1.0).astEqual(zoom(2, 1.0 + 1.0e-14)));
+        assertAsC("float_tolerance_within", zoom(2, 1.0).astEqual(zoom(2, 1.0 + 1.0e-14)));
     }
 
     @Test
     void floatToleranceOutside() {
-        assertFalse(zoom(2, 1.0).astEqual(zoom(2, 1.1)));
+        assertAsC("float_tolerance_outside", zoom(2, 1.0).astEqual(zoom(2, 1.1)));
     }
 
     @Test
     void badValueComparison() {
-        assertTrue(perm1(-1, -1, BAD).astEqual(perm1(-1, -1, BAD)));
+        assertAsC("bad_value_comparison", perm1(-1, -1, BAD).astEqual(perm1(-1, -1, BAD)));
     }
 
     @Test
     void badVsNonBadSameIndexIsNotEqual() {
-        assertFalse(perm1(-1, -1, BAD).astEqual(perm1(-1, -1, 42.0)));
+        assertAsC("bad_vs_non_bad_same_index_is_not_equal", perm1(-1, -1, BAD).astEqual(perm1(-1, -1, 42.0)));
     }
 
     @Test
     void badVsNonBadDifferentIndexIsNotEqual() {
-        assertFalse(perm1(-1, -1, BAD, 0.0).astEqual(perm1(-2, -2, 0.0, 42.0)));
+        assertAsC(
+                "bad_vs_non_bad_different_index_is_not_equal",
+                perm1(-1, -1, BAD, 0.0).astEqual(perm1(-2, -2, 0.0, 42.0)));
     }
 
     // ------------------------------------------------------------------
@@ -116,17 +127,17 @@ class EqualTest {
     @Test
     void unitmapIdentity() {
         UnitMap a = new UnitMap(3);
-        assertTrue(a.astEqual(a));
+        assertAsC("unitmap_identity", a.astEqual(a));
     }
 
     @Test
     void unitmapSameNcoord() {
-        assertTrue(new UnitMap(3).astEqual(new UnitMap(3)));
+        assertAsC("unitmap_same_ncoord", new UnitMap(3).astEqual(new UnitMap(3)));
     }
 
     @Test
     void unitmapDifferentNcoord() {
-        assertFalse(new UnitMap(3).astEqual(new UnitMap(2)));
+        assertAsC("unitmap_different_ncoord", new UnitMap(3).astEqual(new UnitMap(2)));
     }
 
     // ------------------------------------------------------------------
@@ -136,32 +147,32 @@ class EqualTest {
     @Test
     void zoommapIdentity() {
         ZoomMap a = zoom(2, 3.5);
-        assertTrue(a.astEqual(a));
+        assertAsC("zoommap_identity", a.astEqual(a));
     }
 
     @Test
     void zoommapSameValues() {
-        assertTrue(zoom(2, 3.5).astEqual(zoom(2, 3.5)));
+        assertAsC("zoommap_same_values", zoom(2, 3.5).astEqual(zoom(2, 3.5)));
     }
 
     @Test
     void zoommapDifferentFactor() {
-        assertFalse(zoom(2, 3.5).astEqual(zoom(2, 4.0)));
+        assertAsC("zoommap_different_factor", zoom(2, 3.5).astEqual(zoom(2, 4.0)));
     }
 
     @Test
     void zoommapDifferentNcoord() {
-        assertFalse(zoom(2, 3.5).astEqual(zoom(3, 3.5)));
+        assertAsC("zoommap_different_ncoord", zoom(2, 3.5).astEqual(zoom(3, 3.5)));
     }
 
     @Test
     void zoommapInvertAware() {
-        assertTrue(inv(zoom(2, 2.0)).astEqual(zoom(2, 0.5)));
+        assertAsC("zoommap_invert_aware", inv(zoom(2, 2.0)).astEqual(zoom(2, 0.5)));
     }
 
     @Test
     void zoommapInvertAwareMismatch() {
-        assertFalse(inv(zoom(2, 3.0)).astEqual(zoom(2, 0.5)));
+        assertAsC("zoommap_invert_aware_mismatch", inv(zoom(2, 3.0)).astEqual(zoom(2, 0.5)));
     }
 
     // ------------------------------------------------------------------
@@ -171,32 +182,32 @@ class EqualTest {
     @Test
     void shiftmapIdentity() {
         ShiftMap a = shift(1.0, 2.0, 3.0);
-        assertTrue(a.astEqual(a));
+        assertAsC("shiftmap_identity", a.astEqual(a));
     }
 
     @Test
     void shiftmapSameValues() {
-        assertTrue(shift(1.0, 2.0).astEqual(shift(1.0, 2.0)));
+        assertAsC("shiftmap_same_values", shift(1.0, 2.0).astEqual(shift(1.0, 2.0)));
     }
 
     @Test
     void shiftmapDifferentShifts() {
-        assertFalse(shift(1.0, 2.0).astEqual(shift(1.0, 3.0)));
+        assertAsC("shiftmap_different_shifts", shift(1.0, 2.0).astEqual(shift(1.0, 3.0)));
     }
 
     @Test
     void shiftmapDifferentLength() {
-        assertFalse(shift(1.0, 2.0).astEqual(shift(1.0, 2.0, 3.0)));
+        assertAsC("shiftmap_different_length", shift(1.0, 2.0).astEqual(shift(1.0, 2.0, 3.0)));
     }
 
     @Test
     void shiftmapInvertAware() {
-        assertTrue(inv(shift(1.0, 2.0)).astEqual(shift(-1.0, -2.0)));
+        assertAsC("shiftmap_invert_aware", inv(shift(1.0, 2.0)).astEqual(shift(-1.0, -2.0)));
     }
 
     @Test
     void shiftmapInvertAwareMismatch() {
-        assertFalse(inv(shift(1.0, 2.0)).astEqual(shift(1.0, 2.0)));
+        assertAsC("shiftmap_invert_aware_mismatch", inv(shift(1.0, 2.0)).astEqual(shift(1.0, 2.0)));
     }
 
     // ------------------------------------------------------------------
@@ -210,20 +221,24 @@ class EqualTest {
 
     @Test
     void matrixmapSame() {
-        assertTrue(full(new double[] {2.0, 0.0}, new double[] {0.0, 3.0})
-                .astEqual(full(new double[] {2.0, 0.0}, new double[] {0.0, 3.0})));
+        assertAsC(
+                "matrixmap_same",
+                full(new double[] {2.0, 0.0}, new double[] {0.0, 3.0})
+                        .astEqual(full(new double[] {2.0, 0.0}, new double[] {0.0, 3.0})));
     }
 
     @Test
     void matrixmapDifferentElement() {
-        assertFalse(full(new double[] {2.0, 0.0}, new double[] {0.0, 3.0})
-                .astEqual(full(new double[] {2.0, 0.0}, new double[] {0.0, 4.0})));
+        assertAsC(
+                "matrixmap_different_element",
+                full(new double[] {2.0, 0.0}, new double[] {0.0, 3.0})
+                        .astEqual(full(new double[] {2.0, 0.0}, new double[] {0.0, 4.0})));
     }
 
     @Test
     void matrixmapInvertedNotEqual() {
         MatrixMap a = inv(full(new double[] {2.0, 0.0}, new double[] {0.0, 3.0}));
-        assertFalse(a.astEqual(full(new double[] {2.0, 0.0}, new double[] {0.0, 3.0})));
+        assertAsC("matrixmap_inverted_not_equal", a.astEqual(full(new double[] {2.0, 0.0}, new double[] {0.0, 3.0})));
     }
 
     // ------------------------------------------------------------------
@@ -234,25 +249,26 @@ class EqualTest {
     void permmapSame() {
         PermMap a = new PermMap(2, new int[] {1, 2}, 2, new int[] {2, 1}, null);
         PermMap b = new PermMap(2, new int[] {1, 2}, 2, new int[] {2, 1}, null);
-        assertTrue(a.astEqual(b));
+        assertAsC("permmap_same", a.astEqual(b));
     }
 
     @Test
     void permmapDifferentPerm() {
         PermMap a = new PermMap(2, new int[] {1, 2}, 2, new int[] {2, 1}, null);
         PermMap b = new PermMap(2, new int[] {1, 2}, 2, new int[] {1, 2}, null);
-        assertFalse(a.astEqual(b));
+        assertAsC("permmap_different_perm", a.astEqual(b));
     }
 
     @Test
     void permmapEqualCrossInversion() {
         PermMap pm1 = new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
         PermMap pm2 = inv(new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null));
-        assertTrue(pm1.astEqual(pm2));
+        boolean r1 = pm1.astEqual(pm2);
         PermMap pm3 = new PermMap(3, new int[] {2, 3, 1}, 3, new int[] {3, 1, 2}, null);
         PermMap pm3Inv = inv((PermMap) pm3.copy());
         PermMap pm4 = new PermMap(3, new int[] {3, 1, 2}, 3, new int[] {2, 3, 1}, null);
-        assertTrue(pm3Inv.astEqual(pm4));
+        boolean r2 = pm3Inv.astEqual(pm4);
+        assertAsC("permmap_equal_cross_inversion", r1, r2);
     }
 
     // ------------------------------------------------------------------
@@ -265,27 +281,31 @@ class EqualTest {
 
     @Test
     void winmapSame() {
-        assertTrue(win(new double[] {1.0, 2.0}, new double[] {3.0, 4.0})
-                .astEqual(win(new double[] {1.0, 2.0}, new double[] {3.0, 4.0})));
+        assertAsC(
+                "winmap_same",
+                win(new double[] {1.0, 2.0}, new double[] {3.0, 4.0})
+                        .astEqual(win(new double[] {1.0, 2.0}, new double[] {3.0, 4.0})));
     }
 
     @Test
     void winmapDifferentScale() {
-        assertFalse(win(new double[] {1.0, 2.0}, new double[] {3.0, 4.0})
-                .astEqual(win(new double[] {1.0, 2.0}, new double[] {3.0, 5.0})));
+        assertAsC(
+                "winmap_different_scale",
+                win(new double[] {1.0, 2.0}, new double[] {3.0, 4.0})
+                        .astEqual(win(new double[] {1.0, 2.0}, new double[] {3.0, 5.0})));
     }
 
     @Test
     void winmapInvertedNotEqual() {
         WinMap a = inv(win(new double[] {1.0, 2.0}, new double[] {3.0, 4.0}));
-        assertFalse(a.astEqual(win(new double[] {1.0, 2.0}, new double[] {3.0, 4.0})));
+        assertAsC("winmap_inverted_not_equal", a.astEqual(win(new double[] {1.0, 2.0}, new double[] {3.0, 4.0})));
     }
 
     @Test
     void winmapEqualCrossInversion() {
         WinMap wm1Inv = inv(win(new double[] {2.0}, new double[] {3.0}));
         WinMap wm2 = win(new double[] {-2.0 / 3.0}, new double[] {1.0 / 3.0});
-        assertTrue(wm1Inv.astEqual(wm2));
+        assertAsC("winmap_equal_cross_inversion", wm1Inv.astEqual(wm2));
     }
 
     // ------------------------------------------------------------------
@@ -296,21 +316,21 @@ class EqualTest {
     void cmpmapSeriesSame() {
         CmpMap a = new CmpMap(zoom(2, 3.0), shift(1.0, 2.0), true);
         CmpMap b = new CmpMap(zoom(2, 3.0), shift(1.0, 2.0), true);
-        assertTrue(a.astEqual(b));
+        assertAsC("cmpmap_series_same", a.astEqual(b));
     }
 
     @Test
     void cmpmapDifferentComponent() {
         CmpMap a = new CmpMap(zoom(2, 3.0), shift(1.0, 2.0), true);
         CmpMap b = new CmpMap(zoom(2, 4.0), shift(1.0, 2.0), true);
-        assertFalse(a.astEqual(b));
+        assertAsC("cmpmap_different_component", a.astEqual(b));
     }
 
     @Test
     void cmpmapDifferentKind() {
         CmpMap a = new CmpMap(new UnitMap(2), new UnitMap(2), true);
         CmpMap b = new CmpMap(new UnitMap(2), new UnitMap(2), false);
-        assertFalse(a.astEqual(b));
+        assertAsC("cmpmap_different_kind", a.astEqual(b));
     }
 
     // ------------------------------------------------------------------
@@ -322,14 +342,14 @@ class EqualTest {
         double[] coeffs = {2.0, 1.0, 1.0, 0.0, 3.0, 2.0, 0.0, 1.0};
         PolyMap a = new PolyMap(2, 2, 2, coeffs, 0, null);
         PolyMap b = new PolyMap(2, 2, 2, coeffs, 0, null);
-        assertTrue(a.astEqual(b));
+        assertAsC("polymap_same", a.astEqual(b));
     }
 
     @Test
     void polymapDifferentCoeff() {
         PolyMap a = new PolyMap(1, 1, 1, new double[] {2.0, 1.0, 1.0}, 0, null);
         PolyMap b = new PolyMap(1, 1, 1, new double[] {3.0, 1.0, 1.0}, 0, null);
-        assertFalse(a.astEqual(b));
+        assertAsC("polymap_different_coeff", a.astEqual(b));
     }
 
     // ------------------------------------------------------------------
@@ -340,21 +360,21 @@ class EqualTest {
     void lutmapSame() {
         LutMap a = new LutMap(new double[] {0.0, 1.0, 4.0, 9.0}, 0.0, 1.0);
         LutMap b = new LutMap(new double[] {0.0, 1.0, 4.0, 9.0}, 0.0, 1.0);
-        assertTrue(a.astEqual(b));
+        assertAsC("lutmap_same", a.astEqual(b));
     }
 
     @Test
     void lutmapDifferentValues() {
         LutMap a = new LutMap(new double[] {0.0, 1.0, 4.0, 9.0}, 0.0, 1.0);
         LutMap b = new LutMap(new double[] {0.0, 1.0, 4.0, 16.0}, 0.0, 1.0);
-        assertFalse(a.astEqual(b));
+        assertAsC("lutmap_different_values", a.astEqual(b));
     }
 
     @Test
     void lutmapDifferentStart() {
         LutMap a = new LutMap(new double[] {0.0, 1.0}, 0.0, 1.0);
         LutMap b = new LutMap(new double[] {0.0, 1.0}, 1.0, 1.0);
-        assertFalse(a.astEqual(b));
+        assertAsC("lutmap_different_start", a.astEqual(b));
     }
 
     // ------------------------------------------------------------------
@@ -363,17 +383,21 @@ class EqualTest {
 
     @Test
     void wcsmapSame() {
-        assertTrue(new WcsMap(2, WcsMap.AST__TAN, 1, 2).astEqual(new WcsMap(2, WcsMap.AST__TAN, 1, 2)));
+        assertAsC("wcsmap_same", new WcsMap(2, WcsMap.AST__TAN, 1, 2).astEqual(new WcsMap(2, WcsMap.AST__TAN, 1, 2)));
     }
 
     @Test
     void wcsmapDifferentProj() {
-        assertFalse(new WcsMap(2, WcsMap.AST__TAN, 1, 2).astEqual(new WcsMap(2, WcsMap.AST__SIN, 1, 2)));
+        assertAsC(
+                "wcsmap_different_proj",
+                new WcsMap(2, WcsMap.AST__TAN, 1, 2).astEqual(new WcsMap(2, WcsMap.AST__SIN, 1, 2)));
     }
 
     @Test
     void wcsmapDifferentAxes() {
-        assertFalse(new WcsMap(3, WcsMap.AST__TAN, 1, 2).astEqual(new WcsMap(3, WcsMap.AST__TAN, 1, 3)));
+        assertAsC(
+                "wcsmap_different_axes",
+                new WcsMap(3, WcsMap.AST__TAN, 1, 2).astEqual(new WcsMap(3, WcsMap.AST__TAN, 1, 3)));
     }
 
     // ------------------------------------------------------------------
@@ -388,17 +412,17 @@ class EqualTest {
 
     @Test
     void slamapSame() {
-        assertTrue(sla("EQGAL").astEqual(sla("EQGAL")));
+        assertAsC("slamap_same", sla("EQGAL").astEqual(sla("EQGAL")));
     }
 
     @Test
     void slamapDifferentType() {
-        assertFalse(sla("EQGAL").astEqual(sla("GALEQ")));
+        assertAsC("slamap_different_type", sla("EQGAL").astEqual(sla("GALEQ")));
     }
 
     @Test
     void slamapDifferentArgs() {
-        assertFalse(sla("PREC", 50000.0, 51000.0).astEqual(sla("PREC", 50000.0, 52000.0)));
+        assertAsC("slamap_different_args", sla("PREC", 50000.0, 51000.0).astEqual(sla("PREC", 50000.0, 52000.0)));
     }
 
     // ------------------------------------------------------------------
@@ -407,26 +431,26 @@ class EqualTest {
 
     @Test
     void sphmapSame() {
-        assertTrue(new SphMap().astEqual(new SphMap()));
+        assertAsC("sphmap_same", new SphMap().astEqual(new SphMap()));
     }
 
     @Test
     void sphmapDifferentPolarLong() {
         SphMap a = new SphMap();
         a.setPolarLong(1.5);
-        assertFalse(a.astEqual(new SphMap()));
+        assertAsC("sphmap_different_polar_long", a.astEqual(new SphMap()));
     }
 
     @Test
     void sphmapDifferentUnitRadius() {
         SphMap a = new SphMap();
         a.setUnitRadius(true);
-        assertFalse(a.astEqual(new SphMap()));
+        assertAsC("sphmap_different_unit_radius", a.astEqual(new SphMap()));
     }
 
     @Test
     void sphmapInverted() {
-        assertFalse(inv(new SphMap()).astEqual(new SphMap()));
+        assertAsC("sphmap_inverted", inv(new SphMap()).astEqual(new SphMap()));
     }
 
     @Test
@@ -438,7 +462,7 @@ class EqualTest {
         CmpMap abc1 = new CmpMap((Mapping) a.copy(), bc, true);
         CmpMap ab = new CmpMap((Mapping) a.copy(), (Mapping) b.copy(), true);
         CmpMap abc2 = new CmpMap(ab, (Mapping) c.copy(), true);
-        assertTrue(abc1.astEqual(abc2));
+        assertAsC("cmpmap_equal_different_tree_structure", abc1.astEqual(abc2));
     }
 
     // ------------------------------------------------------------------
@@ -447,17 +471,19 @@ class EqualTest {
 
     @Test
     void crossTypeZoomVsShift() {
-        assertFalse(zoom(2, 1.0).astEqual(shift(0.0, 0.0)));
+        assertAsC("cross_type_zoom_vs_shift", zoom(2, 1.0).astEqual(shift(0.0, 0.0)));
     }
 
     @Test
     void crossTypeUnitVsZoom() {
-        assertFalse(new UnitMap(2).astEqual(zoom(2, 1.0)));
+        assertAsC("cross_type_unit_vs_zoom", new UnitMap(2).astEqual(zoom(2, 1.0)));
     }
 
     @Test
     void crossTypeWinmapVsShiftmap() {
-        assertFalse(win(new double[] {0.0}, new double[] {1.0}).astEqual(shift(0.0)));
+        assertAsC(
+                "cross_type_winmap_vs_shiftmap",
+                win(new double[] {0.0}, new double[] {1.0}).astEqual(shift(0.0)));
     }
 
     // ------------------------------------------------------------------
@@ -466,37 +492,41 @@ class EqualTest {
 
     @Test
     void basicframeSame() {
-        assertTrue(frame(2, "Title=test,Domain=PIXEL").astEqual(frame(2, "Title=test,Domain=PIXEL")));
+        assertAsC("basicframe_same", frame(2, "Title=test,Domain=PIXEL").astEqual(frame(2, "Title=test,Domain=PIXEL")));
     }
 
     @Test
     void basicframeDifferentNaxes() {
-        assertFalse(frame(2, "").astEqual(frame(3, "")));
+        assertAsC("basicframe_different_naxes", frame(2, "").astEqual(frame(3, "")));
     }
 
     @Test
     void basicframeDifferentTitleIsEqual() {
-        assertTrue(frame(2, "Title=A").astEqual(frame(2, "Title=B")));
+        assertAsC("basicframe_different_title_is_equal", frame(2, "Title=A").astEqual(frame(2, "Title=B")));
     }
 
     @Test
     void basicframeDifferentDomain() {
-        assertFalse(frame(2, "Domain=X").astEqual(frame(2, "Domain=Y")));
+        assertAsC("basicframe_different_domain", frame(2, "Domain=X").astEqual(frame(2, "Domain=Y")));
     }
 
     @Test
     void basicframeDifferentEpochIsEqual() {
-        assertTrue(frame(2, "Epoch=MJD 50000").astEqual(frame(2, "Epoch=MJD 51000")));
+        assertAsC(
+                "basicframe_different_epoch_is_equal",
+                frame(2, "Epoch=MJD 50000").astEqual(frame(2, "Epoch=MJD 51000")));
     }
 
     @Test
     void basicframeEpochSetVsUnsetIsEqual() {
-        assertTrue(frame(2, "Epoch=MJD 50000").astEqual(frame(2, "")));
+        assertAsC(
+                "basicframe_epoch_set_vs_unset_is_equal",
+                frame(2, "Epoch=MJD 50000").astEqual(frame(2, "")));
     }
 
     @Test
     void basicframeDifferentLabelsIsEqual() {
-        assertTrue(frame(2, "Label(1)=X").astEqual(frame(2, "Label(1)=Y")));
+        assertAsC("basicframe_different_labels_is_equal", frame(2, "Label(1)=X").astEqual(frame(2, "Label(1)=Y")));
     }
 
     // ------------------------------------------------------------------
@@ -507,14 +537,14 @@ class EqualTest {
     void cmpframeSame() {
         CmpFrame a = new CmpFrame(frame(1, ""), frame(1, ""));
         CmpFrame b = new CmpFrame(frame(1, ""), frame(1, ""));
-        assertTrue(a.astEqual(b));
+        assertAsC("cmpframe_same", a.astEqual(b));
     }
 
     @Test
     void cmpframeDifferentChild() {
         CmpFrame a = new CmpFrame(frame(1, "Domain=A"), frame(1, ""));
         CmpFrame b = new CmpFrame(frame(1, "Domain=B"), frame(1, ""));
-        assertFalse(a.astEqual(b));
+        assertAsC("cmpframe_different_child", a.astEqual(b));
     }
 
     // ------------------------------------------------------------------
@@ -523,32 +553,40 @@ class EqualTest {
 
     @Test
     void skyframeSame() {
-        assertTrue(sky("System=FK5").astEqual(sky("System=FK5")));
+        assertAsC("skyframe_same", sky("System=FK5").astEqual(sky("System=FK5")));
     }
 
     @Test
     void skyframeDifferentSystem() {
-        assertFalse(sky("System=FK5").astEqual(sky("System=Galactic")));
+        assertAsC("skyframe_different_system", sky("System=FK5").astEqual(sky("System=Galactic")));
     }
 
     @Test
     void skyframeDifferentEquinox() {
-        assertFalse(sky("System=FK5,Equinox=MJD 50000").astEqual(sky("System=FK5,Equinox=MJD 51000")));
+        assertAsC(
+                "skyframe_different_equinox",
+                sky("System=FK5,Equinox=MJD 50000").astEqual(sky("System=FK5,Equinox=MJD 51000")));
     }
 
     @Test
     void skyframeEquinoxSetVsUnsetDefaultIsEqual() {
-        assertTrue(sky("System=FK5,Equinox=MJD 51544.5").astEqual(sky("System=FK5")));
+        assertAsC(
+                "skyframe_equinox_set_vs_unset_default_is_equal",
+                sky("System=FK5,Equinox=MJD 51544.5").astEqual(sky("System=FK5")));
     }
 
     @Test
     void skyframeDifferentEpoch() {
-        assertFalse(sky("System=FK5,Epoch=MJD 50000").astEqual(sky("System=FK5,Epoch=MJD 51000")));
+        assertAsC(
+                "skyframe_different_epoch",
+                sky("System=FK5,Epoch=MJD 50000").astEqual(sky("System=FK5,Epoch=MJD 51000")));
     }
 
     @Test
     void skyframeSkyRefIsOriginWithoutSkyRefIsEqual() {
-        assertTrue(sky("System=FK5,SkyRefIs=Origin").astEqual(sky("System=FK5")));
+        assertAsC(
+                "skyframe_sky_ref_is_origin_without_sky_ref_is_equal",
+                sky("System=FK5,SkyRefIs=Origin").astEqual(sky("System=FK5")));
     }
 
     @Test
@@ -556,7 +594,7 @@ class EqualTest {
         SkyFrame a = sky("System=FK5,SkyRefIs=Origin");
         a.setD("SkyRef(1)", 1.0);
         a.setD("SkyRef(2)", 0.5);
-        assertFalse(a.astEqual(sky("System=FK5")));
+        assertAsC("skyframe_offset_origin_with_sky_ref_is_not_equal", a.astEqual(sky("System=FK5")));
     }
 
     @Test
@@ -564,27 +602,28 @@ class EqualTest {
         SkyFrame a = sky("System=FK5");
         a.setD("SkyRef(1)", 1.0);
         a.setD("SkyRef(2)", 0.5);
-        assertTrue(a.astEqual(sky("System=FK5")));
+        assertAsC("skyframe_sky_ref_without_sky_ref_is_is_equal", a.astEqual(sky("System=FK5")));
     }
 
     @Test
     void skyframeDifferentNeglonIsEqual() {
-        assertTrue(sky("System=FK5,NegLon=1").astEqual(sky("System=FK5")));
+        assertAsC(
+                "skyframe_different_neglon_is_equal", sky("System=FK5,NegLon=1").astEqual(sky("System=FK5")));
     }
 
     @Test
     void skyframeDifferentTitleIsEqual() {
-        assertTrue(sky("System=FK5,Title=A").astEqual(sky("System=FK5,Title=B")));
+        assertAsC("skyframe_different_title_is_equal", sky("System=FK5,Title=A").astEqual(sky("System=FK5,Title=B")));
     }
 
     @Test
     void crossTypeSkyframeVsBasicframe() {
-        assertFalse(sky("System=FK5").astEqual(frame(2, "")));
+        assertAsC("cross_type_skyframe_vs_basicframe", sky("System=FK5").astEqual(frame(2, "")));
     }
 
     @Test
     void crossTypeBasicframeVsSkyframe() {
-        assertFalse(frame(2, "").astEqual(sky("System=FK5")));
+        assertAsC("cross_type_basicframe_vs_skyframe", frame(2, "").astEqual(sky("System=FK5")));
     }
 
     // ------------------------------------------------------------------
@@ -600,12 +639,12 @@ class EqualTest {
     /** Rust compares the FrameSets as Frames and as Mappings; C has one {@code astEqual}. */
     @Test
     void framesetSame() {
-        assertTrue(frameSet(2.0, "Title=current").astEqual(frameSet(2.0, "Title=current")));
+        assertAsC("frameset_same", frameSet(2.0, "Title=current").astEqual(frameSet(2.0, "Title=current")));
     }
 
     @Test
     void framesetDifferentMapping() {
-        assertFalse(frameSet(2.0, "").astEqual(frameSet(3.0, "")));
+        assertAsC("frameset_different_mapping", frameSet(2.0, "").astEqual(frameSet(3.0, "")));
     }
 
     // ------------------------------------------------------------------
@@ -619,19 +658,19 @@ class EqualTest {
     @Test
     void serialiseRoundTripZoommap() {
         ZoomMap original = zoom(2, 3.14159);
-        assertTrue(original.astEqual(roundTrip(original)));
+        assertAsC("serialise_round_trip_zoommap", original.astEqual(roundTrip(original)));
     }
 
     @Test
     void serialiseRoundTripShiftmap() {
         ShiftMap original = shift(1.5, -2.7, 0.001);
-        assertTrue(original.astEqual(roundTrip(original)));
+        assertAsC("serialise_round_trip_shiftmap", original.astEqual(roundTrip(original)));
     }
 
     @Test
     void serialiseRoundTripSkyframe() {
         SkyFrame original = sky("System=FK5,Epoch=MJD 52000,Equinox=MJD 51544.5,NegLon=1,Title=Test Sky");
-        assertTrue(original.astEqual(roundTrip(original)));
+        assertAsC("serialise_round_trip_skyframe", original.astEqual(roundTrip(original)));
     }
 
     // ------------------------------------------------------------------
@@ -642,9 +681,10 @@ class EqualTest {
     void matrixmapEqualCrossInversion() {
         MatrixMap mmInv = inv(full(new double[] {1.0, 2.0}, new double[] {3.0, 4.0}));
         MatrixMap mmDirect = full(new double[] {-2.0, 1.0}, new double[] {1.5, -0.5});
-        assertTrue(mmInv.astEqual(mmDirect));
+        boolean r1 = mmInv.astEqual(mmDirect);
         MatrixMap mmFwd = full(new double[] {1.0, 2.0}, new double[] {3.0, 4.0});
-        assertFalse(mmFwd.astEqual(mmInv));
+        boolean r2 = mmFwd.astEqual(mmInv);
+        assertAsC("matrixmap_equal_cross_inversion", r1, r2);
     }
 
     // ------------------------------------------------------------------
