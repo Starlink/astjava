@@ -481,8 +481,7 @@ public class Channel extends AstObject {
      * <p>An Object that implements {@link NeedsChannelizing} has its {@code channelize} method
      * called before it is written, and its {@code unChannelize} method after, as jniast's Channel
      * calls them; an exception either throws is passed on unchanged, and one from {@code
-     * channelize} stops the write before anything is written. An {@link IntraMap} whose
-     * Transformer is not Serializable gives a {@link java.io.NotSerializableException} in this way.
+     * channelize} stops the write before anything is written.
      *
      * @param obj the Object to write
      * @return the number of Objects written: 1

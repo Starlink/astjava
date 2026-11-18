@@ -1,17 +1,26 @@
 package uk.ac.starlink.ast;
 
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
- * The transformation functions a Channel can give, by name, to the IntraMaps it reads whose
- * IntraFlag holds no serialised Transformer: C's table of functions registered with {@code
- * astIntraReg} (intramap.c {@code IntraReg}).
+ * Tables of transformation functions by name, C's table of functions registered with {@code
+ * astIntraReg} (intramap.c {@code tran_data}, filled by {@code IntraReg}), from which an IntraMap
+ * read takes its Transformer.
  *
- * <p>C's table is process-wide; this one belongs to a Channel, which lends it to the IntraMap
- * loader through a thread-local slot only while it reads ({@link #enter} and {@link #restore}),
- * since the loader of an IntraMap nested in another Object sees only its own description.
+ * <p>There are two. A registry object holds the functions registered with one Channel ({@link
+ * Channel#registerIntra}), which the Channel lends to the IntraMap loader through a thread-local
+ * slot only while it reads ({@link #enter} and {@link #restore}), since the loader of an IntraMap
+ * nested in another Object sees only its own description. The process-wide table, like C's, holds
+ * the function of every IntraMap made in this process, as jniast's {@code construct} registers it,
+ * but holds each Transformer weakly, so that an entry lapses when no IntraMap uses its
+ * Transformer. A read looks in the Channel's registry first and then in the process-wide table.
  */
 final class IntraRegistry {
 
@@ -33,6 +42,47 @@ final class IntraRegistry {
     /** The registry of the Channel reading on this thread, while it reads. */
     private static final ThreadLocal<IntraRegistry> READING = new ThreadLocal<>();
 
+    /**
+     * The process-wide table of the functions of the IntraMaps made in this process, by name: C's
+     * {@code tran_data} (intramap.c), which {@code astIntraReg} fills for the whole process.
+     */
+    // Mutable static state, as intramap.c keeps its table of registered functions (tran_data) in
+    // static memory for the whole process. PMD's MutableStaticState rule does not flag a final
+    // field, so it needs no suppression.
+    private static final ConcurrentMap<String, Made> MADE = new ConcurrentHashMap<>();
+
+    /** The references of {@link #MADE} whose Transformers have been collected. */
+    private static final ReferenceQueue<Transformer> CLEARED = new ReferenceQueue<>();
+
+    /**
+     * An entry of the process-wide table: a registered function with its Transformer held weakly.
+     */
+    private static final class Made extends WeakReference<Transformer> {
+        final String name;
+        final int nin;
+        final int nout;
+        final int flags;
+        final String purpose;
+        final String author;
+        final String contact;
+
+        Made(Entry e) {
+            super(e.trans, CLEARED);
+            name = e.name;
+            nin = e.nin;
+            nout = e.nout;
+            flags = e.flags;
+            purpose = e.purpose;
+            author = e.author;
+            contact = e.contact;
+        }
+
+        /** The entry, with the Transformer {@code held}. */
+        Entry entry(Transformer held) {
+            return new Entry(name, nin, nout, held, flags, purpose, author, contact);
+        }
+    }
+
     /** A registered function, as C's {@code AstIntraMapTranData} holds it. */
     static final class Entry {
         final String name;
@@ -44,6 +94,10 @@ final class IntraRegistry {
         final String author;
         final String contact;
 
+        /**
+         * The entry for {@code trans}, its flags and strings read from it in the order jniast's
+         * {@code construct} reads them.
+         */
         Entry(String name, int nin, int nout, Transformer trans) {
             this.name = name;
             this.nin = nin;
@@ -51,8 +105,27 @@ final class IntraRegistry {
             this.trans = trans;
             this.flags = flagsOf(trans);
             this.purpose = text(trans.getPurpose());
-            this.author = text(trans.getAuthor());
             this.contact = text(trans.getContact());
+            this.author = text(trans.getAuthor());
+        }
+
+        Entry(
+                String name,
+                int nin,
+                int nout,
+                Transformer trans,
+                int flags,
+                String purpose,
+                String author,
+                String contact) {
+            this.name = name;
+            this.nin = nin;
+            this.nout = nout;
+            this.trans = trans;
+            this.flags = flags;
+            this.purpose = purpose;
+            this.author = author;
+            this.contact = contact;
         }
 
         /** Whether this entry and {@code o} register the same function, as C's IntraReg compares them. */
@@ -192,9 +265,57 @@ final class IntraRegistry {
         }
     }
 
-    /** The function registered under {@code name} with the Channel reading on this thread, or null. */
+    /**
+     * Registers {@code trans}, the Transformer of an IntraMap being made, under {@code name} in the
+     * process-wide table, as jniast's {@code construct} registers it with {@code astIntraReg}:
+     * accepted if the name is free, or held by a Transformer no longer in use, or registered
+     * already with the same details (the same Transformer, numbers of coordinates, flags and
+     * strings); otherwise AST__MRITF, as C's {@code IntraReg} reports a name registered with
+     * different details, the Transformer standing for C's function pointer.
+     *
+     * @return the entry for {@code trans}
+     * @throws AstException with status {@code AST__MRITF} if the name is held with different
+     *     details
+     */
+    static Entry registerMade(String name, int nin, int nout, Transformer trans) {
+        purge();
+        Entry entry = new Entry(name, nin, nout, trans);
+        MADE.compute(name, (key, old) -> {
+            Transformer held = old == null ? null : old.get();
+            if (held == null) {
+                return new Made(entry);
+            }
+            if (!old.entry(held).sameAs(entry)) {
+                throw Ast.err(
+                        AstException.AST__MRITF,
+                        "astIntraReg: Invalid attempt to register the transformation function name \"" + name
+                                + "\" multiple times.");
+            }
+            return old;
+        });
+        return entry;
+    }
+
+    /** Removes the entries of the process-wide table whose Transformers have been collected. */
+    private static void purge() {
+        for (Reference<? extends Transformer> r = CLEARED.poll(); r != null; r = CLEARED.poll()) {
+            Made m = (Made) r;
+            MADE.remove(m.name, m);
+        }
+    }
+
+    /**
+     * The function registered under {@code name} with the Channel reading on this thread, or else
+     * in the process-wide table by an IntraMap still in use, or null.
+     */
     static Entry lookup(String name) {
         IntraRegistry reg = READING.get();
-        return reg == null ? null : reg.find(name);
+        Entry e = reg == null ? null : reg.find(name);
+        if (e != null) {
+            return e;
+        }
+        Made m = MADE.get(name);
+        Transformer held = m == null ? null : m.get();
+        return held == null ? null : m.entry(held);
     }
 }

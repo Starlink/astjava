@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
@@ -18,8 +19,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  *
  * <p>An IntraMap made here is named after its Transformer's class, so its dump is compared with
  * C's with the function name replaced; an IntraMap read from C's dump through a Channel that has
- * the function registered under C's name keeps that name, and is written back byte for byte. The
- * Transformers are not Serializable, so an IntraMap is written as C writes it.
+ * the function registered under C's name keeps that name, and is written back byte for byte.
  */
 class IntraMapOracleTest {
 
@@ -43,13 +43,13 @@ class IntraMapOracleTest {
         return out;
     }
 
-    /**
-     * The text a Channel with Full set to {@code full} writes for {@code obj}, without the {@code
-     * channelize} call of {@link Channel#write}, which refuses an IntraMap whose Transformer is not
-     * Serializable, as jniast's does.
-     */
-    private static String dump(AstObject obj, int full) {
-        return Channel.text(obj, true, full);
+    /** The text a Channel with Full set to {@code full} writes for {@code obj}. */
+    private static String dump(AstObject obj, int full) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Channel ch = new Channel(null, out);
+        ch.setFull(full);
+        ch.write(obj);
+        return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
 
     /** {@code text} with the function name of {@code map} replaced by C's {@code name}. */

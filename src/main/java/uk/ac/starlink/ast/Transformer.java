@@ -5,8 +5,13 @@ package uk.ac.starlink.ast;
  * class can be used to construct a {@code Mapping} (an {@link IntraMap}) with a user-defined
  * transformation function.
  *
- * <p>If the {@code IntraMap}s containing this {@code Transformer} are to be read or written via a
- * {@link Channel}, the class must be declared {@link java.io.Serializable}.
+ * <p>An {@code IntraMap} is written to a {@link Channel} with the name of its transformation
+ * function, not the {@code Transformer}, and is read back with the {@code Transformer} that name
+ * stands for (see {@link IntraMap}).
+ *
+ * <p>The {@code tranP} method may be called from several threads at once, since copies of an
+ * {@code IntraMap} share its {@code Transformer} and no lock is held while it is called: a
+ * {@code Transformer} must be thread-safe.
  *
  * <p>This is implemented as an abstract class (rather than an interface) so that additional flags
  * along the lines of the {@code simpFI} method can be introduced in the future without breaking

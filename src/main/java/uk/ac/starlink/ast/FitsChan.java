@@ -893,8 +893,8 @@ public class FitsChan extends Channel {
      * <p>An Object that implements {@link NeedsChannelizing} has its {@code channelize} and {@code
      * unChannelize} methods called before and after it is written, as for a {@link Channel}; an
      * exception either throws is passed on unchanged, although this method does not declare it, as
-     * jniast's FitsChan passes it on. An {@link IntraMap} whose Transformer is not Serializable
-     * gives a {@link java.io.NotSerializableException} in this way, and nothing is written.
+     * jniast's FitsChan passes it on. An exception from {@code channelize} stops the write before
+     * anything is written.
      *
      * @param obj the Object to write
      * @return the number of Objects written: 1, or 0 if the Object could not be written

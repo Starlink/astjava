@@ -13,24 +13,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.NotSerializableException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
  * Translation of Rust {@code tests/test_intramap.rs} (intramap.c), less the three tests that
- * compare with the C probe, which {@link IntraMapOracleTest} translates, with jniast's behaviour
- * for the Java API: the Transformer classes, serialisation of a Transformer in jniast's printable
- * encoding through a Channel and a FitsChan, at the top level and inside a CmpMap, and the failure
- * of a write of a Transformer that is not Serializable; the errors of a Transformer that throws or
- * returns arrays of the wrong shape; the registration of transformation functions with a Channel,
+ * compare with the C probe, which {@link IntraMapOracleTest} translates, and of jniast's IntraMap
+ * tests (AstTest {@code testMapping}, ThreadTest {@code testIntraMap}), with the Java API: the
+ * Transformer classes; IntraMaps written by name and read back with the Transformer of an IntraMap
+ * made in the same process, or one registered with the Channel, through a Channel and a FitsChan,
+ * at the top level and inside a CmpMap, and AST__URITF where the name stands for no Transformer;
+ * the numbers of coordinates C's loader checks (probe {@code intramap_load_probe.c}); the errors of
+ * a Transformer that throws or returns arrays of the wrong shape; the registration of functions,
  * C's {@code astIntraReg}; and simplification of IntraMaps in series (intramap.c {@code MapMerge}).
  */
 class IntraMapTest {
 
     private static final double BAD = AstObject.AST__BAD;
+
+    private static final Map<String, String> LOAD_PROBE = ProbeOutput.load("intramap_load_probe");
 
     /** A doubling transformation, as the probe registers "double": forward 2x, inverse x/2. */
     static final class Doubler extends Transformer1 {
@@ -102,7 +107,7 @@ class IntraMapTest {
         }
     }
 
-    /** jniast's {@code TestTransformer2} (AstTest.java): a Serializable two-dimensional stretch. */
+    /** jniast's {@code TestTransformer2} (AstTest.java): a two-dimensional stretch, Serializable as there. */
     static final class Stretch extends Transformer2 implements Serializable {
         private static final long serialVersionUID = 1L;
         private final double xfactor;
@@ -203,11 +208,48 @@ class IntraMapTest {
     }
 
     /**
-     * The text a default Channel writes for {@code obj}, without the {@code channelize} call of
-     * {@link Channel#write}, which refuses an IntraMap whose Transformer is not Serializable.
+     * C's {@code Sum2} of {@code probes/intramap_load_probe.c}: two inputs and one output; forward
+     * the sum of the inputs, inverse half the input on each output.
      */
+    static final class Sum2 extends Transformer {
+        @Override
+        public boolean canTransformCoords(int nin, int nout) {
+            return nin == 2 && nout == 1;
+        }
+
+        @Override
+        public double[][] tranP(int npoint, int ncoordIn, double[][] in, boolean forward, int ncoordOut) {
+            double[][] out = new double[ncoordOut][npoint];
+            for (int i = 0; i < npoint; i++) {
+                if (forward) {
+                    out[0][i] = in[0][i] + in[1][i];
+                } else {
+                    out[0][i] = 0.5 * in[0][i];
+                    out[1][i] = 0.5 * in[0][i];
+                }
+            }
+            return out;
+        }
+
+        @Override
+        public String getPurpose() {
+            return "Sum of two inputs";
+        }
+
+        @Override
+        public String getAuthor() {
+            return "AST test suite";
+        }
+
+        @Override
+        public String getContact() {
+            return "starlink-ast";
+        }
+    }
+
+    /** The text a default Channel writes for {@code obj}. */
     private static String dump(AstObject obj) {
-        return Channel.text(obj, true, 0);
+        return ChannelText.dump(obj);
     }
 
     private static Channel reader(String text) {
@@ -216,6 +258,14 @@ class IntraMapTest {
 
     private static AstObject readBack(String text) throws IOException {
         return reader(text).read();
+    }
+
+    /**
+     * {@code text} with the function name of {@code map} replaced by {@code name}, as a dump of
+     * {@code map} reads in another process, where its name stands for no Transformer.
+     */
+    private static String renamed(String text, IntraMap map, String name) {
+        return text.replace("Fname = \"" + map.getFname() + "\"", "Fname = \"" + name + "\"");
     }
 
     // ------------------------------------------------------------------
@@ -239,9 +289,12 @@ class IntraMapTest {
     }
 
     /**
-     * jniast's construction check (jni/IntraMap.c {@code construct}): a Transformer that cannot map
-     * the numbers of coordinates given is an IllegalArgumentException. C's {@code astInitIntraMap}
-     * checks (AST__BADNI, AST__BADNO) are made by the Transformer here.
+     * jniast's construction checks (jni/IntraMap.c {@code construct}): a Transformer that cannot
+     * map the numbers of coordinates given is an IllegalArgumentException, and the registration of
+     * one Transformer with other numbers of coordinates than an IntraMap in use made with it is
+     * AST__MRITF, as C's {@code astIntraReg} reports it. C's {@code astInitIntraMap} checks
+     * (AST__BADNI, AST__BADNO) cannot fail, since the function is registered with the IntraMap's
+     * numbers.
      */
     @Test
     void constructionChecksAsJniastDoes() {
@@ -250,16 +303,22 @@ class IntraMapTest {
         assertEquals("Transformer will not map 2 -> 1 coordinates", e.getMessage());
         assertThrows(IllegalArgumentException.class, () -> new IntraMap(new Stretch(1, 1), 1, 1));
         assertThrows(NullPointerException.class, () -> new IntraMap((Transformer) null, 1, 1));
-        IntraMap m = new IntraMap(new Failing(() -> null), 3, 2);
+        Failing any = new Failing(() -> null);
+        IntraMap m = new IntraMap(any, 3, 2);
         assertEquals(3, m.getNin());
         assertEquals(2, m.getNout());
+        IntraMap again = new IntraMap(any, 3, 2);
+        assertEquals(m.getFname(), again.getFname());
+        AstException mritf = assertThrows(AstException.class, () -> new IntraMap(any, 2, 2));
+        assertEquals(AstException.AST__MRITF, mritf.getStatus());
     }
 
     /**
      * intramap.c {@code IntraReg} and {@code CleanName}, as a Channel registers a function: a blank
      * name is AST__ITFNI, negative numbers of coordinates other than AST__ANY are AST__BADNI and
      * AST__BADNO, a name already registered is AST__MRITF unless the registration is the same, and
-     * white space in a name is ignored.
+     * white space in a name is ignored. The process-wide table refuses a name held by another
+     * Transformer in use in the same way.
      */
     @Test
     void registryChecksAsCDoes() {
@@ -280,29 +339,64 @@ class IntraMapTest {
         assertEquals(AstException.AST__MRITF, e.getStatus());
         e = assertThrows(AstException.class, () -> ch.registerIntra(" dou ble ", 1, 1, new NoFwd()));
         assertEquals(AstException.AST__MRITF, e.getStatus());
+
+        String name = IntraMapTest.class.getName() + "#collision";
+        IntraRegistry.registerMade(name, 1, 1, t);
+        IntraRegistry.registerMade(name, 1, 1, t);
+        e = assertThrows(AstException.class, () -> IntraRegistry.registerMade(name, 1, 1, new Doubler()));
+        assertEquals(AstException.AST__MRITF, e.getStatus());
     }
 
     /**
-     * An IntraMap whose Transformer is not Serializable is written as C writes it, by name, and
-     * reads back only through a Channel that has the function registered under that name;
-     * otherwise the read is AST__URITF, as C's loader reports an unregistered function.
+     * An IntraMap is written as C writes it, by name, and reads back in the same process with the
+     * Transformer of the IntraMap that was written, while that is in use.
      */
     @Test
-    void readingByNameNeedsTheTransformationRegistered() throws IOException {
+    void aSameProcessReadFindsTheTransformer() throws IOException {
         Doubler t = new Doubler();
         IntraMap dbl = new IntraMap(t);
         dbl.setC("IntraFlag", "v1");
         String text = dump(dbl);
-        AstException e = assertThrows(AstException.class, () -> readBack(text));
-        assertEquals(AstException.AST__URITF, e.getStatus());
-        assertTrue(e.getMessage().contains("Function name:   \"" + dbl.getFname() + "\"."), e.getMessage());
-
-        Channel ch = reader(text);
-        ch.registerIntra(dbl.getFname(), 1, 1, t);
-        IntraMap back = assertInstanceOf(IntraMap.class, ch.read());
+        assertTrue(text.contains("Iflag = \"v1\""), text);
+        IntraMap back = assertInstanceOf(IntraMap.class, readBack(text));
+        assertSame(t, back.getTransformer());
         assertTrue(back.astEqual(dbl));
         assertEquals(text, dump(back));
         assertArrayEquals(new double[] {3.0}, back.tran1(1, new double[] {1.5}, true));
+    }
+
+    /**
+     * An IntraMap read where its function name stands for no Transformer, as in another process
+     * (here a name no IntraMap was made with), is AST__URITF, as C's loader reports an
+     * unregistered function, unless the Channel reading has a Transformer registered under it.
+     */
+    @Test
+    void aReadInANewProcessNeedsTheTransformationRegistered() throws IOException {
+        Doubler t = new Doubler();
+        IntraMap dbl = new IntraMap(t);
+        String gone = "org.example.Gone#1f2e3d4c";
+        String text = renamed(dump(dbl), dbl, gone);
+        AstException e = assertThrows(AstException.class, () -> readBack(text));
+        assertEquals(AstException.AST__URITF, e.getStatus());
+        assertEquals(
+                "astLoadIntraMap(Channel): An IntraMap was read which uses an unknown transformation function.\n"
+                        + "This is a private extension to the AST library: to handle it, you must obtain the source "
+                        + "code from its author.\n"
+                        + "You can then register it with AST in your software by calling astIntraReg (see SUN/211).\n"
+                        + " \n"
+                        + "   Function name:   \"" + gone + "\".\n"
+                        + "   Purpose:         \"Double the value\".\n"
+                        + "   Author:          \"AST test suite\".\n"
+                        + "   Contact address: \"starlink-ast\".\n"
+                        + " \n"
+                        + "Error while reading a IntraMap from a Channel.",
+                e.getMsgText());
+
+        Channel ch = reader(text);
+        ch.registerIntra(gone, 1, 1, t);
+        IntraMap back = assertInstanceOf(IntraMap.class, ch.read());
+        assertEquals(gone, back.getFname());
+        assertEquals(text, dump(back));
     }
 
     /**
@@ -314,7 +408,7 @@ class IntraMapTest {
         Doubler t = new Doubler();
         IntraMap im = new IntraMap(t);
         CmpMap cmp = new CmpMap(new ZoomMap(1, 3.0), im, true);
-        String text = dump(cmp);
+        String text = renamed(dump(cmp), im, "double");
 
         Channel ch = reader(text);
         ch.registerIntra("nofwd", 1, 1, new NoFwd());
@@ -322,7 +416,7 @@ class IntraMapTest {
         assertEquals(AstException.AST__URITF, e.getStatus());
 
         ch = reader(text);
-        ch.registerIntra(im.getFname(), 1, 1, t);
+        ch.registerIntra("double", 1, 1, t);
         Mapping back = (Mapping) ch.read();
         assertArrayEquals(new double[] {9.0}, back.tran1(1, new double[] {1.5}, true));
         assertEquals(text, dump(back));
@@ -422,6 +516,36 @@ class IntraMapTest {
     }
 
     /**
+     * A read calls no method of the Transformer: its flags and strings are those registered, so a
+     * Transformer whose methods throw once the IntraMap is made does not make the read throw.
+     */
+    @Test
+    void aReadCallsNoTransformerMethod() throws IOException {
+        int[] calls = new int[1];
+        Failing touchy = new Failing(() -> null) {
+            @Override
+            public boolean hasForward() {
+                if (calls[0]++ > 0) {
+                    throw new IllegalStateException("called again");
+                }
+                return true;
+            }
+
+            @Override
+            public boolean canTransformCoords(int nin, int nout) {
+                if (calls[0] > 0) {
+                    throw new IllegalStateException("called again");
+                }
+                return true;
+            }
+        };
+        IntraMap m = new IntraMap(touchy, 1, 1);
+        Mapping back = (Mapping) readBack(dump(new CmpMap(new UnitMap(1), m, true)));
+        assertEquals(1, back.getNin());
+        assertEquals(1, calls[0]);
+    }
+
+    /**
      * Under the NaN protocol a bad input reaches the Transformer as AST__BAD, as C passes it, never
      * as NaN.
      */
@@ -444,16 +568,17 @@ class IntraMapTest {
     }
 
     // ------------------------------------------------------------------
-    // Serialisation of the Transformer
+    // jniast's tests
     // ------------------------------------------------------------------
 
     /**
-     * jniast's AstTest {@code testMapping}: an IntraMap of a Serializable Transformer written to a
-     * Channel and to a FitsChan reads back and transforms as before, and so does the original.
+     * jniast's AstTest {@code testMapping} (AstTest.java:595-626), less the XmlChan part, a class
+     * this library lacks: an IntraMap written to a Channel and to a FitsChan reads back and
+     * transforms as before, and so does the original.
      */
     @Test
-    void aSerializableTransformerRoundTrips() throws IOException {
-        IntraMap imap = new IntraMap(new Stretch(2.0, 4.0));
+    void jniastRoundTrip() throws IOException {
+        Mapping imap = new IntraMap(new Stretch(2.0, 4.0));
         double[] xina = {1, 2, 3};
         double[] yina = {100, 200, 300};
         double[][] resulta = imap.tran2(3, xina, yina, true);
@@ -466,7 +591,6 @@ class IntraMapTest {
         double[][] resultb = jmap.tran2(3, xina, yina, true);
         assertArrayEquals(resulta[0], resultb[0]);
         assertArrayEquals(resulta[1], resultb[1]);
-        assertEquals(imap.getFname(), ((IntraMap) jmap).getFname());
 
         FitsChan fc = new FitsChan();
         assertEquals(1, fc.write(jmap));
@@ -475,92 +599,150 @@ class IntraMapTest {
         double[][] resultc = kmap.tran2(3, xina, yina, true);
         assertArrayEquals(resulta[0], resultc[0]);
         assertArrayEquals(resulta[1], resultc[1]);
-        assertArrayEquals(xina, kmap.tran2(3, resultc[0], resultc[1], false)[0], 0.0);
 
         double[][] resulte = imap.tran2(3, xina, yina, true);
         assertArrayEquals(resulta[0], resulte[0]);
         assertArrayEquals(resulta[1], resulte[1]);
-        assertEquals(dump(imap), dump(jmap));
     }
 
     /**
-     * An IntraMap of a Serializable Transformer inside a CmpMap reads back through a Channel
-     * without any registration, with its Transformer decoded from the IntraFlag value, and two
-     * IntraMaps of one Transformer still simplify to a UnitMap after the round trip.
+     * jniast's ThreadTest {@code testIntraMap} (ThreadTest.java:29-48): an IntraMap made on one
+     * thread transforms on another.
      */
     @Test
-    void aSerializableTransformerRoundTripsInsideACmpMap() throws IOException {
+    void jniastIntraMapOnAnotherThread() throws InterruptedException {
+        double z = 3.0;
+        IntraMap map = new IntraMap(new Stretch(z, z));
+        int np = 2;
+        double[] xin = {1, 4};
+        double[] yin = {8, 2};
+        double[] xout = new double[np];
+        double[] yout = new double[np];
+        Thread thread = new Thread(
+                () -> {
+                    double[][] out = map.tran2(np, xin, yin, true);
+                    System.arraycopy(out[0], 0, xout, 0, np);
+                    System.arraycopy(out[1], 0, yout, 0, np);
+                },
+                "IntraThread");
+        thread.start();
+        thread.join();
+        assertArrayEquals(new double[] {xin[0] * z, xin[1] * z}, xout);
+        assertArrayEquals(new double[] {yin[0] * z, yin[1] * z}, yout);
+    }
+
+    // ------------------------------------------------------------------
+    // Writing and reading by name
+    // ------------------------------------------------------------------
+
+    /**
+     * An IntraMap inside a CmpMap reads back in the same process, and two IntraMaps of one
+     * Transformer still simplify to a UnitMap after the round trip.
+     */
+    @Test
+    void aRoundTripInsideACmpMap() throws IOException {
         IntraMap im = new IntraMap(new Stretch(2.0, 4.0));
         IntraMap inv = (IntraMap) im.copy();
         inv.invert();
         CmpMap cmp = new CmpMap(new CmpMap(new ZoomMap(2, 3.0), im, true), inv, true);
         String text = dump(cmp);
-        assertTrue(text.contains("Iflag = \""), text);
+        assertFalse(text.contains("Iflag"), text);
         Mapping back = (Mapping) readBack(text);
         double[][] out = back.tran2(1, new double[] {1}, new double[] {2}, true);
         assertArrayEquals(new double[] {3}, out[0]);
         assertArrayEquals(new double[] {6}, out[1]);
         assertEquals(text, dump(back));
-        Mapping s = back.simplify();
-        assertInstanceOf(ZoomMap.class, s);
+        assertInstanceOf(ZoomMap.class, back.simplify());
     }
 
     /**
-     * jniast's Channel and FitsChan writes call {@code channelize}, which throws
-     * NotSerializableException for an IntraMap whose Transformer is not Serializable, and write
-     * nothing.
+     * Channel and FitsChan writes call {@code channelize} and {@code unChannelize}, which do
+     * nothing for an IntraMap, so an IntraMap whose Transformer is not Serializable is written.
      */
     @Test
-    void writingANonSerializableTransformerFails() {
+    void writingNeedsNoSerializableTransformer() throws IOException {
         IntraMap m = new IntraMap(new Doubler());
+        String before = dump(m);
+        m.channelize();
+        m.unChannelize();
+        assertEquals(before, dump(m));
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        NotSerializableException e =
-                assertThrows(NotSerializableException.class, () -> new Channel(null, bout).write(m));
-        assertEquals(Doubler.class.getName(), e.getMessage());
-        assertEquals(0, bout.size());
-        assertThrows(NotSerializableException.class, m::channelize);
-
+        assertEquals(1, new Channel(null, bout).write(m));
+        assertEquals(before, new String(bout.toByteArray(), StandardCharsets.UTF_8));
         FitsChan fc = new FitsChan();
-        assertThrows(NotSerializableException.class, () -> fc.write(m));
-        assertEquals(0, fc.getNcard());
+        assertEquals(1, fc.write(m));
+        fc.setCard(1);
+        assertArrayEquals(new double[] {3.0}, ((Mapping) fc.read()).tran1(1, new double[] {1.5}, true));
     }
 
     /**
-     * Inside another Object, an IntraMap whose Transformer is not Serializable is written as C
-     * writes it, as jniast channelizes only the Object written, and reads back as AST__URITF
-     * unless its function is registered.
+     * An IntraFlag value is read as the string it is, never as a serialised object: a dump that
+     * jniast wrote with a serialised Transformer in IntraFlag reads back, by name, with that text
+     * as its IntraFlag, or is AST__URITF where the name stands for no Transformer.
      */
     @Test
-    void aNestedNonSerializableTransformerIsWrittenByName() throws IOException {
-        IntraMap m = new IntraMap(new Doubler());
-        String text = dump(new CmpMap(new UnitMap(1), m, true));
-        assertFalse(text.contains("Iflag"), text);
-        AstException e = assertThrows(AstException.class, () -> readBack(text));
+    void anIntraFlagIsOnlyAString() throws IOException {
+        Doubler t = new Doubler();
+        IntraMap m = new IntraMap(t);
+        String blob = "s2OAFAAAAAAAAAA+/AAA";
+        m.setC("IntraFlag", blob);
+        String text = dump(m);
+        IntraMap back = assertInstanceOf(IntraMap.class, readBack(text));
+        assertEquals(blob, back.getC("IntraFlag"));
+        assertSame(t, back.getTransformer());
+        AstException e = assertThrows(AstException.class, () -> readBack(renamed(text, m, "unknown")));
         assertEquals(AstException.AST__URITF, e.getStatus());
     }
 
     /**
-     * jniast's printable encoding (IntraMap.java {@code encodePrintable}): six bits at a time from
-     * the lowest bits of each byte, in the alphabet A-Z, a-z, 0-9, + and /. The Java serialisation
-     * magic number 0xACED and a zero byte give "s2OA". The decoding ignores the zero characters
-     * jniast's encoding leaves at the end of the IntraFlag value.
+     * C's {@code astLoadIntraMap} compares the numbers of coordinates of the IntraMap read, as its
+     * Invert attribute leaves them, with those registered (probe {@code intramap_load_probe.c}): an
+     * IntraMap of a function with two inputs and one output reads back as made, and inverted is
+     * AST__BADNI, whether the function is registered with the Channel or by the IntraMap made in
+     * this process.
      */
     @Test
-    void thePrintableEncodingIsJniasts() throws IOException {
-        assertEquals("s2OA", IntraMap.encodePrintable(new byte[] {(byte) 0xAC, (byte) 0xED, 0}));
-        byte[] plain = {(byte) 0xAC, (byte) 0xED, 0, 5, 0x7f, (byte) 0x80, 1};
-        byte[] back = IntraMap.decodePrintable(IntraMap.encodePrintable(plain));
-        for (int i = 0; i < plain.length; i++) {
-            assertEquals(plain[i], back[i]);
+    void anInvertedNonSquareIntraMapCannotBeRead() throws IOException {
+        Sum2 t = new Sum2();
+        IntraMap m = new IntraMap(t, 2, 1);
+        for (String name : new String[] {"as_made", "inverted"}) {
+            String[] parts = LOAD_PROBE.get(name).split("-- read\n", -1);
+            String cdump = parts[0];
+            assertEquals(cdump, renamed(dump(m), m, "sum2"), name);
+            Channel ch = reader(cdump);
+            ch.registerIntra("sum2", 2, 1, t);
+            String result;
+            try {
+                Mapping back = (Mapping) ch.read();
+                double[] out = back.tranP(1, 2, new double[][] {{1.5}, {2.25}}, true, 1)[0];
+                result =
+                        "Nin " + back.getNin() + " forward of (1.5, 2.25): " + CFormat.format("%.17g", out[0]) + " 0\n";
+            } catch (AstException e) {
+                StringBuilder sb = new StringBuilder();
+                for (String line : ProbeOutput.trimLines(e.getMsgText()).split("\n", -1)) {
+                    sb.append("!  ").append(line).append('\n');
+                }
+                result = sb + "status " + e.getStatus() + "\n";
+            }
+            StringBuilder want = new StringBuilder();
+            for (String line : parts[1].split("\n", -1)) {
+                if (!line.isEmpty() && !line.startsWith("!! ")) {
+                    want.append(line).append('\n');
+                }
+            }
+            assertEquals(want.toString(), result, name);
+            AstException same = null;
+            try {
+                readBack(dump(m));
+            } catch (AstException e) {
+                same = e;
+            }
+            assertEquals("inverted".equals(name), same != null, name);
+            if (same != null) {
+                assertEquals(AstException.AST__BADNI, same.getStatus());
+            }
+            m.invert();
         }
-
-        IntraMap im = new IntraMap(new Stretch(2.0, 4.0));
-        String text = dump(im);
-        int at = text.indexOf("Iflag = \"") + "Iflag = \"".length();
-        int end = text.indexOf('"', at);
-        String padded = text.substring(0, end) + "\u0000\u0000\u0000\u0000" + text.substring(end);
-        Mapping back2 = (Mapping) readBack(padded);
-        assertArrayEquals(new double[] {4}, back2.tran2(1, new double[] {2}, new double[] {1}, true)[0]);
     }
 
     /** jniast's {@code copy}: a copy shares the Transformer and the function name. */
@@ -572,8 +754,7 @@ class IntraMapTest {
         assertNotSame(m, copy);
         assertSame(m.getTransformer(), copy.getTransformer());
         assertEquals(m.getFname(), copy.getFname());
-        String fname = Stretch.class.getName() + "#"
-                + Integer.toHexString(m.getTransformer().hashCode());
+        String fname = Stretch.class.getName() + "#" + Integer.toHexString(System.identityHashCode(m.getTransformer()));
         assertEquals(fname, m.getFname());
     }
 

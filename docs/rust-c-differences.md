@@ -551,7 +551,15 @@ The entries are grouped by area, in the order the Java classes were ported.
 - C: `IntraReg` accepts a second registration of a name only if the numbers of coordinates, the function, the flags and the purpose, author and contact strings are all the same, and otherwise reports AST__MRITF.
   Its table is process-wide.
 - Rust: `IntraRegistry::register` accepts a second registration of the same `Arc`, whatever else differs; the registry belongs to a Channel.
-- Java: as C, comparing the Transformer object as C compares the function pointer, with a registry per Channel, used only for an IntraMap whose IntraFlag holds no serialised Transformer.
+- Java: as C, comparing the Transformer object as C compares the function pointer.
+  Functions are registered with a Channel for its reads, and the process-wide table holds the Transformer of each IntraMap made in the process, weakly; a read looks in the Channel's first.
+
+### The numbers of coordinates `astLoadIntraMap` checks
+
+- **C quirk**: `astLoadIntraMap` compares the numbers of input and output coordinates the Mapping class's `GetNin` and `GetNout` give, which take account of the Invert attribute already loaded, with those registered.
+  An inverted IntraMap of a function with different numbers of inputs and outputs therefore cannot be read back: AST__BADNI (probe `src/test/resources/probes/intramap_load_probe.c`, case `inverted`).
+- Rust: `IntraMap::from_node` does not compare the numbers of coordinates with the transformation's.
+- Java: as C.
 
 ### The status of an error from an IntraMap's transformation function
 

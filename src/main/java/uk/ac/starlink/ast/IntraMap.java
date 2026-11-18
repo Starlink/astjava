@@ -1,13 +1,6 @@
 package uk.ac.starlink.ast;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -17,18 +10,21 @@ import java.util.Objects;
  * object, to perform the transformations used by a {@code Mapping}. This allows you to create
  * {@code Mapping}s that perform any conceivable coordinate transformation.
  *
- * <p>However, an {@code IntraMap} is intended for use within a given software environment, and if
- * they are to be communicated via {@link Channel}s can only be used where class libraries
- * containing the appropriate {@code Transformer} classes are available (and only if those classes
- * are {@code Serializable}).
+ * <p>However, an {@code IntraMap} is intended for use within a given software environment. It is
+ * written to a {@link Channel} with the name of its transformation function, not the function
+ * itself, as C's IntraMap is, and can be read back only where that name stands for a Transformer:
+ * in the same process while an IntraMap made with that Transformer is still in use, or through a
+ * Channel with which a Transformer has been registered under the name.
  *
  * <p>The IntraMap holds its Transformer by reference; a {@link #copy} shares it. The name of its
  * transformation function (written to a dump as {@code Fname}) is the Transformer's class name
- * followed by {@code #} and its hash code in hexadecimal, and two IntraMaps with the same name
- * are taken to apply the same function. The flags C registers with the function (whether the
- * forward and inverse transformations exist, and whether a forward and inverse pair, or an
- * inverse and forward pair, in series simplify away) and the purpose, author and contact strings
- * are read from the Transformer when the IntraMap is made.
+ * followed by {@code #} and its identity hash code in hexadecimal, and two IntraMaps with the same
+ * name are taken to apply the same function. Making an IntraMap registers its Transformer under
+ * that name, as jniast registers it with C's {@code astIntraReg}, together with the numbers of
+ * coordinates, the flags (whether the forward and inverse transformations exist, and whether a
+ * forward and inverse pair, or an inverse and forward pair, in series simplify away) and the
+ * purpose, author and contact strings, all read from the Transformer then. The registration holds
+ * the Transformer weakly, and lapses when no IntraMap uses it.
  *
  * <p>The IntraFlag attribute is a string which distinguishes this IntraMap from others using the
  * same function: a pair of IntraMaps that could cancel is simplified only if their IntraFlag
@@ -36,20 +32,14 @@ import java.util.Objects;
  * only if both have it set to the same value. It is unset by default, and cannot be changed once
  * the IntraMap is held by another Object.
  *
- * <p>When it is written to a Channel, an IntraMap whose Transformer is {@code Serializable} has
- * the serialised Transformer written as its IntraFlag value, in jniast's printable encoding,
- * wherever the IntraMap is in the Object written; reading it back recovers the Transformer. An
- * IntraMap whose Transformer is not Serializable is written as C writes it, with its IntraFlag
- * value, and can be read back only through a Channel with which its function has been registered
- * under its name.
+ * <p>The Transformer's {@code tranP} method is called without any lock, and copies of an IntraMap
+ * share its Transformer, so it may be called from several threads at once: the Transformer must
+ * be thread-safe.
  *
  * <p>Ported from Rust {@code mappings/intramap.rs}, C {@code intramap.c} and jniast's {@code
  * IntraMap.java} and {@code jni/IntraMap.c}.
  */
 public class IntraMap extends Mapping implements NeedsChannelizing {
-
-    /** Printable characters used for encoding and decoding (jniast's {@code Chrs64}). */
-    private static final String CHRS64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     /** The Transformer which performs the transformations, shared with any copies. */
     private final Transformer trans;
@@ -83,15 +73,12 @@ public class IntraMap extends Mapping implements NeedsChannelizing {
      * @throws IllegalArgumentException if {@code trans} is not able to transform from {@code nin}
      *     to {@code nout} coordinates
      * @throws NullPointerException if {@code trans} is null
+     * @throws AstException with status {@code AST__MRITF} if another IntraMap in use was made with
+     *     the same function name and different details: another Transformer, other numbers of
+     *     coordinates, or other flags or strings
      */
     public IntraMap(Transformer trans, int nin, int nout) {
-        super(checkCounts(trans, nin, nout), nout, trans.hasForward(), trans.hasInverse());
-        this.trans = trans;
-        this.fname = trans.getClass().getName() + "#" + Integer.toHexString(trans.hashCode());
-        this.flags = IntraRegistry.flagsOf(trans);
-        this.purpose = IntraRegistry.text(trans.getPurpose());
-        this.contact = IntraRegistry.text(trans.getContact());
-        this.author = IntraRegistry.text(trans.getAuthor());
+        this(register(trans, nin, nout), nin, nout);
     }
 
     /**
@@ -114,59 +101,61 @@ public class IntraMap extends Mapping implements NeedsChannelizing {
         this(trans, 1, 1);
     }
 
+    /** Constructs an IntraMap of the function {@code entry} registers, as {@code astInitIntraMap} does. */
+    private IntraMap(IntraRegistry.Entry entry, int nin, int nout) {
+        super(nin, nout, (entry.flags & IntraRegistry.NOFWD) == 0, (entry.flags & IntraRegistry.NOINV) == 0);
+        trans = entry.trans;
+        fname = entry.name;
+        flags = entry.flags;
+        purpose = entry.purpose;
+        author = entry.author;
+        contact = entry.contact;
+    }
+
     /**
-     * {@code nin}, after jniast's check (jni/IntraMap.c {@code construct}) that {@code trans} can
-     * map {@code nin} to {@code nout} coordinates.
+     * jniast's {@code construct} (jni/IntraMap.c) up to its call of {@code astIntraReg}: the check
+     * that {@code trans} can map {@code nin} to {@code nout} coordinates, then the registration of
+     * {@code trans} under its function name in the process-wide table, which reads its flags and
+     * strings. An exception the Transformer's methods throw is passed on, as jniast passes it on.
      */
-    private static int checkCounts(Transformer trans, int nin, int nout) {
+    private static IntraRegistry.Entry register(Transformer trans, int nin, int nout) {
         Objects.requireNonNull(trans, "trans");
         if (!trans.canTransformCoords(nin, nout)) {
             throw new IllegalArgumentException("Transformer will not map " + nin + " -> " + nout + " coordinates");
         }
-        return nin;
+        String name = trans.getClass().getName() + "#" + Integer.toHexString(System.identityHashCode(trans));
+        return IntraRegistry.registerMade(name, nin, nout, trans);
     }
 
     /**
      * Loads an IntraMap from its description, as C's {@code astLoadIntraMap} does: {@code Fname},
-     * {@code Iflag}, {@code Purp}, {@code Auth} and {@code Cntact}. The Transformer is the one the
-     * IntraFlag value holds in jniast's printable encoding; when it holds none, it is the one
-     * registered under the function name with the Channel reading ({@link IntraRegistry}), whose
-     * numbers of coordinates must match the IntraMap's.
+     * {@code Iflag} (the IntraFlag attribute), {@code Purp}, {@code Auth} and {@code Cntact}. The
+     * Transformer is the one registered under the function name, with the Channel reading or, if
+     * none is, by an IntraMap made in this process and still in use ({@link IntraRegistry#lookup}).
+     * As in C, the IntraMap's numbers of coordinates as its Invert attribute leaves them must be
+     * those registered, so an inverted IntraMap of a function with different numbers of inputs and
+     * outputs cannot be read. No method of the Transformer is called.
      *
-     * @throws AstException with status {@code AST__URITF} if the IntraFlag holds no Transformer and
-     *     no function is registered under the name, {@code AST__BADNI} or {@code AST__BADNO} if the
-     *     Transformer cannot transform the IntraMap's numbers of coordinates
+     * @throws AstException with status {@code AST__URITF} if no function is registered under the
+     *     name, or {@code AST__BADNI} or {@code AST__BADNO} if the numbers of coordinates differ
+     *     from those registered
      */
+    // C's loader calls the Mapping class's GetNin and GetNout, which IntraMap does not override.
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     IntraMap(NativeNode node) {
         super(node);
         NativeNode part = node.section("IntraMap");
         String chan = node.channelClass;
         fname = part.readString("Fname", "");
+        // jniast also stored a Java-serialised Transformer here for an IntraMap at the top level of
+        // an Object written; this library reads an IntraMap by its function name only.
         intraFlag = part.getStringIfSet("Iflag");
         String dumpPurpose = part.readString("Purp", "");
         String dumpAuthor = part.readString("Auth", "");
         String dumpContact = part.readString("Cntact", "");
-        int nin = createdNin();
-        int nout = createdNout();
-        Exception[] failure = new Exception[1];
-        Transformer decoded = decodeTransformer(intraFlag, failure);
-        if (decoded != null) {
-            if (!decoded.canTransformCoords(nin, nout)) {
-                throw Ast.err(
-                        AstException.AST__BADNI,
-                        "astLoadIntraMap(" + chan + "): The Transformer read will not map " + nin + " -> " + nout
-                                + " coordinates.");
-            }
-            trans = decoded;
-            flags = IntraRegistry.flagsOf(decoded);
-            purpose = IntraRegistry.text(decoded.getPurpose());
-            author = IntraRegistry.text(decoded.getAuthor());
-            contact = IntraRegistry.text(decoded.getContact());
-            return;
-        }
         IntraRegistry.Entry entry = IntraRegistry.lookup(fname);
         if (entry == null) {
-            AstException err = Ast.err(
+            throw Ast.err(
                     AstException.AST__URITF,
                     "astLoadIntraMap(" + chan + "): An IntraMap was read which uses an unknown transformation "
                             + "function.\nThis is a private extension to the AST library: to handle it, you must "
@@ -174,11 +163,11 @@ public class IntraMap extends Mapping implements NeedsChannelizing {
                             + "software by calling astIntraReg (see SUN/211).\n \n   Function name:   \"" + fname
                             + "\".\n   Purpose:         \"" + dumpPurpose + "\".\n   Author:          \""
                             + dumpAuthor + "\".\n   Contact address: \"" + dumpContact + "\".\n ");
-            if (failure[0] != null) {
-                err.initCause(failure[0]);
-            }
-            throw err;
         }
+        // C asks the parent class's GetNin and GetNout, which take account of the Invert attribute
+        // already loaded (intramap.c astLoadIntraMap).
+        int nin = getNin();
+        int nout = getNout();
         if (nin != entry.nin && entry.nin != IntraRegistry.AST__ANY) {
             throw Ast.err(
                     AstException.AST__BADNI,
@@ -206,8 +195,7 @@ public class IntraMap extends Mapping implements NeedsChannelizing {
 
     /**
      * Writes {@code Fname}, {@code Iflag}, {@code Purp}, {@code Auth} and {@code Cntact}, as C's
-     * {@code Dump} (intramap.c) does. When the Transformer can be serialised, {@code Iflag} holds
-     * it in jniast's printable encoding; otherwise it is the IntraFlag value, written as a blank
+     * {@code Dump} (intramap.c) does: {@code Iflag} is the IntraFlag value, written as a blank
      * string when unset.
      */
     @Override
@@ -215,170 +203,46 @@ public class IntraMap extends Mapping implements NeedsChannelizing {
         super.dump(node);
         node.writeIsA("Mapping", "Mapping between coordinate systems");
         node.writeString("Fname", true, true, fname, "Name of transformation function");
-        String encoded = encodedTransformer();
-        if (encoded != null) {
-            node.writeString("Iflag", true, false, encoded, "IntraMap identification string");
-        } else {
-            node.writeString(
-                    "Iflag",
-                    intraFlag != null,
-                    false,
-                    intraFlag != null ? intraFlag : "",
-                    "IntraMap identification string");
-        }
+        // jniast also stored a Java-serialised Transformer in IntraFlag for an IntraMap at the top
+        // level of an Object written; this library writes and reads an IntraMap by its function
+        // name only.
+        node.writeString(
+                "Iflag",
+                intraFlag != null,
+                false,
+                intraFlag != null ? intraFlag : "",
+                "IntraMap identification string");
         node.writeString("Purp", true, true, purpose, "Purpose of function");
         node.writeString("Auth", true, true, author, "Author's name");
         node.writeString("Cntact", true, true, contact, "Contact address");
     }
 
     // ------------------------------------------------------------------
-    // Channelizing and the printable encoding
+    // Channelizing
     // ------------------------------------------------------------------
 
     /**
-     * Checks that this IntraMap's Transformer can be serialised, as it must be to be written to a
-     * Channel, which calls this method before it writes the IntraMap. The serialised Transformer is
-     * written as the IntraMap's IntraFlag value; this method does not change the IntraMap.
+     * Does nothing. It is present for jniast's API, in which it stored the serialised Transformer
+     * in the IntraFlag attribute before a write; an IntraMap is written with the name of its
+     * transformation function only, and needs no preparation.
      *
-     * @throws NotSerializableException if the {@code Transformer} used by this mapping cannot be
-     *     serialised
-     * @throws IOException if there was some error in I/O
+     * @throws IOException never
      */
     @Override
     public void channelize() throws IOException {
-        serialised();
+        // An IntraMap is written by its function name, which needs no preparation.
     }
 
     /**
-     * Does nothing, since {@link #channelize} does not change the IntraMap and the Transformer of
-     * an IntraMap read from a Channel is recovered from its IntraFlag value as it is read. A
-     * Channel calls this method after reading or writing an IntraMap.
+     * Does nothing. It is present for jniast's API, in which it recovered the serialised
+     * Transformer from the IntraFlag attribute after a read; an IntraMap read finds its
+     * Transformer by the name of its transformation function as it is loaded.
      *
      * @throws IOException never
      */
     @Override
     public void unChannelize() throws IOException {
-        // The loader has already recovered the Transformer, wherever the IntraMap was.
-    }
-
-    /**
-     * The Transformer serialised, as jniast's {@code channelize} serialises it.
-     *
-     * @throws NotSerializableException if the Transformer is not Serializable
-     */
-    private byte[] serialised() throws IOException {
-        if (!(trans instanceof Serializable)) {
-            throw new NotSerializableException(trans.getClass().getName());
-        }
-        ByteArrayOutputStream bstream = new ByteArrayOutputStream();
-        try (ObjectOutputStream ostream = new ObjectOutputStream(bstream)) {
-            ostream.writeObject(trans);
-            ostream.flush();
-        }
-        return bstream.toByteArray();
-    }
-
-    /** The serialised Transformer in printable form, or null if it cannot be serialised. */
-    private String encodedTransformer() {
-        if (!(trans instanceof Serializable)) {
-            return null;
-        }
-        try {
-            return encodePrintable(serialised());
-        } catch (IOException e) {
-            return null;
-        }
-    }
-
-    /**
-     * The Transformer that {@code iflag} holds in printable form, or null if it holds none; the
-     * reason it holds none, if it is an exception, is put in {@code failure[0]}.
-     */
-    // A Transformer's readObject may throw anything; any failure means the value holds none.
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private static Transformer decodeTransformer(String iflag, Exception[] failure) {
-        if (iflag == null) {
-            return null;
-        }
-        byte[] bytes = decodePrintable(iflag);
-        if (bytes == null) {
-            return null;
-        }
-        try (ObjectInputStream ostream = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
-            Object obj = ostream.readObject();
-            return obj instanceof Transformer ? (Transformer) obj : null;
-        } catch (IOException | ClassNotFoundException | RuntimeException e) {
-            failure[0] = e;
-            return null;
-        }
-    }
-
-    /**
-     * Encodes an arbitrary string of bytes into printable form, as jniast's {@code
-     * encodePrintable} (IntraMap.java) does: each group of three bytes, the last padded with zero
-     * bytes, gives four characters of {@link #CHRS64}, six bits at a time from the lowest bits of
-     * the first byte. jniast's result also has four or eight zero characters after the useful
-     * part, which are not written here.
-     */
-    static String encodePrintable(byte[] plain) {
-        int leng = plain.length;
-        StringBuilder coded = new StringBuilder((leng / 3 + 1) * 4);
-        int ip = 0;
-        while (ip < leng) {
-            byte b0 = ip < leng ? plain[ip++] : 0;
-            byte b1 = ip < leng ? plain[ip++] : 0;
-            byte b2 = ip < leng ? plain[ip++] : 0;
-            int ix0 = b0 & 0x3f;
-            int ix1 = ((b0 & 0xc0) >>> 6) | ((b1 & 0x0f) << 2);
-            int ix2 = ((b1 & 0xf0) >>> 4) | ((b2 & 0x03) << 4);
-            int ix3 = (b2 & 0xfc) >>> 2;
-            coded.append(CHRS64.charAt(ix0))
-                    .append(CHRS64.charAt(ix1))
-                    .append(CHRS64.charAt(ix2))
-                    .append(CHRS64.charAt(ix3));
-        }
-        return coded.toString();
-    }
-
-    /**
-     * Decodes a string of printable characters, the reverse of {@link #encodePrintable}, as
-     * jniast's {@code decodePrintable} (IntraMap.java) decodes the UTF-8 bytes of the IntraFlag
-     * value: a byte that is not one of {@link #CHRS64}, such as the zero characters jniast's
-     * encoding ends with, counts as zero, and zero bytes may follow the useful part of the result.
-     *
-     * @return the bytes, or null if a character is not ASCII, which jniast cannot decode
-     */
-    static byte[] decodePrintable(String text) {
-        byte[] coded = text.getBytes(StandardCharsets.UTF_8);
-        int leng = coded.length;
-        byte[] plain = new byte[(leng / 4 + 2) * 3];
-        int ic = 0;
-        int ip = 0;
-        while (ic < leng) {
-            int b0 = ic < leng ? inv64(coded[ic++]) : 0;
-            int b1 = ic < leng ? inv64(coded[ic++]) : 0;
-            int b2 = ic < leng ? inv64(coded[ic++]) : 0;
-            int b3 = ic < leng ? inv64(coded[ic++]) : 0;
-            if (b0 < 0 || b1 < 0 || b2 < 0 || b3 < 0) {
-                return null;
-            }
-            plain[ip++] = (byte) (b0 | (b1 << 6));
-            plain[ip++] = (byte) ((b1 >>> 2) | (b2 << 4));
-            plain[ip++] = (byte) ((b2 >>> 4) | (b3 << 2));
-        }
-        return plain;
-    }
-
-    /**
-     * jniast's {@code Inv64} for byte {@code b}: its index in {@link #CHRS64}, 0 for another ASCII
-     * byte, or -1 for a byte that is not ASCII, which jniast's table cannot index.
-     */
-    private static int inv64(byte b) {
-        if (b < 0) {
-            return -1;
-        }
-        int i = CHRS64.indexOf((char) b);
-        return i < 0 ? 0 : i;
+        // The loader has found the Transformer by its function name.
     }
 
     // ------------------------------------------------------------------

@@ -1,0 +1,28 @@
+== as_made
+ Begin IntraMap 	# Map points using a private transformation function
+    Nin = 2 	# Number of input coordinates
+    Nout = 1 	# Number of output coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    Fname = "sum2" 	# Name of transformation function
+    Purp = "Sum of two inputs" 	# Purpose of function
+    Auth = "AST test suite" 	# Author's name
+    Cntact = "starlink-ast" 	# Contact address
+ End IntraMap
+-- read
+Nin 2 forward of (1.5, 2.25): 3.75 0
+== inverted
+ Begin IntraMap 	# Map points using a private transformation function
+    Nin = 2 	# Number of input coordinates
+    Nout = 1 	# Number of output coordinates
+    Invert = 1 	# Mapping inverted
+ IsA Mapping 	# Mapping between coordinate systems
+    Fname = "sum2" 	# Name of transformation function
+    Purp = "Sum of two inputs" 	# Purpose of function
+    Auth = "AST test suite" 	# Author's name
+    Cntact = "starlink-ast" 	# Contact address
+ End IntraMap
+-- read
+!! AST: Error in routine roundtrip at line 63 in file intramap_load_probe.c.
+!  astLoadIntraMap(Channel): The number of input coordinates for the IntraMap read (1) does not match the number used by the registered "sum2" transformation function (2).
+!  Error while reading a IntraMap from a Channel.
+status 233933210
