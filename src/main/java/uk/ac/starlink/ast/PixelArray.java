@@ -24,9 +24,23 @@ abstract class PixelArray {
     /** Whether the type is summed in {@code float} (C's {@code Xfloattype}). */
     private final boolean sumInFloat;
 
-    private PixelArray(boolean floating, boolean floatSum) {
+    /**
+     * For an integer type, the sum at or below which an interpolated value overflows the type when
+     * rounded (C's {@code LO_<X>}); unused for a floating type.
+     */
+    private final double loLim;
+
+    /**
+     * For an integer type, the sum at or above which an interpolated value overflows the type when
+     * rounded (C's {@code HI_<X>}); unused for a floating type.
+     */
+    private final double hiLim;
+
+    private PixelArray(boolean floating, boolean floatSum, double loLim, double hiLim) {
         this.floating = floating;
         this.sumInFloat = floatSum;
+        this.loLim = loLim;
+        this.hiLim = hiLim;
     }
 
     /** The {@code byte} array {@code a}, with bad value {@code bad}. */
@@ -86,6 +100,27 @@ abstract class PixelArray {
     /** The underlying Java array. */
     abstract Object array();
 
+    /**
+     * Calls the {@code uinterp<X>} method of {@code calc} for this array's type, with this array
+     * as {@code in}, the arrays of {@code inVar}, {@code out} and {@code outVar} (each of this
+     * type, or null for a variance) and the bad value, returning what it returns.
+     *
+     * @throws Exception whatever the method throws
+     */
+    abstract int uinterp(
+            UinterpCalculator calc,
+            int ndimIn,
+            int[] lbndIn,
+            int[] ubndIn,
+            PixelArray inVar,
+            int npoint,
+            int[] offset,
+            double[][] coords,
+            ResampleFlags flags,
+            PixelArray out,
+            PixelArray outVar)
+            throws Exception;
+
     /** Whether the type is summed in {@code float} (C's {@code Xfloattype} is {@code float}). */
     final boolean floatSum() {
         return sumInFloat;
@@ -100,6 +135,15 @@ abstract class PixelArray {
     final boolean signed() {
         // Every jniast type is signed; C's unsigned types have no jniast counterpart.
         return true;
+    }
+
+    /**
+     * Whether the interpolated value {@code v}, a value of the sum type, would overflow an integer
+     * type when rounded (C's {@code v <= LO_<X> || v >= HI_<X>}, tested only for an integer type);
+     * always false for a floating type. A NaN does not overflow.
+     */
+    final boolean overflows(double v) {
+        return !floating && (v <= loLim || v >= hiLim);
     }
 
     /**
@@ -121,7 +165,7 @@ abstract class PixelArray {
         private final byte bad;
 
         Bytes(byte[] a, byte bad) {
-            super(false, true);
+            super(false, true, -0.5f + Byte.MIN_VALUE, 0.5f + Byte.MAX_VALUE);
             this.a = a;
             this.bad = bad;
         }
@@ -160,6 +204,35 @@ abstract class PixelArray {
         Object array() {
             return a;
         }
+
+        @Override
+        int uinterp(
+                UinterpCalculator calc,
+                int ndimIn,
+                int[] lbndIn,
+                int[] ubndIn,
+                PixelArray inVar,
+                int npoint,
+                int[] offset,
+                double[][] coords,
+                ResampleFlags flags,
+                PixelArray out,
+                PixelArray outVar)
+                throws Exception {
+            return calc.uinterpB(
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    a,
+                    inVar == null ? null : ((Bytes) inVar).a,
+                    npoint,
+                    offset,
+                    coords,
+                    flags,
+                    bad,
+                    ((Bytes) out).a,
+                    outVar == null ? null : ((Bytes) outVar).a);
+        }
     }
 
     /** A {@code short} array, summed in float. */
@@ -168,7 +241,7 @@ abstract class PixelArray {
         private final short bad;
 
         Shorts(short[] a, short bad) {
-            super(false, true);
+            super(false, true, -0.5f + Short.MIN_VALUE, 0.5f + Short.MAX_VALUE);
             this.a = a;
             this.bad = bad;
         }
@@ -207,6 +280,35 @@ abstract class PixelArray {
         Object array() {
             return a;
         }
+
+        @Override
+        int uinterp(
+                UinterpCalculator calc,
+                int ndimIn,
+                int[] lbndIn,
+                int[] ubndIn,
+                PixelArray inVar,
+                int npoint,
+                int[] offset,
+                double[][] coords,
+                ResampleFlags flags,
+                PixelArray out,
+                PixelArray outVar)
+                throws Exception {
+            return calc.uinterpS(
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    a,
+                    inVar == null ? null : ((Shorts) inVar).a,
+                    npoint,
+                    offset,
+                    coords,
+                    flags,
+                    bad,
+                    ((Shorts) out).a,
+                    outVar == null ? null : ((Shorts) outVar).a);
+        }
     }
 
     /** An {@code int} array, summed in double. */
@@ -215,7 +317,7 @@ abstract class PixelArray {
         private final int bad;
 
         Ints(int[] a, int bad) {
-            super(false, false);
+            super(false, false, -0.5 + Integer.MIN_VALUE, 0.5 + Integer.MAX_VALUE);
             this.a = a;
             this.bad = bad;
         }
@@ -254,6 +356,35 @@ abstract class PixelArray {
         Object array() {
             return a;
         }
+
+        @Override
+        int uinterp(
+                UinterpCalculator calc,
+                int ndimIn,
+                int[] lbndIn,
+                int[] ubndIn,
+                PixelArray inVar,
+                int npoint,
+                int[] offset,
+                double[][] coords,
+                ResampleFlags flags,
+                PixelArray out,
+                PixelArray outVar)
+                throws Exception {
+            return calc.uinterpI(
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    a,
+                    inVar == null ? null : ((Ints) inVar).a,
+                    npoint,
+                    offset,
+                    coords,
+                    flags,
+                    bad,
+                    ((Ints) out).a,
+                    outVar == null ? null : ((Ints) outVar).a);
+        }
     }
 
     /** A {@code long} array, summed in double. */
@@ -262,7 +393,7 @@ abstract class PixelArray {
         private final long bad;
 
         Longs(long[] a, long bad) {
-            super(false, false);
+            super(false, false, -0.5 + Long.MIN_VALUE, 0.5 + Long.MAX_VALUE);
             this.a = a;
             this.bad = bad;
         }
@@ -301,6 +432,35 @@ abstract class PixelArray {
         Object array() {
             return a;
         }
+
+        @Override
+        int uinterp(
+                UinterpCalculator calc,
+                int ndimIn,
+                int[] lbndIn,
+                int[] ubndIn,
+                PixelArray inVar,
+                int npoint,
+                int[] offset,
+                double[][] coords,
+                ResampleFlags flags,
+                PixelArray out,
+                PixelArray outVar)
+                throws Exception {
+            return calc.uinterpL(
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    a,
+                    inVar == null ? null : ((Longs) inVar).a,
+                    npoint,
+                    offset,
+                    coords,
+                    flags,
+                    bad,
+                    ((Longs) out).a,
+                    outVar == null ? null : ((Longs) outVar).a);
+        }
     }
 
     /** A {@code float} array, summed in float. */
@@ -309,7 +469,7 @@ abstract class PixelArray {
         private final float bad;
 
         Floats(float[] a, float bad) {
-            super(true, true);
+            super(true, true, 0.0, 0.0);
             this.a = a;
             this.bad = bad;
         }
@@ -348,6 +508,35 @@ abstract class PixelArray {
         Object array() {
             return a;
         }
+
+        @Override
+        int uinterp(
+                UinterpCalculator calc,
+                int ndimIn,
+                int[] lbndIn,
+                int[] ubndIn,
+                PixelArray inVar,
+                int npoint,
+                int[] offset,
+                double[][] coords,
+                ResampleFlags flags,
+                PixelArray out,
+                PixelArray outVar)
+                throws Exception {
+            return calc.uinterpF(
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    a,
+                    inVar == null ? null : ((Floats) inVar).a,
+                    npoint,
+                    offset,
+                    coords,
+                    flags,
+                    bad,
+                    ((Floats) out).a,
+                    outVar == null ? null : ((Floats) outVar).a);
+        }
     }
 
     /** A {@code double} array, summed in double. */
@@ -356,7 +545,7 @@ abstract class PixelArray {
         private final double bad;
 
         Doubles(double[] a, double bad) {
-            super(true, false);
+            super(true, false, 0.0, 0.0);
             this.a = a;
             this.bad = bad;
         }
@@ -394,6 +583,35 @@ abstract class PixelArray {
         @Override
         Object array() {
             return a;
+        }
+
+        @Override
+        int uinterp(
+                UinterpCalculator calc,
+                int ndimIn,
+                int[] lbndIn,
+                int[] ubndIn,
+                PixelArray inVar,
+                int npoint,
+                int[] offset,
+                double[][] coords,
+                ResampleFlags flags,
+                PixelArray out,
+                PixelArray outVar)
+                throws Exception {
+            return calc.uinterpD(
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    a,
+                    inVar == null ? null : ((Doubles) inVar).a,
+                    npoint,
+                    offset,
+                    coords,
+                    flags,
+                    bad,
+                    ((Doubles) out).a,
+                    outVar == null ? null : ((Doubles) outVar).a);
         }
     }
 }

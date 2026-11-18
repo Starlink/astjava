@@ -1355,6 +1355,18 @@ public abstract class Mapping extends AstObject {
      * Variances are resampled when both {@code inVar} and {@code outVar} are given; an output
      * variance is bad when its value is, or a contributing input variance is bad or negative.
      *
+     * <p>A kernel scheme gives the mean of the input pixels near the position, each weighted by the
+     * product of the kernel's values at its offsets from the position along each axis. Block
+     * averaging gives the mean of the good input pixels in a block about the position, weighted by
+     * the reciprocals of their variances when variances are resampled; it makes a pixel bad only
+     * where the position is bad or no input pixel of its block can be used, wherever the position
+     * lies. For an integer type, a value or variance from a kernel or block averaging that would
+     * overflow the type is bad. A kernel ({@link Ukern1Calculator}) or interpolation function
+     * ({@link UinterpCalculator}) of the caller's that throws an exception ends the resampling with
+     * an {@code AstException} whose status is {@code AST__UK1ER} or {@code AST__UINER} and whose
+     * cause is that exception; an {@link Error} it throws passes through unchanged. Either way the
+     * output pixels set before the failure keep their values.
+     *
      * <p>To transform fewer pixels, the inverse transformation is replaced by linear fits over
      * sections of the output region wherever they are accurate to within {@code tol} input pixels,
      * as for {@link #tranGrid}, which also describes {@code maxpix}. The ConserveFlux flag scales
@@ -1395,8 +1407,9 @@ public abstract class Mapping extends AstObject {
      * @throws AstException if an argument is invalid, for example with status {@code AST__DIMIN}
      *     if a data or variance array has fewer elements than its grid has pixels, or a bound
      *     array has fewer values than its grid has dimensions, {@code AST__GBDIN} if the output
-     *     region does not lie within the output grid, or {@code AST__TRNND} if the Mapping has no
-     *     inverse transformation
+     *     region does not lie within the output grid, {@code AST__TRNND} if the Mapping has no
+     *     inverse transformation, or {@code AST__UK1ER} or {@code AST__UINER} if a kernel or
+     *     interpolation function of the caller's throws an exception, which is the cause
      */
     public int resample(
             int ndimIn,
@@ -2075,7 +2088,9 @@ public abstract class Mapping extends AstObject {
         /** The parameters C's {@code params} array holds. */
         final double[] params;
 
-        private Interpolator(int scheme, Ukern1Calculator ukern1er, UinterpCalculator uinterper, double... params) {
+        // Package-private so that tests can make the AST__GAUSS scheme, which C's resampling
+        // accepts but jniast has no factory for.
+        Interpolator(int scheme, Ukern1Calculator ukern1er, UinterpCalculator uinterper, double... params) {
             this.scheme = scheme;
             this.ukern1er = ukern1er;
             this.uinterper = uinterper;
@@ -2182,7 +2197,9 @@ public abstract class Mapping extends AstObject {
 
         /**
          * Returns an Interpolator using a 1-dimensional kernel supplied by the caller, applied to
-         * each dimension in turn ({@code AST__UKERN1}).
+         * each dimension in turn ({@code AST__UKERN1}). An exception the kernel throws ends the
+         * resampling with an {@code AstException} with status {@code AST__UK1ER}, as {@link
+         * Ukern1Calculator} describes.
          *
          * @param ukern1er the kernel
          * @param npix the number of pixels on each side of the interpolation point
@@ -2194,7 +2211,8 @@ public abstract class Mapping extends AstObject {
 
         /**
          * Returns an Interpolator using an interpolation function supplied by the caller ({@code
-         * AST__UINTERP}).
+         * AST__UINTERP}). An exception the function throws ends the resampling with an {@code
+         * AstException} with status {@code AST__UINER}, as {@link UinterpCalculator} describes.
          *
          * @param uinterper the interpolation function
          * @return the Interpolator

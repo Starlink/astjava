@@ -1296,6 +1296,38 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: as C.
 - Java: as C; probe `src/test/resources/probes/resample_nan_probe.c` (`ResampleNanTest`).
 
+### The `SombCos` resampling kernel is half `Somb` except at zero offset
+
+- C: `SombCos` forms its first factor as `J1(x) / x`, where `Somb` uses `2.0 * J1(x) / x`, but takes it as 1 at zero offset, so the pixel at the interpolation point counts twice as heavily as the documented kernel `somb(pi*x)*cos(k*pi*x)` would make it. **C quirk.**
+- Rust: as C (`kernels::somb_cos`).
+- Java: as C (`ResampleKernels.sombCos`); the oracle case `sombcos_unit` pins it.
+
+### Block averaging keeps one bad-variance flag per block
+
+- C: `InterpolateBlockAverage<X>` resets `bad_var` only when it starts a block, so for a signed type without `AST__USEBAD` a negative variance leaves out the rest of the block, and with `AST__USEBAD` the output variance is bad exactly when the variance of the block's last good pixel was. **C quirk.**
+- Rust: as C (`interp::block_average`).
+- Java: as C (`ResampleInterpolators.blockAverage`); the oracle cases `blockave_novarbad` and `blockave_win3` fail if the flag is reset for each pixel.
+
+### A caller's kernel or interpolation function that fails
+
+- C: the caller's function reports a failure by setting the status, and `InterpolateKernel1<X>` or `ResampleSection` adds a message and passes that status on; the output keeps what was set before the failure, and `ConserveFlux<X>` does not scale the failing block.
+- jniast: `fukern1` and `fuinterp<X>` set `AST__UK1ER` and `AST__UINER` when the Java method throws.
+- Rust: the caller's function returns an error, which `resample` returns with C's message added.
+- Java: an `Exception` thrown by a `Ukern1Calculator` or `UinterpCalculator` becomes an `AstException` with jniast's status, C's message and the exception as its cause; an `Error` passes through unchanged; the output is C's (probe `src/test/resources/probes/resample_callback_probe.c`, `ResampleCallbackTest`).
+
+### Elementary functions in the resampling kernels
+
+- C: the kernels call the C library's `sin`, `cos` and `exp`.
+- Rust: as C (the `f64` methods, which call the platform's library).
+- Java: the kernels call `java.lang.Math`, which can differ from C's library in the last bit; eight `double` cases of the resample oracle miss their hash on AArch64 macOS by at most 7.1e-15.
+  `ResampleOracleTest` compares every case whose kernel calls these functions value by value with probe `src/test/resources/probes/resample_kernel_probe.c` where its hash differs, within a bound worked out in the test (1e-10 for `double`, 1e-2 for `float`, 1 for an integer type).
+
+### Resampling with the `AST__GAUSS` scheme
+
+- C: `astResample<X>` accepts `AST__GAUSS`.
+- jniast: `Mapping.Interpolator` has no factory for it, though `Mapping.Spreader` has `gauss`.
+- Java: as jniast for the public API; resampling accepts the scheme, which the tests reach through the package-private `Interpolator` constructor.
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails

@@ -9,9 +9,11 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Translation of Rust {@code tests/test_resample.rs}, after C's {@code
- * ast_tester/testresample.c}: {@code resample} on known data. Here are test 1 for the
- * nearest-neighbour and linear schemes, and tests 2, 3 and 5 to 9; every call uses a {@code tol}
- * of zero and a {@code maxpix} of 100, and resamples into the whole output grid.
+ * ast_tester/testresample.c}: {@code resample} on known data, tests 1 to 9; every call uses a
+ * {@code tol} of zero and a {@code maxpix} of 100, and resamples into the whole output grid. The
+ * kernel schemes are given Rust's parameters, 2 and 2: two pixels either side, and a width or full
+ * width at half maximum of two pixels. {@code user_flags_reach_the_callers_interpolator_and_kernel}
+ * is listed in {@code deferred/rust-tests.txt}: jniast's ResampleFlags has no user flags.
  */
 class ResampleTest {
 
@@ -68,6 +70,102 @@ class ResampleTest {
                             null);
             for (int i = 3; i < 27; i++) {
                 assertTrue(Math.abs(out[i] - in[i]) <= 1.0e-10, "scheme " + interp.scheme + " pixel " + i);
+            }
+        }
+    }
+
+    /**
+     * The kernel schemes with Rust's parameters, 2 and 2. jniast has no factory for {@code
+     * AST__GAUSS}, so its Interpolator is made directly.
+     */
+    private static final Mapping.Interpolator SINC = Mapping.Interpolator.sinc(2);
+
+    private static final Mapping.Interpolator SINCSINC = Mapping.Interpolator.sincSinc(2, 2.0);
+    private static final Mapping.Interpolator SINCCOS = Mapping.Interpolator.sincCos(2, 2.0);
+    private static final Mapping.Interpolator SINCGAUSS = Mapping.Interpolator.sincGauss(2, 2.0);
+    private static final Mapping.Interpolator GAUSS =
+            new Mapping.Interpolator(Mapping.AST__GAUSS, null, null, 2.0, 2.0);
+    private static final Mapping.Interpolator SOMB = Mapping.Interpolator.somb(2);
+    private static final Mapping.Interpolator SOMBCOS = Mapping.Interpolator.sombCos(2, 2.0);
+    private static final Mapping.Interpolator BLOCKAVE = Mapping.Interpolator.blockAve(2);
+
+    /** Resamples {@code in}, 30 pixels, through a 1-D UnitMap with {@code interp}. */
+    private static double[] unit30(double[] in, Mapping.Interpolator interp) {
+        double[] out = new double[30];
+        new UnitMap(1)
+                .resampleD(
+                        1,
+                        new int[] {1},
+                        new int[] {30},
+                        in,
+                        null,
+                        interp,
+                        flags(false, false),
+                        0.0,
+                        100,
+                        BAD,
+                        1,
+                        new int[] {1},
+                        new int[] {30},
+                        new int[] {1},
+                        new int[] {30},
+                        out,
+                        null);
+        return out;
+    }
+
+    @Test
+    void test1KernelsAreTheIdentityOnAUnitMap() {
+        double[] in = range(1, 30);
+        for (Mapping.Interpolator interp : new Mapping.Interpolator[] {SINC, SINCSINC, SINCCOS, SINCGAUSS, SOMBCOS}) {
+            double[] out = unit30(in, interp);
+            for (int i = 3; i < 27; i++) {
+                assertTrue(Math.abs(out[i] - in[i]) <= 1.0e-10, "scheme " + interp.scheme + " pixel " + i);
+            }
+        }
+    }
+
+    /** The smoothing schemes reproduce constant data. */
+    @Test
+    void test1SmoothingSchemesKeepConstantData() {
+        double[] in = new double[30];
+        Arrays.fill(in, 42.0);
+        for (Mapping.Interpolator interp : new Mapping.Interpolator[] {GAUSS, SOMB, BLOCKAVE}) {
+            double[] out = unit30(in, interp);
+            for (int i = 3; i < 27; i++) {
+                assertTrue(Math.abs(out[i] - 42.0) <= 1.0e-10, "scheme " + interp.scheme + " pixel " + i);
+            }
+        }
+    }
+
+    @Test
+    void test4KernelsKeepConstantData() {
+        double[] in = new double[400];
+        Arrays.fill(in, 42.0);
+        for (Mapping.Interpolator interp :
+                new Mapping.Interpolator[] {SINC, SINCSINC, SINCCOS, SINCGAUSS, GAUSS, SOMB, SOMBCOS, BLOCKAVE}) {
+            double[] out = new double[16 * 16];
+            new ShiftMap(new double[] {0.5, 0.5})
+                    .resampleD(
+                            2,
+                            new int[] {1, 1},
+                            new int[] {20, 20},
+                            in,
+                            null,
+                            interp,
+                            flags(false, false),
+                            0.0,
+                            100,
+                            BAD,
+                            2,
+                            new int[] {3, 3},
+                            new int[] {18, 18},
+                            new int[] {3, 3},
+                            new int[] {18, 18},
+                            out,
+                            null);
+            for (int i = 0; i < out.length; i++) {
+                assertTrue(Math.abs(out[i] - 42.0) <= 1.0e-8, "scheme " + interp.scheme + " pixel " + i);
             }
         }
     }

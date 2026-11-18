@@ -8,8 +8,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.ProbeData;
+import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
  * Translation of Rust {@code tests/test_resample_oracle.rs}: {@code resample} against C's {@code
@@ -18,13 +20,12 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * output value and variance (as doubles) and every 211th output value. A case that fails part way
  * is compared on what it wrote before failing.
  *
- * <p>{@code resamplingMatchesC} runs the cases of the nearest-neighbour and linear schemes for the
- * types jniast has (D, F, L, I, S, B); the cases of C's unsigned types have no jniast method. The
- * Mappings these cases use do only arithmetic, which Java and C carry out alike, so every value
- * must equal C's on every platform, and the hash is compared everywhere. {@code errorsMatchC} runs
- * the first twelve of the probe's fifteen invalid-argument cases; the last three use a caller's
- * kernel or interpolator, which this test does not cover. {@code too_few_params_is_an_error} is
- * listed in {@code deferred/rust-tests.txt}: jniast's Interpolator factories fix the parameters.
+ * <p>{@code resamplingMatchesC} runs every case of the types jniast has (D, F, L, I, S, B); the
+ * cases of C's unsigned types have no jniast method. The probe's caller's kernel and interpolator
+ * are {@link ResampleCallbackTest.TriKernel} and {@link ResampleCallbackTest.ProbeUinterpAll}.
+ * {@code errorsMatchC} runs the probe's fifteen invalid-argument cases. {@code
+ * too_few_params_is_an_error} is listed in {@code deferred/rust-tests.txt}: jniast's Interpolator
+ * factories fix the parameters.
  */
 class ResampleOracleTest {
 
@@ -61,6 +62,48 @@ class ResampleOracleTest {
                 return new MathMap(2, 2, new String[] {"p=a", "q=b"}, new String[] {"a", "b"});
             default:
                 throw new IllegalArgumentException("no Mapping " + name);
+        }
+    }
+
+    /**
+     * The Interpolator jniast makes for the probe's scheme and parameters {@code p0} and {@code
+     * p1}. jniast's factories take the number of neighbouring pixels as an integer, which each
+     * case's {@code p0} is. jniast has no factory for {@code AST__GAUSS}, so its Interpolator is
+     * made directly. The probe's caller's kernel and interpolator take their parameter from
+     * {@code p1} and {@code p0}, which jniast's calculators cannot see, so each is made with it.
+     */
+    private static Mapping.Interpolator interpolator(String scheme, double p0, double p1) {
+        int npix = (int) p0;
+        if (!"uinterp".equals(scheme)) {
+            assertEquals(p0, npix, "params[0] of " + scheme);
+        }
+        switch (scheme) {
+            case "nearest":
+                return Mapping.NEAREST_INTERPOLATOR;
+            case "linear":
+                return Mapping.LINEAR_INTERPOLATOR;
+            case "sinc":
+                return Mapping.Interpolator.sinc(npix);
+            case "sincsinc":
+                return Mapping.Interpolator.sincSinc(npix, p1);
+            case "sinccos":
+                return Mapping.Interpolator.sincCos(npix, p1);
+            case "sincgauss":
+                return Mapping.Interpolator.sincGauss(npix, p1);
+            case "gauss":
+                return new Mapping.Interpolator(Mapping.AST__GAUSS, null, null, p0, p1);
+            case "somb":
+                return Mapping.Interpolator.somb(npix);
+            case "sombcos":
+                return Mapping.Interpolator.sombCos(npix, p1);
+            case "blockave":
+                return Mapping.Interpolator.blockAve(npix);
+            case "ukern1":
+                return Mapping.Interpolator.ukern1(new ResampleCallbackTest.TriKernel(p1), npix);
+            case "uinterp":
+                return Mapping.Interpolator.uinterp(new ResampleCallbackTest.ProbeUinterpAll(p0));
+            default:
+                throw new IllegalArgumentException("no scheme " + scheme);
         }
     }
 
@@ -107,7 +150,10 @@ class ResampleOracleTest {
             ubndOut = ints(c.get(7));
             lbnd = ints(c.get(8));
             ubnd = ints(c.get(9));
-            interp = "nearest".equals(c.get(10).asText()) ? Mapping.NEAREST_INTERPOLATOR : Mapping.LINEAR_INTERPOLATOR;
+            interp = interpolator(
+                    c.get(10).asText(),
+                    ProbeData.toDouble(c.get(15).get(0)),
+                    ProbeData.toDouble(c.get(15).get(1)));
             flags.setUseBad(c.get(11).asBoolean());
             flags.setNoBad(c.get(12).asBoolean());
             useVar = c.get(13).asBoolean();
@@ -414,43 +460,201 @@ class ResampleOracleTest {
         return h;
     }
 
+    /**
+     * How the case {@code c} differs from C, or null if it matches; also null for a case of a type
+     * jniast lacks, which {@link #isJniastType} tells apart.
+     */
+    static String mismatch(JsonNode c) {
+        Case cs = new Case(c);
+        Result r = run(cs);
+        if (r == null) {
+            return null;
+        }
+        int wantNbad = c.get(18).asInt();
+        int wantStatus = c.get(19).asInt();
+        long wantHash = c.get(20).bigIntegerValue().longValue();
+        JsonNode sample = c.get(21);
+        List<Double> got = new ArrayList<>();
+        for (int k = 0; k < r.out.length; k += 211) {
+            got.add(r.out[k]);
+        }
+        boolean sameSamples = got.size() == sample.size();
+        for (int k = 0; sameSamples && k < got.size(); k++) {
+            double w = ProbeData.toDouble(sample.get(k));
+            sameSamples = Double.doubleToLongBits(got.get(k)) == Double.doubleToLongBits(w);
+        }
+        long h = hash(r, cs.useVar);
+        String values = "";
+        if (r.status == wantStatus && r.nbad == wantNbad && (h != wantHash || !sameSamples)) {
+            String probe = KERNEL_VALUES.get(cs.name + " " + cs.type);
+            if (probe != null) {
+                String diff = valueDifference(r, cs, probe);
+                if (diff == null) {
+                    return null;
+                }
+                values = "; " + diff;
+            }
+        }
+        if (r.status != wantStatus || r.nbad != wantNbad || h != wantHash || !sameSamples) {
+            return cs.name + " " + cs.type + ": status " + r.status + " want " + wantStatus + "; bad " + r.nbad
+                    + " want " + wantNbad + "; hash " + (h == wantHash ? "same" : "differs") + "; samples " + got
+                    + " want " + sample + values;
+        }
+        return null;
+    }
+
+    /**
+     * Every output value and variance of the oracle's cases whose kernels call sin, cos or exp,
+     * keyed by case name and type, from {@code probes/resample_kernel_probe.out}.
+     */
+    private static final Map<String, String> KERNEL_VALUES = ProbeOutput.load("resample_kernel_probe");
+
+    /**
+     * The largest difference from C's value allowed for a case of {@code type} whose kernel calls
+     * sin, cos or exp, where the hash differs. Java's {@code Math.sin}, {@code cos} and {@code exp}
+     * and C's are each within an ulp of the exact value, so they differ by at most 4u relative (u =
+     * 2^-53). A kernel value, at most 1 in size and made from at most two such calls with a
+     * quotient and a product, then differs by at most 16u; a pixel's weight w, the product of at
+     * most three kernel values, by at most 64u. An output value is sum(w v) / sum(w) over at most
+     * 64 pixels (the probe's largest block, 4 by 4 by 4), with |v| at most 56 (the probe's data)
+     * and sum(|w|) / |sum(w)| at most 20 for these kernels with at most a few pixels of a block
+     * left out as bad. Its difference is then at most 64u * 20 * 2 * 56 from the weights, and the
+     * same again from the roundings of the 64 terms of each sum taking different paths: together
+     * 3.2e-11, and a variance, sum(w^2 var) / sum(w)^2 with |var| at most 4, no more.
+     *
+     * <ul>
+     *   <li>D: 1e-10, the bound above.
+     *   <li>F: the sums are in float, so a weight rounded to float may differ by an ulp of float
+     *       (2^-23 relative), and each of the 64 float roundings of each sum may then differ by
+     *       2^-24 of the sum: at most 2^-23 * 20 * 112 + 2 * 64 * 2^-24 * 20 * 56, under 1e-2.
+     *   <li>L, I, S, B: an integer whose value before rounding differs by less than a half, by the
+     *       bounds above, can differ only by one, where that value is near a half.
+     * </ul>
+     *
+     * <p>A bad or untouched pixel (120 or 77) must be bad or untouched in both.
+     */
+    private static double tolerance(String type) {
+        switch (type) {
+            case "D":
+                return 1.0e-10;
+            case "F":
+                return 1.0e-2;
+            case "L":
+            case "I":
+            case "S":
+            case "B":
+                return 1.0;
+            default:
+                throw new IllegalArgumentException("no type " + type);
+        }
+    }
+
+    /**
+     * The values after {@code label} in the text of a probe case of {@code type}, up to the next
+     * label or the end. The probe writes a float with nine significant digits, which reads back to
+     * the float, not to the double it equals.
+     */
+    private static double[] probeValues(String text, String label, String type) {
+        String[] lines = text.split("\n", -1);
+        List<Double> v = new ArrayList<>();
+        boolean in = false;
+        for (String line : lines) {
+            if (line.equals(label)) {
+                in = true;
+            } else if (in && !line.isEmpty() && Character.isLetter(line.charAt(0))) {
+                break;
+            } else if (in && !line.isEmpty()) {
+                for (String t : line.trim().split(" +", -1)) {
+                    v.add("F".equals(type) ? (double) Float.parseFloat(t) : Double.parseDouble(t));
+                }
+            }
+        }
+        double[] a = new double[v.size()];
+        for (int i = 0; i < a.length; i++) {
+            a[i] = v.get(i);
+        }
+        return a;
+    }
+
+    /**
+     * How the outputs of {@code r} differ from the probe's beyond {@link #tolerance}, or null if
+     * none does.
+     */
+    private static String valueDifference(Result r, Case cs, String probe) {
+        double tol = tolerance(cs.type);
+        double[][] got = cs.useVar ? new double[][] {r.out, r.outVar} : new double[][] {r.out};
+        double[][] want = cs.useVar
+                ? new double[][] {probeValues(probe, "out", cs.type), probeValues(probe, "var", cs.type)}
+                : new double[][] {probeValues(probe, "out", cs.type)};
+        for (int a = 0; a < got.length; a++) {
+            if (got[a].length != want[a].length) {
+                return "probe has " + want[a].length + " values, not " + got[a].length;
+            }
+            for (int k = 0; k < got[a].length; k++) {
+                double g = got[a][k];
+                double w = want[a][k];
+                boolean fixed = w == 120.0 || w == 77.0 || g == 120.0 || g == 77.0;
+                if (fixed ? g != w : Double.isNaN(g - w) || Math.abs(g - w) > tol) {
+                    return (a == 0 ? "value " : "variance ") + k + " is " + g + ", C's " + w;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Whether the case {@code c} is of a type jniast has a method for. */
+    static boolean isJniastType(JsonNode c) {
+        switch (c.get(2).asText()) {
+            case "D":
+            case "F":
+            case "L":
+            case "I":
+            case "S":
+            case "B":
+                return true;
+            default:
+                return false;
+        }
+    }
+
     @Test
     void resamplingMatchesC() {
         List<String> failures = new ArrayList<>();
         int ran = 0;
         for (JsonNode c : ProbeData.load("resample").get("CASES")) {
-            String scheme = c.get(10).asText();
-            if (!"nearest".equals(scheme) && !"linear".equals(scheme)) {
-                continue;
-            }
-            Case cs = new Case(c);
-            Result r = run(cs);
-            if (r == null) {
+            if (!isJniastType(c)) {
                 continue;
             }
             ran++;
-            int wantNbad = c.get(18).asInt();
-            int wantStatus = c.get(19).asInt();
-            long wantHash = c.get(20).bigIntegerValue().longValue();
-            JsonNode sample = c.get(21);
-            List<Double> got = new ArrayList<>();
-            for (int k = 0; k < r.out.length; k += 211) {
-                got.add(r.out[k]);
-            }
-            boolean sameSamples = got.size() == sample.size();
-            for (int k = 0; sameSamples && k < got.size(); k++) {
-                double w = ProbeData.toDouble(sample.get(k));
-                sameSamples = Double.doubleToLongBits(got.get(k)) == Double.doubleToLongBits(w);
-            }
-            long h = hash(r, cs.useVar);
-            if (r.status != wantStatus || r.nbad != wantNbad || h != wantHash || !sameSamples) {
-                failures.add(cs.name + " " + cs.type + ": status " + r.status + " want " + wantStatus + "; bad "
-                        + r.nbad + " want " + wantNbad + "; hash " + (h == wantHash ? "same" : "differs")
-                        + "; samples " + got + " want " + sample);
+            String m = mismatch(c);
+            if (m != null) {
+                failures.add(m);
             }
         }
         assertTrue(failures.isEmpty(), failures.size() + " cases differ:\n" + String.join("\n", failures));
-        assertEquals(90, ran, "cases run");
+        assertEquals(222, ran, "cases run");
+    }
+
+    /** The kernel probe's values reproduce the oracle's hash of each of its cases. */
+    @Test
+    void kernelProbeMatchesTheOracle() {
+        int matched = 0;
+        for (JsonNode c : ProbeData.load("resample").get("CASES")) {
+            String key = c.get(0).asText() + " " + c.get(2).asText();
+            String probe = KERNEL_VALUES.get(key);
+            if (probe == null) {
+                continue;
+            }
+            Result r = new Result();
+            r.out = probeValues(probe, "out", c.get(2).asText());
+            boolean useVar = c.get(13).asBoolean();
+            r.outVar = useVar ? probeValues(probe, "var", c.get(2).asText()) : null;
+            assertEquals(c.get(20).bigIntegerValue().longValue(), hash(r, useVar), key);
+            assertTrue(probe.startsWith("nbad " + c.get(18).asInt() + "\n"), key);
+            matched++;
+        }
+        assertEquals(KERNEL_VALUES.size(), matched, "probe cases in the oracle");
+        assertEquals(78, matched, "probe cases");
     }
 
     /** The status of resampling double data as one of the probe's invalid-argument cases does. */
@@ -464,6 +668,21 @@ class ResampleOracleTest {
             int[] ubnd,
             ResampleFlags flags,
             double tol) {
+        return status(map, lbndIn, ubndIn, lbndOut, ubndOut, lbnd, ubnd, flags, tol, Mapping.LINEAR_INTERPOLATOR);
+    }
+
+    /** The status of resampling as {@link #status} does, with {@code interp}. */
+    private static int status(
+            Mapping map,
+            int[] lbndIn,
+            int[] ubndIn,
+            int[] lbndOut,
+            int[] ubndOut,
+            int[] lbnd,
+            int[] ubnd,
+            ResampleFlags flags,
+            double tol,
+            Mapping.Interpolator interp) {
         double[] input = new double[Math.min(npix(lbndIn, ubndIn), 400)];
         for (int k = 0; k < input.length; k++) {
             input[k] = k;
@@ -476,7 +695,7 @@ class ResampleOracleTest {
                     ubndIn,
                     input,
                     null,
-                    Mapping.LINEAR_INTERPOLATOR,
+                    interp,
                     flags,
                     tol,
                     50,
@@ -534,14 +753,53 @@ class ResampleOracleTest {
                     conserve(false),
                     0.1),
             status(mapping("nonlin2"), l2, u2, l2, u2, l2, u2, conserve(false), 1.0e-12),
-            status(unit, l2, u2, l2, u2, l2, u2, conserve(true), 0.1)
+            status(unit, l2, u2, l2, u2, l2, u2, conserve(true), 0.1),
+            status(
+                    new ShiftMap(new double[] {0.5, 0.5}),
+                    l2,
+                    u2,
+                    l2,
+                    u2,
+                    l2,
+                    u2,
+                    none,
+                    0.0,
+                    Mapping.Interpolator.ukern1(new ResampleCallbackTest.TriKernel(-1.0), 2)),
+            status(
+                    unit,
+                    l2,
+                    u2,
+                    l2,
+                    u2,
+                    l2,
+                    u2,
+                    none,
+                    0.0,
+                    Mapping.Interpolator.uinterp(new ResampleCallbackTest.ProbeUinterpAll(-1.0))),
+            status(
+                    unit,
+                    l2,
+                    u2,
+                    l2,
+                    u2,
+                    l2,
+                    u2,
+                    none,
+                    0.0,
+                    Mapping.Interpolator.ukern1(new ResampleCallbackTest.TriKernel(-1.0), 2))
         };
         JsonNode want = ProbeData.load("resample").get("ERRORS");
         assertEquals(15, want.size(), "probe error cases");
-        int[] wantFirst = new int[got.length];
+        int[] wantStatus = new int[got.length];
         for (int i = 0; i < got.length; i++) {
-            wantFirst[i] = want.get(i).asInt();
+            wantStatus[i] = want.get(i).asInt();
         }
-        assertArrayEquals(wantFirst, got);
+        // The probe's kernel and interpolator fail with AST__BADIN, which C passes on as the
+        // status; jniast's callbacks fail with AST__UK1ER and AST__UINER, which C passes on alike.
+        assertEquals(AstException.AST__BADIN, wantStatus[12]);
+        assertEquals(AstException.AST__BADIN, wantStatus[13]);
+        wantStatus[12] = AstException.AST__UK1ER;
+        wantStatus[13] = AstException.AST__UINER;
+        assertArrayEquals(wantStatus, got);
     }
 }

@@ -46,6 +46,9 @@ final class Resample {
 
     private final Mapping.Interpolator interp;
 
+    /** The flags, which a caller's interpolation function is given. */
+    private final ResampleFlags resampleFlags;
+
     /** The flags as C's integer. */
     private final int flags;
 
@@ -67,7 +70,7 @@ final class Resample {
             PixelArray in,
             PixelArray inVar,
             Mapping.Interpolator interp,
-            int flags,
+            ResampleFlags resampleFlags,
             double tol,
             int maxpix,
             long[] lbndOut,
@@ -82,7 +85,8 @@ final class Resample {
         this.in = in;
         this.inVar = inVar;
         this.interp = interp;
-        this.flags = flags;
+        this.resampleFlags = resampleFlags;
+        this.flags = resampleFlags.getFlagsInt();
         this.tol = tol;
         this.maxpix = maxpix;
         this.lbndOut = lbndOut;
@@ -225,7 +229,7 @@ final class Resample {
                 in,
                 usevar ? inVar : null,
                 interp,
-                iflags,
+                flags,
                 tol,
                 maxpix,
                 longs(lbndOut, ndimOut),
@@ -574,7 +578,20 @@ final class Resample {
         }
 
         int result = ResampleInterpolators.interpolate(
-                interp, method, cls, lbndIn, ubndIn, in, inVar, npoint, offset, ptrIn, flags, out, outVar);
+                interp,
+                method,
+                cls,
+                lbndIn,
+                ubndIn,
+                in,
+                inVar,
+                npoint,
+                offset,
+                ptrIn,
+                flags,
+                resampleFlags,
+                out,
+                outVar);
 
         if (conserve) {
             conserveFlux(factor, npoint, offset);

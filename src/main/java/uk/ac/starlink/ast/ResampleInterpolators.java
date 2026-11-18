@@ -5,18 +5,26 @@ package uk.ac.starlink.ast;
  * from their positions in the input grid, and returns the number of output values (and variances)
  * it set bad.
  *
- * <p>A position outside the input grid, including one on its upper edge, or a bad coordinate
- * gives a bad output pixel; a position on a pixel boundary belongs to the pixel with the larger
- * index. Variances are interpolated only when both {@code inVar} and {@code outVar} are given; a
- * variance is bad when it equals the bad value (with {@code AST__USEBAD}) or is negative.
+ * <p>For every scheme but block averaging, a position outside the input grid, including one on its
+ * upper edge, or a bad coordinate gives a bad output pixel, as does (with {@code AST__USEBAD}) a
+ * bad input pixel containing the position; a position on a pixel boundary belongs to the pixel
+ * with the larger index. Variances are interpolated only when both {@code inVar} and {@code
+ * outVar} are given; a variance is bad when it equals the bad value (with {@code AST__USEBAD}) or
+ * is negative.
  *
  * <p>C writes each scheme as eight loops, one for each combination of {@code AST__USEBAD}, {@code
  * AST__NOBAD} and the presence of variances, so that the compiler can drop the tests a case does
  * not need. Each scheme here makes those tests in one loop, with C's arithmetic in C's order.
  *
+ * <p>A caller's kernel or interpolation function that throws an {@link Exception} ends the
+ * resampling with an {@link AstException} whose status is {@code AST__UK1ER} or {@code
+ * AST__UINER}, the statuses jniast's callbacks set, and whose cause is that exception; an {@link
+ * Error} passes through unchanged. Either way the output holds what was set before the failure.
+ *
  * <p>Ported from Rust {@code mappings/resample/interp.rs} and C {@code mapping.c} ({@code
- * InterpolateNearest<X>} and {@code InterpolateLinear<X>}, and the scheme dispatch of {@code
- * ResampleSection}).
+ * InterpolateNearest<X>}, {@code InterpolateLinear<X>}, {@code InterpolateKernel1<X>}, {@code
+ * InterpolateBlockAverage<X>}, and the scheme dispatch of {@code ResampleSection}), and jniast's
+ * {@code jni/Mapping.c} ({@code fukern1} and {@code fuinterp<X>}).
  */
 final class ResampleInterpolators {
 
@@ -29,6 +37,9 @@ final class ResampleInterpolators {
      *
      * @param method C's name of the resampling function, for error messages
      * @param cls the class of the Mapping given, for error messages
+     * @param flags the flags as C's integer
+     * @param flagsObject the flags object given to the resampling method, which a caller's
+     *     interpolation function is given
      * @return the number of output values and variances set bad
      */
     static int interpolate(
@@ -43,6 +54,7 @@ final class ResampleInterpolators {
             int[] offset,
             double[][] coords,
             int flags,
+            ResampleFlags flagsObject,
             PixelArray out,
             PixelArray outVar) {
         switch (interp.scheme) {
@@ -50,10 +62,140 @@ final class ResampleInterpolators {
                 return nearest(lbndIn, ubndIn, in, inVar, npoint, offset, coords, flags, out, outVar);
             case Mapping.AST__LINEAR:
                 return linear(lbndIn, ubndIn, in, inVar, npoint, offset, coords, flags, out, outVar);
+            case Mapping.AST__SINC:
+            case Mapping.AST__SINCCOS:
+            case Mapping.AST__SINCGAUSS:
+            case Mapping.AST__SINCSINC:
+            case Mapping.AST__SOMB:
+            case Mapping.AST__SOMBCOS:
+            case Mapping.AST__GAUSS: {
+                ResampleKernels.Setup setup = ResampleKernels.setup(interp.scheme, interp.params);
+                return kernel1(
+                        lbndIn,
+                        ubndIn,
+                        in,
+                        inVar,
+                        npoint,
+                        offset,
+                        coords,
+                        flags,
+                        setup.kernel,
+                        setup.neighb,
+                        setup.params,
+                        out,
+                        outVar);
+            }
+            case Mapping.AST__UKERN1: {
+                // C's MaxI( 1, (int) floor( params[ 0 ] + 0.5 ) ).
+                int neighb = Math.max(1, (int) Math.floor(interp.params[0] + 0.5));
+                ResampleKernels.Kernel kernel = callersKernel(interp.ukern1er, method, cls);
+                return kernel1(
+                        lbndIn,
+                        ubndIn,
+                        in,
+                        inVar,
+                        npoint,
+                        offset,
+                        coords,
+                        flags,
+                        kernel,
+                        neighb,
+                        interp.params,
+                        out,
+                        outVar);
+            }
+            case Mapping.AST__BLOCKAVE:
+                return blockAverage(
+                        lbndIn, ubndIn, in, inVar, npoint, offset, coords, flags, interp.params, out, outVar);
+            case Mapping.AST__UINTERP:
+                return callersInterpolation(
+                        interp.uinterper,
+                        method,
+                        cls,
+                        lbndIn,
+                        ubndIn,
+                        in,
+                        inVar,
+                        npoint,
+                        offset,
+                        coords,
+                        flagsObject,
+                        out,
+                        outVar);
             default:
                 throw Ast.err(
                         AstException.AST__INTER,
                         method + "(" + cls + "): Unexpected sub-pixel interpolation scheme (" + interp.scheme + ").");
+        }
+    }
+
+    /**
+     * The error with which a caller's function that threw {@code cause} ends the resampling: C's
+     * message, with the status jniast's callback sets, and {@code cause} as its cause.
+     */
+    private static AstException callersError(int status, String message, Exception cause) {
+        AstException err = Ast.err(status, message);
+        err.initCause(cause);
+        return err;
+    }
+
+    /**
+     * The caller's kernel {@code calc} as a kernel, as jniast's {@code fukern1} calls it: with the
+     * offset alone.
+     */
+    // Ukern1Calculator.ukern1 is declared to throw any Exception; each one is the kernel's failure,
+    // and an Error passes through.
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private static ResampleKernels.Kernel callersKernel(Ukern1Calculator calc, String method, String cls) {
+        return (offset, params) -> {
+            try {
+                return calc.ukern1(offset);
+            } catch (Exception e) {
+                throw callersError(
+                        AstException.AST__UK1ER,
+                        method + "(" + cls + "): Error signalled by user-supplied 1-d interpolation kernel.",
+                        e);
+            }
+        };
+    }
+
+    /**
+     * C's call of a caller's interpolation function, as jniast's {@code fuinterp<X>} makes it: the
+     * {@code uinterp<X>} method of {@code calc} for the data's type, given the caller's own data,
+     * variance and output arrays, new arrays of the input bounds and of the offsets, the positions,
+     * the flags object and the bad value. Returns the number of bad pixels it returns.
+     */
+    // UinterpCalculator's methods are declared to throw any Exception; each one is the function's
+    // failure, and an Error passes through.
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private static int callersInterpolation(
+            UinterpCalculator calc,
+            String method,
+            String cls,
+            long[] lbndIn,
+            long[] ubndIn,
+            PixelArray in,
+            PixelArray inVar,
+            int npoint,
+            int[] offset,
+            double[][] coords,
+            ResampleFlags flags,
+            PixelArray out,
+            PixelArray outVar) {
+        int ndimIn = lbndIn.length;
+        int[] lbnd = new int[ndimIn];
+        int[] ubnd = new int[ndimIn];
+        for (int i = 0; i < ndimIn; i++) {
+            lbnd[i] = (int) lbndIn[i];
+            ubnd[i] = (int) ubndIn[i];
+        }
+        try {
+            return in.uinterp(calc, ndimIn, lbnd, ubnd, inVar, npoint, offset.clone(), coords, flags, out, outVar);
+        } catch (Exception e) {
+            throw callersError(
+                    AstException.AST__UINER,
+                    method + "(" + cls + "): Error signalled by user-supplied sub-pixel interpolation function.",
+                    e);
         }
     }
 
@@ -401,5 +543,456 @@ final class ResampleInterpolators {
             }
         }
         return result;
+    }
+
+    /**
+     * C's {@code CALC_AND_ASSIGN_OUTPUT} as {@code InterpolateKernel1<X>} and {@code
+     * InterpolateBlockAverage<X>} define it: the value and variance from the sums, each bad where
+     * its weights sum to zero or it would overflow an integer type when rounded, assigned to the
+     * output pixel at {@code offOut}. {@code bad} says whether the pixel is already bad, and {@code
+     * badVar} whether its variance is. Returns the number of bad values assigned.
+     */
+    private static int calcAndAssign(
+            boolean bad,
+            boolean badVar,
+            double sum,
+            double sumVar,
+            double wtsum,
+            int offOut,
+            boolean nobad,
+            PixelArray in,
+            PixelArray out,
+            PixelArray outVar) {
+        boolean usevar = outVar != null;
+        double val = 0.0;
+        double valVar = 0.0;
+        if (!bad) {
+            bad = wtsum == 0.0;
+            if (!bad) {
+                val = in.sum(sum / wtsum);
+                bad = out.overflows(val);
+            }
+            if (usevar && bad) {
+                badVar = true;
+            }
+        }
+        if (usevar && !badVar) {
+            double wtsumSq = in.sum(wtsum * wtsum);
+            badVar = wtsumSq == 0.0;
+            if (!badVar) {
+                valVar = in.sum(sumVar / wtsumSq);
+                badVar = out.overflows(valVar);
+            }
+        }
+
+        int nbad = 0;
+        if (bad) {
+            if (!nobad) {
+                out.setBad(offOut);
+                if (usevar) {
+                    outVar.setBad(offOut);
+                }
+            }
+            nbad++;
+        } else {
+            out.setResampled(offOut, val);
+            if (usevar) {
+                if (badVar) {
+                    if (!nobad) {
+                        outVar.setBad(offOut);
+                    }
+                    nbad++;
+                } else {
+                    outVar.setResampled(offOut, valVar);
+                }
+            }
+        }
+        return nbad;
+    }
+
+    /**
+     * C's {@code InterpolateKernel1<X>}: each output value is the sum of the input pixels within
+     * {@code neighb} pixels of its position along each axis, weighted by the product of {@code
+     * kernel} evaluated at their offsets along each axis, divided by the sum of those weights, and
+     * each variance the sum of the input variances weighted by the squares of those weights,
+     * divided by the square of their sum. {@code params} are passed to the kernel. The kernel is
+     * evaluated as often and in the order C evaluates it, so that a caller's kernel sees C's
+     * sequence of calls.
+     */
+    static int kernel1(
+            long[] lbndIn,
+            long[] ubndIn,
+            PixelArray in,
+            PixelArray inVar,
+            int npoint,
+            int[] offset,
+            double[][] coords,
+            int flags,
+            ResampleKernels.Kernel kernel,
+            long neighb,
+            double[] params,
+            PixelArray out,
+            PixelArray outVar) {
+        int ndimIn = lbndIn.length;
+        boolean nobad = (flags & ResampleFlags.AST__NOBAD) != 0;
+        boolean usebad = (flags & ResampleFlags.AST__USEBAD) != 0;
+        boolean usevar = inVar != null && outVar != null;
+        Sums sums = new Sums(in, usevar ? inVar : null, usebad);
+
+        long[] stride = new long[ndimIn];
+        double[] xnMin = new double[ndimIn];
+        double[] xnMax = new double[ndimIn];
+        long s = 1;
+        for (int idim = 0; idim < ndimIn; idim++) {
+            stride[idim] = s;
+            s *= ubndIn[idim] - lbndIn[idim] + 1;
+            xnMin[idim] = lbndIn[idim] - 0.5;
+            xnMax[idim] = ubndIn[idim] + 0.5;
+        }
+        // The kernel's values along each axis. C allocates 2 * neighb per axis; no more than the
+        // axis's extent can be used.
+        double[][] kval = new double[ndimIn][];
+        for (int idim = 0; idim < ndimIn; idim++) {
+            kval[idim] = new double[(int) Math.min(2 * neighb, ubndIn[idim] - lbndIn[idim] + 1)];
+        }
+        long[] lo = new long[ndimIn];
+        long[] hi = new long[ndimIn];
+        int[] wt = new int[ndimIn];
+        double[] wtprod = new double[ndimIn];
+
+        int result = 0;
+        for (int point = 0; point < npoint; point++) {
+            boolean bad;
+            if (ndimIn == 1) {
+                double x = coords[0][point];
+                bad = outside(x, xnMin[0], xnMax[0]);
+                if (!bad) {
+                    if (usebad) {
+                        long pixel = (long) Math.floor(x + 0.5) - lbndIn[0];
+                        bad = in.isBad((int) pixel);
+                    }
+                    if (!bad) {
+                        long ix = (long) Math.floor(x);
+                        long loX = Math.max(ix - neighb + 1, lbndIn[0]);
+                        long hiX = Math.min(ix + neighb, ubndIn[0]);
+                        sums.reset();
+                        long offIn = loX - lbndIn[0];
+                        for (long jx = loX; jx <= hiX; jx++, offIn++) {
+                            if (!usebad || !in.isBad((int) offIn)) {
+                                sums.add(offIn, kernel.value(jx - x, params));
+                            }
+                        }
+                    }
+                }
+            } else if (ndimIn == 2) {
+                long ystride = stride[1];
+                double x = coords[0][point];
+                bad = outside(x, xnMin[0], xnMax[0]);
+                if (!bad) {
+                    double y = coords[1][point];
+                    bad = outside(y, xnMin[1], xnMax[1]);
+                    if (!bad) {
+                        if (usebad) {
+                            long ix = (long) Math.floor(x + 0.5);
+                            long iy = (long) Math.floor(y + 0.5);
+                            long pixel = ix - lbndIn[0] + ystride * (iy - lbndIn[1]);
+                            bad = in.isBad((int) pixel);
+                        }
+                        if (!bad) {
+                            long ix = (long) Math.floor(x);
+                            long loX = Math.max(ix - neighb + 1, lbndIn[0]);
+                            long hiX = Math.min(ix + neighb, ubndIn[0]);
+                            long iy = (long) Math.floor(y);
+                            long loY = Math.max(iy - neighb + 1, lbndIn[1]);
+                            long hiY = Math.min(iy + neighb, ubndIn[1]);
+                            for (long jx = loX; jx <= hiX; jx++) {
+                                kval[0][(int) (jx - loX)] = kernel.value(jx - x, params);
+                            }
+                            sums.reset();
+                            long off1 = loX - lbndIn[0] + ystride * (loY - lbndIn[1]);
+                            for (long jy = loY; jy <= hiY; jy++, off1 += ystride) {
+                                double wtY = kernel.value(jy - y, params);
+                                long offIn = off1;
+                                for (long jx = loX; jx <= hiX; jx++, offIn++) {
+                                    if (!usebad || !in.isBad((int) offIn)) {
+                                        sums.add(offIn, kval[0][(int) (jx - loX)] * wtY);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                long pixel = 0;
+                long offIn = 0;
+                bad = false;
+                for (int idim = 0; idim < ndimIn; idim++) {
+                    double xn = coords[idim][point];
+                    bad = outside(xn, xnMin[idim], xnMax[idim]);
+                    if (bad) {
+                        break;
+                    }
+                    if (usebad) {
+                        pixel += stride[idim] * ((long) Math.floor(xn + 0.5) - lbndIn[idim]);
+                    }
+                    long ixn = (long) Math.floor(xn);
+                    lo[idim] = Math.max(ixn - neighb + 1, lbndIn[idim]);
+                    hi[idim] = Math.min(ixn + neighb, ubndIn[idim]);
+                    offIn += stride[idim] * (lo[idim] - lbndIn[idim]);
+                }
+                if (usebad) {
+                    bad = bad || in.isBad((int) pixel);
+                }
+                if (!bad) {
+                    for (int idim = 0; idim < ndimIn; idim++) {
+                        wt[idim] = 0;
+                        double xn = coords[idim][point];
+                        for (long ixn = lo[idim]; ixn <= hi[idim]; ixn++) {
+                            kval[idim][(int) (ixn - lo[idim])] = kernel.value(ixn - xn, params);
+                        }
+                    }
+                    sums.reset();
+                    int idim = ndimIn - 1;
+                    wtprod[idim] = 1.0;
+                    boolean done = false;
+                    while (!done) {
+                        // Each pixel's weight is the product of the kernel's values along each
+                        // axis. The products over the more significant axes are kept in wtprod
+                        // and recomputed only from the most significant axis whose index changed.
+                        for (int ii = idim; ii >= 1; ii--) {
+                            wtprod[ii - 1] = wtprod[ii] * kval[ii][wt[ii]];
+                        }
+                        if (!usebad || !in.isBad((int) offIn)) {
+                            sums.add(offIn, wtprod[0] * kval[0][wt[0]]);
+                        }
+
+                        // The first axis whose index has not reached its last value moves on, and
+                        // the axes before it return to their first; all are done when the last
+                        // axis returns.
+                        idim = 0;
+                        while (true) {
+                            if (wt[idim] != hi[idim] - lo[idim]) {
+                                wt[idim]++;
+                                offIn += stride[idim];
+                                break;
+                            }
+                            wt[idim] = 0;
+                            offIn -= stride[idim] * (hi[idim] - lo[idim]);
+                            idim++;
+                            if (idim == ndimIn) {
+                                done = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            result += calcAndAssign(
+                    bad,
+                    sums.badVar,
+                    sums.sum,
+                    sums.sumVar,
+                    sums.wtsum,
+                    offset[point],
+                    nobad,
+                    in,
+                    out,
+                    usevar ? outVar : null);
+        }
+        return result;
+    }
+
+    /**
+     * C's {@code InterpolateBlockAverage<X>}: each output value is the mean of the good input
+     * pixels in the block reaching {@code params[0]} pixels (rounded) either side of its position
+     * along each axis, weighted by the reciprocals of their variances when variances are given;
+     * the variance is the reciprocal of the sum of those weights.
+     *
+     * <p>As in C, only the general path tests for an empty block, and a position outside the input
+     * grid is bad only if its block misses the grid. C means to leave out a pixel whose variance is
+     * bad, but keeps one flag for the block: for a signed type without {@code AST__USEBAD} a
+     * negative variance leaves out the rest of the block, and the output variance is bad when the
+     * variance of the block's last good pixel was. Both are kept.
+     */
+    static int blockAverage(
+            long[] lbndIn,
+            long[] ubndIn,
+            PixelArray in,
+            PixelArray inVar,
+            int npoint,
+            int[] offset,
+            double[][] coords,
+            int flags,
+            double[] params,
+            PixelArray out,
+            PixelArray outVar) {
+        int ndimIn = lbndIn.length;
+        boolean nobad = (flags & ResampleFlags.AST__NOBAD) != 0;
+        boolean usebad = (flags & ResampleFlags.AST__USEBAD) != 0;
+        boolean usevar = inVar != null && outVar != null;
+        long neighb = (int) Math.floor(params[0] + 0.5);
+        BlockSums sums = new BlockSums(in, usevar ? inVar : null, usebad);
+
+        long[] stride = new long[ndimIn];
+        long s = 1;
+        for (int idim = 0; idim < ndimIn; idim++) {
+            stride[idim] = s;
+            s *= ubndIn[idim] - lbndIn[idim] + 1;
+        }
+        long[] lo = new long[ndimIn];
+        long[] hi = new long[ndimIn];
+        long[] ixm = new long[ndimIn];
+
+        int result = 0;
+        for (int point = 0; point < npoint; point++) {
+            boolean bad;
+            if (ndimIn == 1) {
+                double x = coords[0][point];
+                bad = x == AstObject.AST__BAD;
+                if (!bad) {
+                    long ix = (long) Math.floor(x);
+                    long loX = Math.max(ix - neighb + 1, lbndIn[0]);
+                    long hiX = Math.min(ix + neighb, ubndIn[0]);
+                    sums.reset();
+                    long offIn = loX - lbndIn[0];
+                    for (long jx = loX; jx <= hiX; jx++, offIn++) {
+                        sums.add(offIn);
+                    }
+                }
+            } else if (ndimIn == 2) {
+                long ystride = stride[1];
+                double x = coords[0][point];
+                bad = x == AstObject.AST__BAD;
+                if (!bad) {
+                    double y = coords[1][point];
+                    bad = y == AstObject.AST__BAD;
+                    if (!bad) {
+                        long ix = (long) Math.floor(x);
+                        long loX = Math.max(ix - neighb + 1, lbndIn[0]);
+                        long hiX = Math.min(ix + neighb, ubndIn[0]);
+                        long iy = (long) Math.floor(y);
+                        long loY = Math.max(iy - neighb + 1, lbndIn[1]);
+                        long hiY = Math.min(iy + neighb, ubndIn[1]);
+                        sums.reset();
+                        long off1 = loX - lbndIn[0] + ystride * (loY - lbndIn[1]);
+                        for (long jy = loY; jy <= hiY; jy++, off1 += ystride) {
+                            long offIn = off1;
+                            for (long jx = loX; jx <= hiX; jx++, offIn++) {
+                                sums.add(offIn);
+                            }
+                        }
+                    }
+                }
+            } else {
+                long offIn = 0;
+                bad = false;
+                for (int idim = 0; idim < ndimIn; idim++) {
+                    double xn = coords[idim][point];
+                    bad = xn == AstObject.AST__BAD;
+                    if (bad) {
+                        break;
+                    }
+                    long ixn = (long) Math.floor(xn);
+                    lo[idim] = Math.max(ixn - neighb + 1, lbndIn[idim]);
+                    hi[idim] = Math.min(ixn + neighb, ubndIn[idim]);
+                    // A block with no extent along an axis holds no data.
+                    bad = lo[idim] > hi[idim];
+                    if (bad) {
+                        break;
+                    }
+                    offIn += stride[idim] * (lo[idim] - lbndIn[idim]);
+                    ixm[idim] = lo[idim];
+                }
+                if (!bad) {
+                    sums.reset();
+                    int idim;
+                    do {
+                        sums.add(offIn);
+                        for (idim = 0; idim < ndimIn; idim++) {
+                            if (ixm[idim] < hi[idim]) {
+                                offIn += stride[idim];
+                                ixm[idim]++;
+                                break;
+                            }
+                            offIn -= stride[idim] * (hi[idim] - lo[idim]);
+                            ixm[idim] = lo[idim];
+                        }
+                    } while (idim != ndimIn);
+                }
+            }
+            result += calcAndAssign(
+                    bad,
+                    sums.badVar,
+                    sums.sum,
+                    sums.sumVar,
+                    sums.wtsum,
+                    offset[point],
+                    nobad,
+                    in,
+                    out,
+                    usevar ? outVar : null);
+        }
+        return result;
+    }
+
+    /**
+     * The sums from which {@code InterpolateBlockAverage<X>} forms an output value and variance,
+     * each held in the type's sum type, with C's one flag for a bad variance, which is reset only
+     * when a block's sums are.
+     */
+    private static final class BlockSums {
+        private final PixelArray in;
+        private final PixelArray inVar;
+        private final boolean usebad;
+        private final boolean signed;
+        double sum;
+        double sumVar;
+        double wtsum;
+        boolean badVar;
+
+        BlockSums(PixelArray in, PixelArray inVar, boolean usebad) {
+            this.in = in;
+            this.inVar = inVar;
+            this.usebad = usebad;
+            this.signed = in.signed();
+        }
+
+        /** Starts the sums for a new block. */
+        void reset() {
+            sum = 0.0;
+            wtsum = 0.0;
+            if (inVar != null) {
+                sumVar = 0.0;
+                badVar = false;
+            }
+        }
+
+        /**
+         * Adds the input pixel at {@code off}, unless it is bad: weighted by the reciprocal of its
+         * variance when variances are given, unless {@code badVar} is set, and by one otherwise.
+         */
+        void add(long off) {
+            int offIn = (int) off;
+            if (!usebad || !in.isBad(offIn)) {
+                if (inVar != null) {
+                    double var = inVar.get(offIn);
+                    if (usebad) {
+                        badVar = inVar.isBad(offIn);
+                    }
+                    if (signed) {
+                        badVar = badVar || var < 0.0;
+                    }
+                    if (!(signed || usebad) || !badVar) {
+                        double pixwt = in.sum(1.0 / var);
+                        sum = in.sum(sum + in.sum(pixwt * in.sum(in.get(offIn))));
+                        wtsum = in.sum(wtsum + pixwt);
+                        sumVar = in.sum(sumVar + pixwt);
+                    }
+                } else {
+                    sum = in.sum(sum + in.sum(in.get(offIn)));
+                    wtsum = in.sum(wtsum + 1.0);
+                }
+            }
+        }
     }
 }
