@@ -240,12 +240,12 @@ final class Resample {
     }
 
     /** The first {@code n} values of {@code a}, widened so that no difference of bounds overflows. */
-    private static long[] longs(int[] a, int n) {
+    static long[] longs(int[] a, int n) {
         return Arrays.stream(a, 0, n).asLongStream().toArray();
     }
 
     /** Rust's check that a bound array has a value for each dimension. */
-    private static void checkBounds(String prefix, String name, int[] a, int n) {
+    static void checkBounds(String prefix, String name, int[] a, int n) {
         if (a.length < n) {
             throw Ast.err(
                     AstException.AST__DIMIN, prefix + a.length + " " + name + " supplied for " + n + " dimensions.");
@@ -253,7 +253,7 @@ final class Resample {
     }
 
     /** Rust's check that a data or variance array, if given, has an element for each pixel of its grid. */
-    private static void checkLength(String prefix, String what, PixelArray a, long want) {
+    static void checkLength(String prefix, String what, PixelArray a, long want) {
         if (a != null && a.length() < want) {
             throw Ast.err(
                     AstException.AST__DIMIN,

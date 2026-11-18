@@ -3,7 +3,8 @@ package uk.ac.starlink.ast;
 /**
  * An array of pixel values of one of jniast's data types, with the bad value of the call it is
  * given to: the Java form of the {@code Xtype}, {@code Xfloating}, {@code Xfloattype} and {@code
- * Xsigned} arguments of the macros that generate each of C's resampling functions once per type.
+ * Xsigned} arguments of the macros that generate each of C's resampling and rebinning functions
+ * once per type.
  *
  * <p>Values are passed as doubles. A type summed in {@code float} (C's {@code Xfloattype}: {@code
  * float} for F, S and B, {@code double} for D, L and I) has each step of its arithmetic computed
@@ -14,7 +15,7 @@ package uk.ac.starlink.ast;
  * run: a conversion to {@code int} or {@code long} saturates, as Java's casts do, and one to
  * {@code short} or {@code byte} goes through {@code int}.
  *
- * <p>Ported from Rust {@code pixel.rs} ({@code PixelValue}) and C {@code mapping.c}.
+ * <p>Ported from Rust {@code pixel.rs} ({@code PixelValue} and {@code RebinValue}) and C {@code mapping.c}.
  */
 abstract class PixelArray {
 
@@ -97,6 +98,19 @@ abstract class PixelArray {
      */
     abstract void set(int i, double v);
 
+    /**
+     * {@code v} converted to the type, as a double (C's {@code (Xtype) v}, which {@link #set}
+     * stores).
+     */
+    abstract double fromC(double v);
+
+    /**
+     * Adds {@code c}, a value of the type, to element {@code i} in the type's arithmetic (C's
+     * {@code a[i] += c} with both of the type): wrapping on overflow for an integer type, rounded
+     * to float for {@code float}.
+     */
+    abstract void add(int i, double c);
+
     /** The underlying Java array. */
     abstract Object array();
 
@@ -144,6 +158,14 @@ abstract class PixelArray {
      */
     final boolean overflows(double v) {
         return !floating && (v <= loLim || v >= hiLim);
+    }
+
+    /**
+     * C's {@code CONV( IntType, v )} for this type: {@code v} rounded half away from zero through
+     * {@code int} for an integer type, and {@code v} itself for a floating type.
+     */
+    final double conv(double v) {
+        return floating ? v : (int) (v + (v > 0.0 ? 0.5 : -0.5));
     }
 
     /**
@@ -198,6 +220,16 @@ abstract class PixelArray {
         @Override
         void set(int i, double v) {
             a[i] = (byte) (int) v;
+        }
+
+        @Override
+        double fromC(double v) {
+            return (byte) (int) v;
+        }
+
+        @Override
+        void add(int i, double c) {
+            a[i] = (byte) (a[i] + (byte) (int) c);
         }
 
         @Override
@@ -277,6 +309,16 @@ abstract class PixelArray {
         }
 
         @Override
+        double fromC(double v) {
+            return (short) (int) v;
+        }
+
+        @Override
+        void add(int i, double c) {
+            a[i] = (short) (a[i] + (short) (int) c);
+        }
+
+        @Override
         Object array() {
             return a;
         }
@@ -350,6 +392,16 @@ abstract class PixelArray {
         @Override
         void set(int i, double v) {
             a[i] = (int) v;
+        }
+
+        @Override
+        double fromC(double v) {
+            return (int) v;
+        }
+
+        @Override
+        void add(int i, double c) {
+            a[i] += (int) c;
         }
 
         @Override
@@ -429,6 +481,16 @@ abstract class PixelArray {
         }
 
         @Override
+        double fromC(double v) {
+            return (long) v;
+        }
+
+        @Override
+        void add(int i, double c) {
+            a[i] += (long) c;
+        }
+
+        @Override
         Object array() {
             return a;
         }
@@ -505,6 +567,16 @@ abstract class PixelArray {
         }
 
         @Override
+        double fromC(double v) {
+            return (float) v;
+        }
+
+        @Override
+        void add(int i, double c) {
+            a[i] += (float) c;
+        }
+
+        @Override
         Object array() {
             return a;
         }
@@ -578,6 +650,16 @@ abstract class PixelArray {
         @Override
         void set(int i, double v) {
             a[i] = v;
+        }
+
+        @Override
+        double fromC(double v) {
+            return v;
+        }
+
+        @Override
+        void add(int i, double c) {
+            a[i] += c;
         }
 
         @Override

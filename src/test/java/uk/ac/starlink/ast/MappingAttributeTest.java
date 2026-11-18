@@ -123,32 +123,6 @@ class MappingAttributeTest {
     }
 
     @Test
-    void rebinningIsUnavailable() {
-        UnitMap map = new UnitMap(1);
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> map.rebinD(
-                        0.0,
-                        1,
-                        new int[] {1},
-                        new int[] {2},
-                        new double[2],
-                        null,
-                        Mapping.LINEAR_SPREADER,
-                        false,
-                        0.0,
-                        100,
-                        AstObject.AST__BAD,
-                        1,
-                        new int[] {1},
-                        new int[] {2},
-                        new int[] {1},
-                        new int[] {2},
-                        new double[2],
-                        null));
-    }
-
-    @Test
     void resampleFlagsCombineAsC() {
         ResampleFlags f = new ResampleFlags();
         assertEquals(0, f.getFlagsInt());

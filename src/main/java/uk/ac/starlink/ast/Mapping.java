@@ -37,9 +37,6 @@ import java.util.Objects;
  * #effectiveForward}, every time it transforms, so that the class's own data always describe the
  * Mapping as it was created.
  *
- * <p>Rebinning ({@code rebin*}) is not available in this version, and throws {@link
- * UnsupportedOperationException}.
- *
  * <p>Ported from Rust {@code mappings/mod.rs} and C {@code mapping.c}.
  */
 public abstract class Mapping extends AstObject {
@@ -1951,18 +1948,86 @@ public abstract class Mapping extends AstObject {
     }
 
     // ------------------------------------------------------------------
-    // Rebinning (not available)
+    // Rebinning
     // ------------------------------------------------------------------
 
-    private static UnsupportedOperationException noRebinning() {
-        return new UnsupportedOperationException("Rebinning is not available in this version");
-    }
-
     /**
-     * Rebins a grid of data of any numeric type, chosen by the class of {@code in}. Not available
-     * in this version.
+     * Rebins a region of a grid of data, and optionally its variances, into another grid, through
+     * the forward transformation of this Mapping: the {@code rebin<X>} method for the type of
+     * {@code in} is called. The Mapping takes positions in the input grid to positions in the
+     * output grid, so it needs one input coordinate per input grid dimension and one output
+     * coordinate per output grid dimension, and a forward transformation.
      *
-     * @throws UnsupportedOperationException always
+     * <p>Each pixel has unit extent along each dimension, with integer coordinates at its centre,
+     * and each array holds its grid with the first dimension varying fastest. The output arrays
+     * are set to zero; then the centre of each input pixel in the region from {@code lbnd} to
+     * {@code ubnd} is transformed to the output grid, and its value is shared among the output
+     * pixels around that position as {@code spread} says, each output pixel being the sum of the
+     * contributions it receives. Pixels of the input grid outside the region are ignored, as is an
+     * input pixel whose position is bad or whose centre falls outside the output grid. A kernel
+     * scheme weights the output pixels within its reach by the product of the kernel's values at
+     * their offsets along each axis, normalised to sum to one, and reflects weight falling off the
+     * output grid back onto it. When {@code usebad} is true, an input pixel equal to {@code badval}
+     * is ignored; values are compared with {@code badval} in the data type, so a NaN value is never
+     * bad, even when {@code badval} is NaN. When {@code wlim} is positive, output pixels whose
+     * weights sum to less than it are set to {@code badval}; otherwise no output pixel is set bad.
+     * For {@code int} data each contribution is rounded to the nearest integer before it is added.
+     *
+     * <p>Variances are rebinned when both {@code inVar} and {@code outVar} are given: each output
+     * variance is the sum of the variances of the input pixels contributing to it, each multiplied
+     * by the square of its weight, which assumes that the errors on the input values are
+     * independent; the spreading often correlates the errors on neighbouring output values. When
+     * {@code usebad} is true an input pixel whose variance equals {@code badval} is ignored too,
+     * and when {@code wlim} is positive an output variance is set bad with its value. When only
+     * {@code inVar} is given it is not used, and when only {@code outVar} is given it is left
+     * unchanged. (jniast's {@code rebin} never rebinned variances: it did not ask C to, so C set
+     * the output variances to zero.)
+     *
+     * <p>To transform fewer pixels, the forward transformation is replaced by linear fits over
+     * sections of the input region wherever they are accurate to within {@code tol} output pixels,
+     * as for {@link #tranGrid}, which also describes {@code maxpix}; a large {@code tol} can make
+     * the edges of the sections visible in an output viewed at high contrast. Rebinning can show
+     * artefacts that resampling does not: systems of curved lines across the output, from beating
+     * between the input and output pixel positions, which nearest-neighbour spreading shows most.
+     *
+     * <p>As in C, rebinning a region of more than 1024 pixels simplifies the Mapping, which can set
+     * its IsSimple flag. Like every AST object, a Mapping is used by one thread at a time; a thread
+     * that rebins through a FrameSet another thread uses makes its own {@code copy()}.
+     *
+     * @param wlim the smallest sum of weights an output pixel may have without being set bad, or
+     *     zero or less to set none bad
+     * @param ndimIn the number of dimensions of the input grid
+     * @param lbndIn the lowest pixel index of the input grid on each dimension
+     * @param ubndIn the highest pixel index of the input grid on each dimension
+     * @param in the input data, an array of {@code int}, {@code float} or {@code double} with an
+     *     element for each input pixel
+     * @param inVar the input variances, an array of the type of {@code in} with an element for each
+     *     input pixel, or null
+     * @param spread the pixel spreading scheme
+     * @param usebad whether input pixels equal to {@code badval} are ignored
+     * @param tol the largest positional error, in output pixels, a linear fit may introduce, or
+     *     zero to transform every input pixel through the Mapping
+     * @param maxpix the largest extent, in input pixels, over which a linear fit is first tried
+     * @param badval the bad value, a {@code Number} of the class wrapping the type of {@code in}
+     * @param ndimOut the number of dimensions of the output grid
+     * @param lbndOut the lowest pixel index of the output grid on each dimension
+     * @param ubndOut the highest pixel index of the output grid on each dimension
+     * @param lbnd the lowest pixel index of the input region on each dimension
+     * @param ubnd the highest pixel index of the input region on each dimension
+     * @param out the output data, an array of the type of {@code in} with an element for each
+     *     output pixel
+     * @param outVar the output variances, an array of the type of {@code in} with an element for
+     *     each output pixel, or null
+     * @throws IllegalArgumentException if the arrays are not all of the same type, {@code int},
+     *     {@code float} or {@code double}, or {@code badval} is not of the matching {@code Number}
+     *     class
+     * @throws AstException if an argument is invalid, for example with status {@code AST__DIMIN}
+     *     if a data or variance array has fewer elements than its grid has pixels, or a bound
+     *     array has fewer values than its grid has dimensions, {@code AST__GBDIN} if the input
+     *     region does not lie within the input grid, or {@code AST__TRNND} if the Mapping has no
+     *     forward transformation; as in C, the first output value and variance have then been set
+     *     to zero after an error in the numbers of dimensions, the bounds, {@code tol} or {@code
+     *     maxpix}, and all of them after a later error
      */
     public void rebin(
             double wlim,
@@ -1983,13 +2048,123 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             Object out,
             Object outVar) {
-        throw noRebinning();
+        // jniast casts each argument to the type of in and reports any mismatch; the types are
+        // checked here before the call so that an exception from within it is not mistaken for one.
+        // As in jniast, null data is a NullPointerException.
+        Objects.requireNonNull(in, "in");
+        if (in instanceof int[]
+                && (inVar == null || inVar instanceof int[])
+                && out instanceof int[]
+                && (outVar == null || outVar instanceof int[])
+                && badval instanceof Integer) {
+            rebinI(
+                    wlim,
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    (int[]) in,
+                    (int[]) inVar,
+                    spread,
+                    usebad,
+                    tol,
+                    maxpix,
+                    (Integer) badval,
+                    ndimOut,
+                    lbndOut,
+                    ubndOut,
+                    lbnd,
+                    ubnd,
+                    (int[]) out,
+                    (int[]) outVar);
+        } else if (in instanceof float[]
+                && (inVar == null || inVar instanceof float[])
+                && out instanceof float[]
+                && (outVar == null || outVar instanceof float[])
+                && badval instanceof Float) {
+            rebinF(
+                    wlim,
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    (float[]) in,
+                    (float[]) inVar,
+                    spread,
+                    usebad,
+                    tol,
+                    maxpix,
+                    (Float) badval,
+                    ndimOut,
+                    lbndOut,
+                    ubndOut,
+                    lbnd,
+                    ubnd,
+                    (float[]) out,
+                    (float[]) outVar);
+        } else if (in instanceof double[]
+                && (inVar == null || inVar instanceof double[])
+                && out instanceof double[]
+                && (outVar == null || outVar instanceof double[])
+                && badval instanceof Double) {
+            rebinD(
+                    wlim,
+                    ndimIn,
+                    lbndIn,
+                    ubndIn,
+                    (double[]) in,
+                    (double[]) inVar,
+                    spread,
+                    usebad,
+                    tol,
+                    maxpix,
+                    (Double) badval,
+                    ndimOut,
+                    lbndOut,
+                    ubndOut,
+                    lbnd,
+                    ubnd,
+                    (double[]) out,
+                    (double[]) outVar);
+        } else {
+            throw new IllegalArgumentException("in, in_var, out and out_var must all be arrays of the same primitive"
+                    + " type, and badval a matching Number type");
+        }
     }
 
     /**
-     * Rebins a grid of {@code int} data. Not available in this version.
+     * The flags C's {@code astRebin<X>} is given: {@code AST__USEBAD} when {@code usebad} is true,
+     * as jniast gives it, and {@code AST__USEVAR} when both variance arrays are given, which jniast
+     * did not give, so that variances are rebinned.
+     */
+    private static int rebinFlags(boolean usebad, Object inVar, Object outVar) {
+        return (usebad ? ResampleFlags.AST__USEBAD : 0) | (inVar != null && outVar != null ? Rebin.AST__USEVAR : 0);
+    }
+
+    /**
+     * Rebins a region of a grid of {@code int} data, as {@link #rebin} describes. Each
+     * contribution to an output value is rounded to the nearest integer before it is added.
      *
-     * @throws UnsupportedOperationException always
+     * @param wlim the smallest sum of weights an output pixel may have without being set bad, or
+     *     zero or less to set none bad
+     * @param ndimIn the number of dimensions of the input grid
+     * @param lbndIn the lowest pixel index of the input grid on each dimension
+     * @param ubndIn the highest pixel index of the input grid on each dimension
+     * @param in the input data, an element for each input pixel
+     * @param inVar the input variances, an element for each input pixel, or null; variances are
+     *     rebinned when both {@code inVar} and {@code outVar} are given
+     * @param spread the pixel spreading scheme
+     * @param usebad whether input pixels equal to {@code badval} are ignored
+     * @param tol the largest positional error, in output pixels, a linear fit may introduce
+     * @param maxpix the largest extent, in input pixels, over which a linear fit is first tried
+     * @param badval the bad value
+     * @param ndimOut the number of dimensions of the output grid
+     * @param lbndOut the lowest pixel index of the output grid on each dimension
+     * @param ubndOut the highest pixel index of the output grid on each dimension
+     * @param lbnd the lowest pixel index of the input region on each dimension
+     * @param ubnd the highest pixel index of the input region on each dimension
+     * @param out the output data, an element for each output pixel
+     * @param outVar the output variances, an element for each output pixel, or null; left
+     *     unchanged when {@code inVar} is null
+     * @throws AstException if an argument is invalid, as for {@link #rebin}
      */
     public void rebinI(
             double wlim,
@@ -2010,13 +2185,54 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             int[] out,
             int[] outVar) {
-        throw noRebinning();
+        // jniast passes the output variances to C only with the input ones.
+        Rebin.rebin(
+                this,
+                wlim,
+                ndimIn,
+                lbndIn,
+                ubndIn,
+                PixelArray.of(in, badval),
+                inVar == null ? null : PixelArray.of(inVar, badval),
+                spread,
+                rebinFlags(usebad, inVar, outVar),
+                tol,
+                maxpix,
+                ndimOut,
+                lbndOut,
+                ubndOut,
+                lbnd,
+                ubnd,
+                PixelArray.of(out, badval),
+                inVar == null || outVar == null ? null : PixelArray.of(outVar, badval),
+                "astRebinI");
     }
 
     /**
-     * Rebins a grid of {@code float} data. Not available in this version.
+     * Rebins a region of a grid of {@code float} data, as {@link #rebin} describes.
      *
-     * @throws UnsupportedOperationException always
+     * @param wlim the smallest sum of weights an output pixel may have without being set bad, or
+     *     zero or less to set none bad
+     * @param ndimIn the number of dimensions of the input grid
+     * @param lbndIn the lowest pixel index of the input grid on each dimension
+     * @param ubndIn the highest pixel index of the input grid on each dimension
+     * @param in the input data, an element for each input pixel
+     * @param inVar the input variances, an element for each input pixel, or null; variances are
+     *     rebinned when both {@code inVar} and {@code outVar} are given
+     * @param spread the pixel spreading scheme
+     * @param usebad whether input pixels equal to {@code badval} are ignored
+     * @param tol the largest positional error, in output pixels, a linear fit may introduce
+     * @param maxpix the largest extent, in input pixels, over which a linear fit is first tried
+     * @param badval the bad value
+     * @param ndimOut the number of dimensions of the output grid
+     * @param lbndOut the lowest pixel index of the output grid on each dimension
+     * @param ubndOut the highest pixel index of the output grid on each dimension
+     * @param lbnd the lowest pixel index of the input region on each dimension
+     * @param ubnd the highest pixel index of the input region on each dimension
+     * @param out the output data, an element for each output pixel
+     * @param outVar the output variances, an element for each output pixel, or null; left
+     *     unchanged when {@code inVar} is null
+     * @throws AstException if an argument is invalid, as for {@link #rebin}
      */
     public void rebinF(
             double wlim,
@@ -2037,13 +2253,54 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             float[] out,
             float[] outVar) {
-        throw noRebinning();
+        // jniast passes the output variances to C only with the input ones.
+        Rebin.rebin(
+                this,
+                wlim,
+                ndimIn,
+                lbndIn,
+                ubndIn,
+                PixelArray.of(in, badval),
+                inVar == null ? null : PixelArray.of(inVar, badval),
+                spread,
+                rebinFlags(usebad, inVar, outVar),
+                tol,
+                maxpix,
+                ndimOut,
+                lbndOut,
+                ubndOut,
+                lbnd,
+                ubnd,
+                PixelArray.of(out, badval),
+                inVar == null || outVar == null ? null : PixelArray.of(outVar, badval),
+                "astRebinF");
     }
 
     /**
-     * Rebins a grid of {@code double} data. Not available in this version.
+     * Rebins a region of a grid of {@code double} data, as {@link #rebin} describes.
      *
-     * @throws UnsupportedOperationException always
+     * @param wlim the smallest sum of weights an output pixel may have without being set bad, or
+     *     zero or less to set none bad
+     * @param ndimIn the number of dimensions of the input grid
+     * @param lbndIn the lowest pixel index of the input grid on each dimension
+     * @param ubndIn the highest pixel index of the input grid on each dimension
+     * @param in the input data, an element for each input pixel
+     * @param inVar the input variances, an element for each input pixel, or null; variances are
+     *     rebinned when both {@code inVar} and {@code outVar} are given
+     * @param spread the pixel spreading scheme
+     * @param usebad whether input pixels equal to {@code badval} are ignored
+     * @param tol the largest positional error, in output pixels, a linear fit may introduce
+     * @param maxpix the largest extent, in input pixels, over which a linear fit is first tried
+     * @param badval the bad value
+     * @param ndimOut the number of dimensions of the output grid
+     * @param lbndOut the lowest pixel index of the output grid on each dimension
+     * @param ubndOut the highest pixel index of the output grid on each dimension
+     * @param lbnd the lowest pixel index of the input region on each dimension
+     * @param ubnd the highest pixel index of the input region on each dimension
+     * @param out the output data, an element for each output pixel
+     * @param outVar the output variances, an element for each output pixel, or null; left
+     *     unchanged when {@code inVar} is null
+     * @throws AstException if an argument is invalid, as for {@link #rebin}
      */
     public void rebinD(
             double wlim,
@@ -2064,7 +2321,27 @@ public abstract class Mapping extends AstObject {
             int[] ubnd,
             double[] out,
             double[] outVar) {
-        throw noRebinning();
+        // jniast passes the output variances to C only with the input ones.
+        Rebin.rebin(
+                this,
+                wlim,
+                ndimIn,
+                lbndIn,
+                ubndIn,
+                PixelArray.of(in, badval),
+                inVar == null ? null : PixelArray.of(inVar, badval),
+                spread,
+                rebinFlags(usebad, inVar, outVar),
+                tol,
+                maxpix,
+                ndimOut,
+                lbndOut,
+                ubndOut,
+                lbnd,
+                ubnd,
+                PixelArray.of(out, badval),
+                inVar == null || outVar == null ? null : PixelArray.of(outVar, badval),
+                "astRebinD");
     }
 
     /**
@@ -2234,7 +2511,9 @@ public abstract class Mapping extends AstObject {
         /** The parameters C's {@code params} array holds. */
         final double[] params;
 
-        private Spreader(int scheme, double... params) {
+        // Package-private so that tests can make the AST__SOMB and AST__SOMBCOS schemes, which C's
+        // rebinning accepts but jniast has no factories for.
+        Spreader(int scheme, double... params) {
             this.scheme = scheme;
             this.params = params.clone();
         }

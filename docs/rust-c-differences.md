@@ -1328,6 +1328,47 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - jniast: `Mapping.Interpolator` has no factory for it, though `Mapping.Spreader` has `gauss`.
 - Java: as jniast for the public API; resampling accepts the scheme, which the tests reach through the package-private `Interpolator` constructor.
 
+## Rebinning
+
+### Variances in `rebin`
+
+- C: `astRebin<X>` rebins variances only with the flag `AST__USEVAR` and both variance arrays; given an output variance array without it, C sets the array to zero (and bad where `wlim` sets the data bad).
+- jniast: `rebin` and `rebinI/F/D` pass `AST__USEBAD` alone, and the output variance array only with the input one, so C zeroed the output variances and never filled them, though jniast's documentation promises them.
+- Rust: `rebin` takes `use_var` as a flag of its own.
+- Java: `AST__USEVAR` is added when both variance arrays are given, so the variances are rebinned; with either array absent the flags are jniast's and the result is unchanged, the output variances, if given without input ones, being left as they are, as jniast leaves them (probe `src/test/resources/probes/rebin_jniast_probe.c`, `RebinJniastTest`).
+
+### Array lengths in rebinning
+
+- C: cannot check the lengths of the arrays it is given.
+- jniast: throws `IllegalArgumentException` ("bound arrays too short", "data/variance arrays too short") before calling C.
+- Rust: `rebin` reports AST__DIMIN before C's checks, when bound arrays differ in length or a data or variance array has a length other than its grid's number of pixels, and leaves the output alone.
+- Java: AST__DIMIN with Rust's messages, before C's checks and leaving the output alone, when a bound array has fewer values than the number of dimensions given or a data or variance array fewer elements than its grid has pixels; a longer array is accepted and its leading elements used, as in C and jniast (see "Array arguments longer than needed").
+
+### `astRebin<X>` zeroes only the first output value after an argument error
+
+- C: `Rebin<X>` reports an error in its arguments and carries on to zero the output, whose number of pixels it counts only once its checks have passed, so after an error in the axis counts, bounds, tolerance, initial scale size or region only the first output value (and variance) is zeroed; after a later error, such as a Mapping with no forward transformation, the whole output is. **C quirk.**
+- Rust: as C.
+- Java: as C, as far as the output array goes (an empty array is left alone); `RebinOracleTest.errorsMatchC` records the first two output values after each error.
+
+### Adding a contribution to an `int` output pixel
+
+- C: `SpreadNearest<X>` and `SpreadLinear<X>` add `CONV(IntType, c)`, an `int` for `int` data, so the sum is `int` arithmetic, which wraps on overflow as compiled, as `SpreadKernel1<X>`'s `out[off] += c` does.
+- Rust: `SpreadNearest<X>` and `SpreadLinear<X>` add through a `double` and convert the sum, which saturates on overflow (`spread::Accum::deposit`).
+- Java: as C (`PixelArray.add`); the results differ only on overflow, which no oracle case reaches.
+
+### Rebinning with the `AST__SOMB` and `AST__SOMBCOS` schemes
+
+- C: `astRebin<X>` accepts both schemes.
+- jniast: `Mapping.Spreader` has no factory for either.
+- Java: as jniast for the public API; rebinning accepts the schemes, which the tests reach through the package-private `Spreader` constructor.
+
+### Elementary functions in the rebinning kernels
+
+- C: the kernels call the C library's `sin`, `cos` and `exp`.
+- Rust: as C.
+- Java: the kernels call `java.lang.Math`, which can differ from C's library in the last bit; seven `double` cases of the rebin oracle miss their hash on AArch64 macOS.
+  `RebinOracleTest` compares every case whose kernel calls these functions value by value with probe `src/test/resources/probes/rebin_kernel_probe.c`, within a bound worked out for each output pixel from the contributions it receives (about 1e-14 to 1e-12 for `double`; for `int`, one for each contribution lying within its bound of a half-integer), and checks that each sum of weights lies clear of the weight limit.
+
 ## Test harness
 
 ### Round trips where C's own recorded inverse fails
