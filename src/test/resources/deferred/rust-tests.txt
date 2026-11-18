@@ -15,9 +15,6 @@ tests/test_keymap.rs::check_dump_round_trip | SpecFrame (out of scope)
 tests/test_keymap_serial.rs::the_c_fixture_keymap_round_trips | Box (Region, out of scope)
 tests/test_keymap_serial.rs::the_c_fixture_map_sz_matches | Box (Region, out of scope)
 src/keymap/serial.rs::a_non_ascii_key_does_not_panic_the_presize_filter | Rust-only API (HashMap presizing)
-tests/test_zoommap.rs::zoom_parallel_merge_different_factors | needs simplification
-tests/test_zoommap.rs::zoom_parallel_merge_same_factor | needs simplification
-tests/test_zoommap.rs::a_merged_zoom_that_underflows_to_zero_is_an_error | needs simplification
 tests/test_nan_protocol.rs::nan_protocol_lutmap | LutMap (out of scope)
 tests/test_nan_protocol.rs::nan_protocol_grismmap | GrismMap (out of scope)
 tests/test_nan_protocol.rs::nan_protocol_specmap | SpecMap (out of scope)
@@ -56,30 +53,7 @@ tests/pointset.rs::a_point_set_and_its_views_agree | Rust-only API (PointSet)
 tests/pointset.rs::a_point_set_of_no_points_has_empty_axes | Rust-only API (PointSet)
 tests/pointset.rs::axis_iter_returns_column | Rust-only API (PointSet)
 tests/pointset.rs::view_and_into_ndarray | Rust-only API (PointSet)
-tests/test_winmap.rs::winmap_parallel_merge | needs simplification
-tests/test_winmap.rs::winmap_parallel_merge_with_zoommap | needs simplification
-tests/test_winmap.rs::winmap_merge_with_diagonal_matrix | needs simplification
-tests/test_winmap.rs::winmap_no_merge_with_full_matrix | needs simplification
-tests/test_winmap.rs::winmap_simplifies_to_shiftmap | needs simplification
-tests/test_winmap.rs::winmap_simplifies_to_zoommap | needs simplification
-tests/test_winmap.rs::winmap_simplifies_to_unitmap | needs simplification
-tests/test_winmap.rs::winmap_cancels_with_own_inverse_exactly | needs simplification
-tests/test_winmap.rs::offdiagonal_cd_chain_fuses_deg2rad_into_the_matrixmap | needs simplification
-tests/test_winmap.rs::nonuniform_cdelt_chain_keeps_deg2rad_in_the_winmap | needs simplification
-tests/test_winmap.rs::winmap_merge_with_a_bad_term_is_undefined | needs simplification
-tests/test_matrixmap.rs::matrix_merge_with_permmap_after | needs simplification
-tests/test_matrixmap.rs::matrix_merge_with_permmap_before | needs simplification
-tests/test_matrixmap.rs::permmap_try_merge_with_matrixmap | needs simplification
-tests/test_matrixmap.rs::matrix_merge_with_inverted_permmap | needs simplification
-tests/test_matrixmap.rs::matrix_no_merge_with_constant_permmap | needs simplification
-tests/test_matrixmap.rs::diagonal_matrix_merge_with_winmap | needs simplification
-tests/test_matrixmap.rs::non_diagonal_matrix_no_merge_with_winmap | needs simplification
-tests/test_matrixmap.rs::diagonal_matrix_merge_with_winmap_scales | needs simplification
-tests/test_matrixmap.rs::simplified_switches_full_to_diagonal_when_offdiagonals_are_zero | needs simplification
-tests/test_matrixmap.rs::merging_with_an_inverted_singular_matrix_is_an_error | needs simplification
 tests/test_matrixmap.rs::an_inverted_non_square_matrixmap_equals_its_copy | astEqual (out-of-scope method)
-tests/test_permmap.rs::perm_parallel_merge | needs simplification
-tests/test_permmap.rs::perm_simplified_checks_both_perms | needs simplification
 tests/test_permmap.rs::perm_equal_same_constant_index_differing_values | astEqual (out-of-scope method)
 tests/test_permmap.rs::perm_equal_same_constant_index_same_value | astEqual (out-of-scope method)
 tests/test_permmap.rs::perm_equal_different_index_same_referenced_value | astEqual (out-of-scope method)
@@ -258,54 +232,23 @@ src/wcslib/prj.rs::csc_margin_covers_the_kernels_drift_and_a_zero_margin_does_no
 src/wcslib/prj.rs::quadcube_slice_builds_agree | hardware SIMD
 src/mappings/wcsmap.rs::inverse_longitudes_near_a_limit_are_decided_as_per_value | hardware SIMD
 src/mappings/sphmap.rs::counts_only_the_calls_c_makes | Rust-only API (call counts)
-tests/test_sphmap.rs::sphmap_inv_fwd_cancels_without_unit_radius | needs simplification
-tests/test_sphmap.rs::sphmap_fwd_inv_needs_unit_radius_on_first_only | needs simplification
-tests/test_sphmap.rs::sphmap_fwd_inv_fails_without_unit_radius | needs simplification
-tests/test_sphmap.rs::sphmap_cancellation_requires_matching_polar_long | needs simplification
 tests/test_wcsmap.rs::wcsmap_equal_different_params | astEqual (out-of-scope method)
 tests/test_wcsmap.rs::wcsmap_equal_same_params | astEqual (out-of-scope method)
-tests/test_wcsmap.rs::wcsmap_no_cancel_different_params | needs simplification
-tests/test_wcsmap.rs::wcsmap_cancel_same_params | needs simplification
-tests/test_wcsmap.rs::wcsmap_perm_swap_cancel_simplify | needs simplification
-tests/test_wcsmap.rs::wcsmap_perm_swap_simplify_constants | needs simplification
-tests/test_wcsmap.rs::wcsmap_absorbs_adjacent_permmap | needs simplification
 tests/test_polymap.rs::polymap_bad_powers_len_rejected | Rust-only API (PolyTerm power vectors; C's coefficient array has none)
-tests/test_polymap.rs::polymap_linear_decomposes_to_matrixmap | needs simplification
-tests/test_polymap.rs::polymap_affine_decomposes | needs simplification
-tests/test_polymap.rs::polymap_affine_diagonal_decomposes_to_winmap | needs simplification
-tests/test_polymap.rs::polymap_whose_terms_all_cancel_becomes_a_matrixmap | needs simplification
-tests/test_polymap.rs::polymap_does_not_cancel_against_a_different_inverse | needs simplification
 tests/test_polymap.rs::polymap_equal_compares_the_inverse_coefficients | astEqual (out-of-scope method)
-tests/test_polymap.rs::polymap_fitted_inverse_cancels_soundly | needs simplification
 tests/test_polymap.rs::polymap_with_more_outputs_than_inputs_equals_its_copy | astEqual (out-of-scope method)
-tests/test_polymap.rs::ident_set_polymap_nominated_in_a_list_is_left_alone | needs simplification
-tests/test_polymap.rs::c_simplify | needs simplification
-tests/test_polymap.rs::polymap_affine_general_merges_with_a_neighbour | needs simplification
 tests/test_polymap_simd.rs::simd_falls_back_below_threshold | hardware SIMD
 tests/test_polymap_simd.rs::simd_inverse_falls_back_below_threshold | hardware SIMD
 tests/test_slamap.rs::cvt_from_int | Rust-only API (SlaCvtType integer codes)
-tests/test_slamap.rs::slamap_merge_concatenates_steps | needs simplification
-tests/test_slamap.rs::slamap_merge_cancels_inverse_pairs | needs simplification
-tests/test_slamap.rs::slamap_merge_combines_precession | needs simplification
-tests/test_slamap.rs::slamap_merge_precession_to_identity | needs simplification
-tests/test_slamap.rs::simplify_inverted_map_step_swaps_date_and_equinox | needs simplification
 tests/test_timemap.rs::equality | astEqual (out-of-scope method)
-tests/test_timemap.rs::try_merge_cancellation | needs simplification
 tests/test_timemap.rs::cvt_type_codes_match_c | Rust-only API (TimeCvtType integer codes)
 tests/test_timemap.rs::cvt_type_from_int | Rust-only API (TimeCvtType integer codes)
 tests/test_timemap.rs::cvt_type_inverse | Rust-only API (TimeCvtType::inverse)
-tests/test_timemap.rs::timemap_merge_concatenates | needs simplification
-tests/test_timemap.rs::timemap_merge_cancels_inverse | needs simplification
-tests/test_timemap.rs::timemap_merge_eliminates_no_effect | needs simplification
-tests/test_timemap.rs::timemap_merge_mjd_to_jd_cancels | needs simplification
-tests/test_timemap.rs::timemap_merge_mjd_to_mjd_equal_offsets | needs simplification
-tests/test_timemap.rs::timemap_simplified_chain | needs simplification
 src/units/tests.rs::log_hz_to_hz_is_mathmap | MathMap (out of scope)
 src/units/tests.rs::sqrt_hz_to_hz_is_mathmap | MathMap (out of scope)
 src/units/tests.rs::log_kms_to_ms_is_mathmap | MathMap (out of scope)
 src/units/tests.rs::hz_to_log_hz_is_mathmap | MathMap (out of scope)
 tests/test_unit_mapper.rs::spec_frame_unit_changes_match_the_c_library | SpecFrame (out of scope)
-tests/test_unit_mapper.rs::zoom_map_chains_simplify_as_the_c_library_does | needs simplification
 tests/test_basicframe.rs::map_from_returns_unit | Rust-only API (Frame::map_from)
 tests/test_frame_equality.rs::basic_frames_differing_only_in_cosmetics_are_equal | astEqual (out-of-scope method)
 tests/test_frame_equality.rs::basic_frames_differing_in_domain_are_not_equal | astEqual (out-of-scope method)
@@ -346,7 +289,6 @@ src/frames/cmpframe.rs::overlay_template_clean_partition_copies_skyframe_system 
 src/frames/cmpframe.rs::overlay_template_fallback_non_cmpframe_result | SpecFrame (out of scope)
 src/frames/cmpframe.rs::overlay_template_falls_through_when_partition_unclean | SpecFrame (out of scope)
 tests/test_frameset_integrity.rs::unit_change_leaves_mappings_alone | DSBSpecFrame, LutMap and SpecMap (out of scope)
-tests/test_lsst_oracle.rs::lsst_simplified_inverse_matches_c | needs simplification
 tests/test_show_tostring_oracle.rs::a_concrete_class_writes_what_its_anyobject_writes | Rust-only API (AnyObject)
 tests/test_show_tostring_oracle.rs::try_from_returns_the_class_and_rejects_another | Rust-only API (AnyObject)
 tests/test_show_tostring_oracle.rs::try_from_unboxes_boxed_variants | Rust-only API (AnyObject)
@@ -436,7 +378,6 @@ tests/test_fitschan_wcs.rs::serpens_dut1_is_seconds | FITS-IRAF encoding (out-of
 tests/test_fitschan_wcs.rs::serpens_swapped_axis_transform | FITS-IRAF encoding (out-of-scope method FitsChan.read)
 tests/test_fitschan_wcs.rs::class_noproj_builds_sfl | FITS-CLASS encoding (out-of-scope method FitsChan.read)
 tests/test_fitschan_wcs.rs::crota_3d_forward_matches_oracle_inverse_undefined | SpecFrame (out of scope)
-tests/test_fitschan_wcs.rs::carlin_off_car_header_keeps_the_spherical_projection | needs simplification
 tests/test_fitschan_read.rs::log_suffix_is_stripped_from_the_domain_and_symbol | MathMap (out of scope)
 tests/test_fitschan_read.rs::unset_system_still_leaves_system_unset | Rust-only API (SkyFrame::unset_system)
 tests/test_fitschan_read.rs::dsb_centre_prefers_axref_over_crval | DSBSpecFrame (out of scope)

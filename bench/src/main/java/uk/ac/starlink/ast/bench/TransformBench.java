@@ -46,7 +46,9 @@ public class TransformBench {
         }
     }
 
-    /** The case, {@code <oracle>:<relpath>:<dir>}; {@code BenchCases} lists those that load. */
+    /**
+     * The case, {@code [local:]<oracle>:<relpath>:<dir>}; {@code BenchCases} lists those that load.
+     */
     @Param({
         "framesets:wcsconv/framesets/lsst-ast.ast:forward",
         "framesets:wcsconv/framesets/lsst-ast.ast:inverse",
@@ -125,7 +127,13 @@ public class TransformBench {
         "simplify_fixtures:simplify/lsst1.map:forward",
         "simplify_fixtures:simplify/lsst1.map:inverse",
         "simplify_fixtures:simplify/lsst.map:forward",
-        "simplify_fixtures:simplify/lsst.map:inverse"
+        "simplify_fixtures:simplify/lsst.map:inverse",
+        "local:headers:wcsconv/inputs/sip.head:forward",
+        "local:headers:wcsconv/inputs/sip.head:inverse",
+        "local:headers:wcsconv/inputs/galactic-tan.head:forward",
+        "local:headers:wcsconv/inputs/galactic-tan.head:inverse",
+        "local:headers:wcsconv/inputs/car6.head:forward",
+        "local:headers:wcsconv/inputs/car6.head:inverse"
     })
     public String fixture;
 

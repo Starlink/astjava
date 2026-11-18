@@ -5,6 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,13 +23,11 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * FrameSet as {@code Vrnts}, last in the Frame class's part, so for a subclass of Frame it comes
  * before the {@code IsA Frame} marker, where {@code astLoadFrame} reads it back.
  *
- * <p>C's {@code AddVariant} simplifies the variant Mapping it stores (frameset.c:1824), so the
- * dumps of the FrameSet built here hold an unsimplified Mapping where C's hold a ZoomMap: the Rust
- * test's comparisons of that FrameSet's dump, and of its dump with Full = 1, with C's need
- * simplification and are left out. Instead, C's dump is read and written again, which must give
- * the dump C wrote after reading it back, and the FrameSet read from it must have the variants,
- * the selected variant and the transformation of the FrameSet built here. The FrameSet built here
- * must also read back from its own dump unchanged.
+ * <p>Each FrameSet built here is written with a default Channel and with Full = 1, and read back
+ * and written again, each compared with C's text. C's {@code AddVariant} simplifies the variant
+ * Mapping it stores (frameset.c:1824), so the dumps hold a ZoomMap. The FrameSet read from C's dump
+ * must also have the variants, the selected variant and the transformation of the FrameSet built
+ * here.
  *
  * <p>The probe's {@code specframe} case needs a SpecFrame, outside the first phase, and is skipped.
  */
@@ -81,6 +83,19 @@ class FrameSetVariantsOracleTest {
         return fs.tranP(2, 2, in, true, 2);
     }
 
+    /** The text a Channel with Full = 1 writes for {@code obj}. */
+    private static String fullDump(AstObject obj) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Channel ch = new Channel(null, out);
+        ch.setFull(1);
+        try {
+            ch.write(obj);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return new String(out.toByteArray(), StandardCharsets.UTF_8);
+    }
+
     @Test
     void dumpsMatchC() {
         List<String> skipped = new ArrayList<>();
@@ -106,7 +121,9 @@ class FrameSetVariantsOracleTest {
             }
 
             String text = ChannelText.dump(fs);
-            assertEquals(text, ChannelText.dump(ChannelText.read(text)), name + ": read back");
+            assertEquals(cDump, text, name + ": dump");
+            assertEquals(c.get(2).asText(), ChannelText.dump(ChannelText.read(text)), name + ": read back");
+            assertEquals(c.get(3).asText(), fullDump(fs), name + ": Full = 1");
             checked++;
         }
         assertEquals(SKIPPED, skipped);

@@ -1,8 +1,6 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -20,21 +18,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * range with {@code AST__AXIIN}; the others give no split. A split is compared by its outputs and
  * its dump, byte for byte.
  *
- * <p>{@code matrixmap_inverted_full_permuted}, where C simplifies the PermMap and MatrixMap the base
- * class splits a full permuted selection into into one MatrixMap, is in {@link #EXCLUDED}, and
- * {@code excludedCasesStillDiffer} fails when it matches. The WcsMap cases are run;
- * the NormMap, RateMap and TranMap cases, and with them {@code
+ * <p>The WcsMap cases are run; the NormMap, RateMap and TranMap cases, and with them {@code
  * issimp_component_exclusions_still_differ}, need classes outside the first phase.
  */
 class MapSplitOracleTest {
-
-    /** Cases whose split differs from C's, with the reason. */
-    private static final String[][] EXCLUDED = {
-        {
-            "matrixmap_inverted_full_permuted",
-            "needs simplification: C merges the PermMap and the MatrixMap into one MatrixMap"
-        },
-    };
 
     private static Mapping inverted(Mapping m) {
         m.invert();
@@ -76,15 +63,6 @@ class MapSplitOracleTest {
         return v;
     }
 
-    private static boolean isExcluded(String name) {
-        for (String[] e : EXCLUDED) {
-            if (e[0].equals(name)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /** What Java gives for a case: the AST status name, "None", or the outputs and the dump. */
     private static String outcome(Mapping map, int[] inputs) {
         int[] outs = new int[map.getNout()];
@@ -123,7 +101,7 @@ class MapSplitOracleTest {
         for (JsonNode c : ProbeData.load("map_split").get("CASES")) {
             String name = c.get(0).asText();
             Mapping map = mapping(name);
-            if (map == null || isExcluded(name)) {
+            if (map == null) {
                 continue;
             }
             int[] inputs = ints(c.get(1));
@@ -135,23 +113,6 @@ class MapSplitOracleTest {
             ran++;
         }
         assertTrue(failures.isEmpty(), String.join("\n", failures));
-        assertEquals(47, ran, "cases run");
-    }
-
-    @Test
-    void excludedCasesStillDiffer() {
-        for (String[] e : EXCLUDED) {
-            JsonNode found = null;
-            for (JsonNode c : ProbeData.load("map_split").get("CASES")) {
-                if (c.get(0).asText().equals(e[0])) {
-                    found = c;
-                }
-            }
-            assertNotNull(found, e[0]);
-            assertNotEquals(
-                    want(found.get(2)),
-                    outcome(mapping(e[0]), ints(found.get(1))),
-                    e[0] + " now matches C; remove it from EXCLUDED (" + e[1] + ")");
-        }
+        assertEquals(48, ran, "cases run");
     }
 }

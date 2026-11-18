@@ -3,12 +3,16 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
 import static uk.ac.starlink.ast.MappingTestData.transformRows;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -17,9 +21,9 @@ import org.junit.jupiter.api.Test;
  *
  * <p>The Rust tests of {@code SlaCvtType}'s methods are translated as the behaviour C gives the
  * conversion codes through {@code astSlaAdd}, {@code Transform} and {@code Dump}, except {@code
- * cvt_from_int} (Rust-only API). The {@code try_merge} tests and {@code
- * simplify_inverted_map_step_swaps_date_and_equinox}, of SlaMap's merging when simplified, are
- * deferred ({@code needs simplification}).
+ * cvt_from_int} (Rust-only API). The {@code try_merge} tests become simplifications of the two
+ * SlaMaps in a series CmpMap, and the classes and conversions they expect are those the pinned C
+ * library gives.
  */
 class SlaMapTest {
 
@@ -408,6 +412,85 @@ class SlaMapTest {
         assertEquals(2, s.getNin());
         assertEquals(2, s.getNout());
         assertArrayEquals(fwd(m, 1.0, 0.5), fwd(s, 1.0, 0.5));
+    }
+
+    // ------------------------------------------------------------------
+    // Merging when simplified (slamap.c MapMerge)
+    // ------------------------------------------------------------------
+
+    /** The codes of an SlaMap's conversions, in order. */
+    private static List<String> codes(SlaMap m) {
+        List<String> codes = new ArrayList<>();
+        for (int i = 0; i < m.ncvt(); i++) {
+            codes.add(m.cvtCode(i));
+        }
+        return codes;
+    }
+
+    /** Two SlaMaps in series whose conversions do not cancel merge into one SlaMap holding both, as C gives. */
+    @Test
+    void slamapMergeConcatenatesSteps() {
+        Mapping s = new CmpMap(sla("FK45Z", 1950.0), sla("PREC", 2000.0, 2010.0), true).simplify();
+        SlaMap m = assertInstanceOf(SlaMap.class, s);
+        assertFalse(m.getInvert());
+        assertEquals(Arrays.asList("FK45Z", "PREC"), codes(m));
+        assertArrayEquals(new double[] {1950.0}, m.cvtArgs(0), 0.0);
+        assertArrayEquals(new double[] {2000.0, 2010.0}, m.cvtArgs(1), 0.0);
+    }
+
+    /** FK4 to FK5 followed by its inverse cancels to the 2-axis UnitMap C gives. */
+    @Test
+    void slamapMergeCancelsInversePairs() {
+        SlaMap inverse = sla("FK45Z", 1950.0);
+        inverse.invert();
+        Mapping s = new CmpMap(sla("FK45Z", 1950.0), inverse, true).simplify();
+        assertInstanceOf(UnitMap.class, s);
+        assertEquals(2, s.getNin());
+    }
+
+    /** PREC(2000, 2010) then PREC(2010, 2020) becomes the single PREC(2000, 2020) C gives. */
+    @Test
+    void slamapMergeCombinesPrecession() {
+        Mapping s = new CmpMap(sla("PREC", 2000.0, 2010.0), sla("PREC", 2010.0, 2020.0), true).simplify();
+        SlaMap m = assertInstanceOf(SlaMap.class, s);
+        assertEquals(Arrays.asList("PREC"), codes(m));
+        assertArrayEquals(new double[] {2000.0, 2020.0}, m.cvtArgs(0), 0.0);
+    }
+
+    /**
+     * PREC(2000, 2010) then PREC(2010, 2000) combine into PREC(2000, 2000), which the next pass
+     * removes, leaving the UnitMap C gives.
+     */
+    @Test
+    void slamapMergePrecessionToIdentity() {
+        Mapping s = new CmpMap(sla("PREC", 2000.0, 2010.0), sla("PREC", 2010.0, 2000.0), true).simplify();
+        assertInstanceOf(UnitMap.class, s);
+        assertEquals(2, s.getNin());
+    }
+
+    /**
+     * Inverting an AMP or MAP step exchanges its date and equinox arguments as well as its code,
+     * since the two conversions take the pair in opposite orders (slamap.c MapMerge). An inverted
+     * MAP(EQ, DATE) simplifies to the forward AMP(DATE, EQ) C gives, which transforms as the
+     * inverted original does.
+     */
+    @Test
+    void simplifyInvertedMapStepSwapsDateAndEquinox() {
+        double eq = 2000.0;
+        double date = 55197.0;
+        SlaMap m = sla("MAP", eq, date);
+        m.invert();
+        Mapping s = m.simplify();
+        SlaMap simplified = assertInstanceOf(SlaMap.class, s);
+        assertFalse(simplified.getInvert(), "replacement is applied forward");
+        assertEquals(Arrays.asList("AMP"), codes(simplified));
+        assertArrayEquals(new double[] {date, eq}, simplified.cvtArgs(0), 0.0);
+        double ra = deg2rad(120.0);
+        double dec = deg2rad(-15.0);
+        double[] before = fwd(m, ra, dec);
+        double[] after = fwd(s, ra, dec);
+        assertClose(after[0], before[0], 1e-13, "ra preserved");
+        assertClose(after[1], before[1], 1e-13, "dec preserved");
     }
 
     // ------------------------------------------------------------------

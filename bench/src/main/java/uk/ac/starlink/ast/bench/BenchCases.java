@@ -49,6 +49,23 @@ public final class BenchCases {
     /** The sets whose sections are benchmarked, as named in {@code ast-bench/sets}. */
     private static final String[] SETS = {"framesets", "bench"};
 
+    /** The prefix of the names of {@link #LOCAL_CASES}. */
+    static final String LOCAL_PREFIX = "local:";
+
+    /**
+     * Cases of this project's own, not in {@code ast-bench}'s sets: FITS-WCS headers read through a
+     * FitsChan, so that the FrameSet timed is one this library builds itself. A local case's name is
+     * {@link #LOCAL_PREFIX} followed by an ordinary case name.
+     */
+    static final String[] LOCAL_CASES = {
+        "local:headers:wcsconv/inputs/sip.head:forward",
+        "local:headers:wcsconv/inputs/sip.head:inverse",
+        "local:headers:wcsconv/inputs/galactic-tan.head:forward",
+        "local:headers:wcsconv/inputs/galactic-tan.head:inverse",
+        "local:headers:wcsconv/inputs/car6.head:forward",
+        "local:headers:wcsconv/inputs/car6.head:inverse"
+    };
+
     private BenchCases() {}
 
     /** One {@code [relpath nin= nout= dir=]} section of an oracle. */
@@ -323,11 +340,12 @@ public final class BenchCases {
         throw new IllegalArgumentException("no section " + name);
     }
 
-    private static String[] splitName(String name) {
+    private static String[] splitName(String fullName) {
+        String name = fullName.startsWith(LOCAL_PREFIX) ? fullName.substring(LOCAL_PREFIX.length()) : fullName;
         int first = name.indexOf(':');
         int last = name.lastIndexOf(':');
         if (first < 0 || last == first) {
-            throw new IllegalArgumentException("a case name is <oracle>:<relpath>:<dir>, not " + name);
+            throw new IllegalArgumentException("a case name is [local:]<oracle>:<relpath>:<dir>, not " + fullName);
         }
         return new String[] {name.substring(0, first), name.substring(first + 1, last), name.substring(last + 1)};
     }
@@ -422,26 +440,28 @@ public final class BenchCases {
     // ------------------------------------------------------------------
 
     /**
-     * Prints every section of the benchmarked sets: the case name of each whose fixture loads, as
-     * {@code TransformBench}'s {@code fixture} parameter takes it, and, after them, each that does
-     * not with the reason.
+     * Prints every section of the benchmarked sets and every local case: the case name of each
+     * whose fixture loads, as {@code TransformBench}'s {@code fixture} parameter takes it, and, after
+     * them, each that does not with the reason.
      *
      * @param args not used
      */
     public static void main(String[] args) {
+        List<String> names = new ArrayList<>();
+        for (String set : SETS) {
+            names.addAll(setCases(set));
+        }
+        Collections.addAll(names, LOCAL_CASES);
         List<String> loads = new ArrayList<>();
         List<String> fails = new ArrayList<>();
-        for (String set : SETS) {
-            for (String name : setCases(set)) {
-                try {
-                    load(name);
-                    loads.add(name);
-                } catch (RuntimeException e) {
-                    String msg = String.valueOf(e.getMessage());
-                    int nl = msg.indexOf('\n');
-                    fails.add(name + " | " + e.getClass().getSimpleName() + ": "
-                            + (nl >= 0 ? msg.substring(0, nl) : msg));
-                }
+        for (String name : names) {
+            try {
+                load(name);
+                loads.add(name);
+            } catch (RuntimeException e) {
+                String msg = String.valueOf(e.getMessage());
+                int nl = msg.indexOf('\n');
+                fails.add(name + " | " + e.getClass().getSimpleName() + ": " + (nl >= 0 ? msg.substring(0, nl) : msg));
             }
         }
         Collections.sort(fails);

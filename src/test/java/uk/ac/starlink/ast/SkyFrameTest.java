@@ -365,7 +365,7 @@ class SkyFrameTest {
         // for the alignment (testconvert.c).
         FrameSet fs = convert(sky("FK5"), new Frame(2));
         assertTrue(
-                MappingTestData.isUnitChain(fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)),
+                MappingTestData.isUnitMap(fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)),
                 "SkyFrame -> blank-domain Frame is a UnitMap");
     }
 
@@ -378,11 +378,11 @@ class SkyFrameTest {
         SkyFrame f = sky("FK5");
         FrameSet fs1 = convert(bf, f);
         assertTrue(
-                MappingTestData.isUnitChain(fs1.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)),
+                MappingTestData.isUnitMap(fs1.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)),
                 "Frame[SKY] -> SkyFrame is a UnitMap");
         FrameSet fs2 = convert(f, bf);
         assertTrue(
-                MappingTestData.isUnitChain(fs2.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)),
+                MappingTestData.isUnitMap(fs2.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)),
                 "SkyFrame -> Frame[SKY] is a UnitMap");
         Frame nf = new Frame(2);
         nf.setDomain("NOTSKY");
@@ -974,7 +974,7 @@ class SkyFrameTest {
     private static boolean convertsWithUnitMap(SkyFrame a, SkyFrame b) {
         FrameSet fs = a.convert(b, "SKY");
         assertNotNull(fs, "FK5 SkyFrames convert");
-        return MappingTestData.isUnitChain(fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT));
+        return MappingTestData.isUnitMap(fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT));
     }
 
     /**

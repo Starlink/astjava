@@ -1,0 +1,149 @@
+ Begin CmpMap 	# Compound Mapping
+    Nin = 3 	# Number of input coordinates
+    Nout = 5 	# Number of output coordinates
+ IsA Mapping 	# Mapping between coordinate systems
+    MapA = 	# First component Mapping
+       Begin CmpMap 	# Compound Mapping
+          Nin = 3 	# Number of input coordinates
+          Nout = 5 	# Number of output coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          Series = 0 	# Component Mappings applied in parallel
+          MapA = 	# First component Mapping
+             Begin CmpMap 	# Compound Mapping
+                Nin = 1 	# Number of input coordinates
+                Nout = 2 	# Number of output coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                MapA = 	# First component Mapping
+                   Begin PermMap 	# Coordinate permutation
+                      Nin = 1 	# Number of input coordinates
+                      Nout = 3 	# Number of output coordinates
+                   IsA Mapping 	# Mapping between coordinate systems
+                      OutCpy = 1 	# Output coordinates = input coordinates
+                      In1 = 0 	# Input coordinate 1 is "bad"
+                   End PermMap
+                MapB = 	# Second component Mapping
+                   Begin PermMap 	# Coordinate permutation
+                      Nin = 3 	# Number of input coordinates
+                      Nout = 2 	# Number of output coordinates
+                   IsA Mapping 	# Mapping between coordinate systems
+                      Out1 = 1 	# Output coordinate 1 = input coordinate 1
+                      Out2 = 2 	# Output coordinate 2 = input coordinate 2
+                      In1 = 0 	# Input coordinate 1 is "bad"
+                      In2 = -1 	# Input coordinate 2 = constant no. 1
+                      In3 = 0 	# Input coordinate 3 is "bad"
+                      Nconst = 1 	# Number of constants
+                      Con1 = 3 	# Constant number 1
+                   End PermMap
+             End CmpMap
+          MapB = 	# Second component Mapping
+             Begin CmpMap 	# Compound Mapping
+                Nin = 2 	# Number of input coordinates
+                Nout = 3 	# Number of output coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                MapA = 	# First component Mapping
+                   Begin CmpMap 	# Compound Mapping
+                      Nin = 2 	# Number of input coordinates
+                   IsA Mapping 	# Mapping between coordinate systems
+                      InvB = 1 	# Second Mapping used in inverse direction
+                      MapA = 	# First component Mapping
+                         Begin UnitMap 	# Unit (null) Mapping
+                            Nin = 2 	# Number of input coordinates
+                         IsA Mapping 	# Mapping between coordinate systems
+                         End UnitMap
+                      MapB = 	# Second component Mapping
+                         Begin CmpMap 	# Compound Mapping
+                            Nin = 2 	# Number of input coordinates
+                            Invert = 1 	# Mapping inverted
+                         IsA Mapping 	# Mapping between coordinate systems
+                            InvB = 1 	# Second Mapping used in inverse direction
+                            MapA = 	# First component Mapping
+                               Begin WinMap 	# Map one window on to another
+                                  Nin = 2 	# Number of input coordinates
+                               IsA Mapping 	# Mapping between coordinate systems
+                                  Sft1 = -2.5 	# Shift for axis 1
+                                  Scl1 = 1.375 	# Scale factor for axis 1
+                                  Sft2 = -1 	# Shift for axis 2
+                                  Scl2 = -4 	# Scale factor for axis 2
+                               End WinMap
+                            MapB = 	# Second component Mapping
+                               Begin WinMap 	# Map one window on to another
+                                  Nin = 2 	# Number of input coordinates
+                                  Invert = 1 	# Mapping inverted
+                               IsA Mapping 	# Mapping between coordinate systems
+                                  Sft1 = -2.5 	# Shift for axis 1
+                                  Scl1 = 1.375 	# Scale factor for axis 1
+                                  Sft2 = -1 	# Shift for axis 2
+                                  Scl2 = -4 	# Scale factor for axis 2
+                               End WinMap
+                         End CmpMap
+                   End CmpMap
+                MapB = 	# Second component Mapping
+                   Begin CmpMap 	# Compound Mapping
+                      Nin = 2 	# Number of input coordinates
+                      Nout = 3 	# Number of output coordinates
+                   IsA Mapping 	# Mapping between coordinate systems
+                      MapA = 	# First component Mapping
+                         Begin ShiftMap 	# Shift each coordinate axis
+                            Nin = 2 	# Number of input coordinates
+                         IsA Mapping 	# Mapping between coordinate systems
+                            Sft1 = 3 	# Shift for axis 1
+                            Sft2 = 3 	# Shift for axis 2
+                         End ShiftMap
+                      MapB = 	# Second component Mapping
+                         Begin MatrixMap 	# Matrix transformation
+                            Nin = 2 	# Number of input coordinates
+                            Nout = 3 	# Number of output coordinates
+                         IsA Mapping 	# Mapping between coordinate systems
+                            Form = "Unit" 	# Matrix storage form
+                         End MatrixMap
+                   End CmpMap
+             End CmpMap
+       End CmpMap
+    MapB = 	# Second component Mapping
+       Begin CmpMap 	# Compound Mapping
+          Nin = 5 	# Number of input coordinates
+       IsA Mapping 	# Mapping between coordinate systems
+          InvB = 1 	# Second Mapping used in inverse direction
+          MapA = 	# First component Mapping
+             Begin ShiftMap 	# Shift each coordinate axis
+                Nin = 5 	# Number of input coordinates
+             IsA Mapping 	# Mapping between coordinate systems
+                Sft1 = 0.25 	# Shift for axis 1
+                Sft2 = -1 	# Shift for axis 2
+                Sft3 = 0.25 	# Shift for axis 3
+                Sft4 = -2.5 	# Shift for axis 4
+                Sft5 = 0.5 	# Shift for axis 5
+             End ShiftMap
+          MapB = 	# Second component Mapping
+             Begin CmpMap 	# Compound Mapping
+                Nin = 5 	# Number of input coordinates
+                Invert = 1 	# Mapping inverted
+             IsA Mapping 	# Mapping between coordinate systems
+                Series = 0 	# Component Mappings applied in parallel
+                InvA = 1 	# First Mapping used in inverse direction
+                MapA = 	# First component Mapping
+                   Begin CmpMap 	# Compound Mapping
+                      Nin = 2 	# Number of input coordinates
+                      Invert = 1 	# Mapping inverted
+                   IsA Mapping 	# Mapping between coordinate systems
+                      MapA = 	# First component Mapping
+                         Begin WcsMap 	# FITS-WCS sky projection
+                            Nin = 2 	# Number of input coordinates
+                         IsA Mapping 	# Mapping between coordinate systems
+                            Type = "TAN" 	# Gnomonic projection
+                         End WcsMap
+                      MapB = 	# Second component Mapping
+                         Begin ZoomMap 	# Zoom about the origin
+                            Nin = 2 	# Number of input coordinates
+                         IsA Mapping 	# Mapping between coordinate systems
+                            Zoom = 2 	# Zoom factor
+                         End ZoomMap
+                   End CmpMap
+                MapB = 	# Second component Mapping
+                   Begin UnitMap 	# Unit (null) Mapping
+                      Nin = 3 	# Number of input coordinates
+                   IsA Mapping 	# Mapping between coordinate systems
+                   End UnitMap
+             End CmpMap
+       End CmpMap
+ End CmpMap

@@ -4,11 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
 import static uk.ac.starlink.ast.MappingTestData.transformRows;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -22,9 +26,9 @@ import org.junit.jupiter.api.Test;
  * winmap.c {@code Transform} reports).
  *
  * <p>A WinMap's rate is C's {@code Rate} (winmap.c): the scale factor, or its reciprocal when
- * inverted, where the output is the input, and zero elsewhere. The merge and
- * simplification tests are deferred ({@code needs simplification}), apart from {@code
- * winmap_non_uniform_stays_winmap}, which holds of a Mapping that is not restructured.
+ * inverted, where the output is the input, and zero elsewhere. The Rust tests of the pairwise
+ * merge ({@code try_merge}) offer the two Mappings here, as a list, to the WinMap's {@code
+ * MapMerge} (winmap.c).
  */
 class WinMapTest {
 
@@ -216,5 +220,206 @@ class WinMapTest {
         assertEquals(1.0, m.rate(new double[] {1.0, 1.0}, 2, 2));
         m.invert();
         assertEquals(AstObject.AST__BAD, m.rate(new double[] {1.0, 1.0}, 1, 1));
+    }
+
+    /** The list of {@code w} and {@code other}, both applied forward, after {@code w}'s merge. */
+    private static MergeList merged(WinMap w, Mapping other, boolean series) {
+        MergeList list = new MergeList(Arrays.asList(w, other), Arrays.asList(false, false));
+        w.mapMerge(list, 0, series);
+        return list;
+    }
+
+    @Test
+    void winmapParallelMerge() {
+        WinMap w1 = new WinMap(new double[] {1.0, 2.0}, new double[] {3.0, 4.0});
+        WinMap w2 = new WinMap(new double[] {5.0}, new double[] {6.0});
+        MergeList list = merged(w1, w2, false);
+        assertEquals(1, list.size());
+        Mapping m = list.map(0);
+        assertEquals(3, m.getNin());
+        assertEquals(3, m.getNout());
+        double[][] out = transformRows(m, true, new double[] {1.0, 2.0, 3.0});
+        assertArrayEquals(new double[] {1.0 + 3.0 * 1.0, 2.0 + 4.0 * 2.0, 5.0 + 6.0 * 3.0}, point(out, 0));
+    }
+
+    @Test
+    void winmapParallelMergeWithZoommap() {
+        WinMap w = new WinMap(new double[] {1.0}, new double[] {2.0});
+        MergeList list = merged(w, new ZoomMap(2, 3.0), false);
+        assertEquals(1, list.size());
+        Mapping m = list.map(0);
+        assertEquals(3, m.getNin());
+        double[][] out = transformRows(m, true, new double[] {5.0, 7.0, 9.0});
+        assertArrayEquals(new double[] {1.0 + 2.0 * 5.0, 3.0 * 7.0, 3.0 * 9.0}, point(out, 0));
+    }
+
+    @Test
+    void winmapMergeWithDiagonalMatrix() {
+        WinMap wm = new WinMap(new double[] {1.0, 1.0}, new double[] {2.0, 2.0});
+        MatrixMap mm = new MatrixMap(2, 2, new double[][] {{3.0, 0.0}, {0.0, 4.0}});
+        MergeList list = merged(wm, mm, true);
+        assertEquals(1, list.size());
+        double[][] expected = transformRows(new CmpMap(wm, mm, true), true, new double[] {5.0, 7.0});
+        double[][] actual = transformRows(list.map(0), true, new double[] {5.0, 7.0});
+        assertArrayEquals(point(expected, 0), point(actual, 0), 1e-10);
+    }
+
+    @Test
+    void winmapNoMergeWithFullMatrix() {
+        WinMap wm = new WinMap(new double[] {1.0, 1.0}, new double[] {2.0, 2.0});
+        MatrixMap mm = new MatrixMap(2, 2, new double[][] {{1.0, 2.0}, {3.0, 4.0}});
+        MergeList list = new MergeList(Arrays.asList(wm, mm), Arrays.asList(false, false));
+        assertEquals(-1, wm.mapMerge(list, 0, true));
+        assertEquals(2, list.size());
+        assertSame(wm, list.map(0));
+        assertSame(mm, list.map(1));
+    }
+
+    @Test
+    void winmapSimplifiesToShiftmap() {
+        Mapping s = new WinMap(new double[] {3.0, 5.0}, new double[] {1.0, 1.0}).simplify();
+        assertInstanceOf(ShiftMap.class, s);
+        assertEquals(2, s.getNin());
+    }
+
+    @Test
+    void winmapSimplifiesToZoommap() {
+        Mapping s = new WinMap(new double[] {0.0, 0.0}, new double[] {4.0, 4.0}).simplify();
+        assertInstanceOf(ZoomMap.class, s);
+    }
+
+    @Test
+    void winmapSimplifiesToUnitmap() {
+        Mapping s = new WinMap(new double[] {0.0, 0.0}, new double[] {1.0, 1.0}).simplify();
+        assertInstanceOf(UnitMap.class, s);
+    }
+
+    /**
+     * C winmap.c {@code WinWin}: a WinMap composed in series with its own inverse simplifies to
+     * the exact identity, since the test for equal and opposite WinMaps compares the stored terms,
+     * so never meets the drift {@code scale * (1 / scale)} would. The scales are not exactly
+     * representable.
+     */
+    @Test
+    void winmapCancelsWithOwnInverseExactly() {
+        WinMap w = new WinMap(new double[] {3.5, -2.0}, new double[] {0.999_999_999_977_888, 1.000_000_3});
+        WinMap winv = (WinMap) w.copy();
+        winv.invert();
+        assertInstanceOf(UnitMap.class, new CmpMap(w, winv, true).simplify());
+    }
+
+    /** The leaf classes of a dump, CmpMaps left out, in order. */
+    private static String[] leafClasses(String text) {
+        List<String> out = new ArrayList<>();
+        for (String line : text.split("\n", -1)) {
+            String l = line.trim();
+            if (l.startsWith("Begin ")) {
+                String rest = l.substring("Begin ".length());
+                int end = rest.indexOf(' ');
+                String cls = end < 0 ? rest : rest.substring(0, end);
+                if (!"CmpMap".equals(cls)) {
+                    out.add(cls);
+                }
+            }
+        }
+        return out.toArray(new String[0]);
+    }
+
+    /**
+     * The FITS-WCS read path for a header with an off-diagonal CD matrix builds WinMap(-CRPIX, unit
+     * scale), MatrixMap(CD), UnitMap, MatrixMap(deg2rad, diagonal), WcsMap(TAN) inverted, and C
+     * simplifies that to a leading ShiftMap and one full MatrixMap carrying CD times pi/180. The
+     * matrix values are the C oracle's.
+     */
+    @Test
+    void offdiagonalCdChainFusesDeg2radIntoTheMatrixmap() {
+        double[] crpix = {75.910_204, 60.359_184};
+        WinMap win = new WinMap(new double[] {-crpix[0], -crpix[1]}, new double[] {1.0, 1.0});
+        MatrixMap cd = new MatrixMap(
+                2, 2, new double[][] {{-0.001_831_773_954, -8.541_702_226e-4}, {0.000_854_170_222_6, -0.001_831_773_954}
+                });
+        double d2r = Math.PI / 180.0;
+        MatrixMap deg2rad = new MatrixMap(2, 2, new double[][] {{d2r, 0.0}, {0.0, d2r}});
+        WcsMap wcs = new WcsMap(2, WcsMap.AST__TAN, 1, 2);
+        wcs.invert();
+        CmpMap c1 = new CmpMap(win, cd, true);
+        CmpMap c2 = new CmpMap(c1, new UnitMap(2), true);
+        CmpMap c3 = new CmpMap(c2, deg2rad, true);
+        CmpMap chain = new CmpMap(c3, wcs, true);
+
+        String text = ChannelText.dump(assertInstanceOf(CmpMap.class, chain.simplify()));
+        assertArrayEquals(new String[] {"ShiftMap", "MatrixMap", "WcsMap"}, leafClasses(text), text);
+        for (String token : new String[] {
+            "Sft1 = -75.910203999999993",
+            "Sft2 = -60.359183999999999",
+            "M0 = -3.1970486649575151e-05",
+            "M1 = -1.4908082756862879e-05",
+            "M2 = 1.4908082756862879e-05",
+            "M3 = -3.1970486649575151e-05",
+            "Form = \"Full\""
+        }) {
+            assertTrue(text.contains(token), "expected " + token + " in:\n" + text);
+        }
+    }
+
+    /**
+     * The FITS-WCS read path for the ZPX header ({@code fixtures/wcsconv/inputs/zpx.head}) builds
+     * WinMap(-CRPIX, unit scale), MatrixMap(PC), MatrixMap(CDELT), UnitMap, MatrixMap(deg2rad,
+     * diagonal), WcsMap(ZPN) inverted. C keeps the degrees to radians factor in a WinMap's scales
+     * and leaves the product PC times CDELT in degrees, before the WinMap. The values are the C
+     * oracle's.
+     */
+    @Test
+    void nonuniformCdeltChainKeepsDeg2radInTheWinmap() {
+        double[] crpix = {-319.077_517_318_151, 3_035.649_826_355_72};
+        WinMap win = new WinMap(new double[] {-crpix[0], -crpix[1]}, new double[] {1.0, 1.0});
+        MatrixMap pc = new MatrixMap(2, 2, new double[][] {
+            {0.017_123_380_684_552_016, 0.999_853_384_168_865}, {-0.999_844_421_650_356_9, 0.017_638_948_230_076_08}
+        });
+        MatrixMap cdelt =
+                new MatrixMap(2, 2, new double[][] {{-9.253_475_713_904_881e-5, 0.0}, {0.0, 9.255_325_538_402_174e-5}});
+        double d2r = Math.PI / 180.0;
+        MatrixMap deg2rad = new MatrixMap(2, 2, new double[][] {{d2r, 0.0}, {0.0, d2r}});
+        WcsMap wcs = new WcsMap(2, WcsMap.AST__ZPN, 1, 2);
+        wcs.invert();
+        CmpMap c1 = new CmpMap(win, pc, true);
+        CmpMap c2 = new CmpMap(c1, cdelt, true);
+        CmpMap c3 = new CmpMap(c2, new UnitMap(2), true);
+        CmpMap c4 = new CmpMap(c3, deg2rad, true);
+        CmpMap chain = new CmpMap(c4, wcs, true);
+
+        String text = ChannelText.dump(assertInstanceOf(CmpMap.class, chain.simplify()));
+        assertArrayEquals(new String[] {"MatrixMap", "WinMap", "WcsMap"}, leafClasses(text), text);
+        for (String token : new String[] {
+            "M0 = -1.5845078730445003e-06",
+            "M1 = -9.2521190078721999e-05",
+            "M2 = -9.2538856101294999e-05",
+            "M3 = 1.6325420802437699e-06",
+            "Form = \"Full\"",
+            "Sft1 = 0.0048931414519699694",
+            "Scl1 = 0.017453292519943295",
+            "Sft2 = -0.00060184004538763232",
+            "Scl2 = 0.017453292519943295"
+        }) {
+            assertTrue(text.contains(token), "expected " + token + " in:\n" + text);
+        }
+    }
+
+    /**
+     * Merging a WinMap with an inverted ShiftMap of {@code +DBL_MAX}, whose shift is then the bad
+     * value, gives a WinMap with bad terms, as C's {@code WinShift} does (checked against the C
+     * library: the simplified Mapping is a WinMap of bad terms, and maps 0.0013 to {@code
+     * AST__BAD}).
+     */
+    @Test
+    void winmapMergeWithABadTermIsUndefined() {
+        Mapping w = new CmpMap(new ZoomMap(1, 1e10), new ShiftMap(new double[] {Double.MAX_VALUE}), true).simplify();
+        ShiftMap s = new ShiftMap(new double[] {Double.MAX_VALUE});
+        s.invert();
+        Mapping simplified = new CmpMap(w, s, true).simplify();
+        assertInstanceOf(WinMap.class, simplified);
+        String dump = ChannelText.dump(simplified);
+        assertTrue(dump.contains("Sft1 = <bad>") && dump.contains("Scl1 = <bad>"), dump);
+        assertEquals(BAD, simplified.tran1(1, new double[] {0.0013}, true)[0]);
     }
 }

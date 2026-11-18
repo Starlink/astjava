@@ -380,7 +380,17 @@ public class TimeMap extends Mapping {
                     AstException.AST__TIMIN,
                     "astAddTime(" + astClass() + "): Invalid TimeMap time coordinate conversion type \"" + cvt + "\".");
         }
-        int narg = args == null ? 0 : args.length;
+        addTimeCvt(type, args == null ? 0 : args.length, args);
+    }
+
+    /**
+     * C's {@code AddTimeCvt}: appends conversion {@code type} with its {@code narg} arguments,
+     * followed by the values derived from them ({@link #addArgs}).
+     *
+     * @throws AstException with status {@code AST__TIMIN} if {@code narg} is not the conversion's
+     *     number of arguments
+     */
+    private void addTimeCvt(Cvt type, int narg, double[] args) {
         if (narg != type.nargs) {
             throw Ast.err(
                     AstException.AST__TIMIN,
@@ -444,6 +454,260 @@ public class TimeMap extends Mapping {
             default:
                 break;
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * timemap.c {@code MapMerge}. In series, or alone in the list, the TimeMap and the TimeMaps
+     * adjacent to it are condensed into one Mapping: their conversions are gathered in the order
+     * they are applied, each TimeMap's in reverse and each conversion inverted where the list
+     * applies the TimeMap inverted, and the gathered list is then simplified, pass after pass until
+     * a pass removes nothing, by removing changes of MJD or JD offset whose combined offset is
+     * zero, and adjacent pairs of mutually inverse conversions whose arguments match. If that
+     * removed a Mapping or a conversion, or the nominated TimeMap is applied inverted, the run is
+     * replaced by a UnitMap, when no conversion is left, or else by a new TimeMap of the conversions
+     * left, applied forward.
+     */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        if (!series && list.size() != 1) {
+            return -1;
+        }
+        int nstep0 = ((TimeMap) list.map(where)).steps.size();
+        int imap1 = where;
+        while (imap1 - 1 >= 0 && list.map(imap1 - 1).getClass() == TimeMap.class) {
+            nstep0 += ((TimeMap) list.map(imap1 - 1)).steps.size();
+            imap1--;
+        }
+        int imap2 = where;
+        while (imap2 + 1 < list.size() && list.map(imap2 + 1).getClass() == TimeMap.class) {
+            nstep0 += ((TimeMap) list.map(imap2 + 1)).steps.size();
+            imap2++;
+        }
+
+        List<Step> gathered = new ArrayList<>(nstep0);
+        for (int imap = imap1; imap <= imap2; imap++) {
+            TimeMap timemap = (TimeMap) list.map(imap);
+            boolean invert = list.invert(imap);
+            int ncvt = timemap.steps.size();
+            for (int k = 0; k < ncvt; k++) {
+                Step step = timemap.steps.get(invert ? ncvt - 1 - k : k);
+                double[] args = step.args.clone();
+                gathered.add(new Step(invert ? invertStep(step.cvt, args) : step.cvt, args));
+            }
+        }
+
+        boolean done = false;
+        while (!done) {
+            int nstep1 = gathered.size();
+            List<Step> kept = new ArrayList<>(nstep1);
+            int istep = 0;
+            while (istep < nstep1) {
+                boolean keep = true;
+                Step s1 = gathered.get(istep);
+                if ((s1.cvt == Cvt.MJDTOMJD || s1.cvt == Cvt.MJDTOJD || s1.cvt == Cvt.JDTOMJD) && s1.args[2] == 0.0) {
+                    keep = false;
+                } else if (istep < nstep1 - 1) {
+                    Step s2 = gathered.get(istep + 1);
+                    if (cancels(s1.cvt, s2.cvt, s1.args, s2.args)) {
+                        istep++;
+                        keep = false;
+                    }
+                }
+                if (keep) {
+                    kept.add(s1);
+                }
+                istep++;
+            }
+            done = kept.size() >= nstep1;
+            gathered = kept;
+        }
+
+        int nstep = gathered.size();
+        int ngone = imap2 - imap1;
+        boolean unit = nstep == 0;
+        boolean simpler = ngone != 0 || nstep < nstep0 || unit || list.invert(where);
+        if (!simpler) {
+            return -1;
+        }
+        Mapping replacement;
+        if (unit) {
+            replacement = new UnitMap(list.map(where).getNin());
+        } else {
+            TimeMap tm = new TimeMap();
+            for (Step step : gathered) {
+                tm.addTimeCvt(step.cvt, step.cvt.nargs, step.args);
+            }
+            replacement = tm;
+        }
+        list.replaceRangeWith(imap1, imap2, replacement);
+        return imap1;
+    }
+
+    /**
+     * The conversion that applies the inverse of {@code cvt}, as timemap.c {@code MapMerge} gathers
+     * the conversions of a TimeMap applied inverted: each conversion is exchanged for its inverse,
+     * the two offsets in {@code args} of a conversion between MJD, JD and epochs are swapped, and
+     * the derived values are worked out again for the inverse ({@link #addArgs}).
+     */
+    private static Cvt invertStep(Cvt cvt, double[] args) {
+        Cvt inverse;
+        boolean swap = false;
+        // MODERN-JAVA(14): switch expression
+        switch (cvt) {
+            case TAITOUTC:
+                inverse = Cvt.UTCTOTAI;
+                break;
+            case UTCTOTAI:
+                inverse = Cvt.TAITOUTC;
+                break;
+            case TAITOTT:
+                inverse = Cvt.TTTOTAI;
+                break;
+            case TTTOTAI:
+                inverse = Cvt.TAITOTT;
+                break;
+            case TTTOTDB:
+                inverse = Cvt.TDBTOTT;
+                break;
+            case TDBTOTT:
+                inverse = Cvt.TTTOTDB;
+                break;
+            case TDBTOTCB:
+                inverse = Cvt.TCBTOTDB;
+                break;
+            case TCBTOTDB:
+                inverse = Cvt.TDBTOTCB;
+                break;
+            case TTTOTCG:
+                inverse = Cvt.TCGTOTT;
+                break;
+            case TCGTOTT:
+                inverse = Cvt.TTTOTCG;
+                break;
+            case UTTOGMST:
+                inverse = Cvt.GMSTTOUT;
+                break;
+            case GMSTTOUT:
+                inverse = Cvt.UTTOGMST;
+                break;
+            case GMSTTOLMST:
+                inverse = Cvt.LMSTTOGMST;
+                break;
+            case LMSTTOGMST:
+                inverse = Cvt.GMSTTOLMST;
+                break;
+            case LASTTOLMST:
+                inverse = Cvt.LMSTTOLAST;
+                break;
+            case LMSTTOLAST:
+                inverse = Cvt.LASTTOLMST;
+                break;
+            case UTTOUTC:
+                inverse = Cvt.UTCTOUT;
+                break;
+            case UTCTOUT:
+                inverse = Cvt.UTTOUTC;
+                break;
+            case LTTOUTC:
+                inverse = Cvt.UTCTOLT;
+                break;
+            case UTCTOLT:
+                inverse = Cvt.LTTOUTC;
+                break;
+            case MJDTOMJD:
+                inverse = Cvt.MJDTOMJD;
+                swap = true;
+                break;
+            case MJDTOJD:
+                inverse = Cvt.JDTOMJD;
+                swap = true;
+                break;
+            case JDTOMJD:
+                inverse = Cvt.MJDTOJD;
+                swap = true;
+                break;
+            case MJDTOBEP:
+                inverse = Cvt.BEPTOMJD;
+                swap = true;
+                break;
+            case BEPTOMJD:
+                inverse = Cvt.MJDTOBEP;
+                swap = true;
+                break;
+            case MJDTOJEP:
+                inverse = Cvt.JEPTOMJD;
+                swap = true;
+                break;
+            case JEPTOMJD:
+                inverse = Cvt.MJDTOJEP;
+                swap = true;
+                break;
+            default:
+                throw Ast.err(
+                        AstException.AST__INTER,
+                        "MapMerge(TimeMap): unexpected conversion " + cvt + " (internal AST programming error).");
+        }
+        if (swap) {
+            double tmp = args[0];
+            args[0] = args[1];
+            args[1] = tmp;
+        }
+        addArgs(inverse, args);
+        return inverse;
+    }
+
+    /**
+     * Whether conversion {@code c1} with stored values {@code a1}, followed by {@code c2} with
+     * {@code a2}, is one of the pairs of mutually inverse conversions timemap.c {@code MapMerge}
+     * removes: the two in either order, with the arguments the user supplied equal to within {@code
+     * astEQUAL} (the two offsets of a conversion between MJD, JD and epochs taken in opposite
+     * orders).
+     */
+    private static boolean cancels(Cvt c1, Cvt c2, double[] a1, double[] a2) {
+        if (pair(c1, c2, Cvt.TAITOTT, Cvt.TTTOTAI)
+                || pair(c1, c2, Cvt.UTTOGMST, Cvt.GMSTTOUT)
+                || pair(c1, c2, Cvt.TTTOTCG, Cvt.TCGTOTT)
+                || pair(c1, c2, Cvt.UTTOUTC, Cvt.UTCTOUT)
+                || pair(c1, c2, Cvt.LTTOUTC, Cvt.UTCTOLT)) {
+            return MappingHelpers.astEqual(a1[0], a2[0]);
+        } else if (pair(c1, c2, Cvt.MJDTOJD, Cvt.JDTOMJD)
+                || pair(c1, c2, Cvt.MJDTOMJD, Cvt.MJDTOMJD)
+                || pair(c1, c2, Cvt.MJDTOBEP, Cvt.BEPTOMJD)
+                || pair(c1, c2, Cvt.MJDTOJEP, Cvt.JEPTOMJD)) {
+            return MappingHelpers.astEqual(a1[0], a2[1]) && MappingHelpers.astEqual(a1[1], a2[0]);
+        } else if (pair(c1, c2, Cvt.TAITOUTC, Cvt.UTCTOTAI)) {
+            return equalArgs(a1, a2, 2);
+        } else if (pair(c1, c2, Cvt.TDBTOTCB, Cvt.TCBTOTDB)) {
+            // C compares three values here as for the LMST conversions (timemap.c:2327-2335), but
+            // these conversions store two (timemap.c:1202-1219), so its third comparison reads an
+            // element its gather loop (timemap.c:2180-2182) does not set for them: uninitialised
+            // memory, or a value left in the row by another conversion. The two values stored are
+            // compared.
+            return equalArgs(a1, a2, 2);
+        } else if (pair(c1, c2, Cvt.GMSTTOLMST, Cvt.LMSTTOGMST) || pair(c1, c2, Cvt.LASTTOLMST, Cvt.LMSTTOLAST)) {
+            return equalArgs(a1, a2, 3);
+        } else {
+            return pair(c1, c2, Cvt.TTTOTDB, Cvt.TDBTOTT) && equalArgs(a1, a2, 5);
+        }
+    }
+
+    /** Whether {@code c1} then {@code c2} is {@code x} then {@code y}, or {@code y} then {@code x}. */
+    private static boolean pair(Cvt c1, Cvt c2, Cvt x, Cvt y) {
+        return (c1 == x && c2 == y) || (c1 == y && c2 == x);
+    }
+
+    /** Whether the first {@code n} values of {@code a1} and {@code a2} are equal to within {@code astEQUAL}. */
+    private static boolean equalArgs(double[] a1, double[] a2, int n) {
+        for (int i = 0; i < n; i++) {
+            if (!MappingHelpers.astEqual(a1[i], a2[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // ------------------------------------------------------------------

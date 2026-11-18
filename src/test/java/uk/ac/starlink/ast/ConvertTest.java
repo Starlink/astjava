@@ -49,11 +49,11 @@ class ConvertTest {
 
         FrameSet fs = bf.convert(sf, "");
         assertNotNull(fs, "bf->sf converts");
-        assertTrue(MappingTestData.isUnitChain(fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)));
+        assertTrue(MappingTestData.isUnitMap(fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)));
 
         fs = sf.convert(bf, "");
         assertNotNull(fs, "sf->bf converts");
-        assertTrue(MappingTestData.isUnitChain(fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)));
+        assertTrue(MappingTestData.isUnitMap(fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)));
     }
 
     /**

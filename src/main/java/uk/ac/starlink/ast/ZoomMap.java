@@ -9,6 +9,9 @@ package uk.ac.starlink.ast;
  */
 public class ZoomMap extends Mapping {
 
+    /** C's {@code DBL_EPSILON}. */
+    private static final double DBL_EPSILON = Math.ulp(1.0);
+
     /** The Zoom attribute: the scale factor, or zero when it is unset (default 1). */
     private double zoom;
 
@@ -64,6 +67,202 @@ public class ZoomMap extends Mapping {
     @Override
     boolean isLinear() {
         return true;
+    }
+
+    /**
+     * zoommap.c {@code MapMerge}. The run of ZoomMaps and UnitMaps around this ZoomMap is replaced
+     * by one Mapping applied forward: in series a ZoomMap of the product of their effective
+     * factors, or a UnitMap if that is one to within {@code 8 * DBL_EPSILON}; in parallel a ZoomMap
+     * if every factor is the same, a UnitMap if every factor is one, and a diagonal MatrixMap
+     * otherwise. That is done if it removes a Mapping, gives a UnitMap, or turns this ZoomMap,
+     * applied inverted, forward. Failing that, in series, the ZoomMap is absorbed into the
+     * Mapping before it, or else the one after it, if that is a MatrixMap, a WinMap or a ShiftMap.
+     */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        int result = -1;
+        Mapping replacement = null;
+        boolean simpler;
+        int imap1 = where;
+        int imap2 = where;
+        double zoom = 1.0;
+        if (series) {
+            zoom = ((ZoomMap) list.map(where)).getZoom();
+            if (list.invert(where)) {
+                zoom = 1.0 / zoom;
+            }
+            while (imap1 - 1 >= 0) {
+                Mapping map = list.map(imap1 - 1);
+                if (map.getClass() == ZoomMap.class) {
+                    if (list.invert(imap1 - 1)) {
+                        zoom /= ((ZoomMap) map).getZoom();
+                    } else {
+                        zoom *= ((ZoomMap) map).getZoom();
+                    }
+                } else if (map.getClass() != UnitMap.class) {
+                    break;
+                }
+                imap1--;
+            }
+            while (imap2 + 1 < list.size()) {
+                Mapping map = list.map(imap2 + 1);
+                if (map.getClass() == ZoomMap.class) {
+                    if (list.invert(imap2 + 1)) {
+                        zoom /= ((ZoomMap) map).getZoom();
+                    } else {
+                        zoom *= ((ZoomMap) map).getZoom();
+                    }
+                } else if (map.getClass() != UnitMap.class) {
+                    break;
+                }
+                imap2++;
+            }
+            int ngone = imap2 - imap1;
+            boolean unit = Math.abs(zoom - 1.0) <= 8.0 * DBL_EPSILON;
+            simpler = ngone != 0 || unit || list.invert(where);
+            if (simpler) {
+                int nin = list.map(where).getNin();
+                replacement = unit ? new UnitMap(nin) : new ZoomMap(nin, zoom);
+            }
+        } else {
+            int nin = list.map(where).getNin();
+            while (imap1 - 1 >= 0) {
+                Mapping map = list.map(imap1 - 1);
+                if (map.getClass() != ZoomMap.class && map.getClass() != UnitMap.class) {
+                    break;
+                }
+                nin += map.getNin();
+                imap1--;
+            }
+            while (imap2 + 1 < list.size()) {
+                Mapping map = list.map(imap2 + 1);
+                if (map.getClass() != ZoomMap.class && map.getClass() != UnitMap.class) {
+                    break;
+                }
+                nin += map.getNin();
+                imap2++;
+            }
+            double[] zooms = new double[nin];
+            int nzoom = 0;
+            double minzoom = Double.MAX_VALUE;
+            double maxzoom = -Double.MAX_VALUE;
+            for (int imap = imap1; imap <= imap2; imap++) {
+                Mapping map = list.map(imap);
+                double z = 1.0;
+                if (map.getClass() == ZoomMap.class) {
+                    z = list.invert(imap) ? 1.0 / ((ZoomMap) map).getZoom() : ((ZoomMap) map).getZoom();
+                }
+                int ncoord = map.getNin();
+                for (int coord = 0; coord < ncoord; coord++) {
+                    zooms[nzoom++] = z;
+                }
+                if (z < minzoom) {
+                    minzoom = z;
+                }
+                if (z > maxzoom) {
+                    maxzoom = z;
+                }
+            }
+            int ngone = imap2 - imap1;
+            boolean single = minzoom == maxzoom;
+            boolean unit = single && minzoom == 1.0;
+            simpler = ngone != 0 || unit || list.invert(where);
+            if (simpler) {
+                if (unit) {
+                    replacement = new UnitMap(nin);
+                } else if (single) {
+                    replacement = new ZoomMap(nin, minzoom);
+                } else {
+                    replacement = new MatrixMap(nin, nin, MatrixMap.DIAGONAL, zooms);
+                }
+            }
+        }
+        if (simpler) {
+            list.replaceRangeWith(imap1, imap2, replacement);
+            result = imap1;
+        }
+        if (!simpler && series) {
+            result = absorb(list, where, zoom);
+        }
+        return result;
+    }
+
+    /**
+     * The last part of zoommap.c {@code MapMerge}: the ZoomMap, of effective factor {@code zoom},
+     * merged into the Mapping before it or, failing that, the one after it, if that is a MatrixMap
+     * (whose matrix is scaled), a WinMap (whose terms are scaled) or a ShiftMap (which becomes a
+     * WinMap). The merged Mapping replaces the neighbour, applied with its own Invert attribute,
+     * and the ZoomMap is removed.
+     *
+     * @return the lower index of the two, or -1 if neither neighbour can absorb the ZoomMap
+     */
+    private static int absorb(MergeList list, int where, double zoom) {
+        Mapping replacement = null;
+        int imod = -1;
+        if (where > 0) {
+            imod = where - 1;
+            replacement = absorbed(list, imod, zoom, true);
+        }
+        if (replacement == null && where < list.size() - 1) {
+            imod = where + 1;
+            replacement = absorbed(list, imod, zoom, false);
+        }
+        if (replacement == null) {
+            return -1;
+        }
+        list.set(imod, replacement, replacement.getInvert());
+        list.removeAt(where);
+        return Math.min(where, imod);
+    }
+
+    /**
+     * The Mapping at {@code imod} with the ZoomMap of effective factor {@code zoom} merged into it,
+     * the ZoomMap applied after it if {@code zoomAfter} and before it otherwise; or null if it is
+     * not a MatrixMap, a WinMap or a ShiftMap.
+     */
+    private static Mapping absorbed(MergeList list, int imod, double zoom, boolean zoomAfter) {
+        Mapping neighbour = list.map(imod);
+        if (neighbour instanceof MatrixMap) {
+            int saved = neighbour.swapInvert(list.invert(imod));
+            try {
+                return ((MatrixMap) neighbour).mtrZoom(zoom);
+            } finally {
+                neighbour.restoreInvert(saved);
+            }
+        } else if (neighbour instanceof WinMap) {
+            WinMap result = (WinMap) neighbour.copy();
+            result.setInvert(list.invert(imod));
+            double[][] terms = result.winTerms();
+            double[] a = terms[0];
+            double[] b = terms[1];
+            for (int i = 0; i < a.length; i++) {
+                if (zoomAfter) {
+                    a[i] *= zoom;
+                }
+                b[i] *= zoom;
+            }
+            result.setWinTerms(a, b);
+            return result;
+        } else if (neighbour instanceof ShiftMap) {
+            int nin = neighbour.getNin();
+            double[] a;
+            int saved = neighbour.swapInvert(list.invert(imod));
+            try {
+                a = ((ShiftMap) neighbour).getShifts();
+            } finally {
+                neighbour.restoreInvert(saved);
+            }
+            double[] b = new double[nin];
+            for (int i = 0; i < nin; i++) {
+                if (zoomAfter) {
+                    a[i] *= zoom;
+                }
+                b[i] = zoom;
+            }
+            return new WinMap(a, b);
+        } else {
+            return null;
+        }
     }
 
     /**

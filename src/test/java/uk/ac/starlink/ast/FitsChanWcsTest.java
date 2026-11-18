@@ -20,10 +20,7 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  * (spectral axes, SpecFrame; {@code crota-3d.head} is also read with the FITS-AIPS encoding), {@code
  * jan_class_no_naxis_keyword} and {@code class_noproj_builds_sfl} (the FITS-CLASS encoding), {@code
  * serpens_dut1_is_seconds} and {@code serpens_swapped_axis_transform} ({@code serpens.head} is read
- * with the FITS-IRAF encoding), and {@code carlin_off_car_header_keeps_the_spherical_projection},
- * which checks the class of the Mapping C simplified. {@code
- * carlin_car_header_yields_a_single_winmap} is translated without its check that the simplified
- * Mapping is a WinMap.
+ * with the FITS-IRAF encoding).
  */
 class FitsChanWcsTest {
 
@@ -245,14 +242,23 @@ class FitsChanWcsTest {
         // shifting by CRVAL instead of calling WcsNative (CarLin is read at fitschan.c:36146), so the
         // pixel-to-sky Mapping is linear: CRVAL in radians at CRPIX = (1, 1), moving by CDELT in
         // radians (-0.125 and 0.125 degrees in car1.head) per pixel. C simplifies it to a single
-        // WinMap, which is not checked here.
+        // WinMap.
         Mapping map = readCar1(true).getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        assertInstanceOf(WinMap.class, map, "the pixel to sky Mapping is a " + map.astClass());
         double[] sky = FitsHeaders.tran(map, new double[] {1.0, 1.0}, true);
         assertTrue(Math.abs(sky[0] - 185.0 * D2R) < 1e-12, "lon at CRPIX " + sky[0]);
         assertTrue(Math.abs(sky[1] - -35.0 * D2R) < 1e-12, "lat at CRPIX " + sky[1]);
         double[] sky2 = FitsHeaders.tran(map, new double[] {2.0, 2.0}, true);
         assertTrue(Math.abs(sky2[0] - sky[0] - -0.125 * D2R) < 1e-15, "lon step " + (sky2[0] - sky[0]));
         assertTrue(Math.abs(sky2[1] - sky[1] - 0.125 * D2R) < 1e-15, "lat step " + (sky2[1] - sky[1]));
+    }
+
+    @Test
+    void carlinOffCarHeaderKeepsTheSphericalProjection() {
+        // Without CarLin, C's WcsCelestial calls WcsNative (fitschan.c:36131), so the simplified
+        // pixel to sky Mapping keeps the spherical CAR projection: a CmpMap, not a single WinMap.
+        Mapping map = readCar1(false).getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        assertInstanceOf(CmpMap.class, map, "the pixel to sky Mapping is a " + map.astClass());
     }
 
     @Test

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.fromRows;
@@ -27,19 +28,12 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Rust's {@code PolyTerm} becomes a group of C's coefficient array ({@link PolyTerms}), and
  * Rust's {@code coeffs} is the package-private {@link PolyMap#polyCoeffs}, C's {@code
- * astPolyCoeffs}. The tests that check what C's simplification makes of a PolyMap ({@code
- * polymap_linear_decomposes_to_matrixmap}, {@code polymap_affine_decomposes}, {@code
- * polymap_affine_diagonal_decomposes_to_winmap}, {@code
- * polymap_whose_terms_all_cancel_becomes_a_matrixmap}, {@code
- * polymap_does_not_cancel_against_a_different_inverse}, {@code
- * polymap_fitted_inverse_cancels_soundly}, {@code ident_set_polymap_nominated_in_a_list_is_left_alone},
- * {@code c_simplify} and {@code polymap_affine_general_merges_with_a_neighbour}) are deferred
- * ({@code needs simplification}), those of {@code astEqual} ({@code
+ * astPolyCoeffs}. The tests of {@code astEqual} ({@code
  * polymap_equal_compares_the_inverse_coefficients}, {@code
- * polymap_with_more_outputs_than_inputs_equals_its_copy}) are deferred with it, and {@code
- * polymap_bad_powers_len_rejected} tests the length of a Rust term's power vector, which C's
- * coefficient array cannot express. The tests that simplify only to compare transformed values
- * are kept, since simplification returns a Mapping that transforms identically.
+ * polymap_with_more_outputs_than_inputs_equals_its_copy}) are deferred, since {@code astEqual} is
+ * not part of this library, and {@code polymap_bad_powers_len_rejected} tests the length of a Rust
+ * term's power vector, which C's coefficient array cannot express. The classes and values the
+ * simplification tests expect are C's, from {@code testpolymap.c} or the pinned C library.
  */
 class PolyMapTest {
 
@@ -460,6 +454,191 @@ class PolyMapTest {
         }
     }
 
+    /** The classes in a Mapping's dump, in order. */
+    private static List<String> dumpClasses(Mapping m) {
+        List<String> classes = new ArrayList<>();
+        for (String line : ChannelText.dump(m).split("\n", -1)) {
+            String t = line.trim();
+            if (t.startsWith("Begin ")) {
+                classes.add(t.substring("Begin ".length()).split("\\s+", -1)[0]);
+            }
+        }
+        return classes;
+    }
+
+    /** A purely linear PolyMap becomes the full MatrixMap C gives ([2 3; 4 5]). */
+    @Test
+    void polymapLinearDecomposesToMatrixmap() {
+        PolyMap pm = poly(2, 2, term(2.0, 1, 1, 0), term(3.0, 1, 0, 1), term(4.0, 2, 1, 0), term(5.0, 2, 0, 1));
+        Mapping s = pm.simplify();
+        MatrixMap mm = assertInstanceOf(MatrixMap.class, s, "C gives a MatrixMap");
+        assertArrayEquals(new double[] {2.0, 3.0, 4.0, 5.0}, mm.storedForward());
+        double[] want = point(transformRows(pm, true, new double[] {1.0, 2.0}), 0);
+        double[] got = point(transformRows(s, true, new double[] {1.0, 2.0}), 0);
+        assertClose(want[0], got[0], 1e-10, "axis 1");
+        assertClose(want[1], got[1], 1e-10, "axis 2");
+    }
+
+    /** An affine PolyMap (out1 = 10 + 2x, out2 = 20 + 3y) is no longer a PolyMap. */
+    @Test
+    void polymapAffineDecomposes() {
+        PolyMap pm = poly(2, 2, term(10.0, 1, 0, 0), term(2.0, 1, 1, 0), term(20.0, 2, 0, 0), term(3.0, 2, 0, 1));
+        Mapping s = pm.simplify();
+        assertFalse(s instanceof PolyMap, "should decompose from PolyMap");
+        double[] want = point(transformRows(pm, true, new double[] {3.0, 4.0}), 0);
+        double[] got = point(transformRows(s, true, new double[] {3.0, 4.0}), 0);
+        assertClose(want[0], got[0], 1e-10, "axis 1");
+        assertClose(want[1], got[1], 1e-10, "axis 2");
+    }
+
+    /** The same diagonal affine PolyMap becomes the WinMap C gives (shifts 10, 20; scales 2, 3). */
+    @Test
+    void polymapAffineDiagonalDecomposesToWinmap() {
+        PolyMap pm = poly(2, 2, term(10.0, 1, 0, 0), term(2.0, 1, 1, 0), term(20.0, 2, 0, 0), term(3.0, 2, 0, 1));
+        WinMap w = assertInstanceOf(WinMap.class, pm.simplify(), "C gives a WinMap");
+        String text = ChannelText.dump(w);
+        assertTrue(
+                text.contains("Sft1 = 10")
+                        && text.contains("Scl1 = 2")
+                        && text.contains("Sft2 = 20")
+                        && text.contains("Scl2 = 3"),
+                text);
+    }
+
+    /**
+     * Two constant terms that sum to zero: consolidating them leaves the forward transformation
+     * defined with no coefficients, which the linear test (polymap.c MapMerge) finds linear, so C
+     * gives a diagonal MatrixMap of zero.
+     */
+    @Test
+    void polymapWhoseTermsAllCancelBecomesAMatrixmap() {
+        Mapping s = poly(1, 1, term(1.0, 1, 0), term(-1.0, 1, 0)).simplify();
+        MatrixMap mm = assertInstanceOf(MatrixMap.class, s, "C gives a MatrixMap");
+        assertEquals(MatrixMap.DIAGONAL, mm.storageForm());
+        assertArrayEquals(new double[] {0.0}, mm.storedForward());
+    }
+
+    /**
+     * PolyMaps with the same non-linear forward transformation but inverse transformations with
+     * different coefficient counts are not equal (polymap.c {@code Equal}), so the pair in opposite
+     * directions does not cancel; C returns the CmpMap unchanged.
+     */
+    @Test
+    void polymapDoesNotCancelAgainstADifferentInverse() {
+        double[][] fwd = {term(2.0, 1, 2)};
+        PolyMap a = poly(1, 1, fwd, new double[][] {term(0.5, 1, 1)});
+        PolyMap b = poly(1, 1, fwd, new double[][] {term(0.5, 1, 1), term(1.0, 1, 2)});
+        b.invert();
+        CmpMap cm = new CmpMap(a, b, true);
+        Mapping s = cm.simplify();
+        assertFalse(s instanceof UnitMap, "the pair does not cancel");
+        assertEquals(Arrays.asList("CmpMap", "PolyMap", "PolyMap"), dumpClasses(s));
+    }
+
+    /**
+     * With a fitted inverse the cancellation is sound: the composition it collapses is close to
+     * the identity that replaces it (testpolymap.c, errors 8025-8028).
+     */
+    @Test
+    void polymapFittedInverseCancelsSoundly() {
+        PolyMap raw = poly(1, 1, term(1.0, 1, 2));
+        PolyMap pf = raw.polyTran(false, 1.0e-9, 1.0e-6, 6, new double[] {1.0}, new double[] {1.21});
+        assertNotNull(pf, "Error 8025: an inverse fit over [1, 1.21] converges");
+        double[] xs = new double[5];
+        for (int i = 0; i < 5; i++) {
+            xs[i] = 1.0 + i * 0.025;
+        }
+        double[][] pts = {xs};
+        double[][] back = pf.transform(pf.transform(pts, 5, true), 5, false);
+        for (int i = 0; i < 5; i++) {
+            assertTrue(Math.abs(back[0][i] - xs[i]) <= 1.0e-6, "Error 8026: x = " + xs[i] + ", got " + back[0][i]);
+        }
+        PolyMap pfi = (PolyMap) pf.copy();
+        pfi.invert();
+        CmpMap series = new CmpMap(pf, pfi, true);
+        Mapping simp = series.simplify();
+        assertInstanceOf(UnitMap.class, simp, "Error 8027");
+        double[][] before = series.transform(pts, 5, true);
+        double[][] after = simp.transform(pts, 5, true);
+        for (int i = 0; i < 5; i++) {
+            double diff = Math.abs(after[0][i] - before[0][i]);
+            assertTrue(diff <= 1.0e-6, "Error 8028: the cancellation changed the transform by " + diff);
+        }
+    }
+
+    /**
+     * A PolyMap with Ident set is not offered to its merge (mapping.c {@code astMapMerge_}), so two
+     * cubic terms over the same powers survive unconsolidated, as C leaves them.
+     */
+    @Test
+    void identSetPolymapNominatedInAListIsLeftAlone() {
+        PolyMap pm = poly(1, 1, term(1.0, 1, 3), term(2.0, 1, 3));
+        pm.setIdent("keepme");
+        Mapping s = new CmpMap(pm, new ZoomMap(1, 3.0), false).simplify();
+        String text = ChannelText.dump(s);
+        assertTrue(text.contains("Ident = \"keepme\""), "the Ident survives:\n" + text);
+        assertTrue(text.contains("NCF1 = 2"), "both cubic coefficients survive unconsolidated:\n" + text);
+    }
+
+    /**
+     * Linear PolyMaps simplify to WinMaps, with or without terms that add up; a linear PolyMap
+     * whose matrix is not diagonal becomes a MatrixMap and a ShiftMap, which C's base {@code
+     * Simplify} (mapping.c) cannot return as one Mapping, so it stays the PolyMap
+     * (testpolymap.c, errors 1003-1006, 3002, 3003).
+     */
+    @Test
+    void cSimplify() {
+        Object[][] cases = {
+            {C_COEFF, new double[] {3.0, 7.0}, 1003, 1004}, {C_COEFFB, new double[] {3.5, 6.0}, 1005, 1006}
+        };
+        for (Object[] c : cases) {
+            PolyMap pm = cPoly(2, (double[]) c[0]);
+            Mapping simp = pm.simplify();
+            assertInstanceOf(WinMap.class, simp, "Error " + c[2]);
+            assertArrayEquals(
+                    (double[]) c[1], point(transformRows(simp, true, new double[] {1.0, 2.0}), 0), "Error " + c[3]);
+        }
+        PolyMap pm = cPoly(2, C_COEFF2);
+        Mapping simp = pm.simplify();
+        assertInstanceOf(PolyMap.class, simp, "Error 3002");
+        assertTrue(((PolyMap) simp).equalTo(pm), "Error 3003");
+    }
+
+    /**
+     * A general affine PolyMap followed by a ZoomMap: the PolyMap becomes a MatrixMap and a
+     * ShiftMap, split into the list when next nominated (cmpmap.c {@code MapMerge}), so the
+     * ShiftMap merges with the ZoomMap into C's MatrixMap followed by a WinMap that scales by 2 and
+     * shifts by (20, 40).
+     */
+    @Test
+    void polymapAffineGeneralMergesWithANeighbour() {
+        Mapping s = new CmpMap(generalAffine(), new ZoomMap(2, 2.0), true).simplify();
+        assertEquals(Arrays.asList("CmpMap", "MatrixMap", "WinMap"), dumpClasses(s));
+        String text = ChannelText.dump(s);
+        assertTrue(text.contains("Sft1 = 20") && text.contains("Sft2 = 40"), text);
+    }
+
+    /**
+     * A PolyMap that cancels against its neighbour is left with the Invert attribute it had. The
+     * inverted series CmpMap applies the second PolyMap forward, so the merge sets that PolyMap's
+     * Invert attribute while it compares the pair; C does not restore it when the pair cancels
+     * (polymap.c {@code MapMerge} restores only a PolyMap that was not replaced), which the merge
+     * here does.
+     */
+    @Test
+    void aCancelledPolymapKeepsItsInvert() {
+        double[][] fwd = {term(1.0, 1, 2), term(3.0, 1, 1)};
+        double[][] inv = {term(0.5, 1, 1)};
+        PolyMap p = poly(1, 1, fwd, inv);
+        PolyMap q = (PolyMap) p.copy();
+        q.invert();
+        CmpMap c = new CmpMap(p, q, true);
+        c.invert();
+        assertInstanceOf(UnitMap.class, c.simplify());
+        assertFalse(p.getInvert());
+        assertTrue(q.getInvert());
+    }
+
     @Test
     void polymapNonlinearStaysPolymap() {
         Mapping s = poly(1, 1, term(1.0, 1, 2)).simplify();
@@ -506,6 +685,10 @@ class PolyMapTest {
 
     private static final double[] C_COEFF = {
         1.0, 1.0, 0.0, 0.0, 2.0, 1.0, 1.0, 0.0, 1.0, 2.0, 0.0, 0.0, 3.0, 2.0, 0.0, 1.0
+    };
+    private static final double[] C_COEFFB = {
+        1.0, 1.0, 0.0, 0.0, 0.5, 1.0, 0.0, 0.0, 2.0, 1.0, 1.0, 0.0, 1.0, 2.0, 0.0, 0.0, 3.0, 2.0, 0.0, 1.0, -0.5, 2.0,
+        0.0, 1.0
     };
     private static final double[] C_COEFF2 = {
         1.0, 1.0, 0.0, 0.0, 2.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 2.0, 0.0, 0.0, 1.0, 2.0, 1.0, 0.0, 2.0, 2.0,

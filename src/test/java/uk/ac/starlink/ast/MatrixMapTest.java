@@ -2,11 +2,15 @@ package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
 import static uk.ac.starlink.ast.MappingTestData.transformRows;
 
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -14,13 +18,11 @@ import org.junit.jupiter.api.Test;
  * {@code double[nout][nin]}.
  *
  * <p>A MatrixMap's rate is C's {@code Rate} (matrixmap.c): the element of the matrix applied
- * forward. The merge tests and {@code
- * simplified_switches_full_to_diagonal_when_offdiagonals_are_zero} and {@code
- * merging_with_an_inverted_singular_matrix_is_an_error} test simplification, and are deferred;
- * {@code an_inverted_non_square_matrixmap_equals_its_copy} tests {@code astEqual}, which is outside
- * the first phase. {@code matrix_map_simplified_identity} and {@code
- * matrix_map_simplified_non_identity_preserved} check only that the simplified Mapping transforms
- * as the original does, which holds of a Mapping that is not restructured.
+ * forward. The Rust tests of the pairwise merge ({@code try_merge}) offer the two Mappings here, as
+ * a list, to the MatrixMap's {@code MapMerge} (matrixmap.c), which is where C merges a MatrixMap
+ * with a PermMap or a WinMap, whichever comes first. {@code
+ * an_inverted_non_square_matrixmap_equals_its_copy} tests {@code astEqual}, which is outside the
+ * first phase.
  */
 class MatrixMapTest {
 
@@ -400,5 +402,161 @@ class MatrixMapTest {
         MatrixMap full = new MatrixMap(3, 2, new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
         assertEquals(6.0, full.rate(at3, 2, 3));
         assertEquals(2.0, full.rate(at3, 1, 2));
+    }
+
+    /** The list of {@code a} and {@code b} in series, applied with the Invert values given. */
+    private static MergeList pair(Mapping a, Mapping b, boolean inva, boolean invb) {
+        return new MergeList(Arrays.asList(a, b), Arrays.asList(inva, invb));
+    }
+
+    @Test
+    void matrixMergeWithPermmapAfter() {
+        MatrixMap mm = full(new double[] {1.0, 2.0}, new double[] {3.0, 4.0});
+        PermMap pm = new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
+        MergeList list = pair(mm, pm, false, false);
+        assertEquals(0, mm.mapMerge(list, 0, true), "MatrixMap + PermMap should merge");
+        assertEquals(1, list.size());
+        assertFalse(list.invert(0));
+        double[] in = {1.0, 2.0};
+        double[] expected = point(transformRows(new CmpMap(mm, pm, true), true, in), 0);
+        double[] actual = point(transformRows(list.map(0), true, in), 0);
+        assertArrayEquals(expected, actual);
+        assertArrayEquals(new double[] {11.0, 5.0}, actual);
+    }
+
+    @Test
+    void matrixMergeWithPermmapBefore() {
+        PermMap pm = new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
+        MatrixMap mm = full(new double[] {1.0, 2.0}, new double[] {3.0, 4.0});
+        Mapping simplified = new CmpMap(pm, mm, true).simplify();
+        assertInstanceOf(MatrixMap.class, simplified, "PermMap + MatrixMap should simplify to MatrixMap");
+        assertArrayEquals(new double[] {4.0, 10.0}, point(transformRows(simplified, true, new double[] {1.0, 2.0}), 0));
+    }
+
+    /** The PermMap first: C merges the pair through the MatrixMap's {@code MapMerge}. */
+    @Test
+    void permmapTryMergeWithMatrixmap() {
+        PermMap pm = new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
+        MatrixMap mm = full(new double[] {1.0, 2.0}, new double[] {3.0, 4.0});
+        MergeList list = pair(pm, mm, false, false);
+        assertEquals(0, mm.mapMerge(list, 1, true), "PermMap + MatrixMap should merge");
+        assertEquals(1, list.size());
+        assertArrayEquals(
+                new double[] {4.0, 10.0}, point(transformRows(list.map(0), true, new double[] {1.0, 2.0}), 0));
+    }
+
+    @Test
+    void matrixMergeWithInvertedPermmap() {
+        MatrixMap mm = full(new double[] {1.0, 2.0}, new double[] {3.0, 4.0});
+        PermMap pm = new PermMap(2, new int[] {2, 1}, 2, new int[] {2, 1}, null);
+        MergeList list = pair(mm, pm, false, true);
+        assertEquals(0, mm.mapMerge(list, 0, true), "MatrixMap + inverted PermMap should merge");
+        assertEquals(1, list.size());
+        assertArrayEquals(
+                new double[] {11.0, 5.0}, point(transformRows(list.map(0), true, new double[] {1.0, 2.0}), 0));
+        assertFalse(pm.getInvert(), "the PermMap's own Invert attribute is left as it was");
+    }
+
+    /**
+     * A PermMap giving an output a constant has directions that disagree (matrixmap.c {@code
+     * PermOK}), and a link that works in one direction only, so it neither merges nor swaps.
+     */
+    @Test
+    void matrixNoMergeWithConstantPermmap() {
+        MatrixMap mm = full(new double[] {1.0, 2.0}, new double[] {3.0, 4.0});
+        PermMap pm = new PermMap(2, new int[] {2, 1}, 2, new int[] {-1, 1}, new double[] {99.0});
+        MergeList list = pair(mm, pm, false, false);
+        assertEquals(-1, mm.mapMerge(list, 0, true), "PermMap with constants should not merge into MatrixMap");
+        assertEquals(2, list.size());
+        assertSame(mm, list.map(0));
+        assertSame(pm, list.map(1));
+    }
+
+    @Test
+    void diagonalMatrixMergeWithWinmap() {
+        MatrixMap mm = full(new double[] {2.0, 0.0}, new double[] {0.0, 3.0});
+        WinMap wm = new WinMap(new double[] {1.0, 1.0}, new double[] {1.0, 1.0});
+        MergeList list = pair(mm, wm, false, false);
+        assertEquals(0, mm.mapMerge(list, 0, true), "diagonal MatrixMap + WinMap should merge");
+        assertEquals(1, list.size());
+        double[] in = {5.0, 7.0};
+        double[] expected = point(transformRows(new CmpMap(mm, wm, true), true, in), 0);
+        assertArrayEquals(expected, point(transformRows(list.map(0), true, in), 0), 1e-10);
+    }
+
+    /**
+     * A full MatrixMap does not merge with a WinMap. It can be swapped with one, but with nothing
+     * beyond the WinMap to move towards, the swap is only tried on copies, and kept only if a
+     * swapped Mapping then simplifies to another class, which the swap's own simplification of each
+     * has already done.
+     */
+    @Test
+    void nonDiagonalMatrixNoMergeWithWinmap() {
+        MatrixMap mm = full(new double[] {1.0, 2.0}, new double[] {3.0, 4.0});
+        WinMap wm = new WinMap(new double[] {1.0, 1.0}, new double[] {1.0, 1.0});
+        MergeList list = pair(mm, wm, false, false);
+        assertEquals(-1, mm.mapMerge(list, 0, true), "non-diagonal MatrixMap should not merge with WinMap");
+        assertSame(mm, list.map(0));
+        assertSame(wm, list.map(1));
+    }
+
+    @Test
+    void diagonalMatrixMergeWithWinmapScales() {
+        MatrixMap mm = full(new double[] {3.0, 0.0}, new double[] {0.0, 2.0});
+        WinMap wm = new WinMap(new double[] {10.0, 20.0}, new double[] {0.5, 4.0});
+        MergeList list = pair(mm, wm, false, false);
+        assertEquals(0, mm.mapMerge(list, 0, true));
+        double[] in = {2.0, 3.0};
+        double[] expected = point(transformRows(new CmpMap(mm, wm, true), true, in), 0);
+        assertArrayEquals(new double[] {13.0, 44.0}, expected);
+        assertArrayEquals(expected, point(transformRows(list.map(0), true, in), 0), 1e-10);
+    }
+
+    /** A full matrix read from a dump, its off-diagonal elements zero, simplifies to diagonal form. */
+    @Test
+    void simplifiedSwitchesFullToDiagonalWhenOffdiagonalsAreZero() {
+        String src = ChannelText.text(
+                " Begin MatrixMap",
+                "    Nin = 2",
+                " IsA Mapping",
+                "    M0 = 2",
+                "    M1 = 0",
+                "    M2 = 0",
+                "    M3 = 3",
+                "    IM0 = 0.5",
+                "    IM1 = 0",
+                "    IM2 = 0",
+                "    IM3 = 0.33333333333333331",
+                "    Form = \"Full\"",
+                " End MatrixMap");
+        Mapping map = (Mapping) ChannelText.read(src);
+        MatrixMap mm = assertInstanceOf(MatrixMap.class, map.simplify(), "still a MatrixMap");
+        String s = ChannelText.dump(mm);
+        assertTrue(s.contains("Form = \"Diagonal\""), "expected Diagonal form after simplify, got:\n" + s);
+        assertFalse(s.contains("M2 ="), "diagonal form should not emit M2");
+    }
+
+    /** An inverted singular MatrixMap, which has no forward transformation. */
+    private static MatrixMap invertedSingular() {
+        MatrixMap m = full(new double[] {1.0, 1.0}, new double[] {1.0, 1.0});
+        m.invert();
+        return m;
+    }
+
+    /**
+     * Merging a MatrixMap with a neighbour multiplies the matrices, which an inverted singular
+     * MatrixMap cannot take part in, and C passes the error up from the simplification.
+     */
+    @Test
+    void mergingWithAnInvertedSingularMatrixIsAnError() {
+        Mapping[][] pairs = {
+            {full(new double[] {1.0, 2.0}, new double[] {3.0, 4.0}), invertedSingular()},
+            {invertedSingular(), new ZoomMap(2, 3.0)}
+        };
+        for (Mapping[] p : pairs) {
+            CmpMap map = new CmpMap(p[0], p[1], true);
+            AstException e = assertThrows(AstException.class, map::simplify);
+            assertEquals(AstException.AST__MTRML, e.getStatus());
+        }
     }
 }

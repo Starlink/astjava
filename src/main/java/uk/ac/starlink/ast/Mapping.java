@@ -102,6 +102,12 @@ public abstract class Mapping extends AstObject {
     private boolean allowSimplify;
 
     /**
+     * C's Frozen flag: a simplification may not nominate this Mapping, because its changes were
+     * found to repeat (cmpmap.c {@code Simplify}).
+     */
+    private boolean frozen;
+
+    /**
      * Constructs a Mapping with no inputs or outputs, defined in both directions. Each subclass
      * that describes its own inputs and outputs overrides {@link #getNin} and {@link #getNout}.
      */
@@ -348,6 +354,22 @@ public abstract class Mapping extends AstObject {
     }
 
     /**
+     * Sets the Invert attribute to {@code invert} for a while and returns the attribute as it was,
+     * for {@link #restoreInvert}: what C's {@code MapMerge} functions do with {@code astGetInvert}
+     * and {@code astSetInvert} to apply a Mapping of a list in the orientation the list gives it.
+     */
+    final int swapInvert(boolean invert) {
+        int saved = invertValue;
+        invertValue = invert ? 1 : 0;
+        return saved;
+    }
+
+    /** Puts back the Invert attribute {@link #swapInvert} returned, set or cleared as it was. */
+    final void restoreInvert(int saved) {
+        invertValue = saved;
+    }
+
+    /**
      * Inverts the Mapping by reversing the sense of its Invert attribute, as C's {@code astInvert}
      * does: the attribute is cleared, and set again only if its default is not the value wanted.
      */
@@ -481,13 +503,51 @@ public abstract class Mapping extends AstObject {
         return testAttrib("ident");
     }
 
+    /** The number of inputs of {@code map} applied with the Invert value {@code invert}, as a {@link MergeList} applies it. */
+    static int appliedNin(Mapping map, boolean invert) {
+        return invert ? map.createdNout() : map.createdNin();
+    }
+
+    /** The number of outputs of {@code map} applied with the Invert value {@code invert}, as a {@link MergeList} applies it. */
+    static int appliedNout(Mapping map, boolean invert) {
+        return invert ? map.createdNin() : map.createdNout();
+    }
+
+    /** Whether the Mapping is frozen, so that a simplification may not nominate it (C's {@code astFrozen}). */
+    final boolean getFrozen() {
+        return frozen;
+    }
+
+    /** Freezes the Mapping (C's {@code astSetFrozen}). */
+    final void setFrozen() {
+        frozen = true;
+    }
+
+    /** Unfreezes the Mapping (C's {@code astClearFrozen}). */
+    final void clearFrozen() {
+        frozen = false;
+    }
+
     /**
      * The per-class step of simplification (C's {@code Simplify} method), called by {@link
-     * #simplify} only. In this version no Mapping is restructured, so the result is this Mapping,
-     * as C's returns when nothing can be simplified.
+     * #simplify} only. This version is C's base {@code Simplify} ({@link Simplifier#baseSimplify}),
+     * which offers the Mapping, alone in a list, to its own {@link #mapMerge}.
      */
     Mapping simplifyStep() {
-        return this;
+        return Simplifier.baseSimplify(this);
+    }
+
+    /**
+     * C's per-class {@code MapMerge} method: given that this Mapping is at index {@code where} in
+     * {@code list}, whose Mappings are applied in series if {@code series} and in parallel
+     * otherwise, changes the list if that makes it simpler, by merging this Mapping with its
+     * neighbours, replacing it with a simpler Mapping, or swapping it with a neighbour so that
+     * other merges become possible. This version, C's, changes nothing.
+     *
+     * @return the index of the first entry changed, or -1 if the list is unchanged
+     */
+    int mapMerge(MergeList list, int where, boolean series) {
+        return -1;
     }
 
     /**
@@ -495,9 +555,8 @@ public abstract class Mapping extends AstObject {
      * that can be performed more efficiently in a single operation, as C's {@code astSimplify}
      * does. The result transforms coordinates as this Mapping does.
      *
-     * <p>In this version no Mapping is restructured: the result is this Mapping, which is recorded
-     * as simplified, as C records a Mapping it cannot simplify. The Mapping returned may therefore
-     * not be independent of the original; use {@link #copy} if an independent one is needed.
+     * <p>The Mapping returned may be this Mapping, or share parts with it, so it may not be
+     * independent of the original; use {@link #copy} if an independent one is needed.
      *
      * @return the simplified Mapping
      */

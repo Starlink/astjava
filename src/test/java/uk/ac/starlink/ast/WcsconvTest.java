@@ -32,24 +32,17 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  *       encoding, so no {@code native} row can be compared with C's output. Its input is still read
  *       as C reads it: a read that stops at an out-of-scope class or encoding gives that reason
  *       ({@code needs <Class>} or {@code encoding <name>}), and a read that fails otherwise fails the
- *       test, since C reads every input. A FrameSet read from FITS-WCS cards is listed as {@value
- *       #SIMPLIFY}, since C's output holds it with the Mapping C simplified ({@code WcsMapFrm}), which
- *       this port does not; any other is listed as {@value #WRITE}. Reading C's output back instead
- *       does not give C's Object: the cards hold numbers rounded to FitsDigits (the {@code timj}
- *       Epoch is 2002.3822 in them, 2002.3821786502001 in the Object).
+ *       test, since C reads every input. A row whose read succeeds is listed as {@value #WRITE}.
+ *       Reading C's output back instead does not give C's Object: the cards hold numbers rounded to
+ *       FitsDigits (the {@code timj} Epoch is 2002.3822 in them, 2002.3821786502001 in the Object).
  *   <li>An {@code ast} row's output is the Object's native text, compared with C's as the Rust test
- *       compares it (numbers to 4 ULP, or to {@code astEQUAL} for an {@code astequal} row). One that
- *       differs only in the FrameSet's Mappings is listed as {@value #SIMPLIFY}; the texts without
- *       the Mappings must match.
+ *       compares it (numbers to 4 ULP, or to {@code astEQUAL} for an {@code astequal} row).
  * </ul>
  */
 class WcsconvTest {
 
     /** The reason of a row whose output needs {@code FitsChan.write}. */
     static final String WRITE = "out-of-scope method FitsChan.write";
-
-    /** The reason of a row whose output holds a FrameSet whose Mapping C simplified. */
-    static final String SIMPLIFY = "needs simplification";
 
     /** The number of rows whose output is written with a FITS encoding or DSS. */
     static final int WRITE_ROWS = 85;
@@ -114,26 +107,15 @@ class WcsconvTest {
         return rows;
     }
 
-    /** The Object read from a row's input, and the encoding it was read with (null for a native dump). */
-    private static final class Input {
-        final AstObject obj;
-        final String encoding;
-
-        Input(AstObject obj, String encoding) {
-            this.obj = obj;
-            this.encoding = encoding;
-        }
-    }
-
     /**
      * The Object {@code wcsconverter.c} reads from the input of {@code row}: a FITS header through a
      * FitsChan with the row's attributes set first and CDMatrix set to its value, or, if that gives
      * nothing, the file read as a native dump.
      */
-    private static Input readInput(Row row) {
+    private static AstObject readInput(Row row) {
         String text = Fixtures.read(row.input);
         if (row.input.endsWith(".ast")) {
-            return new Input(ChannelText.read(text), null);
+            return ChannelText.read(text);
         }
         FitsChan fc = new FitsChan();
         if (!row.attrs.isEmpty()) {
@@ -146,9 +128,8 @@ class WcsconvTest {
             fc.setCDMatrix(fc.getCDMatrix());
         }
         fc.clear("Card");
-        String encoding = fc.getEncoding();
         AstObject obj = fc.read();
-        return obj != null ? new Input(obj, encoding) : new Input(ChannelText.read(text), null);
+        return obj != null ? obj : ChannelText.read(text);
     }
 
     /**
@@ -178,16 +159,16 @@ class WcsconvTest {
      * What {@code row} gives: null if its output matches C's, otherwise the reason it cannot.
      *
      * @throws AssertionError if the read fails where C's succeeds, or an {@code ast} row's output
-     *     differs from C's other than in the FrameSet's Mappings
+     *     differs from C's
      */
     private static String outcome(Row row) {
         boolean ast = "ast".equalsIgnoreCase(row.encoding);
         if (row.needsWrite() || (!ast && row.input.endsWith(".ast"))) {
             return WRITE;
         }
-        Input in;
+        AstObject obj;
         try {
-            in = readInput(row);
+            obj = readInput(row);
         } catch (UnsupportedOperationException e) {
             return FitsHeaders.outOfScope(e);
         } catch (AstException e) {
@@ -198,20 +179,14 @@ class WcsconvTest {
             throw new AssertionError("C reads " + row.input + ", but here the read fails: " + e.getMessage(), e);
         }
         if (!ast) {
-            return "FITS-WCS".equals(in.encoding) ? SIMPLIFY : WRITE;
+            return WRITE;
         }
-        String got = ChannelText.dump(in.obj);
+        String got = ChannelText.dump(obj);
         String want = Fixtures.read(row.expected);
-        if (equivalent(row, got, want)) {
-            return null;
+        if (!equivalent(row, got, want)) {
+            throw new AssertionError("the texts differ:\n--- Java\n" + got + "--- C\n" + want);
         }
-        String gotFrames = FitsHeaders.withoutMappings(got);
-        String wantFrames = FitsHeaders.withoutMappings(want);
-        if (!equivalent(row, gotFrames, wantFrames)) {
-            throw new AssertionError(
-                    "the texts without Mappings differ:\n--- Java\n" + gotFrames + "--- C\n" + wantFrames);
-        }
-        return SIMPLIFY;
+        return null;
     }
 
     /** {@link #outcome}, with any failure given as a string starting "FAIL". */

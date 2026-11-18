@@ -224,4 +224,47 @@ class FrameSetIntegrityTest {
                 e.getMsgText().endsWith("Unable to accommodate the attribute setting \"SkyRefIs=ORIGIN\"."),
                 e.getMsgText());
     }
+
+    /** The integer at the start of {@code s}. */
+    private static int leadingInt(String s) {
+        int end = 0;
+        while (end < s.length() && Character.isDigit(s.charAt(end))) {
+            end++;
+        }
+        return Integer.parseInt(s.substring(0, end));
+    }
+
+    /** The number of nodes a FrameSet's dump records: its Nnode, or its Nframe when Nnode is absent. */
+    private static int nodeCount(String dump) {
+        int nframe = -1;
+        for (String line : CValues.lines(dump)) {
+            String t = line.trim();
+            if (t.startsWith("Nnode = ")) {
+                return leadingInt(t.substring("Nnode = ".length()));
+            } else if (t.startsWith("Nframe = ") && nframe < 0) {
+                nframe = leadingInt(t.substring("Nframe = ".length()));
+            }
+        }
+        return nframe;
+    }
+
+    /**
+     * Setting an attribute of the current Frame over and over leaves the FrameSet as the first
+     * setting left it. Each setting restores integrity through a conversion from the recorded
+     * Frame to the changed one; C simplifies that conversion (frame.c {@code ConvertX}) to a
+     * UnitMap, which {@code RestoreIntegrity} does not add as a node.
+     */
+    @Test
+    void settingAFrameAttributeKeepsTheFrameSetsSize() {
+        FrameSet fs = FitsHeaders.readFrameSet(FitsHeaders.fixture("wcsconv/inputs/galactic-tan.head"));
+        fs.setC("Label(1)", "x0");
+        String first = ChannelText.dump(fs);
+        for (int i = 1; i < 200; i++) {
+            fs.setC("Label(1)", "x" + i);
+        }
+        String last = ChannelText.dump(fs);
+        assertTrue(first.contains("\"x0\""), "the dump records the label");
+        assertEquals(nodeCount(first), nodeCount(last), "nodes after the first and last settings");
+        assertEquals(first.replace("\"x0\"", "\"x199\""), last);
+    }
 }

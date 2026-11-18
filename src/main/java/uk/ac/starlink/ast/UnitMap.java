@@ -25,6 +25,47 @@ public class UnitMap extends Mapping {
         super(node);
     }
 
+    /**
+     * unitmap.c {@code MapMerge}: alone, the UnitMap is applied forward; in series it is removed
+     * from the list; in parallel it is joined with the UnitMaps on either side of it into one, or,
+     * with none beside it, applied forward. The UnitMap's own Invert attribute is not changed.
+     */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        if (list.size() == 1) {
+            if (list.invert(0)) {
+                list.setInvert(0, false);
+                return 0;
+            }
+            return -1;
+        }
+        if (series) {
+            list.removeAt(where);
+            return where;
+        }
+        int i1 = where;
+        int i2 = where;
+        int nin = list.map(where).getNin();
+        // C compares class names, so a subclass of UnitMap does not join the run.
+        while (i1 - 1 >= 0 && list.map(i1 - 1).getClass() == UnitMap.class) {
+            i1--;
+            nin += list.map(i1).getNin();
+        }
+        while (i2 + 1 < list.size() && list.map(i2 + 1).getClass() == UnitMap.class) {
+            i2++;
+            nin += list.map(i2).getNin();
+        }
+        if (i1 == i2) {
+            if (list.invert(where)) {
+                list.setInvert(where, false);
+                return where;
+            }
+            return -1;
+        }
+        list.replaceRangeWith(i1, i2, new UnitMap(nin));
+        return i1;
+    }
+
     @Override
     String dumpComment() {
         return "Unit (null) Mapping";

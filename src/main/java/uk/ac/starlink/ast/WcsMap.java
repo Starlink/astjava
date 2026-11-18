@@ -591,6 +591,17 @@ public class WcsMap extends Mapping {
     }
 
     /**
+     * C's {@code GetNP}: the number of projection parameters stored for the zero-based axis {@code
+     * i}, up to the largest index set, or 0 for an axis out of range.
+     */
+    final int storedParamCount(int i) {
+        if (i >= 0 && pv != null && i < createdNin()) {
+            return pv[i] == null ? 0 : pv[i].length;
+        }
+        return 0;
+    }
+
+    /**
      * C's {@code SetPV}: sets projection parameter {@code m} of the zero-based axis {@code i};
      * {@code AST__BAD} leaves it unset. The parameter is stored as C stores it, so a shared WcsMap
      * refuses the change, as an {@code astMAKE_SET1} attribute does (wcsmap.c:3924).
@@ -1179,11 +1190,17 @@ public class WcsMap extends Mapping {
         return null;
     }
 
+    /** {@link WcsMapMerge#wcsMapMerge}, wcsmap.c {@code MapMerge}. */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        return WcsMapMerge.wcsMapMerge(this, list, where, series);
+    }
+
     /**
      * C's {@code CopyPV}: gives {@code out} the projection parameters of {@code in}'s longitude
      * and latitude axes on its own longitude and latitude axes, and sets it up again.
      */
-    private static void copyPV(WcsMap in, WcsMap out) {
+    static void copyPV(WcsMap in, WcsMap out) {
         out.pv = null;
         if (in.pv != null) {
             out.pv = new double[out.createdNin()][];
