@@ -690,13 +690,15 @@ class FitsSpectralAxesTest {
         assertEquals("0:00:00.0", fs.getC("RefRA"), "the FrameSet written is not changed");
         fs.set("System(1)=GALACTIC");
         // C fits the galactic TAN projection (FitLine) to points transformed through SphMaps and
-        // SlaMaps, whose sines and arctangents in java.lang.Math are 1 ULP from C's libm; the
-        // fitted CDELT2 and PC elements move by up to 7e-17 and 6e-13, as in the write of the same
-        // celestial axes without the spectral axis (C probe gal_probe).
+        // SlaMaps, whose sines and arctangents in java.lang.Math differ from C's libm by about an
+        // ULP, by different amounts on different processors and Java runtimes. An ULP of the
+        // galactic longitude (264 degrees, 6e-14) over the few pixels the fit spans is about 1e-11
+        // of the 0.001 degree pixel size, so the fitted CDELT2 and PC elements need only agree
+        // with C's to that relative tolerance.
         Map<String, Double> fitted = new HashMap<>();
-        fitted.put("CDELT2", 1.0e-16);
+        fitted.put("CDELT2", 1.0e-14);
         for (String pc : new String[] {"PC1_1", "PC1_2", "PC2_1", "PC2_2"}) {
-            fitted.put(pc, 1.0e-12);
+            fitted.put(pc, 1.0e-11);
         }
         assertWritesAsC(C_REFPOS_SKY_GAL, fs, "", 10, 10, fitted);
     }
