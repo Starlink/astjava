@@ -614,7 +614,7 @@ class ResampleOracleTest {
      * The largest relative difference between Java's and C's weight for a pixel, worked out in
      * {@link #bounds}.
      */
-    private static final double RHO_W = 164 * U;
+    private static final double RHO_W = 165 * U;
 
     /**
      * The largest differences from C's outputs allowed for the kernel case {@code cs}, for each
@@ -637,9 +637,9 @@ class ResampleOracleTest {
      * neighb^2 = 11.1 (Gauss with fwhm 1 and 2 pixels), so Gauss 115u and SincGauss (a at most
      * 4.93) 6u + 53u + 2u = 61u. The default reaches, ceil(sqrt(-log(0.01) / k)) = ceil(3.87) and
      * ceil(1.93), are far from integers, so are the same. A weight is the product of one kernel
-     * value per axis, with a rounding for each product: at most 115u in 1-D (Gauss), 2 * 81u + 2u =
-     * 164u in 2-D (Gauss with fwhm 1.2, a at most 7.70, 81u), and 3 * 6u + 4u = 22u in 3-D: RHO_W
-     * = 164u.
+     * value per axis, with a rounding for each product: at most 115u in 1-D (Gauss), 2 * 81.016u +
+     * 2u = 164.03u in 2-D (Gauss with fwhm 1.2, a at most 7.7016, 81.016u), and 3 * 6u + 4u = 22u in
+     * 3-D: RHO_W = 165u.
      *
      * <p>With s the unit roundoff of the sum type (u, or 2^-24 for F, S and B), e the relative
      * difference of a weight as summed (RHO_W, or RHO_W + 2s where it is rounded to float), and n
