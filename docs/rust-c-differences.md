@@ -555,6 +555,12 @@ The entries are grouped by area, in the order the Java classes were ported.
   Functions are registered with a Channel for its reads, and the process-wide table holds the Transformer of each IntraMap made in the process, weakly; a read looks in the Channel's first.
   The process-wide names are made from identity hash codes, which two Transformers may share, so where C would refuse a name held by another function, making an IntraMap takes the next free name instead (`#1`, `#2`, ... added); the same Transformer with other details is still AST__MRITF.
 
+### Concurrent calls of an IntraMap's transformation function
+
+- C: `Transform` (`intramap.c`) holds `LOCK_MUTEX2` around each call of a registered function, so no two run at once; jniast's calls were serialised too, through its global `AstLock`.
+- Rust: holds no lock, and requires `IntraTransform: Send + Sync`.
+- Java: holds no lock; the Javadoc of Transformer and IntraMap says a Transformer must be thread-safe, since copies of an IntraMap share it (a user decision).
+
 ### The numbers of coordinates `astLoadIntraMap` checks
 
 - **C quirk**: `astLoadIntraMap` compares the numbers of input and output coordinates the Mapping class's `GetNin` and `GetNout` give, which take account of the Invert attribute already loaded, with those registered.

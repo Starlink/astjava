@@ -240,9 +240,9 @@ public class Channel extends AstObject {
 
     /**
      * Registers {@code trans} as the transformation function called {@code name}, so that an
-     * IntraMap this Channel reads whose IntraFlag holds no serialised Transformer, and whose
-     * function has that name, uses it: C's {@code astIntraReg}, whose registrations are
-     * process-wide where these belong to the Channel. See {@link IntraRegistry#register}.
+     * IntraMap this Channel reads whose function has that name uses it, in preference to the
+     * process-wide table: C's {@code astIntraReg}, whose registrations are process-wide where
+     * these belong to the Channel. See {@link IntraRegistry#register}.
      *
      * @param nin the number of input coordinates of the function, or {@link IntraRegistry#AST__ANY}
      * @param nout the number of output coordinates of the function, or {@link

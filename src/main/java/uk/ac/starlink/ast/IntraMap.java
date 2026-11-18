@@ -13,19 +13,21 @@ import java.util.Objects;
  * <p>However, an {@code IntraMap} is intended for use within a given software environment. It is
  * written to a {@link Channel} with the name of its transformation function, not the function
  * itself, as C's IntraMap is, and can be read back only where that name stands for a Transformer:
- * in the same process while an IntraMap made with that Transformer is still in use, or through a
- * Channel with which a Transformer has been registered under the name.
+ * in the same process, after an IntraMap was made with that Transformer and until the Transformer
+ * is garbage-collected, or through a Channel with which a Transformer has been registered under
+ * the name.
  *
  * <p>The IntraMap holds its Transformer by reference; a {@link #copy} shares it. The name of its
  * transformation function (written to a dump as {@code Fname}) is the Transformer's class name
  * followed by {@code #} and its identity hash code in hexadecimal, with {@code #1}, {@code #2},
- * ... added if another Transformer still in use already has that name, and two IntraMaps with the
+ * ... added if another Transformer not yet garbage-collected has that name, and two IntraMaps with the
  * same name are taken to apply the same function. Making an IntraMap registers its Transformer under
  * that name, as jniast registers it with C's {@code astIntraReg}, together with the numbers of
  * coordinates, the flags (whether the forward and inverse transformations exist, and whether a
  * forward and inverse pair, or an inverse and forward pair, in series simplify away) and the
  * purpose, author and contact strings, all read from the Transformer then. The registration holds
- * the Transformer weakly, and lapses when no IntraMap uses it.
+ * the Transformer weakly: it lasts while the Transformer is reachable, and lapses once the
+ * Transformer is garbage-collected. Every IntraMap made with one Transformer has the same name.
  *
  * <p>The IntraFlag attribute is a string which distinguishes this IntraMap from others using the
  * same function: a pair of IntraMaps that could cancel is simplified only if their IntraFlag
@@ -74,9 +76,9 @@ public class IntraMap extends Mapping implements NeedsChannelizing {
      * @throws IllegalArgumentException if {@code trans} is not able to transform from {@code nin}
      *     to {@code nout} coordinates
      * @throws NullPointerException if {@code trans} is null
-     * @throws AstException with status {@code AST__MRITF} if an IntraMap in use was made with
-     *     {@code trans} and other numbers of coordinates, or {@code trans} now gives other flags or
-     *     strings
+     * @throws AstException with status {@code AST__MRITF} if an IntraMap was made earlier with
+     *     {@code trans} and other details: other numbers of coordinates, or other flags or strings
+     *     than {@code trans} now gives
      */
     public IntraMap(Transformer trans, int nin, int nout) {
         this(register(trans, nin, nout), nin, nout);
@@ -132,7 +134,8 @@ public class IntraMap extends Mapping implements NeedsChannelizing {
      * Loads an IntraMap from its description, as C's {@code astLoadIntraMap} does: {@code Fname},
      * {@code Iflag} (the IntraFlag attribute), {@code Purp}, {@code Auth} and {@code Cntact}. The
      * Transformer is the one registered under the function name, with the Channel reading or, if
-     * none is, by an IntraMap made in this process and still in use ({@link IntraRegistry#lookup}).
+     * none is, by an IntraMap made in this process with a Transformer not yet garbage-collected
+     * ({@link IntraRegistry#lookup}).
      * As in C, the IntraMap's numbers of coordinates as its Invert attribute leaves them must be
      * those registered, so an inverted IntraMap of a function with different numbers of inputs and
      * outputs cannot be read. No method of the Transformer is called.

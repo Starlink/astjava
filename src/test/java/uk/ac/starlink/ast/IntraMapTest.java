@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -767,6 +768,26 @@ class IntraMapTest {
         assertEquals(base + "#2", back.getFname());
         assertSame(other1, IntraRegistry.lookup(base).trans);
         assertSame(other2, IntraRegistry.lookup(base + "#1").trans);
+    }
+
+    /**
+     * Every IntraMap of one Transformer has one name: after a collision has given it {@code #1},
+     * and the Transformer holding the base name has been garbage-collected, a new IntraMap of it
+     * still takes {@code #1}, not the free base name.
+     */
+    @Test
+    void oneTransformerKeepsItsNameAfterACollisionLapses() {
+        Doubler t = new Doubler();
+        String base = Doubler.class.getName() + "#" + Integer.toHexString(System.identityHashCode(t));
+        Doubler other = new Doubler();
+        IntraRegistry.registerMade(base, 1, 1, other);
+        IntraMap m = new IntraMap(t);
+        assertEquals(base + "#1", m.getFname());
+        IntraRegistry.lapse(base);
+        assertNull(IntraRegistry.lookup(base));
+        IntraMap again = new IntraMap(t);
+        assertEquals(base + "#1", again.getFname());
+        assertSame(t, IntraRegistry.lookup(base + "#1").trans);
     }
 
     /** jniast's {@code copy}: a copy shares the Transformer and the function name. */

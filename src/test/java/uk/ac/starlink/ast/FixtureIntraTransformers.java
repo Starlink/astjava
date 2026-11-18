@@ -11,8 +11,7 @@ final class FixtureIntraTransformers {
 
     /**
      * C's {@code TestIntraTran}: each output coordinate is the input coordinate of the same index,
-     * or bad beyond the input coordinates, in either direction. It is not Serializable, so an
-     * IntraMap using it is written as C writes it.
+     * or bad beyond the input coordinates, in either direction.
      */
     static final class Identity extends Transformer {
         private final boolean fiFlag;

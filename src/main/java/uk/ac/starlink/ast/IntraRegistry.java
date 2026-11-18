@@ -19,8 +19,8 @@ import java.util.concurrent.ConcurrentMap;
  * slot only while it reads ({@link #enter} and {@link #restore}), since the loader of an IntraMap
  * nested in another Object sees only its own description. The process-wide table, like C's, holds
  * the function of every IntraMap made in this process, as jniast's {@code construct} registers it,
- * but holds each Transformer weakly, so that an entry lapses when no IntraMap uses its
- * Transformer. A read looks in the Channel's registry first and then in the process-wide table.
+ * but holds each Transformer weakly, so that an entry lasts while its Transformer is reachable
+ * and lapses once it is garbage-collected. A read looks in the Channel's registry first and then in the process-wide table.
  */
 final class IntraRegistry {
 
@@ -50,6 +50,13 @@ final class IntraRegistry {
     // static memory for the whole process. PMD's MutableStaticState rule does not flag a final
     // field, so it needs no suppression.
     private static final ConcurrentMap<String, Made> MADE = new ConcurrentHashMap<>();
+
+    /**
+     * For each name of the process-wide table that has had a suffix added ({@link #registerMade}),
+     * the largest suffix it has had. It only grows, so that a chain of names is searched to its
+     * end after an earlier name in it has been removed.
+     */
+    private static final ConcurrentMap<String, Integer> LONGEST = new ConcurrentHashMap<>();
 
     /** The references of {@link #MADE} whose Transformers have been collected. */
     private static final ReferenceQueue<Transformer> CLEARED = new ReferenceQueue<>();
@@ -279,14 +286,14 @@ final class IntraRegistry {
 
     /**
      * Registers {@code trans}, the Transformer of an IntraMap being made, in the process-wide table,
-     * as jniast's {@code construct} registers it with {@code astIntraReg}, under {@code name} or,
-     * if that is held by another Transformer still in use, under the first of {@code name#1},
-     * {@code name#2}, ... that is not. A name is taken if it is free, held by a Transformer no
-     * longer in use, or held by {@code trans}; held by {@code trans} with other details (numbers
-     * of coordinates, flags or strings), it is AST__MRITF, as C's {@code IntraReg} reports a
-     * function registered again with different details.
+     * as jniast's {@code construct} registers it with {@code astIntraReg}. The name is the one of
+     * {@code name}, {@code name#1}, {@code name#2}, ... that already holds {@code trans}, if any
+     * does, so that every IntraMap of one Transformer has one name; otherwise it is the first of
+     * them that is free or held by a Transformer that has been garbage-collected. Held by {@code
+     * trans} with other details (numbers of coordinates, flags or strings), it is AST__MRITF, as
+     * C's {@code IntraReg} reports a function registered again with different details.
      *
-     * <p>The names come from identity hash codes, which two Transformers in use may share; C's
+     * <p>The names come from identity hash codes, which two reachable Transformers may share; C's
      * names are chosen by its callers, and its {@code IntraReg} refuses a name held by another
      * function. A new name is chosen here instead, so that making an IntraMap does not fail
      * because of a shared hash code.
@@ -295,32 +302,78 @@ final class IntraRegistry {
      * @throws AstException with status {@code AST__MRITF} if {@code trans} is registered under the
      *     name with different details
      */
+    // The same Transformer, not an equal one.
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
     static Entry registerMade(String name, int nin, int nout, Transformer trans) {
         purge();
         Entry first = new Entry(name, nin, nout, trans);
-        for (int k = 0; ; k++) {
-            Entry entry = k == 0 ? first : first.renamed(name + "#" + k);
-            boolean[] other = new boolean[1];
-            MADE.compute(entry.name, (key, old) -> {
-                Transformer held = old == null ? null : old.get();
-                if (held == null) {
-                    return new Made(entry);
+        // A name of the chain may be free while a later one holds trans, so every name up to the
+        // longest the chain has had is looked at.
+        int longest = LONGEST.getOrDefault(name, 0);
+        for (int k = 0; k <= longest; k++) {
+            Made m = MADE.get(chainName(name, k));
+            if (m != null && m.get() == trans) {
+                Entry e = claim(first.renamed(chainName(name, k)), trans);
+                if (e != null) {
+                    return e;
                 }
-                if (!old.entry(held).sameTransformer(trans)) {
-                    other[0] = true;
-                    return old;
-                }
-                if (!old.entry(held).sameAs(entry)) {
-                    throw Ast.err(
-                            AstException.AST__MRITF,
-                            "astIntraReg: Invalid attempt to register the transformation function name \"" + entry.name
-                                    + "\" multiple times.");
-                }
-                return old;
-            });
-            if (!other[0]) {
-                return entry;
             }
+        }
+        for (int k = 0; ; k++) {
+            Entry e = claim(k == 0 ? first : first.renamed(chainName(name, k)), trans);
+            if (e != null) {
+                if (k > 0) {
+                    LONGEST.merge(name, k, Math::max);
+                }
+                return e;
+            }
+        }
+    }
+
+    /** Name {@code k} of the chain of names starting at {@code name}: {@code name}, {@code name#1}, ... */
+    private static String chainName(String name, int k) {
+        return k == 0 ? name : name + "#" + k;
+    }
+
+    /**
+     * Registers {@code trans} under {@code entry}'s name if that is free, held by a Transformer that
+     * has been garbage-collected, or held by {@code trans} with the same details.
+     *
+     * @return {@code entry}, or null if another reachable Transformer holds the name
+     * @throws AstException with status {@code AST__MRITF} if {@code trans} holds the name with other
+     *     details
+     */
+    private static Entry claim(Entry entry, Transformer trans) {
+        boolean[] other = new boolean[1];
+        MADE.compute(entry.name, (key, old) -> {
+            Transformer held = old == null ? null : old.get();
+            if (held == null) {
+                return new Made(entry);
+            }
+            if (!old.entry(held).sameTransformer(trans)) {
+                other[0] = true;
+                return old;
+            }
+            if (!old.entry(held).sameAs(entry)) {
+                throw Ast.err(
+                        AstException.AST__MRITF,
+                        "astIntraReg: Invalid attempt to register the transformation function name \"" + entry.name
+                                + "\" multiple times.");
+            }
+            return old;
+        });
+        return other[0] ? null : entry;
+    }
+
+    /**
+     * Makes the entry of the process-wide table under {@code name} lapse, as when its Transformer is
+     * garbage-collected: the reference is cleared and queued for removal.
+     */
+    static void lapse(String name) {
+        Made m = MADE.get(name);
+        if (m != null) {
+            m.clear();
+            m.enqueue();
         }
     }
 
@@ -334,7 +387,8 @@ final class IntraRegistry {
 
     /**
      * The function registered under {@code name} with the Channel reading on this thread, or else
-     * in the process-wide table by an IntraMap still in use, or null.
+     * in the process-wide table by an IntraMap made with a Transformer not yet garbage-collected,
+     * or null.
      */
     static Entry lookup(String name) {
         IntraRegistry reg = READING.get();
