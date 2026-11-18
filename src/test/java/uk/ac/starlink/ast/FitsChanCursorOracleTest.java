@@ -37,11 +37,9 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  *
  * <p>Cases whose scripts read from the FitsChan ({@code R}, {@code RN}, {@code PW}, and {@code
  * RW}, {@code RCIW} and {@code RSW}, which write what they read back into it) run when their reads
- * and writes need only the encodings and classes of this library. A read that reaches FITS-CLASS,
- * whose read is out of scope, throws {@code UnsupportedOperationException}; the number of such
- * cases is pinned by {@link #WAITING_FOR_ANOTHER_ENCODING}. A read or write that stops at another
- * out-of-scope class (such as {@code needs SpecFrame}) must be in {@link #EXCLUDED} with that
- * reason, measured from the exception. Cases whose scripts write an Object they make ({@code W},
+ * and writes need only the classes of this library. A read or write that stops at an out-of-scope
+ * class (such as {@code needs MathMap}) must be in {@link #EXCLUDED} with that reason, measured
+ * from the exception. Cases whose scripts write an Object they make ({@code W},
  * {@code WF}, {@code WFT}, {@code WC} and {@code WCF}) run; {@code native_full_1}, whose Object
  * parts C writes with counts this library does not keep, is excluded and compared without them.
  */
@@ -50,14 +48,8 @@ class FitsChanCursorOracleTest {
     /** The operations that read from the FitsChan, and write what they read. */
     private static final Set<String> READS = new HashSet<>(Arrays.asList("R", "RN", "PW", "RW", "RCIW", "RSW"));
 
-    /**
-     * The number of cases run here: those that write no Object read, are not excluded, and whose reads
-     * need only the encodings read here.
-     */
-    private static final int RUNNABLE = 247;
-
-    /** The number of cases whose reads reach the read of an encoding whose read is not available. */
-    private static final int WAITING_FOR_ANOTHER_ENCODING = 2;
+    /** The number of cases run here: those that are not excluded. */
+    private static final int RUNNABLE = 257;
 
     /**
      * The start of the reason of a case whose transcript hangs on the last bit of an elementary
@@ -75,18 +67,6 @@ class FitsChanCursorOracleTest {
 
     private static Map<String, String> excludedCases() {
         Map<String, String> m = new LinkedHashMap<>();
-        // Headers with a spectral axis, whose FITS-WCS read builds a SpecFrame.
-        for (String name : Arrays.asList(
-                "dist_sip_axis3",
-                "dist_zpx_three",
-                "sao_three_ctypes",
-                "iwc_on_spectral",
-                "iwc_off_spectral",
-                "iwc_on_spectral_cunit",
-                "sao_three_ctypes_rw",
-                "fao_spec_order")) {
-            m.put(name, "needs SpecFrame");
-        }
         // The absolute description of the offset SkyFrame passes C's LogAxis test on its first
         // axis, so C builds the -LOG Mapping, which holds a MathMap; the description then fails
         // MakeIntWorld and is not written (lldb probe s2 of the final review fixes).
@@ -610,7 +590,6 @@ class FitsChanCursorOracleTest {
     @Test
     void cardFunctionsMatchTheCLibrary() throws IOException {
         List<String> failed = new ArrayList<>();
-        List<String> waitingCases = new ArrayList<>();
         int run = 0;
         for (JsonNode c : ProbeData.load("fitschan_cursor").get("CASES")) {
             List<String> ops = ops(c);
@@ -625,12 +604,8 @@ class FitsChanCursorOracleTest {
             } catch (UnsupportedOperationException e) {
                 assertTrue(uses(ops, READS), name + ": " + e.getMessage());
                 String reason = Deferred.unavailableReason(e.getMessage());
-                if (reason != null && reason.startsWith("encoding ") && !"encoding FITS-WCS".equals(reason)) {
-                    waitingCases.add(name + " (" + reason + ")");
-                } else {
-                    failed.add(name + ": the read stops (" + e.getMessage() + "); list it in EXCLUDED with \"" + reason
-                            + "\"");
-                }
+                failed.add(name + ": the read stops (" + e.getMessage() + "); list it in EXCLUDED with \"" + reason
+                        + "\"");
                 continue;
             }
             run++;
@@ -647,10 +622,6 @@ class FitsChanCursorOracleTest {
         }
         assertTrue(failed.isEmpty(), String.join("\n\n", failed));
         assertEquals(RUNNABLE, run, "cases run");
-        assertEquals(
-                WAITING_FOR_ANOTHER_ENCODING,
-                waitingCases.size(),
-                "cases waiting for the read of another encoding: " + waitingCases);
     }
 
     /**

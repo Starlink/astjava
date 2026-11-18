@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.Deferred;
 import uk.ac.starlink.ast.testsupport.OracleSection;
 
@@ -264,12 +265,18 @@ class FitsChanWriteTest {
      * p3.c} for FITS-WCS and {@code rt.c} for the other encodings, beside the task reports, and
      * {@code rt7.c} and {@code rtc.c} of the final review fixes for the offset SkyFrames): C's
      * write returns 0 (for FITS-IRAF, a description with a LONPOLE or projection parameters, or a
-     * TNX or ZPX projection read as TPN or ZPN), or C's cards read back give values where C's read
+     * TNX or ZPX projection read as TPN or ZPN; for FITS-WCS, crota-3d, a spectral cube whose
+     * celestial axes are rotated: C probe {@code write_probe} of Task 8; for FITS-CLASS, class-noproj,
+     * class-spec and class-spec-hel: C probe {@code classrt.c} of Task 10), or C's cards read back give values where C's read
      * of the header gives BAD (the CAR headers whose longitude range the projection bounds, among
      * them the FITS-AIPS header cmap_3years_GP_D2) or other values (scp, at a point 1.3E-6 radians
-     * from the pole, where longitude changes fast; and the offset SkyFrames, whose offset
+     * from the pole, where longitude changes fast; the offset SkyFrames, whose offset
      * coordinates C describes without a projection, with the absolute coordinates as an alternate
-     * description), or C's read of the cards written fails (skyref, whose alternate description,
+     * description; and vopt-f2w, vopt-geo, vrad-v2f and vrad-wav, whose velocity axes, sampled
+     * linearly in frequency or wavelength, C writes with the {@code -X2P} algorithm, the reference
+     * at pixel 1 and a CDELT from the numerical rate of the conversion there, so that the cards
+     * read back give velocities up to 1e-3 m/s from those of the header, the same values as C's
+     * read of C's cards: C probe {@code roundtrip_probe} of Task 8), or C's read of the cards written fails (skyref, whose alternate description,
      * CTYPE1A {@code RA} and CTYPE2A {@code Dec}, C's read rejects as a longitude axis without a
      * latitude axis).
      */
@@ -280,6 +287,10 @@ class FitsChanWriteTest {
         for (String h : Arrays.asList(
                 "programs/joye_car_headers/CHIPASS_Equ.head",
                 "wcsconv/inputs/car6.head",
+                "wcsconv/inputs/class-noproj.head",
+                "wcsconv/inputs/class-spec-hel.head",
+                "wcsconv/inputs/class-spec.head",
+                "wcsconv/inputs/crota-3d.head",
                 "wcsconv/inputs/tsc.head",
                 "wcsconv/inputs/iraf-longpole.head",
                 "wcsconv/inputs/projp-nopv0.head",
@@ -301,7 +312,11 @@ class FitsChanWriteTest {
                 "wcsconv/inputs/offset-sky.head",
                 "wcsconv/inputs/offset-sref.head",
                 "wcsconv/inputs/scp.head",
-                "wcsconv/inputs/skyref-alt.head")) {
+                "wcsconv/inputs/skyref-alt.head",
+                "wcsconv/inputs/vopt-f2w.head",
+                "wcsconv/inputs/vopt-geo.head",
+                "wcsconv/inputs/vrad-v2f.head",
+                "wcsconv/inputs/vrad-wav.head")) {
             m.put(h, DIFFERS);
         }
         m.put("wcsconv/inputs/skyref.head", READ_FAILS);
@@ -359,17 +374,17 @@ class FitsChanWriteTest {
     }
 
     /** The encodings whose headers {@link #everyInScopeHeaderRoundTrips} writes and reads back. */
-    private static final Set<String> ROUND_TRIP_ENCODINGS =
-            new LinkedHashSet<>(Arrays.asList("FITS-WCS", "FITS-PC", "FITS-IRAF", "FITS-AIPS", "FITS-AIPS++", "DSS"));
+    private static final Set<String> ROUND_TRIP_ENCODINGS = new LinkedHashSet<>(
+            Arrays.asList("FITS-WCS", "FITS-PC", "FITS-IRAF", "FITS-AIPS", "FITS-AIPS++", "FITS-CLASS", "DSS"));
 
     /**
-     * Every FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++ and DSS header of {@code
+     * Every FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS, FITS-AIPS++, FITS-CLASS and DSS header of {@code
      * headers.oracle} whose sections match C here, read, written with its own encoding into a new
      * FitsChan and read back, transforms the inputs of its forward section to the outputs C
      * recorded, within the section's tolerances, unless it is in {@link #NOT_ROUND_TRIPPED} with
      * the outcome it gives, which is checked. {@code headers.oracle} has no DSS header (C probe
      * {@code rt.c} of Task 9); {@code FitsEncDssTest.writtenAndReadBackAsC} round-trips C's DSS
-     * header. Its FITS-CLASS headers need SpecFrame.
+     * header.
      */
     @Test
     void everyInScopeHeaderRoundTrips() {
@@ -433,6 +448,38 @@ class FitsChanWriteTest {
             }
         } finally {
             pool.shutdown();
+        }
+    }
+
+    /**
+     * A spectral cube (wcsconv's skyspec3d, FITS-WCS with RA, Dec and frequency axes) written with
+     * each of FITS-WCS, FITS-PC, FITS-IRAF, FITS-AIPS and FITS-AIPS++ into a new FitsChan and read
+     * back transforms as the header does: C's write of each returns 1, and C's read of C's cards
+     * gives these values at these pixels (C probe {@code roundtrip_probe} of Task 8).
+     */
+    @Test
+    void spectralCubeRoundTripsInEachEncoding() {
+        double[][] pixels = {{1, 1, 1}, {10, 20, 30}, {64, 64, 128}};
+        double[][] want = {
+            {-3.1296012703025604, 0.7768103146506354, 1371400000},
+            {-3.1317713222141985, 0.780138109793003, 1400400000},
+            {3.138128627580643, 0.7878386196480921, 1498400000},
+        };
+        FrameSet fs = FitsHeaders.readFrameSet(FitsHeaders.fixture("wcsconv/inputs/skyspec3d.head"));
+        for (String encoding : new String[] {"FITS-WCS", "FITS-PC", "FITS-IRAF", "FITS-AIPS", "FITS-AIPS++"}) {
+            FitsChan out = new FitsChan();
+            out.setEncoding(encoding);
+            assertEquals(1, out.write(fs), encoding);
+            out.clear("Card");
+            FrameSet back = FitsHeaders.readFrameSet(out);
+            for (int i = 0; i < pixels.length; i++) {
+                double[] got = back.tranN(1, 3, pixels[i], true, 3);
+                for (int j = 0; j < 3; j++) {
+                    assertTrue(
+                            CValues.ulpClose(got[j], want[i][j], 4),
+                            encoding + " pixel " + i + " axis " + j + ": " + got[j] + " vs C " + want[i][j]);
+                }
+            }
         }
     }
 }

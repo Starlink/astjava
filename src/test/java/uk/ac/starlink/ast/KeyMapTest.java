@@ -25,9 +25,9 @@ import org.junit.jupiter.api.Test;
  * therefore translated as C writes them.
  *
  * <p>The tests built on the seven scalar entries of testkeymap.c, one of which is a SkyFrame,
- * are {@code scalarPutsAndTypes}, {@code scalarCrossTypeReads} and {@code
- * aScalarReadsAsALengthOneVector}. Those that also store a SpecFrame, which is outside the first
- * phase, are on the deferred list.
+ * are {@code scalarPutsAndTypes}, {@code copyPreservesEveryEntry}, {@code scalarCrossTypeReads}
+ * and {@code aScalarReadsAsALengthOneVector}; those on its vectors, one of which holds a
+ * SpecFrame, follow them.
  */
 class KeyMapTest {
 
@@ -1623,5 +1623,166 @@ class KeyMapTest {
         AstObject[] avec = map2.mapGet1A("Freda");
         assertEquals(1, avec.length);
         assertInstanceOf(SkyFrame.class, avec[0]);
+    }
+
+    /**
+     * main (testkeymap.c:433-532): a copy holds every entry, and changing it leaves the original
+     * as it was.
+     */
+    @Test
+    void copyPreservesEveryEntry() {
+        KeyMap map = sevenKeyMap();
+        KeyMap map2 = (KeyMap) map.copy();
+
+        // Error 0.
+        assertEquals(7, map2.mapSize());
+
+        // Error badkey / nokey: every put key is present exactly once, and nothing else is.
+        List<String> keys = readKeys(map2);
+        Collections.sort(keys);
+        assertEquals(Arrays.asList("Freda", "Fredc", "Fredd", "Fredi", "Fredk", "Fredr", "Freds"), keys);
+
+        // Error -1: a scalar has length 1 through astMapLength.
+        assertEquals(1, map2.mapLength("Fredi"));
+
+        // Error 1 / 2, 1k / 2k, 1 / 2B, 3 / 4, 3b / 4b.
+        assertEquals(1999, map2.mapGet0I("Fredi"));
+        assertEquals(1999L, map2.mapGet0K("Fredk"));
+        assertEquals((short) 1999, map2.mapGet0S("Freds"));
+        assertEquals(1999.9, map2.mapGet0D("Fredd"));
+        assertEquals(1999.9f, map2.mapGet0F("Fredr"));
+
+        // Error 5 / 6 / 7.
+        assertEquals("Hello", map2.mapGet0C("Fredc"));
+
+        // Error 5b / 6b / 7b: astMapGetC on a length-1 entry gives the value, with no
+        // parentheses.
+        assertEquals("Hello", map2.mapGetC("Fredc"));
+
+        // Error 8 / 9.
+        assertInstanceOf(SkyFrame.class, map2.mapGet0A("Freda"));
+
+        // The copy is independent of the original.
+        map2.mapPut0I("Fredi", -7, "com 1");
+        map2.mapPut0A("Freda", new SpecFrame(), " ");
+        map2.mapRemove("Fredc");
+
+        assertEquals(7, map.mapSize());
+        assertEquals(1999, map.mapGet0I("Fredi"));
+        assertEquals("Hello", map.mapGet0C("Fredc"));
+        assertInstanceOf(SkyFrame.class, map.mapGet0A("Freda"));
+    }
+
+    /**
+     * {@link #sevenKeyMap} with five of its scalars replaced by vectors, as main does at
+     * testkeymap.c:638-677; Fredk and Fredr stay scalar. C's {@code astSpecFrame( " " )} leaves
+     * the System at its wavelength default.
+     */
+    private static KeyMap vectorKeyMap() {
+        KeyMap map = sevenKeyMap();
+        map.mapPut1I("Fredi", new int[] {1999, 0}, "com 1");
+        // Error 29b.
+        assertEquals(2, map.mapLength("Fredi"));
+        map.mapPut1S("Freds", new short[] {1999, 0}, "com 1");
+        // Error 29c.
+        assertEquals(2, map.mapLength("Freds"));
+        map.mapPut1D("Fredd", new double[] {1999.9, -0.01}, "com2");
+        map.mapPut1C("Fredc", new String[] {"Hello", " ", "  Hello"}, " ");
+        map.mapPut1A("Freda", new AstObject[] {new SkyFrame(), null, new SpecFrame(), null}, " ");
+        return map;
+    }
+
+    /**
+     * main (testkeymap.c:638-763). A scalar read of a vector entry gives the entry's first
+     * element.
+     */
+    @Test
+    void vectorPutsReplaceScalars() {
+        KeyMap map2 = (KeyMap) vectorKeyMap().copy();
+
+        // Error A1 / A2, A1k / A2k, A3 / A4.
+        assertEquals(1999, map2.mapGet0I("Fredi"));
+        assertEquals(1999L, map2.mapGet0K("Fredk"));
+        assertEquals(1999.9, map2.mapGet0D("Fredd"));
+
+        // Error A5 / A6 / A7: MapLenC reports the longest element, "  Hello", while MapGet0C
+        // still gives element 0.
+        assertEquals(7, map2.mapLenC("Fredc"));
+        assertEquals("Hello", map2.mapGet0C("Fredc"));
+
+        // Error A8 / A9.
+        assertInstanceOf(SkyFrame.class, map2.mapGet0A("Freda"));
+
+        // Error A10 / A11, A12 / A13a / A13.
+        assertEquals(1999.0, map2.mapGet0D("Fredi"));
+        assertEquals("1999", map2.mapGet0C("Fredi"));
+
+        // Error A14 / A15, A14k / A15k.
+        assertEquals(2000, map2.mapGet0I("Fredd"));
+        assertEquals(2000L, map2.mapGet0K("Fredd"));
+
+        // Error A16 / A17a / A17.
+        assertEquals("1999.9", map2.mapGet0C("Fredd"));
+    }
+
+    /** main (testkeymap.c:765-835). */
+    @Test
+    void vectorReads() {
+        KeyMap map2 = (KeyMap) vectorKeyMap().copy();
+
+        // Error B1 / B2a / B2b / B2c.
+        assertArrayEquals(new int[] {1999, 0}, map2.mapGet1I("Fredi"));
+        // Error B3 / B4a / B4b / B4c.
+        assertArrayEquals(new double[] {1999.9, -0.01}, map2.mapGet1D("Fredd"));
+
+        // Error B5 / B6a / B6b / B6c / B6d / B6e: elements 1 and 3 were put as null and read
+        // back as null.
+        AstObject[] avec = map2.mapGet1A("Freda");
+        assertEquals(4, avec.length);
+        assertInstanceOf(SkyFrame.class, avec[0]);
+        assertNull(avec[1]);
+        assertInstanceOf(SpecFrame.class, avec[2]);
+        assertNull(avec[3]);
+
+        // Error B7 / B8a / B8b / B8c / B8d.
+        assertArrayEquals(new String[] {"Hello", " ", "  Hello"}, map2.mapGet1C("Fredc"));
+    }
+
+    /** main (testkeymap.c:849-877). */
+    @Test
+    void elementReads() {
+        KeyMap map2 = (KeyMap) vectorKeyMap().copy();
+
+        // Error B1z / B2bz.
+        assertEquals(1999, map2.mapGetElemI("Fredi", 0));
+        // Error B3z / B4cz.
+        assertEquals(-0.01, map2.mapGetElemD("Fredd", 1));
+        // Error B5z / B6dz.
+        AstObject[] aval = new AstObject[1];
+        assertTrue(map2.mapGetElemA("Freda", 2, aval));
+        assertInstanceOf(SpecFrame.class, aval[0]);
+        // Error B7z / B8dz.
+        assertEquals("  Hello", map2.mapGetElemC("Fredc", 2));
+    }
+
+    /** main (testkeymap.c:879-883): a removed key reads as absent, not as an error. */
+    @Test
+    void removeThenReadFails() {
+        KeyMap map2 = (KeyMap) vectorKeyMap().copy();
+
+        // Removing an absent key is silent.
+        map2.mapRemove("Bert");
+        map2.mapRemove("Fredc");
+        // Error C1.
+        assertNull(map2.mapGet1C("Fredc"));
+    }
+
+    /** main (testkeymap.c:885), on the KeyMap {@link #removeThenReadFails} leaves. */
+    @Test
+    void checkDumpRoundTrip() {
+        KeyMap map2 = (KeyMap) vectorKeyMap().copy();
+        map2.mapRemove("Bert");
+        map2.mapRemove("Fredc");
+        checkDump(map2);
     }
 }

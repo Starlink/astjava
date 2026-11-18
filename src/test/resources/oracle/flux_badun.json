@@ -1,0 +1,9 @@
+{
+  "source": "crates/starlink-ast/tests/flux_badun_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/flux_badun_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "ATTRS": ["System","Title","Label(1)","Symbol(1)","Unit(1)"],
+    "CASES": [["","Jy",{"variant":"Ok","value":""},[{"variant":"Ok","value":"FLXDN"},{"variant":"Ok","value":"Flux density at = 1.4E+09 Hz"},{"variant":"Ok","value":"Flux density"},{"variant":"Ok","value":"S_nu"},{"variant":"Ok","value":"Jy"}]],["","W/m^2/Hz/arcsec**2",{"variant":"Ok","value":""},[{"variant":"Ok","value":"SFCBR"},{"variant":"Ok","value":"Surface brightness at = 1.4E+09 Hz"},{"variant":"Ok","value":"Surface brightness"},{"variant":"Ok","value":"mu_nu"},{"variant":"Ok","value":"W/m^2/Hz/arcsec**2"}]],["","m",{"variant":"Err","value":"Badun"},[{"variant":"Err","value":"Badun"},{"variant":"Err","value":"Badun"},{"variant":"Err","value":"Badun"},{"variant":"Err","value":"Badun"},{"variant":"Ok","value":"m"}]],["System=FLXDN","Jy",{"variant":"Ok","value":""},[{"variant":"Ok","value":"FLXDN"},{"variant":"Ok","value":"Flux density at = 1.4E+09 Hz"},{"variant":"Ok","value":"Flux density"},{"variant":"Ok","value":"S_nu"},{"variant":"Ok","value":"Jy"}]],["System=FLXDN","W/m^2/Hz/arcsec**2",{"variant":"Ok","value":""},[{"variant":"Ok","value":"SFCBR"},{"variant":"Ok","value":"Surface brightness at = 1.4E+09 Hz"},{"variant":"Ok","value":"Surface brightness"},{"variant":"Ok","value":"mu_nu"},{"variant":"Ok","value":"W/m^2/Hz/arcsec**2"}]],["System=FLXDN","m",{"variant":"Ok","value":""},[{"variant":"Err","value":"Badun"},{"variant":"Err","value":"Badun"},{"variant":"Err","value":"Badun"},{"variant":"Err","value":"Badun"},{"variant":"Ok","value":"m"}]]]
+  }
+}

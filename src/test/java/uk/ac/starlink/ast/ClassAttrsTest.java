@@ -10,30 +10,42 @@ import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
 /**
- * Translation of Rust {@code tests/test_class_attrs.rs}: the class attributes of TimeFrame checked
- * against C ({@code oracle/class_attrs.json}, from {@code
+ * Translation of Rust {@code tests/test_class_attrs.rs}: the class attributes of TimeFrame,
+ * SpecFrame, DSBSpecFrame and FluxFrame checked against C ({@code oracle/class_attrs.json}, from {@code
  * tools/oracle_fixtures/class_attrs_probe.c}). The probe applies each {@code ;}-separated setting
  * to a default object of the class with {@code astSet}, reads every attribute back with {@code
  * astGetC}, {@code astGetI} or {@code astGetD} and its {@code astTest} result, and dumps the
  * object; {@link #make} and {@link #mismatch} do the same through the Java API.
  *
- * <p>The probe's SpecFrame, DSBSpecFrame and FluxFrame cases are skipped (out of scope), and the
- * tests {@code spec_frame_domain_is_cleaned}, {@code dsb_centre_with_no_topocentric_frequency_is_rejected}
- * and {@code flux_frame_domain_is_cleaned} are listed in {@code deferred/rust-tests.txt}.
+ * <p>The probe makes its FluxFrame with {@code astFluxFrame( AST__BAD, NULL, " " )}. The test
+ * {@code flux_frame_domain_is_cleaned} is in {@link FluxFrameTest}, {@code
+ * spec_frame_domain_is_cleaned} in {@link SpecFrameTest} and {@code
+ * dsb_centre_with_no_topocentric_frequency_is_rejected} in {@link DSBSpecFrameTest}.
  */
 class ClassAttrsTest {
 
     /** Whether the probe's class is one this library provides. */
     private static boolean inScope(String cls) {
-        return "TimeFrame".equals(cls);
+        return "TimeFrame".equals(cls)
+                || "SpecFrame".equals(cls)
+                || "DSBSpecFrame".equals(cls)
+                || "FluxFrame".equals(cls);
     }
 
     /** A default object of {@code cls} with each {@code ;}-separated setting applied, as the probe does. */
     private static Frame make(String cls, String settings) {
-        if (!"TimeFrame".equals(cls)) {
+        Frame f;
+        if ("TimeFrame".equals(cls)) {
+            f = new TimeFrame();
+        } else if ("SpecFrame".equals(cls)) {
+            f = new SpecFrame();
+        } else if ("DSBSpecFrame".equals(cls)) {
+            f = new DSBSpecFrame();
+        } else if ("FluxFrame".equals(cls)) {
+            f = new FluxFrame(AstObject.AST__BAD, null);
+        } else {
             throw new IllegalArgumentException("unexpected class " + cls);
         }
-        Frame f = new TimeFrame();
         int start = 0;
         while (start < settings.length()) {
             int semi = settings.indexOf(';', start);
@@ -130,7 +142,7 @@ class ClassAttrsTest {
                 failures.add(what + ": " + e.getMessage());
             }
         }
-        assertEquals(165, run, "the in-scope cases the C probe recorded");
+        assertEquals(165 + 442 + 132 + 72, run, "the in-scope cases the C probe recorded");
         assertTrue(
                 failures.isEmpty(), failures.size() + " of " + run + " cases differ:\n" + String.join("\n", failures));
     }
@@ -159,7 +171,7 @@ class ClassAttrsTest {
                         + "--- C\n" + expected);
             }
         }
-        assertEquals(15, run, "the in-scope dumps the C probe recorded");
+        assertEquals(15 + 26 + 11 + 9, run, "the in-scope dumps the C probe recorded");
         assertTrue(
                 failures.isEmpty(), failures.size() + " of " + run + " dumps differ:\n" + String.join("\n", failures));
     }
@@ -182,17 +194,12 @@ class ClassAttrsTest {
      * astSetC( cmpframe, "Domain", "" )} leaves {@code astTest( cmpframe, "Domain" )} true with the
      * value {@code ""}, and {@code astSetC( cmpframe, "Title", "" )} leaves {@code astTest( cmpframe,
      * "Title" )} true.
-     *
-     * <p>The Rust test joins a TimeFrame and a FluxFrame (out of scope); here the second component
-     * is a 1-d Frame. The components do not affect these results: the Domain and Title are the
-     * CmpFrame's own, and cmpframe.c {@code GetDomain} and {@code GetTitle} consult the components
-     * only when the attribute is not set.
      */
     @Test
     void cmpFrameDomainIsCleanedAndEmptyIsSet() {
         TimeFrame a = new TimeFrame();
         a.set("System=MJD");
-        CmpFrame cf = new CmpFrame(a, new Frame(1));
+        CmpFrame cf = new CmpFrame(a, new FluxFrame());
         cf.setDomain("my cmp");
         assertEquals("MYCMP", cf.getDomain());
         cf.setDomain("");

@@ -16,8 +16,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * FrameSet from its current Frame, to which setting it on the FrameSet goes (cmpframe.c, frameset.c
  * {@code GetUseDefs}). A dump writes {@code UseDfs} when it is set (object.c {@code Dump}).
  *
- * <p>Every case but {@code spec_off}, which needs a SpecFrame, outside the first phase, runs here.
- * For {@code frameset_own}, set through a FrameSet of two Frames, the dump is not compared: C's
+ * <p>Every case runs here. For {@code frameset_own}, set through a FrameSet of two Frames, the dump is not compared: C's
  * {@code astSimplify} reduces the Mapping the FrameSet's integrity check puts on its current Frame
  * to a UnitMap, which this version does not, so the dumps differ in that Mapping; the value, the
  * test result and the reading back of C's dump are compared.
@@ -40,6 +39,8 @@ class UseDefsTest {
                 Frame f = off(new Frame(1));
                 f.setIdent("Me");
                 return f;
+            case "spec_off":
+                return off(new SpecFrame());
             case "sky_on":
                 SkyFrame sky = new SkyFrame();
                 sky.setUseDefs(true);
@@ -90,7 +91,7 @@ class UseDefsTest {
                 failures.add(name + ": read back as " + read);
             }
         }
-        assertEquals(9, ran, "every case but spec_off");
+        assertEquals(10, ran, "every case");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 }

@@ -1,0 +1,9 @@
+{
+  "source": "crates/starlink-ast/tests/specflux_cmp_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/specflux_cmp_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "PICKS": [[false,1,"SpecFrame","Frequency","GHz"],[false,2,"FluxFrame","Flux density","W/m^2/Hz"],[true,1,"FluxFrame","Flux density","W/m^2/Hz"],[true,2,"SpecFrame","Frequency","GHz"]],
+    "FOUND": ["CmpFrame",[1399.9999999999998,1.0E-26]]
+  }
+}

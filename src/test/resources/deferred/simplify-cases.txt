@@ -2,9 +2,6 @@
 # <row name> | <reason>
 # Rewritten by SimplifyRegressionTest with -Dast.writeDeferred=true.
 brad | needs LutMap
-rigby | needs SpecMap
-cmpmap_perm_parallel_swap | needs SpecMap
-spec_inverse_cancel | needs SpecMap
 lut_linear_to_win | needs LutMap
 lut_inverse_cancel | needs LutMap
 pcd_zero_to_unit | needs PcdMap
@@ -19,12 +16,6 @@ intramap_inverse_cancel | needs IntraMap
 tranmap_invert_normalize | needs TranMap
 tranmap_component_simplify | needs TranMap
 ratemap_simplify_interior | needs RateMap
-spec_invert_normalize | needs SpecMap
-spec_partial_cancel | needs SpecMap
-spec_unit_cancel | needs SpecMap
-spec_lsr_cancel | needs SpecMap
-spec_geocentric_cancel | needs SpecMap
-spec_topocentric_cancel | needs SpecMap
 normmap_basic_frame_to_unit | needs NormMap
 normmap_inverse_cancel | needs NormMap
 normmap_duplicate_elim | needs NormMap
@@ -45,10 +36,8 @@ switchmap_inverse_cancel | needs SwitchMap
 pcd_perm_swap_cancel | needs PcdMap
 pcd_swap_zoom_simplifies | needs PcdMap
 pcd_inverted_zoom_swap | needs PcdMap
-spec_merge_no_cancel | needs SpecMap
 neg_win_nonmergeable_series | needs MathMap
 neg_math_no_simpfi | needs MathMap
-neg_spec_arg_mismatch | needs SpecMap
 neg_grism_same_direction | needs GrismMap
 neg_lut_nonlinear | needs LutMap
 neg_lut_different_tables | needs LutMap
@@ -61,18 +50,14 @@ neg_perm_no_merge | needs MathMap
 neg_ratemap_nonratemap_neighbour | needs RateMap
 neg_ratemap_different_inner | needs RateMap
 neg_lut_parallel | needs LutMap
-neg_spec_2arg_mismatch | needs SpecMap
-neg_spec_3arg_mismatch | needs SpecMap
 neg_grism_different_attrs | needs GrismMap
 neg_normmap_different_frames | needs NormMap
-neg_spec_parallel | needs SpecMap
 neg_grism_parallel | needs GrismMap
 neg_grism_inv_then_zoom | needs GrismMap
 neg_grism_fwd_then_nonzoom | needs GrismMap
 neg_math_nonmath_neighbour | needs MathMap
 neg_spline_parallel | needs SplineMap
 neg_lut_nonlut_neighbour | needs LutMap
-neg_spec_lone_forward | needs SpecMap
 neg_spline_nonspline_neighbour | needs SplineMap
 neg_tranmap_parallel | needs TranMap
 neg_tranmap_nontranmap_neighbour | needs TranMap
@@ -82,7 +67,6 @@ neg_normmap_nonnorm_neighbour | needs NormMap
 neg_grism_zoom_before_fwd | needs GrismMap
 neg_grism_nonzoom_before_inv | needs GrismMap
 neg_ratemap_parallel | needs RateMap
-neg_spec_6arg_mismatch | needs SpecMap
 neg_spline_different_coeffs | needs SplineMap
 cmpmap_parallel_in_series_merge | needs MathMap
 cmpmap_perm_swap_aconstants | needs MathMap
@@ -106,42 +90,28 @@ dssmap_inv_winmap_absorb | needs DssMap
 dssmap_winmap_absorb | needs DssMap
 dssmap_zoom_no_merge | needs DssMap
 neg_box_asymmetric_2d | needs Box, PointSet
-spec_run_inverted_mid | needs SpecMap
-spec_run4_identity | needs SpecMap
 fitschan_tab_spectral | needs LutMap
 switchmap_inverse_cancel_distinct_selectors | needs MathMap, SwitchMap
-cap_cmpmap_01 | needs MathMap, RateMap, SpecMap, TranMap
+cap_cmpmap_01 | needs MathMap, RateMap, TranMap
 cap_cmpmap_02 | needs MathMap
-cap_cmpmap_04 | needs MathMap, RateMap, SpecMap, TranMap
-cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism, SpecFrame
+cap_cmpmap_04 | needs MathMap, RateMap, TranMap
+cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism
 cap_lutmap_01 | needs LutMap, MathMap
 cap_mathmap_01 | needs MathMap
 cap_matrixmap_04 | needs ChebyMap
-cap_permmap_01 | needs NormMap, SpecFrame
-cap_pointlist_01 | needs Box, PointList, PointSet, Prism, SpecFrame
-cap_pointlist_02 | needs Interval, PointList, PointSet, Prism, SpecFrame
-cap_slamap_02 | needs Box, PointSet, Polygon, Prism, SpecFrame
+cap_permmap_01 | needs NormMap
+cap_pointlist_01 | needs Box, PointList, PointSet, Prism
+cap_pointlist_02 | needs Interval, PointList, PointSet, Prism
+cap_slamap_02 | needs Box, PointSet, Polygon, Prism
 cap_slamap_07 | needs Box, Circle, CmpRegion, NullRegion, PointSet
-cap_specmap_01 | needs SpecMap
-cap_specmap_02 | needs LutMap, SpecMap
-cap_specmap_03 | needs SpecMap
-cap_specmap_04 | needs SpecMap
-cap_specmap_05 | needs SpecMap
-cap_specmap_06 | needs SpecMap
-cap_specmap_07 | needs SpecMap
-cap_specmap_08 | needs SpecMap
-cap_specmap_09 | needs LutMap, SpecMap
-cap_specmap_10 | needs SpecMap
-cap_specmap_11 | needs SpecMap
-cap_specmap_12 | needs SpecMap
-cap_specmap_13 | needs SpecMap
-cap_specmap_14 | needs MathMap, SpecMap
-cap_timemap_02 | needs Box, Interval, PointSet, SpecFrame, StcResourceProfile
+cap_specmap_02 | needs LutMap
+cap_specmap_09 | needs LutMap
+cap_specmap_14 | needs MathMap
+cap_timemap_02 | needs Box, Interval, PointSet, StcResourceProfile
 cap_unitnormmap_01 | needs UnitNormMap
-cap_winmap_01 | needs SpecMap
 cap_xphmap_01 | needs XphMap
 cap_xphmap_02 | needs XphMap
-cap_zoommap_04 | needs Box, MathMap, PointList, PointSet, SpecFrame
+cap_zoommap_04 | needs Box, MathMap, PointList, PointSet
 neg_tranmap_adjacent_no_merge | needs MathMap, TranMap
 neg_lut_constant | needs LutMap
 neg_math_lone | needs MathMap
@@ -227,8 +197,6 @@ neg_pcd_diff_disco | needs PcdMap
 neg_pcd_diff_centre | needs PcdMap
 neg_pcd_same_invert | needs PcdMap
 neg_pcd_perm_nonswap | needs PcdMap
-specmap_invert_normalize | needs SpecMap
-specmap_pair_cancel | needs SpecMap
 pcd_inverse_cancel_tail | needs PcdMap
 nullregion_merge_tail | needs NullRegion
 grism_inverse_cancel_tail | needs GrismMap
@@ -246,8 +214,7 @@ lut_exactly_linear | needs LutMap
 neg_lut_near_linear | needs LutMap
 parpair_one_side_reduces | needs MathMap
 neg_parpair_aligned_irreducible | needs MathMap
-cmpmap_inverted_lone | needs SpecMap
-cmpmap_inverted_nested | needs MathMap, SpecMap
+cmpmap_inverted_nested | needs MathMap
 rate_inner_reduce_series | needs RateMap
 rate_inner_reduce_lone | needs RateMap
 cheby_linear_lone_reduce | needs ChebyMap

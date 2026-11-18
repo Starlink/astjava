@@ -19,9 +19,10 @@ import uk.ac.starlink.ast.internal.pal.Pal;
  * <p>Some translations are made only for some encodings, as in C: RADECSYS to RADESYS, LONGPOLE to
  * LONPOLE, PROJPi to PVi_m, and CmVALi, CmPIXi, CmYPEi and CmNITi to alternate axis descriptions
  * for FITS-PC and FITS-IRAF, and CDjjjiii to PCi_j for FITS-IRAF; C reads those keywords under
- * every encoding, and translates CmELTi under every encoding. C's {@code ClassTrans}, the
- * translation FITS-CLASS makes, is not available, since that encoding is not read; asking for it
- * throws {@link UnsupportedOperationException}.
+ * every encoding, and translates CmELTi under every encoding. FITS-CLASS has translations of its
+ * own (C's {@code ClassTrans}): its spectral CRVAL is an offset from the rest frequency, in the
+ * source's rest frame, whose velocity a VELO-xxx keyword gives, and a blank projection code is
+ * {@code -GLS}.
  *
  * <p>Ported from Rust {@code fitschan/spec_trans.rs}, following the order and tests of C's {@code
  * SpecTrans}.
@@ -33,6 +34,9 @@ final class FitsSpecTrans {
 
     /** C's {@code AST__DR2D}: degrees per radian. */
     private static final double AST__DR2D = 57.29577951308232;
+
+    /** C's {@code AST__C}: the speed of light in m/s. */
+    private static final double AST__C = 2.99792458E8;
 
     /** The {@code tnx} warning (fitschan.c:32460). */
     private static final String TNX_WARNING = "This FITS header includes, or was derived from, a TNX projection which"
@@ -133,9 +137,9 @@ final class FitsSpecTrans {
      * (those at the entry card first), is thrown as the error C reports; the translations change
      * only the copy, so stopping once they are done ends the read where C's ends.
      *
-     * @throws UnsupportedOperationException for the FITS-CLASS encoding
      * @throws AstException where C's {@code SpecTrans} reports an error: a keyword it needs is
-     *     absent or has no value, or an IRAF WAT string holds a word that is not a number
+     *     absent or has no value, an IRAF WAT string holds a word that is not a number, or a
+     *     FITS-CLASS header has no rest frequency or a spectral axis other than frequency
      */
     static FitsCardList specTrans(
             FitsCardList cards,
@@ -159,15 +163,10 @@ final class FitsSpecTrans {
      * The translations of {@link #specTrans}, written into {@code cards} itself. C's {@code this}
      * is {@code cards} as supplied, and its {@code ret} the keywords written here.
      *
-     * @throws UnsupportedOperationException for the FITS-CLASS encoding
      * @throws AstException as {@link #specTrans} does
      */
     static void specTransInplace(
             FitsCardList cards, FitsChan.Encoding encoding, TransAttrs attrs, TransWarnings warnings) {
-        if (encoding == FitsChan.Encoding.FITS_CLASS) {
-            throw new UnsupportedOperationException(
-                    "FitsChan: reading the " + encoding.cName() + " encoding is not available");
-        }
         Translator t = new Translator(cards, encoding, attrs, warnings);
         // The primary axis description, then 'A' to 'Z' (fitschan.c:31558-31559, 32615).
         t.version(' ');
@@ -513,6 +512,9 @@ final class FitsSpecTrans {
         /** Whether the encoding is FITS-IRAF, which alone translates the CDjjjiii matrix. */
         private final boolean iraf;
 
+        /** Whether the encoding is FITS-CLASS, which has translations of its own. */
+        private final boolean fitsClass;
+
         /**
          * C's {@code CardComm( this )} where C gives it as the comment of a translated card: the
          * comment of the current card of the cards as supplied, which is the first card not
@@ -529,6 +531,7 @@ final class FitsSpecTrans {
             this.warnings = warnings;
             this.pcOrIraf = encoding == FitsChan.Encoding.FITS_PC || encoding == FitsChan.Encoding.FITS_IRAF;
             this.iraf = encoding == FitsChan.Encoding.FITS_IRAF;
+            this.fitsClass = encoding == FitsChan.Encoding.FITS_CLASS;
             this.cardComm = currentComment(src);
         }
 
@@ -630,6 +633,14 @@ final class FitsSpecTrans {
             cards.setTranslation(keyword, FitsCard.Value.ofFloat(value), comment);
         }
 
+        /**
+         * C's {@code SetValue( ret, keyword, ... )} of a floating value with no comment, which
+         * leaves the comment of the keyword in {@code this} as the one a reader sees.
+         */
+        private void replaceFloat(String keyword, double value) {
+            setFloat(keyword, value, null);
+        }
+
         /** C's {@code SetValue( ret, keyword, ... )} of a string. */
         private void setString(String keyword, String value, String comment) {
             cards.setTranslation(keyword, FitsCard.Value.ofString(value), comment);
@@ -714,7 +725,9 @@ final class FitsSpecTrans {
                 cmxxx();
                 epochEquinox();
                 dateObs();
-                // C's ClassTrans runs here for FITS-CLASS, which is not read.
+                if (fitsClass) {
+                    classTrans();
+                }
                 if (ustrEq(prj, "-TAN") && saoTrans()) {
                     prj = "-TPN";
                     setCelestialSuffix(s, "-TPN");
@@ -736,6 +749,113 @@ final class FitsSpecTrans {
             restfreq(s);
             aipsSpectral(s);
             cunit(s);
+        }
+
+        /**
+         * The translations of a FITS-CLASS header (C's {@code ClassTrans}, fitschan.c), made for the
+         * primary axis description from the celestial axes found: the spectral CRVAL, an offset
+         * from the rest frequency, is made the frequency; the spectral axis is in the source's
+         * rest frame (SPECSYS SOURCE); a blank projection code of a celestial axis becomes {@code
+         * -GLS}; and the source's velocity, the VELO-xxx velocity of the reference channel less
+         * that channel's radio velocity in the source's rest frame, is given as SSYSSRC, the rest
+         * frame the VELO-xxx keyword names, and ZSOURCE.
+         *
+         * <p>The spectral axis is the one of the first three that is not celestial (axis 2 when
+         * there are no celestial axes). C reads the reference frequency of the radio velocity
+         * from a variable it sets only when that axis has a CTYPE of FREQ and a CRVAL; otherwise
+         * the variable is not initialised, which here is 0, the value C's recorded outputs of the
+         * {@code class-spec} and {@code class-spec-hel} wcsconv fixtures, whose one axis is not
+         * axis 2, encode.
+         *
+         * @throws AstException with status {@code AST__BDFTS} if there is neither RESTFRQ nor
+         *     RESTFREQ, if the spectral CTYPE is not FREQ, or if its CRVAL is absent
+         */
+        private void classTrans() {
+            // The rest frequency.
+            Double restfreq = getFloat2("RESTFRQ", false);
+            if (restfreq == null) {
+                restfreq = getFloat2("RESTFREQ", false);
+            }
+            if (restfreq == null) {
+                throw Ast.err(
+                        AstException.AST__BDFTS, "astRead(FitsChan): Keyword RESTFREQ not found in CLASS FITS header.");
+            }
+
+            // The spectral axis.
+            int axspec;
+            if (axlat + axlon == 1) {
+                axspec = 2;
+            } else if (axlat + axlon == 3) {
+                axspec = 0;
+            } else {
+                axspec = 1;
+            }
+
+            // A FREQ axis, whose CRVAL is made the frequency. C leaves crval unset when this does
+            // not set it; see the method description.
+            double crval = 0.0;
+            String ctypeKey = key("CTYPE", axspec + 1, ' ');
+            String cval = getString2(ctypeKey);
+            if (cval != null) {
+                if (!AstObject.chrMatch("FREQ", cval)) {
+                    throw Ast.err(
+                            AstException.AST__BDFTS,
+                            "astRead(FitsChan): FITS-CLASS keyword " + ctypeKey + " has value \"" + cval
+                                    + "\" - CLASS support in AST only includes \"FREQ\" axes.");
+                }
+                String crvalKey = key("CRVAL", axspec + 1, ' ');
+                Double v = getFloat2(crvalKey, true);
+                crval = v + restfreq;
+                replaceFloat(crvalKey, crval);
+                replaceString("SPECSYS", "SOURCE");
+            }
+
+            // A blank projection code becomes -GLS. C copies the first four characters with
+            // strncpy, which stops at the end of a shorter value; a value of more than four
+            // characters always has four.
+            for (int ax : new int[] {axlon, axlat}) {
+                String keyname = key("CTYPE", ax + 1, ' ');
+                String type = getString2(keyname);
+                if (type != null && type.length() > 4 && type.startsWith("    ", 4)) {
+                    replaceString(keyname, type.substring(0, 4) + "-GLS");
+                }
+            }
+
+            // The velocity of the reference channel, and the rest frame the keyword giving it
+            // names: the first of these keywords present, in C's order.
+            String[][] velocityKeys = {
+                {"VELO-HEL", "BARYCENT"},
+                {"VELO-OBS", "TOPOCENT"},
+                {"VELO-TOP", "TOPOCENT"},
+                {"VELO-EAR", "GEOCENTR"},
+                {"VELO-GEO", "GEOCENTR"},
+                {"VELO-LSR", "LSRK"},
+                {"VLSR", "LSRK"}
+            };
+            String ssyssrc = null;
+            Double vref = null;
+            for (String[] k : velocityKeys) {
+                vref = getFloat2(k[0], false);
+                if (vref != null) {
+                    ssyssrc = k[1];
+                    break;
+                }
+            }
+            if (vref == null) {
+                warnAtEntry(
+                        "badval",
+                        "A FITS-CLASS header was identified (DELTAV and VLSR/VELO-xxx present) but no usable velocity"
+                                + " reference keyword was found. Assuming LSRK.");
+                ssyssrc = "LSRK";
+                vref = 0.0;
+            }
+
+            // The radio velocity of the reference channel in the source's rest frame, and the
+            // source's velocity, the difference of the two, as a redshift.
+            double v0 = AST__C * (restfreq - crval) / restfreq;
+            double vsource = vref - v0;
+            replaceString("SSYSSRC", ssyssrc);
+            replaceFloat("ZSOURCE", (AST__C / (AST__C - vsource)) - 1.0);
         }
 
         /** {@link #withSuffix} of a CTYPE that may be absent, as C's would be when an axis is. */

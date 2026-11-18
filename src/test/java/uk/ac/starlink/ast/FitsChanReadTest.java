@@ -15,9 +15,8 @@ import org.junit.jupiter.api.Test;
  * WcsOthers}.
  *
  * <p>Listed in {@code deferred/rust-tests.txt}: {@code log_suffix_is_stripped_from_the_domain_and_symbol}
- * (a {@code -LOG} axis, which C maps with a MathMap), {@code dsb_centre_prefers_axref_over_crval}
- * (a DSBSpecFrame) and {@code unset_system_still_leaves_system_unset} (a constructor of the Rust
- * port's own).
+ * (a {@code -LOG} axis, which C maps with a MathMap) and {@code
+ * unset_system_still_leaves_system_unset} (a constructor of the Rust port's own).
  */
 class FitsChanReadTest {
 
@@ -285,5 +284,36 @@ class FitsChanReadTest {
                 "CTYPE1  = 'LINEAR'",
                 "CDELT1  = 0.25");
         assertEquals(0.5, fs.tran1(1, new double[] {3.0}, true)[0]);
+    }
+
+    /** A topocentric FREQ axis with IMAGFREQ, which makes a DSBSpecFrame. */
+    private static final String DSB_FREQ = String.join(
+            "\n",
+            "NAXIS   =                    1",
+            "NAXIS1  =                   10",
+            "CTYPE1  = 'FREQ'",
+            "CUNIT1  = 'Hz'",
+            "CRPIX1  =                    1",
+            "CRVAL1  =              2.30E11",
+            "CDELT1  =               1.0E6",
+            "SPECSYS = 'TOPOCENT'",
+            "IMAGFREQ=              2.40E11",
+            "");
+
+    /** The DSBCentre of the DSBSpecFrame read from {@code header}, in Hz. */
+    private static double dsbCentreOf(String header) {
+        Frame f = currentFrame(header);
+        assertInstanceOf(DSBSpecFrame.class, f, "current Frame is a " + f.astClass());
+        return ((DSBSpecFrame) f).getDsbCentre();
+    }
+
+    /**
+     * C's {@code WcsSpectral} takes the observation centre from AXREF when the header has one, and
+     * from CRVAL otherwise; the values are those C reports for the same two headers.
+     */
+    @Test
+    void dsbCentrePrefersAxrefOverCrval() {
+        assertEquals(2.30e11, dsbCentreOf(DSB_FREQ));
+        assertEquals(2.32e11, dsbCentreOf(DSB_FREQ + "AXREF1  =              2.32E11\n"));
     }
 }

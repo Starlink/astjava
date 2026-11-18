@@ -279,6 +279,30 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: makes the point bad.
 - Java: as Rust.
 
+### The frequency correction factor of a SpecMap's change of rest frame
+
+- C: a 1-dimensional SpecMap works out the factor the first time it transforms points and keeps it in the conversion's last argument slot (`specmap.c` `FrameChange`), so a SpecMap written after it has transformed points carries a `Spec<n><x>` card for it, as the fixtures `simplify/cap_specmap_06.map` and `cap_winmap_01.map` do.
+- Rust: keeps the factor in a separate cache (`fcorr`), which is not written.
+- Java: as C.
+
+### SpecMap values that are not finite
+
+- C: each conversion that can make a value that is not finite tests for it and writes AST__BAD; ENTOFR, FRTOEN, WNTOFR, FRTOWN, BTTOVL and VLTOBT do not, so an overflow gives an infinity (`specmap.c` `SystemChange`).
+- Rust: also replaces every value that is not finite with AST__BAD after the last conversion.
+- Java: as C, apart from inputs that are not finite, which are bad (see "Infinite input coordinates").
+
+### SpecMap load errors
+
+- C: a missing or unknown conversion is AST__BADIN with C's messages (`astLoadSpecMap`).
+- Rust: AST__SPCIN.
+- Java: as C.
+
+### The SpecMap axis-count message
+
+- **C quirk**: `astInitSpecMap` refuses a number of axes other than 1 or 3 with a message saying "it should be 1 or 2".
+- Rust: gives its own message.
+- Java: keeps C's message.
+
 ## Units
 
 Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follows C in each.
@@ -342,6 +366,99 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: `astFormat` returns NULL without an error when the Unit cannot be converted to days.
 - Rust: raises an error.
 - Java: as C.
+
+### SpecFrame Overlay onto a Frame of another class
+
+- **C quirk**: when the template has its System set, `Overlay` (specframe.c) clears the System and AlignSystem of a copy of the template and overlays the copy; when that changes the copy's System, `ClearSystem` also clears the copy's Title, Label and Symbol, and its Unit unless one was used with the default System, so none of those is overlaid either.
+- Rust: `specframe_overlay` overlays the template itself through `frame_overlay`, which transfers the System only to a result of the template's class, so the Title, Label, Symbol and Unit are overlaid.
+- Java: as C.
+
+### A SpecFrame Symbol changed by its Unit
+
+- **C quirk**: `GetSymbol` (specframe.c) copies the default Symbol, modified for a Unit other than the System's default, into a static 21-character buffer with `strcpy`, so a longer one overflows it: System `WAVN` with Unit `nm` gives a Symbol beginning `999999999.99999988/ WAVN`, and the fortified `strcpy` traps (probed: SIGTRAP from `astGetC( f, "Symbol(1)" )`, and from a NATIVE write of a header with `CTYPE1 = 'WAVN'`, `CUNIT1 = 'nm'`, through `Dump`).
+  `GetSymbol` in fluxframe.c has the same pattern (read from the code, not triggered by the units tried).
+- Rust: gives the whole Symbol.
+- Java: as Rust.
+
+### A failed StdOfRest, SourceVRF or SourceSys setting
+
+- **C quirk**: when re-expressing a set SpecOrigin or SourceVel in the new standard of rest or source System fails (AST__ATSER, AST__NOVAL, AST__BADUN), setting or clearing StdOfRest, SourceVRF or SourceSys reports the error but stores the new value anyway: `SetStdOfRest` and `ClearStdOfRest` (specframe.c) store it after `OriginStdOfRest` has cleared the SpecOrigin and failed, and the `astMAKE_SET` and `astMAKE_CLEAR` macros for SourceVRF and SourceSys store it after `ConvertSourceVel` has failed, leaving the SourceVel expressed in the old rest frame or System.
+  Later attribute values, the default Title (`Wavelength (LSRK)`, say) and the dump then describe the new value.
+- Rust: `set_std_of_rest`, `clear_std_of_rest`, `set_source_vrf`, `clear_source_vrf`, `set_source_sys` and `clear_source_sys` in `frames/specframe.rs` return the error before storing the value.
+- Java: as Rust: the setter throws and the attribute keeps its old value (a SpecOrigin already cleared by the failed re-expression stays cleared, as in C).
+
+### Aligning DSBSpecFrames in sidebands sets the target's SideBand
+
+- **C quirk**: to find the observed sideband of the target and of the result, `SubFrame` (dsbspecframe.c) reads the SideBand, sets it to `observed` and sets it back with `astSetSideBand`, so after a conversion with AlignSideBand set on both DSBSpecFrames (or one restoring a FrameSet's integrity) the target's SideBand is set, to the value it had.
+  `Match` then calls the target's `SubFrame` a second time when the target axis belongs to a DSBSpecFrame, although the parent `Match` has made the same call, so the result of the second call is a copy of a target whose SideBand is set.
+- Rust: `DSBSpecFrame::sub_frame` takes the observed sidebands from the sign of the IF without changing either Frame, and `match_template` makes the call once.
+- Java: as C.
+
+### DSBSpecFrame settings and errors
+
+- **C quirk**: `SetAttrib` (dsbspecframe.c) takes any setting that holds the text `dsbcentre=` for a DSBCentre setting, so `Title=dsbcentre=3` fails with AST__ATTIN.
+  `GetLO` reads the DSBCentre for the second line of its AST__ATTIN message after reporting the first, when the getter gives its default, so the message always says the DSBCentre is 3e+10 Hz.
+  Its AST__NOVAL and AST__ATTIN messages name `astGetImagFreq` whichever method calls it, and `ToLSBMapping` and `ToUSBMapping` find the Mapping to topocentric frequency before checking the IF and DSBCentre.
+  The loader refuses a SideBand other than `USB`, `LSB` or `LO`, in that case, with AST__ATTIN.
+- Rust: has no string attribute layer for a DSBSpecFrame; its `lo_freq` message gives the DSBCentre held, `verify_attrs` names `astMatch`, the sideband Mappings check the attributes first, and `from_node` reads the SideBand in any case and ignores one it does not know.
+- Java: as C.
+
+### FluxFrame System names
+
+- C: at the pin, `SystemCode` (fluxframe.c) reads both `SFCBRW` and `SRCBR` as `AST__SBRIGHTW`, and `FluxSystemString` writes `SFCBRW`, so a FluxFrame in that System reads its own dump back.
+  The Rust repository's `c-library-quirks.md` lists this as resolved upstream in b4457da9, after the pin, but the pinned C already holds the fix (3b1f3f5a, "fluxframe: read the System name it writes for per-wavelength surface brightness").
+- Rust: `FluxSystem::parse` reads both names and writes `SFCBRW`, as C at the pin does.
+- Java: as C.
+
+### The SpecVal comparison of `MakeFluxMapping`
+
+- C: the two SpecVals, each converted to the result's density system, must satisfy `astEQUALS( specval_in, specval_out, 1.0E8 )`: a difference of no more than the larger of 1e8 times DBL_EPSILON times the sum of their magnitudes, and 1e-12.
+- Rust: allows 1e8 times DBL_EPSILON times the larger of their magnitudes and 1, which is about half C's width for large values and wider than C's for values below 1.
+- Java: as C.
+
+### FluxFrame Overlay onto a Frame of another class
+
+- **C quirk**: when the template has its System set, `Overlay` (fluxframe.c) clears the System and AlignSystem of the template itself, overlays the Frame attributes, and sets the System and AlignSystem again with the values they had.
+  The template's AlignSystem is left set, to its default if it was not set, and when clearing the System changes it, FluxFrame's `ClearSystem` and `SetSystem` clear the template's Label, Symbol and Title and reset its Unit to the one last used with each System, or clear it (probed through `astOverlay`).
+- Rust: `fluxframe_overlay` leaves the template unchanged; `frame_overlay` transfers the System only to a result of the template's class.
+- Java: as C.
+
+### The Unit a FluxFrame records for its System
+
+- C: `SetUnit` (fluxframe.c) records the Unit as given, trailing spaces included, as the one used with the System, while the Frame class stores the Unit without them (probed: `Unit(1)=Jy  ` dumps `UFlxdn = "Jy  "`).
+- Rust: records the Unit without trailing spaces.
+- Java: as C.
+
+### A FluxFrame dump whose `SpcFr` is not a SpecFrame
+
+- C: `astLoadFluxFrame` keeps whatever Object `SpcFr` holds.
+- Rust: keeps it only if it is a SpecFrame, and ignores any other.
+- Java: refuses it with AST__LDERR, since a FluxFrame here holds only a SpecFrame.
+
+### The comment of a FluxFrame's SFCBRW units in a dump
+
+- C: `Dump` formats "Preferred units for <system label>" into a 50-character buffer (`fluxframe.c` `Dump`); for SFCBRW the comment is 55 characters, so it writes past the buffer (an AddressSanitizer stack-buffer-overflow, C probe). **C quirk.**
+- Rust: writes the whole comment.
+- Java: as Rust.
+
+### A SpecFluxFrame dump whose components are not a SpecFrame and a FluxFrame
+
+- C: `astLoadSpecFluxFrame` loads the CmpFrame and keeps whatever Frames `FrameA` and `FrameB` hold, which `GetSpecFrame` and `GetFluxFrame` (specfluxframe.c) later cast to a SpecFrame and a FluxFrame.
+- Rust: refuses them with AST__LDERR.
+- Java: as Rust.
+
+### The default Title of a SpecFluxFrame
+
+- C: `GetTitle` (specfluxframe.c) formats "<flux Label> versus <spectral Label>" with `sprintf` into a static 101-character buffer, so Labels longer than 92 characters between them write past it (read from the code, not probed). **C quirk.**
+- Rust: gives the whole Title.
+- Java: as Rust.
+
+### Casting between a CmpFrame and a SpecFluxFrame
+
+- C: `Cast` (cmpframe.c) copies a CmpFrame or SpecFluxFrame as an instance of any class of the CmpFrame family, a subclass included (`astCastCopy`), so a SpecFluxFrame template that matches no CmpFrame is cast into a plain CmpFrame and matched again, and a plain CmpFrame template that matches no SpecFluxFrame (the CmpFrame `ConvertX` gets from matching a SpecFluxFrame against a FluxFrame or SpecFrame) is cast into a SpecFluxFrame holding copies of its components, whose `Match` reaches `MakeSFMapping`.
+  **C quirk**: `Cast` compares the classes through CmpFrame's own `class_vtab`, which is initialised only when a plain CmpFrame is first made, so in a process that has made SpecFluxFrames but no CmpFrame a SpecFluxFrame match that fails dereferences null in `astClassCompare` (probed: SIGSEGV converting a SpecFluxFrame whose SpecFrame has Domain `FOO` to a default one).
+- Rust: SpecFluxFrame has no `cast`, and `CmpFrame::cast` in `frames/cmpframe.rs` copies a CmpFrame only into a CmpFrame, so neither becomes the other and these conversions find nothing.
+- Java: as C once a CmpFrame has been made: a FluxFrame or SpecFrame that does not match a SpecFluxFrame directly converts through `MakeSFMapping`, so it throws `needs RateMap` (or C's error, such as AST__ATSER from `GetSpecFrame`).
 
 ## FitsChan
 
@@ -656,11 +773,17 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `other_axes` in `fitschan/fset_to_store/other_axes.rs` gets `None` from `is_map_tab_1d` for such an axis.
 - Java: throws `UnsupportedOperationException` for any Mapping `IsMapTab1D` returns there (this library has no FitsTable).
 
-### Two SkyFrames in `MakeFitsFrameSet`
+### Two SkyFrames or two SpecFrames in `MakeFitsFrameSet`
 
-- C: `MakeFitsFrameSet` marks a world Frame with axes of two SkyFrames (of Domain `SKY`) unusable and makes no FrameSet, but then passes the null FrameSet to `AddEncodingFrame`, which dereferences it (a C-oracle probe writing a CmpFrame of two SkyFrames crashes in `astGetFrame_`) (`fitschan.c` `MakeFitsFrameSet`, `AddEncodingFrame`). **C quirk.**
-- Rust: `make_fits_frameset` in `fitschan/fset_to_store/mod.rs` does not look for a second SkyFrame.
+- C: `MakeFitsFrameSet` marks a world Frame with axes of two SkyFrames (of Domain `SKY`), or of two SpecFrames, unusable and makes no FrameSet, but then passes the null FrameSet to `AddEncodingFrame`, which dereferences it (a C-oracle probe writing a CmpFrame of two SkyFrames crashes in `astGetFrame_`); so it does when the celestial axes it makes or finds for a SpecFrame's reference position give no FrameSet or no fiducial point (`fitschan.c` `MakeFitsFrameSet`, `AddEncodingFrame`). **C quirk.**
+- Rust: `make_fits_frameset` in `fitschan/fset_to_store/mod.rs` looks for neither a second SkyFrame nor a second SpecFrame.
 - Java: makes no FrameSet, so that the description cannot be made, which is what `AddVersion` does with the null FrameSet C means to return.
+
+### A SpecFrame's reference position in `MakeFitsFrameSet`
+
+- C: when the SpecFrame of the world Frame has RefRA and RefDec set, and the world Frame has no SkyFrame and at most two axes, `MakeFitsFrameSet` adds FK5 J2000 celestial axes, read by a FitsChan from a TAN header with the reference position at pixel (0, 0) and the SpecFrame's Epoch as MJD-OBS, the two new pixel axes being given the constant 0; when the world Frame has a SkyFrame, it sets the SkyFrame to FK5 J2000 and sets RefRA and RefDec through the FrameSet to the fiducial point of the projection, formatted by the SkyFrame with Digits 20, then sets back the SkyFrame's System and Equinox if they were set (`fitschan.c` `MakeFitsFrameSet`).
+- Rust: `make_fits_frameset` in `fitschan/fset_to_store/mod.rs` adds no celestial axes, and sets RefRA and RefDec on the SpecFrame to the fiducial point, normalised, without formatting it.
+- Java: as C (`FitsFsetToStore.makeFitsFrameSet`).
 
 ### Units in `MakeFitsFrameSet`
 
@@ -779,7 +902,64 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: when the image has three or more pixel axes and both celestial pixel axes span one pixel, `CLASSFromStore` transforms pixel (1, 1, 1) with the FrameSet written and stores the celestial result as CRVAL, with CRPIX 1, before its other checks; `astTranN` is given three coordinates whatever the number of pixel and world axes, so a FrameSet with four pixel axes makes the write fail with `AST__NCPIN`.
   It looks up the sizes of those pixel axes in `dim` at the indices of the celestial WCS axes (`fitschan.c` `CLASSFromStore`). **C quirk** (three coordinates for any FrameSet; WCS axis indices into the pixel dimensions).
 - Rust: `class_store_ok` in `fitschan/enc_class.rs` reads the NAXIS cards for the rotation and LONPOLE checks but neither moves the reference point nor transforms anything, so it writes the reference point unchanged and reports no error for four axes.
-- Java: as C (`FitsEncClass`), as far as C goes without a SpecFrame: every FrameSet of this library's classes is refused, as C refuses it, since only a SpecFrame gives SPECSYS.
+- Java: as C (`FitsEncClass`).
+
+### The cards `CLASSFromStore` writes
+
+- C: `CLASSFromStore` writes CRPIX, CRVAL and CTYPE of the first three axes, each loop stopping at a missing value or a `-TAB` axis, and then still writes CDELT, EQUINOX, DATE-OBS (and MJD-OBS over a card the header has), RESTFREQ, IMAGFREQ, OBJECT, LINE, the velocities and the azimuth and elevation before returning 0, leaving the cards for `Write` to remove.
+  Each CTYPE comment is the description's, if it has one.
+  EQUINOX is 1950 for FK4 and 2000 for FK5 when the description has a RADESYS and no equinox.
+  A description of one pixel axis, to which `MakeFitsFrameSet` added celestial axes, is written with NAXIS 3 and NAXIS2 and NAXIS3 of 1.
+  VELO-LSR, VLSR and DELTAV convert the spectral CRVAL and CRVAL plus CDELT, both in Hz, with a SpecFrame matched in the current Frame of the FrameSet written; AZIMUTH and ELEVATIO convert the celestial CRVAL with SkyFrames matched there, and are normalised with the AZEL template SkyFrame (`fitschan.c` `CLASSFromStore`).
+  When the description has fewer than three axes with a CRPIX and the spectral axis is not among them, C scales and writes `cdelt[axspec]` past the end of its array of one element per axis written (`fitschan.c:7015`).
+  C also reads uninitialised elements of its `crval` array, those of axes its CRVAL loop did not reach, when it computes VELO-LSR and DELTAV (the spectral axis) and AZIMUTH and ELEVATIO (the celestial axes).
+  **C quirk** (an over-run and uninitialised reads), neither reachable from a FrameSet, since every WCS axis has a CRPIX.
+  The pinned C has the fixes the Rust repository's `docs/issues/c-library-quirks.md` lists as upstream aea3090b (a LONPOLE of +180 or -180 degrees is allowed and any other refused, as a66a0cb5) and 17416d33 (the spectral CDELT is scaled to Hz once).
+- Rust: `class_store_ok` in `fitschan/enc_class.rs` checks every value before `write_to_cards` writes any; `write_to_cards` gives every CTYPE the default comment, writes EQUINOX only when the description has one, and leaves NAXIS alone; `write_velocities_from_frameset` takes the frequencies from the cards written, finding the spectral axis by its CTYPE; `write_azel_from_frameset` finds the celestial axes by their CTYPE and normalises with the matched AZEL Frame.
+- Java: as C (`FitsEncClass`), except that the over-run throws `AstException` with status `AST__INTER` and an unreached `crval` element reads as 0.
+
+### `ClassTrans`
+
+- C: `SpecTrans` calls `ClassTrans` for the primary description of a FITS-CLASS header after translating DATE-OBS and before the SAO, NCP, ATF and GLS translations.
+  It reports `AST__BDFTS` when there is neither RESTFRQ nor RESTFREQ, when the spectral CTYPE (of the one of the first three axes that is not celestial, axis 2 when there are none) is not FREQ, ignoring case and trailing spaces, and when that axis has no CRVAL.
+  It writes the CRVAL plus the rest frequency, SPECSYS `SOURCE`, SSYSSRC and ZSOURCE with no comment, and warns (`badval`) when there is no VELO-xxx keyword, assuming LSRK and a velocity of zero.
+  A blank projection code becomes `-GLS`, which the GLS translation does not change to `-SFL`, since it tests the projection code `SpecTrans` took before `ClassTrans` ran.
+  The reference frequency of the radio velocity is a variable set only when the spectral axis has a CTYPE; otherwise it is not initialised, and the recorded outputs of the wcsconv fixtures `class-spec.head` and `class-spec-hel.head`, whose one axis is not axis 2, encode 0 (`fitschan.c` `ClassTrans`). **C quirk** (an uninitialised variable).
+- Rust: `translate_class` in `fitschan/spec_trans.rs` runs after every other translation, and skips what C reports: no rest frequency, a spectral CTYPE other than FREQ (compared after trimming spaces at both ends) and a missing CRVAL; it gives the cards it writes comments.
+- Java: as C (`FitsSpecTrans`); the uninitialised value is 0, as Rust's.
+
+### Which CTYPE values `WcsSpectral` takes as spectral
+
+- C: `IsSpectral` compares the first four characters of the CTYPE, without trailing spaces, with the ten FITS-WCS paper III codes case by case, and accepts the axis only when the algorithm code after them is blank or starts with `-`; any other axis is left to `WcsOthers` as a linear axis (`fitschan.c` `IsSpectral`), so `freq` gives a plain Frame axis with Domain `FREQ`.
+- Rust: `parse_spectral_ctype` in `fitschan/wcs_spectral.rs` takes the first four characters through `SpecSystem::parse`, which ignores case and accepts the long System names, and does not check the algorithm code, so `freq` makes a SpecFrame and `FREQXYZW` fails with an unknown algorithm code.
+- Java: as C (`FitsWcsSpectral.spectralAxes`, `FitsStore.isSpectral`).
+
+### The order of the SpecFrame settings in `WcsSpectral`
+
+- C: sets System, the reference position, Unit (CUNIT, or the system's default unit, which is blank for ZOPT and BETA), Epoch, RestFreq (set to `AST__BAD` when there is neither RESTFRQ nor RESTWAV), ObsLat/ObsLon/ObsAlt, SourceVRF, SourceVel, StdOfRest and Label, in that order, and then calls `DSBSetUp` with the AXREF value, else the CRVAL value, which is `AST__BAD` when there is neither (`fitschan.c` `WcsSpectral`).
+- Rust: `build_spectral_axis` sets StdOfRest second, skips the Unit when it is blank, so a ZOPT or BETA axis with no CUNIT has no Unit set, and gives `dsb_set_up` an observation centre of 0 when there is neither AXREF nor CRVAL.
+- Java: as C (`FitsWcsSpectral`); C's blank Unit is set and recorded as the Unit used with the System.
+
+### How `SpectralAxes` tries the non-linear and grism algorithms
+
+- C: `SpectralAxes` tries each System of the `-X2P` algorithm (FREQ, WAVE, AWAV and VELO, the axis's own System among them) and of the grism algorithm (WAVE and AWAV in m) by setting it, and clearing or setting the Unit, through the FrameSet being written, which remaps its current Frame, and sets the original System and the linear Unit back after each, so the FrameSet's Mapping goes through each conversion and back, and a Unit that was not set is left set; it gives `IsMapTab1D` no unit (`fitschan.c` `SpectralAxes`).
+- Rust: `try_x2p_cascade` and `try_grism_cascade` in `fitschan/fset_to_store/spectral_axes.rs` convert clones of the SpecFrame and join the conversion to the pixel to world Mapping themselves, leaving the FrameSet unchanged; they skip the axis's own System, and pass to the next System when the reference value or the rate does not convert; `is_map_tab_1d` is given the linear Unit.
+- Java: as C (`FitsSpectralAxes`).
+  A FrameSet of this library's classes holds no GrismMap, so C's grism algorithm finds none, and only the attribute changes are made.
+
+### The keywords `SpectralAxes` stores
+
+- C: `SpectralAxes` describes every SpecFrame axis of the world Frame; uses the reference value it has even when it is bad; takes a set Label, blank or not, as the CTYPE comment and CNAME; gives the Local_group standard of rest as `LOCALGRP` (`GetFitsSor`); and finds VELOSYS by setting SourceVRF and SourceVel on the SpecFrame in the FrameSet, setting them back only when SourceVel was set, so that SourceVRF is left set (`fitschan.c` `SpectralAxes`).
+- Rust: `spectral_axes` in `fitschan/fset_to_store/spectral_axes.rs` describes the first spectral axis only; describes none when the reference value is bad; skips a blank Label; gives `LOCAL` for the Local_group standard of rest; and finds VELOSYS on a clone of the SpecFrame.
+- Java: as C (`FitsSpectralAxes`).
+
+### The default reference value of `SpectralAxes`
+
+- C: the default reference value is the middle of the spectral range when the size of the one pixel axis that feeds the spectral axis is known, found by splitting the inverted pixel to world Mapping, and the value at pixel 1 otherwise (`fitschan.c` `SpectralAxes`).
+  The Rust repository's `docs/issues/c-library-quirks.md` lists this as a fix made after the pin (upstream e09bc221), but the pinned C has it, as commit 0dfd0f74.
+  It also has the fixes the same file lists as upstream 85e75a4e (`IsMapLinear` centres the values it fits, as d2c047eb) and 7f4ba71d (`AddVersion` takes the pixel to world Mapping again after the axes are described, as 12e9ed4a).
+- Rust: as C.
+- Java: as C (`FitsSpectralAxes`, `FitsIsMapLinear`, `FitsFsetToStore.addVersion`).
 
 ## Test harness
 

@@ -2,7 +2,6 @@ package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,28 +18,35 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * target and then by the template, each through its own class's Overlay (frame.c {@code
  * SubFrame}).
  *
- * <p>The cases of {@code overlay_results_match_the_c_library} whose Frames this version builds run
- * here: {@code frame_pick}, the SkyFrame cases ({@code sky_target_frame_template}, {@code
- * sky_pick_one}) and the TimeFrame cases ({@code time_target_frame_template}, {@code
- * time_system_change}, {@code time_pick_padded}). The cases with a SpecFrame
- * or a FluxFrame (among them {@code cmp_template_plain_target}, whose CmpFrame holds a SpecFrame)
- * are outside this version.
+ * <p>Every case of {@code overlay_results_match_the_c_library} runs here.
  */
 class OverlayTest {
 
     /** J1990 as a TDB Modified Julian Date. */
     private static final double J1990 = 47892.0;
 
-    /** The current Frame of what {@code target.findFrame(template, "")} finds. */
+    /** The current Frame of what {@code target.findFrame(template, "")} finds, or null. */
     private static Frame found(Frame target, Frame template) {
         FrameSet fs = target.findFrame(template, "");
-        assertNotNull(fs, "a match");
-        return fs.getFrame(FrameSet.AST__CURRENT);
+        return fs == null ? null : fs.getFrame(FrameSet.AST__CURRENT);
+    }
+
+    private static SpecFrame spec(String settings) {
+        SpecFrame f = new SpecFrame();
+        f.set(settings);
+        return f;
     }
 
     private static TimeFrame time(String system) {
         TimeFrame f = new TimeFrame();
         f.setSystem(system);
+        return f;
+    }
+
+    /** The probe's {@code astFluxFrame( 1.4e9, NULL, "System=FLXDN" )}. */
+    private static FluxFrame flux() {
+        FluxFrame f = new FluxFrame(1.4e9, null);
+        f.setSystem("FLXDN");
         return f;
     }
 
@@ -50,8 +56,20 @@ class OverlayTest {
         return f;
     }
 
-    /** The Frame the probe's case gives, or null if this version cannot build its Frames. */
-    private static Frame run(String name) {
+    /**
+     * The Frame the probe's case gives, as the one element of an array, which is null if the case
+     * finds no Frame; or null if this version cannot build the case's Frames.
+     */
+    private static Frame[] run(String name) {
+        Frame f = build(name);
+        if (f != null || "cmp_template_plain_target".equals(name)) {
+            return new Frame[] {f};
+        }
+        return null;
+    }
+
+    /** The Frame the probe's case gives, or null if there is none or this version cannot build it. */
+    private static Frame build(String name) {
         switch (name) {
             case "frame_pick": {
                 Frame f = new Frame(2);
@@ -94,6 +112,29 @@ class OverlayTest {
             }
             case "time_pick_padded":
                 return time("JD").pickAxes(2, new int[] {1, 0}, null);
+            case "spec_target_frame_template": {
+                Frame t = new Frame(1);
+                t.set("Domain=SPECTRUM,Title=Spec,Label(1)=Nu,Digits=8");
+                return found(spec("System=FREQ,Unit=GHz"), t);
+            }
+            case "spec_system_change":
+                return found(spec("System=FREQ,Label(1)=Mine,Title=Mine"), spec("System=WAVE"));
+            case "cmp_template_plain_target": {
+                Frame target = new Frame(2);
+                target.setDomain("SPECTRUM-");
+                return found(target, new CmpFrame(spec("Title=CmpSpec,Label(1)=Freq"), new Frame(1)));
+            }
+            case "spec_pick_padded":
+                return spec("System=FREQ,Unit=GHz").pickAxes(2, new int[] {1, 0}, null);
+            case "spec_wave_pick_padded":
+                return spec("System=WAVE").pickAxes(2, new int[] {1, 0}, null);
+            case "flux_target_frame_template": {
+                Frame t = new Frame(1);
+                t.set("Domain=FLUX,Title=TT,Label(1)=LL,Epoch=2010.0,Digits=9");
+                return found(flux(), t);
+            }
+            case "flux_pick_padded":
+                return flux().pickAxes(2, new int[] {1, 0}, null);
             default:
                 return null;
         }
@@ -105,16 +146,21 @@ class OverlayTest {
         int ran = 0;
         for (JsonNode c : ProbeData.load("overlay").get("CASES")) {
             String name = c.get(0).asText();
-            Frame f = run(name);
-            if (f == null) {
+            Frame[] built = run(name);
+            if (built == null) {
                 continue;
             }
             ran++;
+            Frame f = built[0];
             JsonNode w = c.get(1);
-            String got = f.getTitle() + "|" + f.getDomain() + "|" + f.getDigits() + "|" + f.testEpoch() + "|"
-                    + f.getEpochMjd() + "|" + f.getLabel(1) + "|" + f.getUnit(1);
-            String want =
-                    w.get(0).asText() + "|" + w.get(1).asText() + "|" + w.get(2).asInt() + "|"
+            String got = f == null
+                    ? "None"
+                    : f.getTitle() + "|" + f.getDomain() + "|" + f.getDigits() + "|" + f.testEpoch() + "|"
+                            + f.getEpochMjd() + "|" + f.getLabel(1) + "|" + f.getUnit(1);
+            String want = w.isNull()
+                    ? "None"
+                    : w.get(0).asText() + "|" + w.get(1).asText() + "|"
+                            + w.get(2).asInt() + "|"
                             + w.get(3).asBoolean() + "|" + ProbeData.toDouble(w.get(4)) + "|"
                             + w.get(5).asText() + "|"
                             + w.get(6).asText();
@@ -122,7 +168,7 @@ class OverlayTest {
                 failures.add(name + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(6, ran, "the cases with Frames this version builds");
+        assertEquals(13, ran, "the cases with Frames this version builds");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

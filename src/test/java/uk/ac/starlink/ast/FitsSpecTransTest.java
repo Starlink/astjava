@@ -20,8 +20,7 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  *
  * <p>Many Rust tests run under FITS-PC although the translation they test is not gated on the
  * encoding; those run here under FITS-WCS, which C translates the same way, and those of the
- * translations only FITS-PC and FITS-IRAF make run under that encoding. The test of C's {@code
- * ClassTrans} is deferred, since FITS-CLASS is not read. C marks the cards a translation reads as
+ * translations only FITS-PC and FITS-IRAF make run under that encoding. C marks the cards a translation reads as
  * used rather than deleting them, so where Rust asserts a card has gone, these tests assert it was
  * consumed. Rust's {@code rename_keyword} tests run as the RADECSYS and LONGPOLE translations C
  * makes in its place. The tests after the translated ones check behaviour of C that the Rust port
@@ -570,20 +569,116 @@ class FitsSpecTransTest {
         assertEquals(1.0, cards.getStoredFloat("CDELT1A"));
     }
 
+    @Test
+    void translatesClassSpectralCrvalAndSpecsys() {
+        // C's ClassTrans: the spectral CRVAL is an offset from RESTFREQ, so 0 becomes 1e9; the
+        // spectral axis is in the source's rest frame; VELO-LSR gives SSYSSRC LSRK, and ZSOURCE
+        // is the redshift of the source velocity VELO-LSR less the reference channel's radio
+        // velocity, which is zero at the incremented CRVAL.
+        FitsCardList cards = FitsCardList.fromHeader("CTYPE1  = 'RA---GLS'\n"
+                + "CTYPE2  = 'DEC--GLS'\n"
+                + "CTYPE3  = 'FREQ    '\n"
+                + "CRVAL1  =                  0.0\n"
+                + "CRVAL2  =                  0.0\n"
+                + "CRVAL3  =                  0.0\n"
+                + "RESTFREQ=                1.0E9 / [Hz] Rest frequency\n"
+                + "VELO-LSR=               1.0E4\n"
+                + "END");
+        FitsSpecTrans.specTransInplace(
+                cards, FitsChan.Encoding.FITS_CLASS, new FitsSpecTrans.TransAttrs(), new FitsSpecTrans.TransWarnings());
+        assertEquals(1.0e9, cards.getStoredFloat("CRVAL3"));
+        assertEquals("SOURCE", cards.getString("SPECSYS"));
+        assertEquals("LSRK", cards.getString("SSYSSRC"));
+        double c = 299792458.0;
+        assertEquals(c / (c - 1.0e4) - 1.0, cards.getStoredFloat("ZSOURCE"));
+    }
+
+    /** A FITS-CLASS header of three axes, whose spectral CRVAL3 is an offset from RESTFREQ. */
+    private static final String CLASS_TRANS_HEADER = "NAXIS   =                    3\n"
+            + "CTYPE1  = 'RA---GLS'\n"
+            + "CTYPE2  = 'DEC--GLS'\n"
+            + "CTYPE3  = 'FREQ    '\n"
+            + "CRVAL1  =                  0.0\n"
+            + "CRVAL2  =                  0.0\n"
+            + "CRVAL3  =                  0.0\n"
+            + "CRPIX1  =                  1.0\n"
+            + "CRPIX2  =                  1.0\n"
+            + "CRPIX3  =                  1.0\n"
+            + "CDELT1  =                 -0.1\n"
+            + "CDELT2  =                  0.1\n"
+            + "CDELT3  =                1.0E6\n"
+            + "RESTFREQ=                1.0E9 / [Hz] Rest frequency\n"
+            + "VELO-LSR=               1.0E4\n"
+            + "END";
+
+    /** The RESTFREQ card of {@link #CLASS_TRANS_HEADER}. */
+    private static final String CLASS_RESTFREQ = "RESTFREQ=                1.0E9 / [Hz] Rest frequency\n";
+
+    /** The VELO-LSR card of {@link #CLASS_TRANS_HEADER}. */
+    private static final String CLASS_VELO_LSR = "VELO-LSR=               1.0E4\n";
+
     // ------------------------------------------------------------------
     // C behaviour beyond the Rust tests
     // ------------------------------------------------------------------
 
     @Test
-    void fitsClassIsNotRead() {
-        UnsupportedOperationException ex = assertThrows(
-                UnsupportedOperationException.class,
-                () -> FitsSpecTrans.specTransInplace(
-                        FitsCardList.fromHeader("END"),
-                        FitsChan.Encoding.FITS_CLASS,
-                        new FitsSpecTrans.TransAttrs(),
-                        new FitsSpecTrans.TransWarnings()));
-        assertEquals("FitsChan: reading the FITS-CLASS encoding is not available", ex.getMessage());
+    void fitsClassReportsAMissingRestFrequency() {
+        // C's ClassTrans reports AST__BDFTS when there is neither RESTFRQ nor RESTFREQ; the message
+        // is C's, from a read of CLASS_TRANS_HEADER without RESTFREQ (C probe of the task report).
+        AstException e = assertThrows(
+                AstException.class,
+                () -> under(FitsChan.Encoding.FITS_CLASS, CLASS_TRANS_HEADER.replace(CLASS_RESTFREQ, "")));
+        assertEquals(AstException.AST__BDFTS, e.getStatus());
+        assertTrue(
+                e.getMessage().contains("astRead(FitsChan): Keyword RESTFREQ not found in CLASS FITS header."),
+                e.getMessage());
+    }
+
+    @Test
+    void fitsClassReportsASpectralAxisOtherThanFrequency() {
+        // C's ClassTrans reports AST__BDFTS for a spectral CTYPE other than FREQ, quoting the value
+        // with its trailing spaces (C probe).
+        AstException e = assertThrows(
+                AstException.class,
+                () -> under(FitsChan.Encoding.FITS_CLASS, CLASS_TRANS_HEADER.replace("'FREQ    '", "'VRAD    '")));
+        assertEquals(AstException.AST__BDFTS, e.getStatus());
+        assertTrue(
+                e.getMessage()
+                        .contains("astRead(FitsChan): FITS-CLASS keyword CTYPE3 has value \"VRAD    \" - CLASS support"
+                                + " in AST only includes \"FREQ\" axes."),
+                e.getMessage());
+    }
+
+    @Test
+    void fitsClassWithoutAVelocityKeywordAssumesLsrk() {
+        // C's ClassTrans warns (badval) that it assumes LSRK with a reference velocity of zero,
+        // before the scan for QV cards (C probe: the ASTWARN cards go in front of the first card).
+        FitsSpecTrans.TransWarnings w = new FitsSpecTrans.TransWarnings();
+        FitsCardList cards = FitsCardList.fromHeader(CLASS_TRANS_HEADER.replace(CLASS_VELO_LSR, ""));
+        FitsSpecTrans.specTransInplace(cards, FitsChan.Encoding.FITS_CLASS, new FitsSpecTrans.TransAttrs(), w);
+        assertEquals(1, w.entry.size());
+        assertTrue(w.end.isEmpty());
+        assertEquals("badval", w.entry.get(0).condition);
+        assertEquals(
+                "A FITS-CLASS header was identified (DELTAV and VLSR/VELO-xxx present) but no usable velocity"
+                        + " reference keyword was found. Assuming LSRK.",
+                w.entry.get(0).text);
+        assertEquals("LSRK", cards.getString("SSYSSRC"));
+        assertEquals(0.0, cards.getStoredFloat("ZSOURCE"));
+    }
+
+    @Test
+    void fitsClassReadGivesCsSourceVelocity() {
+        // The SpecFrame read from CLASS_TRANS_HEADER: C gives StdOfRest Source, RestFreq 1e9 Hz,
+        // SourceVRF LSRK and SourceVel 10000.166782032104 m/s (C probe, astShow of the FrameSet).
+        FitsChan fc = FitsChan.fromHeader(CLASS_TRANS_HEADER);
+        fc.setEncoding("FITS-CLASS");
+        FrameSet fs = FitsHeaders.readFrameSet(fc);
+        SpecFrame spec = (SpecFrame) fs.pickAxes(1, new int[] {3}, null);
+        assertEquals("Source", spec.getC("StdOfRest"));
+        assertEquals(1.0e9, spec.restFreqValue());
+        assertEquals("LSRK", spec.getC("SourceVRF"));
+        assertEquals(10000.166782032104, spec.sourceVelValue());
     }
 
     @Test

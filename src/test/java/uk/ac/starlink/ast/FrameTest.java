@@ -15,10 +15,11 @@ import org.junit.jupiter.api.Test;
  * ast_tester/testframe.c}, and a table of Unit and NormUnit pairs read back from a one-axis C
  * Frame.
  *
- * <p>The parts for a plain Frame, a SkyFrame, a TimeFrame, a CmpFrame and a FrameSet holding a
- * SkyFrame are translated here; of {@code
- * spectral_time_and_flux_frames_normalise_the_unit_they_report}, the TimeFrame part. The SpecFrame,
- * FluxFrame, DSBSpecFrame and Circle parts need classes outside the first phase.
+ * <p>The parts for a plain Frame, a SkyFrame, a SpecFrame, a TimeFrame, a CmpFrame and a FrameSet
+ * holding a SkyFrame are translated here; of {@code
+ * spectral_time_and_flux_frames_normalise_the_unit_they_report}, the SpecFrame, DSBSpecFrame,
+ * TimeFrame and FluxFrame parts (the FluxFrame values checked against the pinned C library). The
+ * Circle parts need a class outside this library.
  */
 class FrameTest {
 
@@ -60,14 +61,37 @@ class FrameTest {
         assertEquals(timeFrame.getUnit(1), timeFrame.getNormUnit(1), "NormUnit(1) of a default TimeFrame");
     }
 
-    /** A TimeFrame normalises the Unit it reports, its default included. */
+    /**
+     * A SpecFrame, a DSBSpecFrame, a TimeFrame and a FluxFrame normalise the Unit they report, their
+     * defaults included.
+     */
     @Test
     void spectralTimeAndFluxFramesNormaliseTheUnitTheyReport() {
+        SpecFrame freq = new SpecFrame();
+        freq.setSystem("FREQ");
+        assertEquals("GHz", freq.getNormUnit(1));
+        freq.setUnit(1, "MHz*1000");
+        assertEquals("GHz", freq.getNormUnit(1));
+        SpecFrame wavn = new SpecFrame();
+        wavn.setSystem("WAVN");
+        assertEquals("m**-1", wavn.getNormUnit(1));
+        DSBSpecFrame wave = new DSBSpecFrame();
+        wave.setSystem("WAVE");
+        assertEquals("Angstrom", wave.getNormUnit(1));
+
         TimeFrame time = new TimeFrame();
         time.setSystem("MJD");
         assertEquals("d", time.getNormUnit(1));
         time.setUnit(1, "1000*s");
         assertEquals("ks", time.getNormUnit(1));
+
+        FluxFrame flux = new FluxFrame();
+        assertEquals("(W/Hz)*m**-2", flux.getNormUnit(1));
+        flux.setUnit(1, "erg/s/cm**2/Hz");
+        assertEquals("(erg/Hz)*cm**-2/s", flux.getNormUnit(1));
+        FluxFrame sb = new FluxFrame();
+        sb.setSystem("SFCBR");
+        assertEquals("(W/Hz)*arcmin**-2*m**-2", sb.getNormUnit(1));
     }
 
     @Test

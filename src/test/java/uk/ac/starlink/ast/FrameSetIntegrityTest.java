@@ -23,19 +23,22 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * RestoreIntegrity}): it converts the recorded state of the current Frame to its new state with
  * {@code astConvert}, and reports {@code AST__ILOST} when no conversion exists.
  *
- * <p>The probe's FluxFrame, SpecFluxFrame, SpecFrame and DSBSpecFrame cases, and the CmpFrame cases
- * (a CmpFrame of a SkyFrame and a SpecFrame), need classes outside the first phase and are skipped.
+ * <p>The probe's SpecFluxFrame cases need a class this version does not have yet and are skipped.
  * Every value is compared within libm rounding, which is no wider than the Rust test's comparison.
- * {@code unit_change_leaves_mappings_alone} reads a FrameSet holding a DSBSpecFrame, a LutMap and
- * a SpecMap and is deferred.
+ * {@code unit_change_leaves_mappings_alone} reads a FrameSet holding a LutMap and is deferred.
  */
 class FrameSetIntegrityTest {
 
     private static final JsonNode PROBE = ProbeData.load("integrity");
 
-    /** The prefixes of the cases that need a class outside the first phase. */
-    private static final List<String> SKIPPED_PREFIXES =
-            Arrays.asList("flux_", "specflux_", "spec_", "dsb_", "cmp_sky_spec_");
+    /** RefRA of the probe's SpecFrames ({@code integrity_probe.c REF_RA}). */
+    private static final double REF_RA = 1.0471975511965976;
+
+    /** RefDec of the probe's SpecFrames ({@code integrity_probe.c REF_DEC}). */
+    private static final double REF_DEC = 0.5235987755982988;
+
+    /** The prefixes of the cases that need a class this version does not have. */
+    private static final List<String> SKIPPED_PREFIXES = Arrays.asList("specflux_");
 
     private static boolean skipped(String name) {
         for (String p : SKIPPED_PREFIXES) {
@@ -52,9 +55,30 @@ class FrameSetIntegrityTest {
         return f;
     }
 
+    private static SpecFrame spec(String settings) {
+        SpecFrame f = new SpecFrame();
+        f.set(settings);
+        return f;
+    }
+
     /** The probe's current Frame for {@code name}. */
     private static Frame current(String name) {
         switch (name) {
+            case "cmp_sky_spec_equinox":
+            case "cmp_sky_spec_galactic":
+                return new CmpFrame(sky("System=FK5"), spec("System=FREQ,Unit=GHz"));
+            case "spec_vrad":
+                return spec("System=FREQ,Unit=GHz,RestFreq=230.538");
+            case "spec_lsrk": {
+                SpecFrame f = spec("System=FREQ,Unit=GHz,Epoch=2010.0");
+                f.setRefPos(null, REF_RA, REF_DEC);
+                return f;
+            }
+            case "spec_sourcevel": {
+                SpecFrame f = spec("System=FREQ,Unit=GHz,StdOfRest=Source");
+                f.setRefPos(null, REF_RA, REF_DEC);
+                return f;
+            }
             case "frame_activeunit_km":
                 Frame f = new Frame(1);
                 f.set("Unit(1)=m");
@@ -81,6 +105,16 @@ class FrameSetIntegrityTest {
                 SkyFrame p = sky("System=ICRS");
                 p.permAxes(new int[] {2, 1});
                 return p;
+            case "dsb_usb":
+                DSBSpecFrame d = new DSBSpecFrame();
+                d.set("System=FREQ,Unit=GHz,DSBCentre=230.0,IF=4.0,SideBand=LSB");
+                return d;
+            case "flux_unit_jy":
+            case "flux_system_sfcbr": {
+                FluxFrame ff = new FluxFrame(1.4e9, null);
+                ff.set("System=FLXDN");
+                return ff;
+            }
             case "time_jd":
             case "time_utc":
             case "time_origin":
@@ -101,7 +135,16 @@ class FrameSetIntegrityTest {
             case "sky_unknown_title":
                 return new String[][] {{"Title", "Renamed"}};
             case "sky_fk5_equinox":
+            case "cmp_sky_spec_equinox":
                 return new String[][] {{"Equinox", "J2050"}};
+            case "cmp_sky_spec_galactic":
+                return new String[][] {{"System", "GALACTIC"}};
+            case "spec_vrad":
+                return new String[][] {{"System", "VRAD"}};
+            case "spec_lsrk":
+                return new String[][] {{"StdOfRest", "LSRK"}};
+            case "spec_sourcevel":
+                return new String[][] {{"SourceVel", "100.0"}};
             case "sky_gappt_epoch":
                 return new String[][] {{"Epoch", "2010.0"}};
             case "sky_fk4_to_fk5":
@@ -118,6 +161,12 @@ class FrameSetIntegrityTest {
                 return new String[][] {{"TimeScale", "UTC"}};
             case "time_origin":
                 return new String[][] {{"TimeOrigin", "55000.0"}};
+            case "dsb_usb":
+                return new String[][] {{"SideBand", "USB"}};
+            case "flux_unit_jy":
+                return new String[][] {{"Unit(1)", "Jy"}};
+            case "flux_system_sfcbr":
+                return new String[][] {{"System", "SFCBR"}};
             default:
                 throw new IllegalArgumentException("no case " + name);
         }
@@ -128,8 +177,17 @@ class FrameSetIntegrityTest {
         if ("frame_activeunit_km".equals(name)) {
             return new double[][] {{1000.0, 5.0}};
         }
+        if (name.startsWith("flux_")) {
+            return new double[][] {{1.0e-26, 3.0e-26}};
+        }
         if (name.startsWith("time_")) {
             return new double[][] {{0.25, 1.75}};
+        }
+        if (name.startsWith("spec_") || name.startsWith("dsb_")) {
+            return new double[][] {{230.0, 345.0}};
+        }
+        if (name.startsWith("cmp_")) {
+            return new double[][] {{1.0, 4.2}, {0.5, -0.9}, {1.0, 2.0}};
         }
         return new double[][] {{1.0, 4.2}, {0.5, -0.9}};
     }
@@ -198,7 +256,7 @@ class FrameSetIntegrityTest {
                 failures.add(failure);
             }
         }
-        assertEquals(13, checked, "cases in the first phase");
+        assertEquals(21, checked, "the cases with classes this version has");
         assertTrue(
                 failures.isEmpty(),
                 failures.size() + " of " + checked + " cases differ from C:\n" + String.join("\n", failures));

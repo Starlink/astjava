@@ -25,7 +25,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * <p>C's {@code ZOOM_CASES} are chains of ZoomMaps, each perhaps inverted, nested as the probe
  * nests them, {@code ((z1 z2) z3)}, and simplified.
  *
- * <p>Left to later work: {@code spec_frame_unit_changes_match_the_c_library} (SpecFrame).
+ * <p>C's {@code SPEC_CASES} are the Mappings {@code astConvert} finds between two SpecFrames of one
+ * System that differ only in Unit (specframe.c {@code MakeSpecMapping}).
  */
 class UnitMapperTest {
 
@@ -90,6 +91,45 @@ class UnitMapperTest {
             }
         }
         assertEquals(70, cases.size());
+        assertTrue(failures.isEmpty(), failures.size() + " cases differ from C:\n" + String.join("\n", failures));
+    }
+
+    /** A SpecFrame with the given System and Unit. */
+    private static SpecFrame specFrame(String system, String unit) {
+        SpecFrame f = new SpecFrame();
+        f.setSystem(system);
+        f.setUnit(1, unit);
+        return f;
+    }
+
+    @Test
+    void specFrameUnitChangesMatchTheCLibrary() {
+        JsonNode data = ProbeData.load("unit_mapper");
+        double[] values = doubles(data.get("VALUES"));
+        List<String> failures = new ArrayList<>();
+        int ran = 0;
+        for (JsonNode c : data.get("SPEC_CASES")) {
+            ran++;
+            String system = c.get(0).asText();
+            String from = c.get(1).asText();
+            String to = c.get(2).asText();
+            FrameSet fs = specFrame(system, from).convert(specFrame(system, to), "");
+            if (fs == null) {
+                failures.add(system + " " + from + " -> " + to + ": no Mapping");
+                continue;
+            }
+            Mapping map = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+            double[] wantFwd = doubles(c.get(3).get(0));
+            double[] wantInv = doubles(c.get(3).get(1));
+            double[] fwd = map.tran1(values.length, values, true);
+            double[] inv = map.tran1(values.length, values, false);
+            if (!Arrays.equals(fwd, wantFwd) || !Arrays.equals(inv, wantInv)) {
+                failures.add(system + " " + from + " -> " + to + ": forward " + Arrays.toString(fwd) + " inverse "
+                        + Arrays.toString(inv) + ", C gives forward " + Arrays.toString(wantFwd) + " inverse "
+                        + Arrays.toString(wantInv));
+            }
+        }
+        assertEquals(24, ran);
         assertTrue(failures.isEmpty(), failures.size() + " cases differ from C:\n" + String.join("\n", failures));
     }
 

@@ -817,9 +817,11 @@ public class Frame extends Mapping {
     /**
      * A deep copy of this Frame as an instance of the class of {@code obj}, one of its ancestors,
      * with the attributes that class does not allow cleared (C's {@code astCastCopy} followed by
-     * {@code astCleanAttribs}). The ancestors of the Frame classes that are not FrameSets are
-     * Frame itself; the copy then has this Frame's Object, Mapping and Frame attributes, except
-     * the ID, as C's copy has, and copies of its Axis objects and variants.
+     * {@code astCleanAttribs}). Here {@code obj} is a plain Frame, the ancestor of every Frame
+     * class that is not a FrameSet; the copy then has this Frame's Object, Mapping and Frame
+     * attributes, except the ID, as C's copy has, and copies of its Axis objects and variants.
+     * A class with another Frame class as an ancestor overrides this for that ancestor, and
+     * {@link CmpFrame} for every class of its family, as cmpframe.c's {@code Cast} does.
      *
      * @throws AstException with status {@code AST__INTER} if {@code obj} is not a plain Frame
      */
@@ -3145,16 +3147,6 @@ public class Frame extends Mapping {
         return i == value.length() ? value.substring(start) : null;
     }
 
-    /** Whether a value holds a character that is not white space, as C's {@code "%*s"} needs. */
-    private static boolean hasWord(String value) {
-        for (int i = 0; i < value.length(); i++) {
-            if (!CScan.isCSpace(value.charAt(i))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /** C's {@code SetAttrib} (frame.c); {@code original} as for {@link #getAttrib(String, String)}. */
     private void setAttrib(String attrib, String value, String original) {
         Integer ival = CScan.scanInt(value);
@@ -3224,9 +3216,9 @@ public class Frame extends Mapping {
             setTitle(value);
         } else if ("unit".equals(ix)) {
             setUnit(axis, value);
-        } else if ("obslat".equals(attrib) && hasWord(value)) {
+        } else if ("obslat".equals(attrib) && CScan.hasWord(value)) {
             setObsLatValue(readObsAngle(value, 'N', 'S', "ObsLat", "observers latitude"));
-        } else if ("obslon".equals(attrib) && hasWord(value)) {
+        } else if ("obslon".equals(attrib) && CScan.hasWord(value)) {
             setObsLonValue(readObsAngle(value, 'E', 'W', "ObsLon", "observers longitude"));
         } else if ("obsalt".equals(attrib) && dval != null) {
             setObsAlt(dval);

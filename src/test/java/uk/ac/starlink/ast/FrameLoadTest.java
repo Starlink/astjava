@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -26,24 +25,13 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * axis attributes C reads from it (through {@code astGetC}, {@code astGetI}, {@code astGetD} and
  * {@code astTest}) or the error it reports.
  *
- * <p>SpecFrame and FluxFrame are out of scope, so {@code frame_keys_survive_a_round_trip} and
- * {@code legacy_observer_keys_are_read} check their TimeFrame halves only, and the cases of {@link
- * #OUT_OF_SCOPE} are left out of {@code hand_written_descriptions_load_as_the_c_library_does}.
+ * <p>The cases of {@link #OUT_OF_SCOPE}, if any, are left out of {@code
+ * hand_written_descriptions_load_as_the_c_library_does}.
  */
 class FrameLoadTest {
 
     /** Cases holding a class that is out of scope, with that class. */
-    private static final Map<String, String> OUT_OF_SCOPE = outOfScope();
-
-    private static Map<String, String> outOfScope() {
-        Map<String, String> m = new LinkedHashMap<>();
-        m.put("spec_bad_system", "SpecFrame");
-        m.put("spec_bad_alsys", "SpecFrame");
-        m.put("flux_bad_system", "FluxFrame");
-        m.put("spec_axis_keys", "SpecFrame");
-        m.put("flux_axis_keys", "FluxFrame");
-        return Collections.unmodifiableMap(m);
-    }
+    private static final Map<String, String> OUT_OF_SCOPE = Collections.emptyMap();
 
     /**
      * Hand-written descriptions loaded differently from C, each with what it would take to load it
@@ -84,19 +72,31 @@ class FrameLoadTest {
 
     /**
      * Digits, MinAxes, MaxAxes, MatchEnd, Permute and PreserveAxes survive a native round trip of
-     * a TimeFrame.
+     * a SpecFrame and a TimeFrame.
      */
     @Test
     void frameKeysSurviveARoundTrip() {
+        SpecFrame s = new SpecFrame();
+        s.setSystem("FREQ");
+        setFrameKeys(s);
+        assertFrameKeys(roundTrip(s));
         TimeFrame t = new TimeFrame();
         t.setSystem("MJD");
         setFrameKeys(t);
         assertFrameKeys(roundTrip(t));
     }
 
-    /** ClLat and ClLon (timeframe.c) give the observer position when ObsLat and ObsLon are absent. */
+    /**
+     * GeoLat and GeoLon (specframe.c) and ClLat and ClLon (timeframe.c) give the observer position
+     * when ObsLat and ObsLon are absent.
+     */
     @Test
     void legacyObserverKeysAreRead() {
+        String spec = "Begin SpecFrame\n Naxes = 1\n Domain = \"SPECTRUM\"\n System = \"FREQ\"\n "
+                + "GeoLat = 0.3\n GeoLon = 1.2\nEnd SpecFrame\n";
+        Frame s = (Frame) ChannelText.read(spec);
+        assertEquals(0.3, s.getObsLatValue());
+        assertEquals(1.2, s.getObsLonValue());
         String time = "Begin TimeFrame\n Naxes = 1\n Domain = \"TIME\"\n System = \"MJD\"\n "
                 + "ClLat = -0.4\n ClLon = 2.5\nEnd TimeFrame\n";
         Frame t = (Frame) ChannelText.read(time);
@@ -213,7 +213,7 @@ class FrameLoadTest {
                 failures.add(name + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(12, run, "cases run");
+        assertEquals(17, run, "cases run");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

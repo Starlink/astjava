@@ -68,26 +68,37 @@ final class FitsWcsCelestial {
         final int latAxis;
 
         /**
-         * The celestial reference position, {@code {longitude, latitude}} in radians, or null: C's
-         * {@code reflon} and {@code reflat}, from CRVAL, overridden by {@code RFVAL<i>} and then
-         * by {@code AXREF<i>}.
+         * The reference longitude in radians, or {@code AST__BAD}: C's {@code reflon}, from CRVAL,
+         * overridden by {@code RFVAL<i>} and then by {@code AXREF<i>}. It is kept apart from the
+         * latitude, as C returns them, since a SpecFrame takes whichever of the two is known (C's
+         * {@code WcsSpectral}), while SkyRef needs both.
          */
-        final double[] refPos;
+        final double refLon;
+
+        /** The reference latitude in radians, or {@code AST__BAD}: C's {@code reflat}, as {@link #refLon}. */
+        final double refLat;
 
         /**
-         * Whether {@link #refPos} came from {@code AXREF<i>}, so that C sets SkyRef from it even
-         * when the SkyFrame has one (fitschan.c:36677-36686), where otherwise it sets SkyRef only
-         * when it is not set (fitschan.c:36566).
+         * Whether {@link #refLon} and {@link #refLat} came from {@code AXREF<i>}, so that C sets
+         * SkyRef from them even when the SkyFrame has one (fitschan.c:36677-36686), where
+         * otherwise it sets SkyRef only when it is not set and both are known (fitschan.c:36566).
          */
         final boolean refPosForced;
 
         CelestialResult(
-                Mapping mapping, SkyFrame frame, int lonAxis, int latAxis, double[] refPos, boolean refPosForced) {
+                Mapping mapping,
+                SkyFrame frame,
+                int lonAxis,
+                int latAxis,
+                double refLon,
+                double refLat,
+                boolean refPosForced) {
             this.mapping = mapping;
             this.frame = frame;
             this.lonAxis = lonAxis;
             this.latAxis = latAxis;
-            this.refPos = refPos;
+            this.refLon = refLon;
+            this.refLat = refLat;
             this.refPosForced = refPosForced;
         }
     }
@@ -382,14 +393,13 @@ final class FitsWcsCelestial {
             reflat = store.axref[axlat] * AST__DD2R;
             refPosForced = true;
         }
-        double[] refPos = reflon != AST__BAD && reflat != AST__BAD ? new double[] {reflon, reflat} : null;
 
         // C builds the Frame of all the axes with the SkyFrame's axes in FITS order; the SkyFrame
         // returned here has its axes in the order the Mapping delivers them.
         if (axlat < axlon) {
             sfrm.permAxes(new int[] {2, 1});
         }
-        return new CelestialResult(ret, sfrm, axlon, axlat, refPos, refPosForced);
+        return new CelestialResult(ret, sfrm, axlon, axlat, reflon, reflat, refPosForced);
     }
 
     /** Adds {@code val} to element {@code axis} of {@code outa} and {@code outb}, or makes both bad. */

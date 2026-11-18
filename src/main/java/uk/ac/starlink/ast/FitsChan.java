@@ -787,8 +787,8 @@ public class FitsChan extends Channel {
      * @throws AstException as {@link Channel#read} does for the NATIVE encoding, with status {@code
      *     AST__BADIN} also if a long string has a {@code CONTINUE} card missing; or the error of
      *     making the FrameSet for another encoding
-     * @throws UnsupportedOperationException if the encoding is not NATIVE and its reading is not
-     *     available
+     * @throws UnsupportedOperationException if the encoding is not NATIVE and the description
+     *     needs a class this library lacks
      */
     @Override
     public AstObject read() {
@@ -848,7 +848,7 @@ public class FitsChan extends Channel {
      * The FrameSet the cards describe in {@code enc}, an encoding other than NATIVE, or null if they
      * describe none (C's {@code FitsToStore} and {@code FsetFromStore}).
      *
-     * @throws UnsupportedOperationException for an encoding whose reading is not available
+     * @throws UnsupportedOperationException where the description needs a class this library lacks
      */
     private AstObject readForeign(Encoding enc) {
         // MODERN-JAVA(21): switch expression
@@ -858,12 +858,10 @@ public class FitsChan extends Channel {
             case FITS_IRAF:
             case FITS_AIPS:
             case FITS_AIPSPP:
+            case FITS_CLASS:
                 return FitsWcsRead.read(this, enc);
             case DSS:
                 return FitsWcsRead.readDss(this);
-            case FITS_CLASS:
-                throw new UnsupportedOperationException(
-                        "FitsChan: reading the " + enc.cName() + " encoding is not available");
             default:
                 throw Ast.err(AstException.AST__INTER, "astRead(FitsChan): unexpected encoding " + enc + ".");
         }
@@ -1222,8 +1220,8 @@ public class FitsChan extends Channel {
      * fails, and then every remaining card with a WCS keyword is removed as a read removes it. The
      * first remaining card is then current.
      *
-     * @throws UnsupportedOperationException if the Encoding is not NATIVE and its reading is not
-     *     available
+     * @throws UnsupportedOperationException if the Encoding is not NATIVE and a description needs a
+     *     class this library lacks
      */
     public void purgeWCS() {
         readFromSource();

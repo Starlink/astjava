@@ -34,8 +34,12 @@ final class ObjectRegistry {
                 return CmpFrame::new;
             case "CmpMap":
                 return CmpMap::new;
+            case "DSBSpecFrame":
+                return DSBSpecFrame::new;
             case "FitsChan":
                 return FitsChan::new;
+            case "FluxFrame":
+                return FluxFrame::new;
             case "Frame":
                 return Frame::new;
             case "FrameSet":
@@ -56,6 +60,12 @@ final class ObjectRegistry {
                 return SkyFrame::new;
             case "SlaMap":
                 return SlaMap::new;
+            case "SpecFluxFrame":
+                return SpecFluxFrame::new;
+            case "SpecFrame":
+                return SpecFrame::new;
+            case "SpecMap":
+                return SpecMap::new;
             case "SphMap":
                 return SphMap::new;
             case "TimeFrame":

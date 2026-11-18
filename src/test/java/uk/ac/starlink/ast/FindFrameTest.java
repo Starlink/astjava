@@ -17,8 +17,6 @@ import org.junit.jupiter.api.Test;
  * FrameSet::find_frame(&template, &[])} is {@code findFrame(template, " ")}, and with {@code
  * &["X"]} it is {@code findFrame(template, "X")}.
  *
- * <p>The tests whose Frames include a SpecFrame are deferred.
- *
  * <p>{@code matchEndAndPreserveAxesChooseTheAxes} has no Rust counterpart: it checks the axes
  * frame.c {@code Match} associates under the MatchEnd and PreserveAxes attributes.
  *
@@ -32,6 +30,73 @@ class FindFrameTest {
         Frame f = new Frame(naxes);
         f.setDomain(domain);
         return f;
+    }
+
+    private static SkyFrame fk5() {
+        SkyFrame f = new SkyFrame();
+        f.setSystem("FK5");
+        return f;
+    }
+
+    private static SpecFrame spec(String system) {
+        SpecFrame f = new SpecFrame();
+        f.setSystem(system);
+        return f;
+    }
+
+    /** A CmpFrame template matches a CmpFrame target of the same classes, with all three axes. */
+    @Test
+    void cmpframeMatchAgainstCmpframeTemplate() {
+        CmpFrame template = new CmpFrame(fk5(), spec("FREQ"));
+        CmpFrame target = new CmpFrame(fk5(), spec("FREQ"));
+        FrameFinder.MatchResult m = template.match(target, false);
+        assertNotNull(m, "CmpFrame matches CmpFrame");
+        assertEquals(3, m.result.getNaxes());
+        assertEquals(3, m.templateAxes.length);
+        assertEquals(3, m.targetAxes.length);
+    }
+
+    /** A SkyFrame template, whose MaxAxes is 2, does not match a three-axis CmpFrame. */
+    @Test
+    void cmpframeMatchWithDefaultMaxAxesFails() {
+        assertNull(fk5().match(new CmpFrame(fk5(), spec("FREQ")), false));
+    }
+
+    /** With MaxAxes 3, a SkyFrame template finds the SkyFrame inside a CmpFrame. */
+    @Test
+    void cmpframeMatchAgainstSkyframeTemplateWithMaxAxes() {
+        SkyFrame template = fk5();
+        template.setMaxAxes(3);
+        template.setMinAxes(2);
+        FrameFinder.MatchResult m = template.match(new CmpFrame(fk5(), spec("FREQ")), false);
+        assertNotNull(m, "the SkyFrame template finds the CmpFrame's SkyFrame");
+        assertEquals(2, m.result.getNaxes());
+    }
+
+    /** A SpecFrame template finds the spectral axis of a CmpFrame of a SkyFrame and a SpecFrame. */
+    @Test
+    void findFrameSpecframeTemplateIntoCmpframeSkySpec() {
+        SpecFrame template = spec("VRAD");
+        template.setStdOfRest("LSRK");
+        template.setUnit(1, "m/s");
+        template.setMinAxes(1);
+        template.setMaxAxes(3);
+        FrameSet result = new CmpFrame(fk5(), spec("FREQ")).findFrame(template, "");
+        assertNotNull(result, "the SpecFrame template matches the CmpFrame's SpecFrame");
+        Frame current = result.getFrame(FrameSet.AST__CURRENT);
+        assertEquals(1, current.getNaxes());
+        assertInstanceOf(SpecFrame.class, current);
+    }
+
+    /** The SpecFrame is found whichever axes of the CmpFrame it has. */
+    @Test
+    void findFrameSpecframeTemplateIntoCmpframeSpecSky() {
+        SpecFrame template = spec("VRAD");
+        template.setMinAxes(1);
+        template.setMaxAxes(3);
+        FrameSet result = new CmpFrame(spec("FREQ"), fk5()).findFrame(template, "");
+        assertNotNull(result, "the SpecFrame template matches regardless of component order");
+        assertEquals(1, result.getFrame(FrameSet.AST__CURRENT).getNaxes());
     }
 
     @Test

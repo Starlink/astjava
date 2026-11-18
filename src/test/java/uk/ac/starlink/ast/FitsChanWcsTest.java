@@ -1,6 +1,7 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -14,11 +15,6 @@ import uk.ac.starlink.ast.testsupport.OracleSection;
  *
  * <p>The values the Rust test copies from {@code fixtures/oracle/headers.oracle} are read from that
  * file here, with the Rust test's tolerances.
- *
- * <p>Listed in {@code deferred/rust-tests.txt}: {@code read_spectral_header}, {@code
- * axes_swap_non_adjacent_celestial_axes} and {@code crota_3d_forward_matches_oracle_inverse_undefined}
- * (spectral axes, SpecFrame; {@code crota-3d.head} is also read with the FITS-AIPS encoding), {@code
- * jan_class_no_naxis_keyword} and {@code class_noproj_builds_sfl} (the FITS-CLASS encoding).
  */
 class FitsChanWcsTest {
 
@@ -116,6 +112,13 @@ class FitsChanWcsTest {
     }
 
     @Test
+    void janClassNoNaxisKeyword() {
+        // jan.fits-class has CTYPE1 RA, CTYPE2 DEC and CTYPE3 FREQ but no NAXIS: the FITS-CLASS
+        // read takes the axis count from the CRPIX indices.
+        assertEquals(3, readFixture("jan.fits-class").getNin());
+    }
+
+    @Test
     void sipReadDefaultRefitsInverseViaPolytran() {
         // With SipReplace at its default, C replaces the inverse by an astPolyTran fit over three
         // times the image area (fitschan.c:29857-29862), which on this header is good to about
@@ -186,6 +189,27 @@ class FitsChanWcsTest {
                         name + " inverse row " + row + " axis " + (k + 1) + ": got " + got[k] + ", C gives " + want[k]);
             }
         }
+    }
+
+    @Test
+    void classNoprojBuildsSfl() {
+        // class-noproj.head is a FITS-CLASS header whose celestial CTYPEs have no projection code,
+        // which C's ClassTrans makes -GLS. Forward rows 1, 4, 2 and 6 (pixel 1, 512.5, 1024 and
+        // 256.75 on the spectral axis) with Rust's tolerances: 1e-3 Hz on the spectral axis and
+        // 1e-9 radians on the celestial axes; inverse rows 4 and 1 to 1e-6 pixels.
+        FrameSet fs = readFixture("class-noproj.head");
+        OracleSection fwd = FitsHeaders.headersOracle("wcsconv/inputs/class-noproj.head", true);
+        for (int row : new int[] {1, 4, 2, 6}) {
+            double[] got = FitsHeaders.tran(fs, FitsHeaders.oracleIn(fwd, row), true);
+            double[] want = FitsHeaders.oracleOut(fwd, row);
+            for (int k = 0; k < want.length; k++) {
+                double tol = Math.max(k == 0 ? 1e-3 : 1e-9, Math.abs(want[k]) * 1e-12);
+                assertTrue(
+                        Math.abs(got[k] - want[k]) <= tol,
+                        "forward row " + row + " axis " + (k + 1) + ": got " + got[k] + ", C gives " + want[k]);
+            }
+        }
+        checkInverseRows("class-noproj.head", new int[] {4, 1}, 1e-6);
     }
 
     @Test
@@ -286,5 +310,48 @@ class FitsChanWcsTest {
         double[] out = FitsHeaders.tran(map, new double[] {150.0, 120.0}, true);
         assertTrue(Math.abs(out[0] - 0.018_049_750) < 1e-6, "axis 1 " + out[0]);
         assertTrue(Math.abs(out[1] - -1.440_691_695) < 1e-6, "axis 2 " + out[1]);
+    }
+
+    /** A one-axis frequency header. */
+    private static final String SPECTRAL_HEADER = String.join(
+            "\n",
+            "NAXIS   =                    1 / Number of axes",
+            "CRPIX1  =                  1.0 / Reference pixel",
+            "CRVAL1  =          1.42040575E9 / Reference frequency (Hz)",
+            "CDELT1  =           1000000.00 / Frequency step (Hz)",
+            "CTYPE1  = 'FREQ    '           / Frequency axis",
+            "CUNIT1  = 'Hz      '           / Units",
+            "SPECSYS = 'BARYCENT'           / Reference frame",
+            "RESTFRQ =          1.42040575E9 / Rest frequency (Hz)",
+            "");
+
+    @Test
+    void readSpectralHeader() {
+        FrameSet fs = FitsHeaders.readFrameSet(wcsChan(SPECTRAL_HEADER));
+        assertEquals(2, fs.getNframe(), "pixel and spectral Frames");
+        assertEquals(1, fs.getFrame(FrameSet.AST__CURRENT).getNaxes());
+        assertInstanceOf(SpecFrame.class, fs.getFrame(FrameSet.AST__CURRENT));
+    }
+
+    @Test
+    void axesSwapNonAdjacentCelestialAxes() {
+        // axes-swap.head has CTYPE1 = DEC--TAN, CTYPE2 = WAVE, CTYPE3 = RA---TAN and CTYPE4 =
+        // STOKES: the celestial pair is separated by the spectral axis.
+        FrameSet fs = readFixture("axes-swap.head");
+        assertEquals(4, fs.getFrame(FrameSet.AST__CURRENT).getNaxes());
+        checkForwardRows("axes-swap.head", new int[] {1, 4, 5}, 1e-12);
+    }
+
+    @Test
+    void crota3dForwardMatchesOracleInverseUndefined() {
+        // crota-3d.head (WAVE, RA---TAN, DEC--TAN with a CROTA3 coupling the celestial axes) is
+        // read with the FITS-AIPS encoding C guesses for it.
+        Mapping map = readFixture("crota-3d.head");
+        assertEquals(3, map.getNin());
+        assertEquals(3, map.getNout());
+        checkForwardRows("crota-3d.head", new int[] {1, 2, 5}, 1e-12);
+        // The pixel to IWC MatrixMap is near-singular, so C leaves the inverse undefined.
+        assertTrue(map.getTranForward(), "forward defined");
+        assertFalse(map.getTranInverse(), "inverse undefined, as C's astGetTranInverse gives 0");
     }
 }

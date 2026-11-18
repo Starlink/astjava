@@ -14,11 +14,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * to the other attributes of a TimeFrame, checked against C ({@code oracle/system_change.json},
  * from {@code tools/oracle_fixtures/system_change_probe.c}). When the System changes, the Label,
  * Symbol and Title, whose defaults depend on it, are cleared, and the Unit last used with the new
- * System is restored, or cleared (timeframe.c {@code SetSystem} and {@code ClearSystem}). {@link
- * #run} makes each Frame as the probe does.
- *
- * <p>The SpecFrame cases ({@code spec_*}) and the FluxFrame case ({@code flux_set_sfcbr}) are
- * skipped (out of scope).
+ * System is restored, or cleared (timeframe.c and specframe.c {@code SetSystem} and {@code
+ * ClearSystem}, and those of fluxframe.c). {@link #run} makes each Frame as the probe does.
  */
 class SystemChangeTest {
 
@@ -28,6 +25,14 @@ class SystemChangeTest {
     private static TimeFrame time(String system) {
         TimeFrame f = new TimeFrame();
         f.set("System=" + system);
+        f.set(MINE);
+        return f;
+    }
+
+    private static SpecFrame spec(String system, String unit) {
+        SpecFrame f = new SpecFrame();
+        f.set("System=" + system);
+        f.setUnit(1, unit);
         f.set(MINE);
         return f;
     }
@@ -51,11 +56,31 @@ class SystemChangeTest {
                 return f;
             }
             case "spec_set_vrad":
-            case "spec_set_back_to_freq":
-            case "spec_clear":
-            case "spec_clear_unchanged":
-            case "flux_set_sfcbr":
-                return null;
+            case "spec_set_back_to_freq": {
+                SpecFrame f = spec("FREQ", "MHz");
+                f.set("System=VRAD");
+                if ("spec_set_back_to_freq".equals(name)) {
+                    f.set("System=FREQ");
+                }
+                return f;
+            }
+            case "spec_clear": {
+                SpecFrame f = spec("FREQ", "MHz");
+                f.clear("System");
+                return f;
+            }
+            case "spec_clear_unchanged": {
+                SpecFrame f = spec("WAVE", "nm");
+                f.clear("System");
+                return f;
+            }
+            case "flux_set_sfcbr": {
+                FluxFrame f = new FluxFrame(AstObject.AST__BAD, null);
+                f.set("System=FLXDN,Unit=Jy");
+                f.set(MINE);
+                f.set("System=SFCBR");
+                return f;
+            }
             default:
                 throw new IllegalArgumentException("no Java set-up for case " + name);
         }
@@ -81,7 +106,7 @@ class SystemChangeTest {
                 failures.add(name + ": got " + got + ", C gives " + want);
             }
         }
-        assertEquals(3, run, "the in-scope cases the C probe recorded");
+        assertEquals(8, run, "the cases the C probe recorded");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 }

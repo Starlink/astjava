@@ -236,4 +236,11 @@ class NativeRoundTripTest {
         m.timeAdd("TAITOUTC", new double[] {50000.0, AstObject.AST__BAD});
         assertDoubleRoundTrip(m, "TimeMap tai->utc");
     }
+
+    @Test
+    void roundTripSpecmap() {
+        SpecMap m = new SpecMap(1, 0);
+        m.specAdd("WNTOFR", new double[0]);
+        assertDoubleRoundTrip(m, "SpecMap wn->fr");
+    }
 }

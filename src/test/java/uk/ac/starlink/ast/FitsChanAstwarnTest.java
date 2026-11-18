@@ -18,9 +18,6 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * <p>C's {@code Warn} (fitschan.c:35453) stores its cards in front of the current card (from
  * fitschan.c:35590), and during a read the current card is the last {@code NAXIS<i>} that C's
  * {@code DistortMaps} looked up with {@code astGetFitsF} (fitschan.c:9019).
- *
- * <p>Listed in {@code deferred/rust-tests.txt}: {@code
- * badctype_warning_names_the_legal_ctype_and_precedes_naxis1} (a spectral axis, SpecFrame).
  */
 class FitsChanAstwarnTest {
 
@@ -317,5 +314,40 @@ class FitsChanAstwarnTest {
                 e);
         assertEquals(before, fc.toHeader());
         assertEquals(1, fc.getCard());
+    }
+
+    /** A one-axis air wavelength header whose {@code -A2F} code names the wrong P system. */
+    private static final String ONE_AXIS_BADCTYPE = String.join(
+            "\n",
+            "SIMPLE  =                    T / Fits standard",
+            "BITPIX  =                  -32 / Bits per pixel",
+            "NAXIS   =                    1 / Number of dimensions",
+            "NAXIS1  =                 1024 / Length of axis",
+            "CTYPE1  = 'AWAV-A2F'           / Air wavelength sampled, expressed as frequency",
+            "CRVAL1  =            5.000E-07 / Reference air wavelength (metres)",
+            "CRPIX1  =              512.500 / Reference pixel",
+            "CDELT1  =            1.000E-10 / Wavelength increment (metres)",
+            "CUNIT1  = 'm       '           / Axis units",
+            "RESTFRQ =           5.996E+14  / Rest frequency (Hz)",
+            "SPECSYS = 'BARYCENT'           / Spectral reference frame",
+            "");
+
+    @Test
+    void badctypeWarningNamesTheLegalCtypeAndPrecedesNaxis1() {
+        FitsChan fc = FitsChan.fromHeader(ONE_AXIS_BADCTYPE);
+        assertNotNull(fc.read());
+        // The text and wrapping of C's cards, from the wcsconv fixture expected/awav-a2f.native.
+        assertEquals(
+                Arrays.asList(
+                        "        ",
+                        "The spectral CTYPE value AWAV-A2F is not legal - using ",
+                        "AWAV-A2A instead.",
+                        "        "),
+                FitsHeaders.astwarnValues(fc));
+        // A one-axis header parks C's card cursor on NAXIS1, so the block precedes it.
+        List<String> kws = FitsHeaders.keywords(fc);
+        int firstWarn = kws.indexOf("ASTWARN");
+        int naxis1 = kws.indexOf("NAXIS1");
+        assertTrue(firstWarn >= 0 && firstWarn < naxis1, "the block precedes NAXIS1: " + kws);
     }
 }
