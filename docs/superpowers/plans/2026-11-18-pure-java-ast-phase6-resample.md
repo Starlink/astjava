@@ -183,4 +183,6 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
   - final review;
   - gaps and risks.
   It also corrects the phase 5 report's "SelectorMap moved to phase 6": Regions are spec item 6, which is phase 7.
+  Its future work lists a Javadoc sweep: wording copied from jniast or C that presents a class as a wrapper around the C library (MathMap's "Java interface to the AST MathMap class") or describes arguments in C terms ("Pointer to an array", "a NULL pointer"), rewritten to describe the Java class itself.
+  Citations of C or jniast source as the origin of behaviour (`jni/IntraMap.c`, `mapping.c`) are provenance and stay.
 - [ ] **Step 2: Commit** `Report phase 6`.
