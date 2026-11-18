@@ -1135,7 +1135,10 @@ public class PolyMap extends Mapping {
      * the one after) that is a PolyMap applied in the other direction is applied in {@code
      * pmap0}'s direction and compared with it; the first equal one and {@code pmap0} are replaced
      * by UnitMaps applied forward, of {@code pmap0}'s output count if the neighbour comes first and
-     * its input count otherwise. The Invert attributes set for the comparison are restored.
+     * its input count otherwise. As in C, the neighbour's Invert attribute is restored after the
+     * comparison, and {@code pmap0}'s only when the pair does not cancel: a cancelled {@code pmap0},
+     * which may be shared with the Mapping being simplified, is left with the list's value
+     * (docs/rust-c-differences.md, "Cancelling a PolyMap with its inverse").
      *
      * @return the index of the first entry changed: the lower of the pair if they cancel, and
      *     {@code result} otherwise
@@ -1143,6 +1146,7 @@ public class PolyMap extends Mapping {
     private static int cancelWithNeighbour(MergeList list, int where, Mapping pmap0, int result) {
         boolean inv0 = list.invert(where);
         int saved0 = pmap0.swapInvert(inv0);
+        boolean cancelled = false;
         try {
             int nin = pmap0.getNin();
             int nout = pmap0.getNout();
@@ -1162,11 +1166,15 @@ public class PolyMap extends Mapping {
                     int n = i < where ? nout : nin;
                     list.set(where, new UnitMap(n), false);
                     list.set(i, new UnitMap(n), false);
+                    cancelled = true;
                     return Math.min(i, where);
                 }
             }
         } finally {
-            pmap0.restoreInvert(saved0);
+            // C annuls its pointer to a cancelled pmap0, which skips the restore.
+            if (!cancelled) {
+                pmap0.restoreInvert(saved0);
+            }
         }
         return result;
     }

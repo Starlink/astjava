@@ -1,0 +1,8 @@
+== series
+before p 0 set 0 q 1 set 1
+class UnitMap
+after p 0 set 1 q 1 set 1
+== inverted_series
+before p 0 set 0 q 1 set 1
+class UnitMap
+after p 0 set 1 q 0 set 1

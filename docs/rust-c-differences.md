@@ -105,10 +105,10 @@ The entries are grouped by area, in the order the Java classes were ported.
 
 ### Cancelling a PolyMap with its inverse
 
-- **C quirk**: when `MapMerge` cancels a nominated PolyMap with its inverse it annuls the PolyMap before restoring its Invert attribute (`polymap.c:4004-4006`), so the PolyMap is left with the value the list applied it with: simplifying the inverse of a series CmpMap of a PolyMap and an inverted copy of it gives a UnitMap and leaves the copy with Invert unset.
-  Confirmed with the pinned library.
+- **C quirk**: when `MapMerge` cancels a nominated PolyMap with its inverse it annuls the PolyMap before restoring its Invert attribute (`polymap.c` `MapMerge`), so the PolyMap is left with the value the list applied it with, set: simplifying the inverse of a series CmpMap of a PolyMap and an inverted copy of it gives a UnitMap and leaves the copy, which the CmpMap shares, with Invert set to 0 (probe `src/test/resources/probes/polymap_cancel_probe.c`, case `inverted_series`).
 - Rust: not compared.
-- Java: restores the PolyMap's Invert attribute.
+- Java: as C.
+  Java sets back the neighbour's Invert attribute after the comparison as it was, set or unset, where C's `astSetInvert` leaves it set, so the two differ only in what `test("Invert")` gives afterwards.
 
 ### Cancelling WcsMaps whose projection parameters differ
 
