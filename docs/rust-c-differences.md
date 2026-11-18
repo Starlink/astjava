@@ -1324,6 +1324,12 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: as C, with Rust's `as`, which gives 0 for a NaN (`interp::block_average`, `PixelValue::from_sum`).
 - Java: as the pinned library on AArch64: `PixelArray.overflows` is false for a NaN, and Java's casts give 0 for a NaN (`short` and `byte` through `int`), so an integer output and its variance are 0 (`ResampleInterpolators.blockAverage`, `PixelArray.setResampled`); the differential run against C found the outputs identical.
 
+### Block averaging at a position far outside the input grid
+
+- C: `InterpolateBlockAverage<X>` takes the pixel index of a position as `(int) floor(x)` and the block's bounds as `ix - neighb + 1` and `ix + neighb` in `int`, with no test that the position lies in the grid; for a position beyond the range of an `int` the conversion is undefined, and so is an overflow of the bounds, so with `npix` of zero or less, whose block is empty, a position that far outside need not give a bad output. **C bug.**
+- Rust: `x.floor() as i64` saturates, and the bounds are formed in `i64`, which overflows (a panic in a debug build) for a position at or beyond 2^63 with `npix` of zero or less.
+- Java: an empty block, and so a bad output, wherever the position lies: `ResampleInterpolators.blockIndex` holds the index within 2^32 of the grid, which leaves every block the same since a block reaches less than 2^31 pixels, and keeps its bounds within a `long` (`ResampleArgumentsTest.anEmptyBlockIsBadAtAnyPosition`).
+
 ### Flux conservation of an integer output beyond its type's range
 
 - C: `ConserveFlux<X>` scales each output with `out[off] *= factor`, converting the product back to the type with no range check, which is undefined when it lies outside the type's range (UBSan reports it for `short` and `signed char`); the pinned library on AArch64 converts to a 32-bit (or, for `long`, 64-bit) integer, saturating, and keeps the low 16 or 8 bits for `short` and `signed char`.

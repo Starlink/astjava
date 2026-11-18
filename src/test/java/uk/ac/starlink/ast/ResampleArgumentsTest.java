@@ -286,6 +286,50 @@ class ResampleArgumentsTest {
         }
     }
 
+    /**
+     * A block average over {@code npix} of zero or less takes in no pixels, so its output is bad
+     * however far outside the input grid its position lies, even beyond the range of a {@code
+     * long}.
+     */
+    @Test
+    void anEmptyBlockIsBadAtAnyPosition() {
+        for (int ndim = 1; ndim <= 3; ndim++) {
+            int[] ones = new int[ndim];
+            int[] threes = new int[ndim];
+            Arrays.fill(ones, 1);
+            Arrays.fill(threes, 3);
+            for (double shift : new double[] {1e19, -1e19, Double.POSITIVE_INFINITY}) {
+                for (int npix : new int[] {0, -1}) {
+                    double[] shifts = new double[ndim];
+                    Arrays.fill(shifts, -shift);
+                    double[] out = {0.0};
+                    int nbad = new ShiftMap(shifts)
+                            .resampleD(
+                                    ndim,
+                                    ones,
+                                    threes,
+                                    sevens((int) Math.pow(3, ndim)),
+                                    null,
+                                    Mapping.Interpolator.blockAve(npix),
+                                    new ResampleFlags(),
+                                    0.0,
+                                    100,
+                                    -1.0,
+                                    ndim,
+                                    ones,
+                                    ones,
+                                    ones,
+                                    ones,
+                                    out,
+                                    null);
+                    String label = ndim + "-D, shift " + shift + ", npix " + npix;
+                    assertEquals(1, nbad, label);
+                    assertEquals(-1.0, out[0], label);
+                }
+            }
+        }
+    }
+
     private static IllegalArgumentException generic(Object in, Object inVar, Number badval, Object out, Object outVar) {
         return assertThrows(
                 IllegalArgumentException.class,

@@ -803,6 +803,24 @@ final class ResampleInterpolators {
     }
 
     /**
+     * How far outside the input grid {@link #blockIndex} holds a pixel index. A block reaches less
+     * than 2^31 pixels either side of its position, so a block whose position lies further than
+     * this outside the grid misses it, as does the block of the index held here.
+     */
+    private static final long BLOCK_INDEX_LIMIT = 1L << 32;
+
+    /**
+     * The index of the pixel holding position {@code x} on an axis of the input grid from {@code
+     * lbnd} to {@code ubnd}, as C's {@code (int) floor(x)}, but held within {@link
+     * #BLOCK_INDEX_LIMIT} of the grid. The block it gives is then the same, empty when the
+     * position lies so far outside, while the block's bounds stay well within a {@code long}.
+     */
+    private static long blockIndex(double x, long lbnd, long ubnd) {
+        long ix = (long) Math.floor(x);
+        return Math.max(lbnd - BLOCK_INDEX_LIMIT, Math.min(ix, ubnd + BLOCK_INDEX_LIMIT));
+    }
+
+    /**
      * C's {@code InterpolateBlockAverage<X>}: each output value is the mean of the good input
      * pixels in the block reaching {@code params[0]} pixels (rounded) either side of its position
      * along each axis, weighted by the reciprocals of their variances when variances are given;
@@ -850,7 +868,7 @@ final class ResampleInterpolators {
                 double x = coords[0][point];
                 bad = x == AstObject.AST__BAD;
                 if (!bad) {
-                    long ix = (long) Math.floor(x);
+                    long ix = blockIndex(x, lbndIn[0], ubndIn[0]);
                     long loX = Math.max(ix - neighb + 1, lbndIn[0]);
                     long hiX = Math.min(ix + neighb, ubndIn[0]);
                     sums.reset();
@@ -867,10 +885,10 @@ final class ResampleInterpolators {
                     double y = coords[1][point];
                     bad = y == AstObject.AST__BAD;
                     if (!bad) {
-                        long ix = (long) Math.floor(x);
+                        long ix = blockIndex(x, lbndIn[0], ubndIn[0]);
                         long loX = Math.max(ix - neighb + 1, lbndIn[0]);
                         long hiX = Math.min(ix + neighb, ubndIn[0]);
-                        long iy = (long) Math.floor(y);
+                        long iy = blockIndex(y, lbndIn[1], ubndIn[1]);
                         long loY = Math.max(iy - neighb + 1, lbndIn[1]);
                         long hiY = Math.min(iy + neighb, ubndIn[1]);
                         sums.reset();
@@ -892,7 +910,7 @@ final class ResampleInterpolators {
                     if (bad) {
                         break;
                     }
-                    long ixn = (long) Math.floor(xn);
+                    long ixn = blockIndex(xn, lbndIn[idim], ubndIn[idim]);
                     lo[idim] = Math.max(ixn - neighb + 1, lbndIn[idim]);
                     hi[idim] = Math.min(ixn + neighb, ubndIn[idim]);
                     // A block with no extent along an axis holds no data.
