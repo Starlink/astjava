@@ -1,5 +1,6 @@
 package uk.ac.starlink.ast;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -13,8 +14,10 @@ import org.junit.jupiter.api.Test;
  * AST__GBDIN}; and the generic {@code resample} given arrays of different types, a bad value of
  * another {@code Number} type or data that is not a primitive array gives jniast's {@code
  * IllegalArgumentException}. No such call reaches an {@code ArrayIndexOutOfBoundsException} or a
- * {@code ClassCastException}. This test has no Rust counterpart; the messages of the length checks
- * are Rust's {@code resample}'s.
+ * {@code ClassCastException}. Nor does a Mapping whose user-supplied transformation gives NaN for
+ * some positions: an IntraMap turns them into AST__BAD, so the result is that of positions that
+ * are bad. This test has no Rust counterpart; the messages of the length checks are Rust's {@code
+ * resample}'s.
  */
 class ResampleArgumentsTest {
 
@@ -313,6 +316,103 @@ class ResampleArgumentsTest {
         assertEquals(0, nbad);
         for (int k = 0; k < 20; k++) {
             assertEquals(k * 3, out[k], "pixel " + k);
+        }
+    }
+
+    /**
+     * A 1-D transformation that shifts by a quarter of a pixel (forward +0.25, inverse -0.25) and
+     * gives a set value instead for positions beyond 5.
+     */
+    static final class ShiftUpToFive extends Transformer1 {
+        private final double beyond;
+
+        ShiftUpToFive(double beyond) {
+            this.beyond = beyond;
+        }
+
+        @Override
+        public double[] tran1(int npoint, double[] xin, boolean forward) {
+            double[] out = new double[npoint];
+            for (int i = 0; i < npoint; i++) {
+                double x = xin[i];
+                out[i] = x > 5.0 ? beyond : forward ? x + 0.25 : x - 0.25;
+            }
+            return out;
+        }
+
+        @Override
+        public String getPurpose() {
+            return "Shift by a quarter of a pixel up to 5";
+        }
+
+        @Override
+        public String getAuthor() {
+            return "astjava tests";
+        }
+
+        @Override
+        public String getContact() {
+            return "astjava";
+        }
+    }
+
+    /** The values and variances, then the bad count, of {@code resampleD} through {@code map}. */
+    private static double[][] resampleWith(Mapping map, Mapping.Interpolator interp) {
+        int[] lbnd = {1};
+        int[] ubnd = {10};
+        double[] in = new double[10];
+        double[] inVar = new double[10];
+        for (int k = 0; k < 10; k++) {
+            in[k] = k + 1.0;
+            inVar[k] = 0.5 * k + 0.25;
+        }
+        double[] out = new double[10];
+        double[] outVar = new double[10];
+        Arrays.fill(out, 55.0);
+        Arrays.fill(outVar, 55.0);
+        int nbad = map.resampleD(
+                1,
+                lbnd,
+                ubnd,
+                in,
+                inVar,
+                interp,
+                new ResampleFlags(),
+                0.0,
+                100,
+                -1.0,
+                1,
+                lbnd,
+                ubnd,
+                lbnd,
+                ubnd,
+                out,
+                outVar);
+        return new double[][] {out, outVar, {nbad}};
+    }
+
+    /**
+     * Resampling through an IntraMap whose Transformer gives NaN beyond 5, on a grid whose lower
+     * bound is 1, gives what it gives when the Transformer gives AST__BAD there, for the nearest,
+     * linear, a kernel and the block averaging schemes.
+     */
+    @Test
+    void nanPositionsAreBadPositions() {
+        Mapping nanMap = new IntraMap(new ShiftUpToFive(Double.NaN));
+        Mapping badMap = new IntraMap(new ShiftUpToFive(AstObject.AST__BAD));
+        Mapping.Interpolator[] interps = {
+            Mapping.NEAREST_INTERPOLATOR,
+            Mapping.LINEAR_INTERPOLATOR,
+            Mapping.Interpolator.sincSinc(2, 2.0),
+            Mapping.Interpolator.blockAve(1)
+        };
+        for (Mapping.Interpolator interp : interps) {
+            double[][] want = resampleWith(badMap, interp);
+            double[][] got = resampleWith(nanMap, interp);
+            assertEquals(5.0, want[2][0], "bad count");
+            for (int i = 0; i < 3; i++) {
+                assertArrayEquals(want[i], got[i]);
+            }
         }
     }
 }

@@ -568,6 +568,46 @@ class IntraMapTest {
         assertArrayEquals(new double[] {7.0, 2.0}, out[0]);
     }
 
+    /** Adds 1 to each coordinate, giving NaN above 5 and positive infinity below -5. */
+    private static final class NanAboveFive extends Failing {
+        NanAboveFive() {
+            super(() -> null);
+        }
+
+        @Override
+        public double[][] tranP(int npoint, int ncoordIn, double[][] in, boolean forward, int ncoordOut) {
+            double[][] out = new double[ncoordOut][npoint];
+            for (int c = 0; c < ncoordOut; c++) {
+                for (int i = 0; i < npoint; i++) {
+                    double x = in[c][i];
+                    out[c][i] = x > 5.0 ? Double.NaN : x < -5.0 ? Double.POSITIVE_INFINITY : x + 1.0;
+                }
+            }
+            return out;
+        }
+    }
+
+    /**
+     * A NaN the Transformer returns becomes AST__BAD, as the Mapping class requires of every
+     * transformation, through each public transformation method and the package's own; an
+     * infinite value is returned as it is, as other Mappings return one.
+     */
+    @Test
+    void nanResultsBecomeBad() {
+        double inf = Double.POSITIVE_INFINITY;
+        IntraMap m1 = new IntraMap(new NanAboveFive(), 1, 1);
+        assertArrayEquals(new double[] {2.0, BAD, inf}, m1.tran1(3, new double[] {1.0, 6.0, -6.0}, true));
+        assertArrayEquals(new double[] {BAD, 3.0}, m1.tran1(2, new double[] {7.0, 2.0}, false));
+        assertArrayEquals(new double[] {BAD, 2.0}, m1.transform(new double[][] {{9.0, 1.0}}, 2, true)[0]);
+
+        IntraMap m2 = new IntraMap(new NanAboveFive(), 2, 2);
+        assertArrayEquals(
+                new double[] {2.0, BAD, BAD, 4.0}, m2.tranN(2, 2, new double[] {1.0, 8.0, 6.0, 3.0}, true, 2));
+        double[][] p = m2.tranP(2, 2, new double[][] {{1.0, 8.0}, {6.0, 3.0}}, true, 2);
+        assertArrayEquals(new double[] {2.0, BAD}, p[0]);
+        assertArrayEquals(new double[] {BAD, 4.0}, p[1]);
+    }
+
     // ------------------------------------------------------------------
     // jniast's tests
     // ------------------------------------------------------------------

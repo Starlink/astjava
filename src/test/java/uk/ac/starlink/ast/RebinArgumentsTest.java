@@ -1,6 +1,8 @@
 package uk.ac.starlink.ast;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
@@ -15,8 +17,10 @@ import org.junit.jupiter.api.Test;
  * after an error in the bounds is left alone; and the generic {@code rebin} given arrays of
  * different types, a type jniast cannot rebin, a bad value of another {@code Number} type or data
  * that is not a primitive array gives jniast's {@code IllegalArgumentException}. No such call
- * reaches an {@code ArrayIndexOutOfBoundsException} or a {@code ClassCastException}. This test has
- * no Rust counterpart; the messages of the length checks are Rust's {@code rebin}'s.
+ * reaches an {@code ArrayIndexOutOfBoundsException} or a {@code ClassCastException}. Nor does a
+ * Mapping whose user-supplied transformation gives NaN for some positions: an IntraMap turns them
+ * into AST__BAD, so the result is that of positions that are bad. This test has no Rust
+ * counterpart; the messages of the length checks are Rust's {@code rebin}'s.
  */
 class RebinArgumentsTest {
 
@@ -277,6 +281,45 @@ class RebinArgumentsTest {
                 .rebin(0.0, 2, L, U, in, null, Mapping.NEAREST_SPREADER, false, 0.0, 100, -1, 2, L, U, L, U, out, null);
         for (int k = 0; k < 20; k++) {
             assertEquals(k * 3, out[k], "pixel " + k);
+        }
+    }
+
+    /** The values and variances of {@code rebinD} through {@code map}. */
+    private static double[][] rebinWith(Mapping map, Mapping.Spreader spread) {
+        int[] lbnd = {1};
+        int[] ubnd = {10};
+        double[] in = new double[10];
+        double[] inVar = new double[10];
+        for (int k = 0; k < 10; k++) {
+            in[k] = k + 1.0;
+            inVar[k] = 0.5 * k + 0.25;
+        }
+        double[] out = new double[10];
+        double[] outVar = new double[10];
+        map.rebinD(
+                0.0, 1, lbnd, ubnd, in, inVar, spread, false, 0.0, 100, -1.0, 1, lbnd, ubnd, lbnd, ubnd, out, outVar);
+        return new double[][] {out, outVar};
+    }
+
+    /**
+     * Rebinning through an IntraMap whose Transformer gives NaN beyond 5, on a grid whose lower
+     * bound is 1, gives what it gives when the Transformer gives AST__BAD there, for the nearest
+     * and linear schemes.
+     */
+    @Test
+    void nanPositionsAreBadPositions() {
+        Mapping nanMap = new IntraMap(new ResampleArgumentsTest.ShiftUpToFive(Double.NaN));
+        Mapping badMap = new IntraMap(new ResampleArgumentsTest.ShiftUpToFive(AstObject.AST__BAD));
+        Mapping.Spreader[] spreads = {Mapping.NEAREST_SPREADER, Mapping.LINEAR_SPREADER};
+        for (Mapping.Spreader spread : spreads) {
+            double[][] want = rebinWith(badMap, spread);
+            double[][] got = rebinWith(nanMap, spread);
+            assertFalse(
+                    Arrays.equals(rebinWith(new ShiftMap(new double[] {0.25}), spread)[0], want[0]),
+                    "the bad positions change the result");
+            for (int i = 0; i < 2; i++) {
+                assertArrayEquals(want[i], got[i]);
+            }
         }
     }
 }

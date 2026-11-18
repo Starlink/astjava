@@ -574,6 +574,14 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: keeps the code of the error the transformation returns.
 - Java: AST__ITFER, as jniast, with the Transformer's exception as the cause.
 
+### A NaN from an IntraMap's transformation function
+
+- C: `Transform` (`intramap.c`) and jniast's `tranWrap` (`jni/IntraMap.c`) return the function's values as they are, so a NaN it gives is kept unless the environment variable `AST_REPLACE_NAN` is set (`astTransform`, `pointset.c` `astReplaceNaN`).
+  Resampling and rebinning take only AST__BAD to be a bad position, so in C a NaN position reaches the conversion of a coordinate to a pixel index.
+- Rust: `IntraMap::transform_into` returns the transformation's values as they are.
+- Java: `IntraMap` turns a NaN in the Transformer's result into AST__BAD, as the Mapping class's contract requires of every transformation (no transformation gives a NaN output), so resampling and rebinning treat the position as bad.
+  An infinite value is kept, as other Mappings keep one (an overflow in a ZoomMap gives an infinity through `transform`, as C does by default); it lies outside every grid.
+
 ### The value of two pi in `platepos`
 
 - C: `platepos` (`dssmap.c`) adds its own `twopi`, 6.28318530717959, to a negative right ascension; it is a little more than the double nearest to two pi, so a wrapped right ascension is about four units in the last place larger (probe `src/test/resources/probes/dssmap_probe.c`, case `tran_pltra_small`, where the round trip through `platepix` comes back 2.4e-10 pixels short).
