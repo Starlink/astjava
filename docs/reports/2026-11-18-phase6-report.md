@@ -92,7 +92,7 @@ Added:
 
 | Where | What | Derivation |
 | --- | --- | --- |
-| `ResampleOracleTest.bounds` (78 kernel probe cases: 13 case names whose kernels call `sin`, `cos` or `exp`, six types) | Each output value and variance within a bound worked out from that pixel's own weights; bad and untouched pixels exact; an integer may differ by one only where its bound is below a half and its value lies further than the bound from the type's range limits (asserted) | Kernel relative differences with each libm function within 4u and each pair of correct roundings 2u: Sinc 6u, SincCos 12u, SincSinc 14u, Somb 0, SombCos 6u, Gauss 115u and SincGauss 61u at the cases' largest argument; the weight difference RHO_W = 164u (2-D Gauss with FWHM 1.2); with s the sum type's unit roundoff and n the pixel's terms, dV = (e + 2s + 2ns) P/\|W\| + \|val\| (e + 2ns) A/\|W\| + 2s\|val\| from the pixel's own P = sum(\|w v\|), A = sum(\|w\|), W and value, the variance likewise, one more rounding for flux conservation, doubled for second-order terms; `double` bounds come out around 1e-12 |
+| `ResampleOracleTest.bounds` (78 kernel probe cases: 13 case names whose kernels call `sin`, `cos` or `exp`, six types) | Each output value and variance within a bound worked out from that pixel's own weights; bad and untouched pixels exact; an integer may differ by one only where its bound is below a half and its value lies further than the bound from the type's range limits (asserted) | Kernel relative differences with each libm function within 4u and each pair of correct roundings 2u: Sinc 6u, SincCos 12u, SincSinc 14u, Somb 0, SombCos 6u, Gauss 115u and SincGauss 61u at the cases' largest argument; the weight difference RHO_W = 165u (2-D Gauss with FWHM 1.2); with s the sum type's unit roundoff and n the pixel's terms, dV = (e + 2s + 2ns) P/\|W\| + \|val\| (e + 2ns) A/\|W\| + 2s\|val\| from the pixel's own P = sum(\|w v\|), A = sum(\|w\|), W and value, the variance likewise, one more rounding for flux conservation, doubled for second-order terms; `double` bounds come out around 1e-12 |
 | `RebinOracleTest.bounds` (33 kernel probe cases: 11 case names, `double`, `float`, `int`) | As above for spreading, through reflection at the edges, the box sums, the weights and the running sum; sums of weights must lie clear of `wlim`; `somb_unit` is exact (J1's rational branch is plain arithmetic) | Task 2's kernel differences propagated through `SpreadKernel1<X>`; `double` bounds come out 2e-14 to 2e-12 |
 | `ResampleMemoryChild` | Centre value of the 2048 × 2048 `float` image within 1e-4 of 3 | Constant data gives sum(3w)/sum(w), exactly 3 whatever the weights, so only `float` roundings count: at most 3 × 4 × (2 × 32 + 1) × 2^-24 = 4.7e-5 with sum(\|w\|)/sum(w) at most 2 per axis for sinc reaching two pixels |
 | `ResampleTest` tests 1 and 4 | Rust's 1e-10 and 1e-8 for kernels on a UnitMap and on constant data | Taken from the Rust tests; no derivation is written beside them (deferred minor) |
@@ -153,7 +153,7 @@ A scoped re-review found every finding addressed.
 The review confirmed the five Review Focus items (the fourth as ruled), the user's variance decision, and that every bit-exact comparison reaches only arithmetic, `sqrt` and `floor`, so CI's x86-64 runners should give the same results.
 After the fixes `mvn verify` passes with 3,848 tests.
 
-Left as minor: a null `Interpolator`, `ResampleFlags`, `Spreader` or array gives `NullPointerException` (a null `Spreader` after the output has been zeroed); `IntraMapTest` does not reach `tran2` or the NaN protocol, which use the same path; and block averaging with `npix` of zero or less averages a whole axis for a position beyond about 2^63, through `long` overflow, where C's conversion is undefined.
+Left as minor, and fixed afterwards (see the minor items under Gaps and risks): a null `Interpolator`, `ResampleFlags`, `Spreader` or array gives `NullPointerException` (a null `Spreader` after the output has been zeroed); `IntraMapTest` does not reach `tran2` or the NaN protocol, which use the same path; and block averaging with `npix` of zero or less averages a whole axis for a position beyond about 2^63, through `long` overflow, where C's conversion is undefined.
 
 ## Gaps and risks
 
@@ -169,15 +169,15 @@ Left as minor: a null `Interpolator`, `ResampleFlags`, `Spreader` or array gives
   The tests ran on JDK 21 and the JDK 27 runtime, not on Java 8; the kernel bounds are derived, not tuned, and every kernel probe case is checked against them here, but x86-64 is exercised only in CI.
 - **Probe size.**
   `resample_kernel_probe.out` is 417 KB and `rebin_kernel_probe.out` 222 KB.
-- **Minor items left from the reviews:**
-  - `LinearApprox`'s direction overload says "inputs" in its `AST__NCPIN` message when `forward` is false (`LinearApprox.java:52`); `resample` cannot reach it.
-  - `ResampleTest` tests 1 and 4 keep Rust's 1e-10 and 1e-8 without a derivation beside them.
-  - `ResampleOracleTest`'s `RHO_W` comment gives 164u where a = 7.7016 gives 165u, and `bounds()`'s `@throws` wording does not match its `b < 0.5` test; `valueDifference` was flagged for treating the probe's fill values 77 and 120 as fixed markers.
-  - `ResampleInterpolators.kernel1` tests the `double` use-bad flag in a way the review flagged, and `Resample` reads the flags twice (`Resample.java:89`, `:132`).
-  - `Rebin.rebin`'s Javadoc omits `maxpix` (`AST__SSPIN`) from the errors that zero the first value; a null `Spreader` gives a `NullPointerException` after the output is zeroed; the `BlockSpreading` seam could default to the scheme's own spreading and drop the null case.
-  - `RebinTest`'s switch defaults throw `IllegalStateException`, not `AstException` with `AST__INTER` (test code).
-  - Javadoc lines of 152 and 157 columns in `Ukern1Calculator.java` and `ResampleArgumentsTest.java` (the formatter and linters pass them).
-  - Task 1's interim `AST__INTER` for the schemes Task 2 added is resolved.
+- **Minor items from the reviews**, fixed after the final review unless stated:
+  - `LinearApprox`'s direction overload names the outputs in its `AST__NCPIN` message when `forward` is false.
+  - `ResampleOracleTest`'s `RHO_W` is 165u: a = 7.7016 gives 81.016u for each axis of the 2-D Gauss case.
+  - A null argument other than a variance array gives a `NullPointerException` naming it, before the output is touched.
+  - Block averaging holds a far position's pixel index within 2^32 of the grid, so a block with `npix` of zero or less is empty, and its output bad, wherever its position lies; `docs/rust-c-differences.md` records C's undefined conversion there.
+  - `IntraMapTest.nanResultsBecomeBad` covers `tran2` and the NaN protocol, and `IntraMap`'s Javadoc no longer reads as if C meant NaN positions to miss every pixel.
+  - `Resample` reads the flags once; `Rebin`'s `BlockSpreading` seam defaults to the scheme's own spreading; `Rebin.rebin`'s Javadoc names `maxpix` among the errors that zero the first value; `RebinTest`'s switch defaults throw `AST__INTER`; the 152- to 157-column Javadoc lines are wrapped.
+  - Left as it is: `ResampleInterpolators.kernel1` tests the use-bad flag for the pixel at the position and again for each pixel of the block, as C and Rust do.
+  - Settled earlier: `ResampleTest`'s tolerances, `bounds()`'s `@throws` wording and `valueDifference`, which no longer treats any value as a marker, and Task 1's interim `AST__INTER` (Task 2).
 
 ## Future work
 
