@@ -11,6 +11,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.MappingTestData.point;
 import static uk.ac.starlink.ast.MappingTestData.transformRows;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -18,8 +23,10 @@ import org.junit.jupiter.api.Test;
  * gives, which Rust, copying its components, has no counterpart for. Rust's {@code then} and
  * {@code alongside} are the constructor with {@code series} true and false.
  *
- * <p>{@code cmpmap_equality_compares_components_as_applied} tests {@code astEqual}, which is not
- * ported. {@code cmpmap_simplified_two_unitmaps_series} and {@code
+ * <p>Also the translation of the three nested-series tests of Rust {@code
+ * tests/test_transform_memory.rs}, which a child JVM runs ({@link CmpMapSeriesMemoryChild}).
+ *
+ * <p>{@code cmpmap_simplified_two_unitmaps_series} and {@code
  * cmpmap_simplified_two_unitmaps_parallel} check only how the simplified Mapping transforms, which
  * holds of a Mapping that is not restructured.
  */
@@ -368,5 +375,67 @@ class CmpMapTest {
                 .astEqual(new CmpMap(new ZoomMap(1, 0.5), new ShiftMap(new double[] {1.0}), true)));
         assertFalse(new CmpMap(new ZoomMap(1, 2.0), new ShiftMap(new double[] {1.0}), true)
                 .astEqual(new CmpMap(new ZoomMap(1, 0.5), new ShiftMap(new double[] {1.0}), true)));
+    }
+
+    // ------------------------------------------------------------------
+    // tests/test_transform_memory.rs: nested series hold no full-size intermediates
+    // ------------------------------------------------------------------
+
+    /**
+     * The heap {@link CmpMapSeriesMemoryChild} runs in: the points given and their result, each 32
+     * MiB, and beyond them half of that and 8 MiB for the JVM's own use. A series CmpMap passes the
+     * points between its components 8192 at a time (cmpmap.c {@code Transform}), so eight ZoomMaps
+     * in nested series need a few batches of 8192 points beyond the result, whatever the number of
+     * points; holding the points between the components would need a full-size intermediate per
+     * level, seven in all, and one alone does not fit. Rust bounds the peak beyond the input by the
+     * size of the result and 2 MiB of batches.
+     */
+    private static final String HEAP_MIB = Integer.toString(2 * 32 + 16 + 8);
+
+    private static String readAll(InputStream in) throws IOException {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        byte[] chunk = new byte[4096];
+        for (int n = in.read(chunk); n >= 0; n = in.read(chunk)) {
+            buf.write(chunk, 0, n);
+        }
+        return new String(buf.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Runs {@link CmpMapSeriesMemoryChild} with {@code mode} in a JVM of the heap {@link #HEAP_MIB}
+     * describes, with the serial collector and a small young generation, so that the old
+     * generation, which holds the large arrays, has nearly all of it.
+     */
+    private static void assertFitsTheHeap(String mode) throws IOException, InterruptedException {
+        String java = Paths.get(System.getProperty("java.home"), "bin", "java").toString();
+        ProcessBuilder pb = new ProcessBuilder(
+                java,
+                "-XX:+UseSerialGC",
+                "-Xmn4m",
+                "-Xmx" + HEAP_MIB + "m",
+                "-cp",
+                System.getProperty("java.class.path"),
+                CmpMapSeriesMemoryChild.class.getName(),
+                mode);
+        pb.redirectErrorStream(true);
+        Process p = pb.start();
+        String out = readAll(p.getInputStream());
+        assertEquals(0, p.waitFor(), mode + ": " + out);
+        assertTrue(out.contains("passed"), mode + ": " + out);
+    }
+
+    @Test
+    void nestedSeriesHoldsNoFullSizeIntermediates() throws IOException, InterruptedException {
+        assertFitsTheHeap("transform");
+    }
+
+    @Test
+    void nestedSeriesTransformIntoHoldsNoFullSizeIntermediates() throws IOException, InterruptedException {
+        assertFitsTheHeap("transformInto");
+    }
+
+    @Test
+    void nestedSeriesTransformIntoNanHoldsNoFullSizeIntermediates() throws IOException, InterruptedException {
+        assertFitsTheHeap("transformIntoNan");
     }
 }
