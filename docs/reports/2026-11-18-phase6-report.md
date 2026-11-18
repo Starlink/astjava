@@ -145,7 +145,15 @@ Rust-side findings, from the same work: Rust's nearest and linear spreading add 
 
 ## Final review
 
-The whole-branch review follows; this section is filled in after it.
+A whole-branch review of `7f1919d..af25abb` found nothing Critical and one Important defect.
+An `IntraMap` passed its Transformer's NaN outputs through, against Mapping's class contract that no transformation gives a NaN output, so resampling or rebinning through it could throw `ArrayIndexOutOfBoundsException` (a grid with a positive lower bound) or write wrong pixels.
+It was fixed at the source: `IntraMap` now turns a NaN output into `AST__BAD` (`e4ce277`), and resampling and rebinning keep C's tests, which treat only `AST__BAD` as bad; tests compare a Transformer returning NaN with one returning `AST__BAD` for several schemes.
+The same pass added derived-bound comments to `ResampleTest`'s tolerances, made `ResampleOracleTest`'s integer check allow a difference of 1 only near a half-integer, as its derivation says, and made `ResampleThreadsTest` compare as it goes so that it holds a few megabytes rather than about 200 (`fbcf3a9`).
+A scoped re-review found every finding addressed.
+The review confirmed the five Review Focus items (the fourth as ruled), the user's variance decision, and that every bit-exact comparison reaches only arithmetic, `sqrt` and `floor`, so CI's x86-64 runners should give the same results.
+After the fixes `mvn verify` passes with 3,848 tests.
+
+Left as minor: a null `Interpolator`, `ResampleFlags`, `Spreader` or array gives `NullPointerException` (a null `Spreader` after the output has been zeroed); `IntraMapTest` does not reach `tran2` or the NaN protocol, which use the same path; and block averaging with `npix` of zero or less averages a whole axis for a position beyond about 2^63, through `long` overflow, where C's conversion is undefined.
 
 ## Gaps and risks
 
