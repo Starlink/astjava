@@ -128,7 +128,7 @@ Java follows C in every case that has a defined result, and gives a defined resu
 
 | Where | Behaviour | Confirmed |
 | --- | --- | --- |
-| `mapping.c` `InterpolateBlockAverage<X>` | Weights each pixel by `1.0 / var` and tests only for a negative variance, so a zero input variance makes the weight infinite and the output NaN; for an integer type C then converts the NaN to the type, which is undefined (AArch64 gives 0, x86-64 the type's minimum); C defines no result, Java gives C's AArch64 result, and integer variances of 0 are ordinary data | Differential run, UBSan (`MAKE_INTERPOLATE_BLOCKAVE` expansions for L, I, S, B) |
+| `mapping.c` `InterpolateBlockAverage<X>` | Weights each pixel by `1.0 / var` and tests only for a negative variance, so a zero input variance makes the weight infinite and the output NaN; for an integer type C then converts the NaN to the type, which is undefined (AArch64 gives 0; x86-64's conversion instructions give `INT_MIN` for `int` and `LONG_MIN` for `long`); C defines no result, Java gives C's AArch64 result, and integer variances of 0 are ordinary data | Differential run, UBSan (`MAKE_INTERPOLATE_BLOCKAVE` expansions for L, I, S, B) |
 | `mapping.c` `InterpolateBlockAverage<X>` | Resets `bad_var` only when it starts a block, so one negative or bad variance can leave out the rest of the block | Rust quirk entry, oracle cases `blockave_novarbad` and `blockave_win3` |
 | `mapping.c` `MAKE_INTERPOLATE_BLOCKAVE` for L | Sums `long` data in `long double`, which is `double` on AArch64 macOS and 80-bit on x86-64 Linux, so C's own `long` block averages depend on the platform | Reading |
 | `mapping.c` `SombCos` | The first factor is half `Somb`'s except at zero offset | Rust quirk entry, oracle |
@@ -139,7 +139,7 @@ Java follows C in every case that has a defined result, and gives a defined resu
 Not a C defect but a jniast one: jniast never passed `AST__USEVAR` to `astRebin<X>`, so its `rebin` zeroed the output variances and never filled them, although its Javadoc promised them (fixed by the user's decision above).
 
 The run also found three kinds of undefined behaviour, now in the PR #104 defect report, reproduced against a sanitiser build of the PR tip: `ConserveFlux<X>` converts products outside an integer type's range back to the type, `SpreadKernel1I` and `SpreadNearestI` overflow `int` addition while accumulating, and `SpreadNearestI` converts out-of-range doubles to `int`.
-Java gives C's AArch64 results for each (`int` addition wraps, conversions saturate), recorded for rebinning in `docs/rust-c-differences.md`.
+Java gives C's AArch64 results for each (`int` addition wraps, conversions saturate, and `short` and `byte` keep the low bits of the saturated `int`); `docs/rust-c-differences.md` records these and the zero-variance block average.
 
 Rust-side findings, from the same work: Rust's nearest and linear spreading add an `int` contribution through `double` and saturate, where C's `int` addition wraps; the Rust quirks file records the out-of-range conversion for bytes only (B and UB); and Rust's parameter-count check has no C counterpart.
 
@@ -152,12 +152,11 @@ The whole-branch review follows; this section is filled in after it.
 - **Shared concurrent use.**
   A Mapping may not be resampled or rebinned by two threads at once: resampling more than 1024 pixels simplifies the Mapping, and simplification changes shared components' Invert attributes temporarily, as C does, so a second thread can see them changed.
   The Javadoc says so and tells users to copy a FrameSet per thread; if shared concurrent use is ever wanted, the Simplifier and CmpMap must stop changing shared components in place.
-- **The zero-variance block average** is not yet in `docs/rust-c-differences.md`; Java's 0 for an integer type is C's AArch64 value, and CI's x86-64 C would give the type's minimum.
 - **`rust-tests.txt` has no automated checker.**
   No test loads it, so a Rust test file that is neither translated nor listed is found only by a sweep, as `test_huge.rs` was.
   `test_huge.rs::huge` also resamples a 60001 × 60001 grid, more pixels than a Java array holds, so when Regions arrive it cannot be translated as it stands.
 - **Regions** (phase 7): SelectorMap, the SwitchMap, TranMap and RateMap `RemoveRegions`, and the tests phase 5 listed for them.
-- **Differential-run gaps:** Somb with `npix` of 3 or more, transcendental MathMaps, `rebin` with one variance array, small grids only, no Java 8 runtime (details above).
+- **Differential-run gaps:** Somb with `npix` of 3 or more, transcendental MathMaps, `rebin` with one variance array, small grids only, no Java 8 runtime, and a flux-conservation factor in the bound taken from Java's own run (details above).
 - **Runtimes.**
   The tests ran on JDK 21 and the JDK 27 runtime, not on Java 8; the kernel bounds are derived, not tuned, and every kernel probe case is checked against them here, but x86-64 is exercised only in CI.
 - **Probe size.**

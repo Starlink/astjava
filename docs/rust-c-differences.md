@@ -1308,6 +1308,21 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: as C (`interp::block_average`).
 - Java: as C (`ResampleInterpolators.blockAverage`); the oracle cases `blockave_novarbad` and `blockave_win3` fail if the flag is reset for each pixel.
 
+### Block averaging with a zero variance
+
+- C: `InterpolateBlockAverage<X>` weights each pixel by `1.0 / var` and leaves out only negative variances (and, with `AST__USEBAD`, bad ones), so a zero variance gives an infinite weight, and the value `sum / wtsum` and the variance `sum_var / (wtsum * wtsum)` are NaN.
+  A NaN passes `CALC_AND_ASSIGN_OUTPUT`'s range test (`val <= LO_<X> || val >= HI_<X>` is false), so it is assigned and not counted as bad: a `double` or `float` output and its variance are NaN, and for `long`, `int`, `short` and `byte` C converts the NaN to the type, which is undefined (UBSan reports it).
+  The pinned library on AArch64 gives 0; other platforms need not (x86-64's conversion instructions give `INT_MIN` for `int` and `LONG_MIN` for `long`). **C quirk.**
+- Rust: as C, with Rust's `as`, which gives 0 for a NaN (`interp::block_average`, `PixelValue::from_sum`).
+- Java: as the pinned library on AArch64: `PixelArray.overflows` is false for a NaN, and Java's casts give 0 for a NaN (`short` and `byte` through `int`), so an integer output and its variance are 0 (`ResampleInterpolators.blockAverage`, `PixelArray.setResampled`); the differential run against C found the outputs identical.
+
+### Flux conservation of an integer output beyond its type's range
+
+- C: `ConserveFlux<X>` scales each output with `out[off] *= factor`, converting the product back to the type with no range check, which is undefined when it lies outside the type's range (UBSan reports it for `short` and `signed char`); the pinned library on AArch64 converts to a 32-bit (or, for `long`, 64-bit) integer, saturating, and keeps the low 16 or 8 bits for `short` and `signed char`.
+  It also leaves alone any output equal to the bad value, so a good integer output that equals it is not scaled. **C quirk.**
+- Rust: converts with `as`, which saturates to the type's own range (`PixelValue::from_f64`), so a `short` or `byte` product beyond the range differs from the pinned library.
+- Java: as the pinned library on AArch64 (`Resample.conserveFlux`, `PixelArray.set`: Java's `(int)` and `(long)` casts saturate, and `short` and `byte` go through `int`); the differential run against C found the outputs identical.
+
 ### A caller's kernel or interpolation function that fails
 
 - C: the caller's function reports a failure by setting the status, and `InterpolateKernel1<X>` or `ResampleSection` adds a message and passes that status on; the output keeps what was set before the failure, and `ConserveFlux<X>` does not scale the failing block.
@@ -1352,9 +1367,10 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 
 ### Adding a contribution to an `int` output pixel
 
-- C: `SpreadNearest<X>` and `SpreadLinear<X>` add `CONV(IntType, c)`, an `int` for `int` data, so the sum is `int` arithmetic, which wraps on overflow as compiled, as `SpreadKernel1<X>`'s `out[off] += c` does.
+- C: `SpreadNearest<X>` and `SpreadLinear<X>` add `CONV(IntType, c)`, an `int` for `int` data, so the sum is `int` arithmetic, as `SpreadKernel1<X>`'s `out[off] += c` is; overflow is undefined (UBSan reports it in `SpreadKernel1I`), and the pinned library wraps.
+  Each contribution `c = CONV(IntType, pfac * in)` is converted to `int` with no range check, and each variance contribution `CONV(IntType, in_var * pfac * pfac)` is a `double` (the conditional in `CONV` takes the type of its `double` branch), so `out_var` is summed in `double` and converted back to `int`; both conversions are undefined beyond the range of `int` (UBSan reports the second in `SpreadNearestI`), and the pinned library on AArch64 saturates. **C quirk.**
 - Rust: `SpreadNearest<X>` and `SpreadLinear<X>` add through a `double` and convert the sum, which saturates on overflow (`spread::Accum::deposit`).
-- Java: as C (`PixelArray.add`); the results differ only on overflow, which no oracle case reaches.
+- Java: as the pinned library on AArch64: `PixelArray.add` wraps, and `PixelArray.conv` and the variance sum use Java's saturating `(int)` cast (`RebinSpreaders.deposit`); two contributions of `INT_MAX - 5` to one pixel give C's -12 for the value and `INT_MAX` for the variance with the nearest, linear and sinc spreaders; no oracle case overflows.
 
 ### Rebinning with the `AST__SOMB` and `AST__SOMBCOS` schemes
 
