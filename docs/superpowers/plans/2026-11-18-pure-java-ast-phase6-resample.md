@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
 > Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** jniast's `Mapping.resample`, `resampleB/S/I/L/F/D`, `rebin` and `rebinI/F/D` work as C's `astResample<X>` and `astRebin<X>` do when called through jniast, with every Interpolator and Spreader scheme, including the caller's own kernel (`Ukern1Calculator`) and interpolator (`UinterpCalculator`).
+**Goal:** jniast's `Mapping.resample`, `resampleB/S/I/L/F/D`, `rebin` and `rebinI/F/D` work as C's `astResample<X>` and `astRebin<X>` do when called through jniast (except that `rebin` now rebins variances, which jniast never did), with every Interpolator and Spreader scheme, including the caller's own kernel (`Ukern1Calculator`) and interpolator (`UinterpCalculator`).
 
 **Architecture:** Port the Rust port's `mappings/resample/{mod,interp,kernels}.rs`, `mappings/rebin/{mod,spread}.rs` and `pixel.rs` onto the phase 1 to 5 classes, with `TranGrid` as the Java pattern for C's adaptive subdivision (`astLinearApprox` over sections, blocks of output pixels, `AST_REPLACE_NAN`).
 C (`reference/starlink-ast/src/mapping.c`: `Resample<X>`, `ResampleAdaptively`, `ResampleWithBlocking`, `ResampleSection`, `Interpolate*<X>`, `ConserveFlux<X>`, the kernel functions, `Rebin<X>`, `RebinAdaptively`, `RebinWithBlocking`, `RebinSection`, `Spread*<X>`) is final.
@@ -56,14 +56,15 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 2. **Conversions to the pixel type** follow C as compiled on the platform the oracles were made on (AArch64), as Rust's `PixelValue::from_f64` and `RebinValue::from_c` do.
    Java's `(int)` and `(long)` casts saturate, which matches AArch64; `(byte)` and `(short)` go through `int` as C's do.
 3. **Flags are C's integers.** `ResampleFlags.getFlagsInt()` gives the flags C is passed.
-   `rebin` passes C `AST__USEBAD` when `usebad` is true and 0 otherwise, as jniast's `Mapping.c` does.
-   C rebins variances only with `AST__USEVAR`, which jniast never sets, so `rebin` zeroes `out_var` and never fills it, as jniast's does.
-   The Javadoc says so; `docs/rust-c-differences.md` records it as a jniast behaviour.
+   `rebin` passes C `AST__USEBAD` when `usebad` is true, as jniast's `Mapping.c` does, and also `AST__USEVAR` when both `in_var` and `out_var` are given.
+   jniast never set `AST__USEVAR`, so through jniast C zeroed `out_var` and never filled it, though jniast's Javadoc promises output variances; C rebins variances only with that flag.
+   With it, `rebin` gives the variances jniast's Javadoc describes; with either array absent the flags are jniast's and C's result is unchanged.
+   The Javadoc of `rebin` and `rebinI/F/D` says when variances are rebinned; `docs/rust-c-differences.md` records the change from jniast.
 4. **The caller's functions.** `Interpolator.ukern1(calc, npix)` passes C `params = {npix}`, and C's kernel callback calls `calc.ukern1(offset)`.
    `Interpolator.uinterp(calc)` calls the `uinterp<X>` method for the data's type with the caller's own `in`, `in_var`, `out` and `out_var` arrays, the block's `offset` (`int[npoint]`) and `coords` (`double[ndim_in][npoint]`), and the `ResampleFlags` object given to `resample`, as jniast does.
    A thrown `Exception` stops the resampling with status `AST__UK1ER` or `AST__UINER`, as jniast's `astSetStatus` does, and becomes the `AstException`'s cause.
 5. **`RebinSeq<X>` is not ported:** jniast has no `rebinSeq`.
-   The spreading functions take only the flags `Rebin<X>` passes (`AST__USEBAD`; `AST__USEVAR` is never set through jniast).
+   The spreading functions take only the flags `Rebin<X>` passes (`AST__USEBAD` and `AST__USEVAR`).
    Each place C tests a flag only `RebinSeq<X>` sets is left out, with a comment naming the flag.
    `test_rebinseq.rs` and `test_rebinseq_oracle.rs` go to `deferred/rust-tests.txt` with the reason `astRebinSeq (not in jniast)`.
 
@@ -139,11 +140,11 @@ The earlier plans' Shared Design sections and the rulings in `docs/reports/2026-
 - Consumes: `PixelArray`, `ResampleKernels.setup`.
 - Produces: `static void Rebin.rebin(Mapping map, double wlim, int ndimIn, int[] lbndIn, int[] ubndIn, PixelArray in, PixelArray inVar, Mapping.Spreader spread, int flags, double tol, int maxpix, int ndimOut, int[] lbndOut, int[] ubndOut, int[] lbnd, int[] ubnd, PixelArray out, PixelArray outVar, String method)`.
 
-- [ ] **Step 1: Convert** `rebin_oracle/cases.rs` to `rebin.json`; write `rebin_jniast_probe.c`, which calls `astRebinD`, `astRebinF` and `astRebinI` with flags 0 and `AST__USEBAD`, with variance arrays, and prints every output value and variance (Shared Design item 3); build it against the pinned C and commit the output.
+- [ ] **Step 1: Convert** `rebin_oracle/cases.rs` to `rebin.json`; write `rebin_jniast_probe.c`, which calls `astRebinD`, `astRebinF` and `astRebinI` with flags 0, `AST__USEBAD`, `AST__USEVAR` and both, with and without variance arrays, and prints every output value and variance (Shared Design item 3); build it against the pinned C and commit the output.
 - [ ] **Step 2: Write the failing tests:**
   - `RebinTest`: every test of `test_rebin.rs` for D, F and I.
   - `RebinOracleTest`: `rebinningMatchesC` and `errorsMatchC` for the jniast types, each asserting its case count; `tooFewParamsIsAnError`.
-  - `RebinJniastTest`: the probe's values, `out_var` zeroed.
+  - `RebinJniastTest`: the probe's values: `rebin` with both variance arrays matches C's `AST__USEVAR` call, and with only one of them matches C's call without the flag.
   - `RebinArgumentsTest`: Review Focus 2 for rebin.
   - `ResampleThreadsTest`: rebinning added.
 - [ ] **Step 3: Run** `mvn test -Dtest='Rebin*Test,ResampleThreadsTest'` — Expected: FAIL.
