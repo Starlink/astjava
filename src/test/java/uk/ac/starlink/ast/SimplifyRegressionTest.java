@@ -1,6 +1,7 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -172,11 +173,7 @@ class SimplifyRegressionTest {
             // correction factor it works out, as C's does (specmap.c FrameChange). What the input
             // computed before it was simplified is found from a second reading of it.
             dump = ChannelText.dump(simplified);
-            // C's harness compares the reference and the simplified Mapping, both read from their
-            // dumps, with astEqual (ast_tester/test_simplify.tap, ast_astequal.c), the reference
-            // first: a dump does not carry everything astEqual looks at, such as a base Frame
-            // written only through Frm.
-            equal = refObj.astEqual(ChannelText.read(dump));
+            equal = equalToReference(refObj, dump);
             List<double[][]> transformsBefore = inputTransforms(
                     inputMapping(ChannelText.read(Fixtures.read(r.input)), refObj), oracle.get(r.input));
             List<double[][]> transformsAfter = inputTransforms(input, oracle.get(r.input));
@@ -224,6 +221,16 @@ class SimplifyRegressionTest {
             problem = problem == null ? transform : problem + "; " + transform;
         }
         return problem;
+    }
+
+    /**
+     * Whether astEqual finds the reference {@code refObj} equal to the simplified Mapping read
+     * from its dump {@code dump}. C's harness compares the two, both read from their dumps, with
+     * astEqual (ast_tester/test_simplify.tap, ast_astequal.c), the reference first: a dump does not
+     * carry everything astEqual looks at, such as a base Frame written only through Frm.
+     */
+    static boolean equalToReference(AstObject refObj, String dump) {
+        return refObj.astEqual(ChannelText.read(dump));
     }
 
     /**
@@ -366,6 +373,20 @@ class SimplifyRegressionTest {
             }
         }
         return null;
+    }
+
+    /**
+     * The astEqual check accepts a row's own simplification and rejects a wrong one: row {@code
+     * zoom_series_merge} simplifies two ZoomMaps in series to C's ZoomMap of factor 6, and a ZoomMap
+     * of factor 5 or the unsimplified CmpMap is not that.
+     */
+    @Test
+    void theAstEqualCheckRejectsAWrongSimplification() {
+        AstObject ref = ChannelText.read(Fixtures.read("simplify/zoom_series_merge.simp"));
+        Mapping input = (Mapping) ChannelText.read(Fixtures.read("simplify/zoom_series_merge.map"));
+        assertTrue(equalToReference(ref, ChannelText.dump(input.simplify())));
+        assertFalse(equalToReference(ref, ChannelText.dump(new ZoomMap(2, 5.0))));
+        assertFalse(equalToReference(ref, ChannelText.dump(input)));
     }
 
     @Test
