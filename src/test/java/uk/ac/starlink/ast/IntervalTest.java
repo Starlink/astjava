@@ -520,6 +520,24 @@ class IntervalTest {
     }
 
     @Test
+    void limitsEachOthersNegationOnOneOfTwoAxesAreAnError() {
+        // interval.c Overlap combines the axes' codes through a 5 by 5 table, which code 6 indexes
+        // beyond; the pinned build gives 6 though these Intervals are disjoint (probe cases
+        // interval_negation_on_first_of_two_axes and interval_negation_on_second_of_two_axes).
+        Interval[][] pairs = {
+            {interval2(2, 0, 1, 1), interval2(1, 0, 2, 1)}, {interval2(0, 2, 1, 1), interval2(0, 1, 1, 2)}
+        };
+        for (Interval[] pair : pairs) {
+            for (int i = 0; i < 2; i++) {
+                Interval a = pair[i];
+                Interval b = pair[1 - i];
+                AstException e = assertThrows(AstException.class, () -> a.overlap(b));
+                assertEquals(AstException.AST__INTER, e.getStatus());
+            }
+        }
+    }
+
+    @Test
     void aSplitWithTwoOutputsIsNotOneToOne() {
         // interval.c OneToOne gives up when the first input feeds two outputs, so the overlap is
         // region.c's, which cannot compare two unbounded Intervals.

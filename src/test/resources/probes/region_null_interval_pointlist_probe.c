@@ -21,7 +21,9 @@
  * is 9.
  *
  * Overlap: each "overlap" line gives astOverlap( a, b ), then
- * astOverlap( b, a ). The "split" line gives the number of outputs
+ * astOverlap( b, a ); two cases of two-axis Intervals, one axis of each the
+ * other's negation, give what the pinned build gives for an index beyond
+ * interval.c Overlap's table. The "split" line gives the number of outputs
  * astMapSplit finds fed by the first input of the PermMap one Interval is
  * mapped through, which interval.c OneToOne requires to be one.
  *
@@ -521,6 +523,14 @@ static void intervals( void ) {
    overlap( "interval_split_two_outputs_overlap", interval2( 0, BAD, BAD, BAD ),
             mapped( interval2( 0, BAD, BAD, BAD ), m, astFrame( 2, " " ) ) );
 
+   /* Two Intervals of two axes whose limits on one axis are each other's
+      negation: interval.c Overlap indexes beyond its table of combined
+      codes, so the results are those of the pinned build. */
+   overlap( "interval_negation_on_first_of_two_axes", interval2( 2, 0, 1, 1 ),
+            interval2( 1, 0, 2, 1 ) );
+   overlap( "interval_negation_on_second_of_two_axes", interval2( 0, 2, 1, 1 ),
+            interval2( 0, 1, 1, 2 ) );
+
    show( "interval_dump", (AstObject *) interval2( 1.0, BAD, BAD, 2.0 ) );
 }
 
@@ -530,6 +540,7 @@ static void pointlists( void ) {
                          2.0, 3.0, BAD, 2.0, 1.0, BAD, 3.0, 3.9999999 };
    double halfw[ 10 ] = { 1.4, 2.0, 1.5, 2.0, 1.6, 2.0, 0.5, 2.0, 3.0, 4.5 };
    double dup[ 6 ] = { 2.0, 2.0, 2.0, 2.0, 2.0, BAD };
+   double xyd[ 6 ] = { 1.0, 2.0, 1.0, 2.0, 3.0, 4.0 };
    double badin[ 6 ] = { BAD, 2.0, 1.0, BAD, 7.0, BAD };
    double zp[ 8 ] = { 2.0, 4.0, 6.0, 8.0, 1.0, 2.0, 3.0, 4.0 };
    double sub[ 2 ] = { 1.0, 2.0 };
@@ -606,6 +617,9 @@ static void pointlists( void ) {
    overlap( "pointlist_in_box", pointlist2( 2, xy, NULL ), box2( 0, 0, 5, 5 ) );
    overlap( "pointlist_across_box", pointlist2( 2, xy, NULL ), box2( 0, 0, 2, 3 ) );
    overlap( "pointlist_beside_box", pointlist2( 2, xy, NULL ), box2( 10, 10, 11, 11 ) );
+   /* The same points with one given twice: astOverlap( b, a ) reaches
+      pointlist.c RegPins with more points than the PointList has. */
+   overlap( "pointlist_duplicated_point", pointlist2( 3, xyd, NULL ), pointlist2( 2, xy, NULL ) );
 
    show( "pointlist_dump", (AstObject *) pointlist2( 2, xy, NULL ) );
 }

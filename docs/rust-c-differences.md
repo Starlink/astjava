@@ -882,7 +882,8 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: region.c `Mask<X>` turns each bound of the Region's bounding box in grid coordinates into a pixel index with `(int)round( bound ) + 2` in `int` arithmetic.
   For a bound beyond the `int` range the conversion is undefined (AArch64 saturates, giving `INT_MAX` or `INT_MIN`; x86-64 gives `INT_MIN` for either), and the sum can then overflow, so any Region whose bounds in grid coordinates pass the `int` range can get an empty box, and every pixel is then taken to be on the side of the Region its outside is.
   An Interval with no upper limit, whose bound is `DBL_MAX`, is one: masking the inside of the Interval x >= 3 on pixels 1 to 10 sets none, and masking its outside sets all ten.
-  A bounded Region taken there by the Mapping is another: the Box from (-1, -1) to (1, 1) through a ZoomMap of 1e12, masked outside on a 4 by 4 grid, sets all 16 pixels though every pixel is inside it (and a PointList so mapped sets 15). **C bug.**
+  A bounded Region taken there by the Mapping is another: the Box from (-1, -1) to (1, 1) through a ZoomMap of 1e12, masked outside on a 4 by 4 grid, sets all 16 pixels though every pixel is inside it. **C bug.**
+  pointlist.c has a `Mask<X>` of its own, which finds the pixel of each point and makes no grid box, so a PointList is not affected.
 - Rust: computes the index in 64-bit integers, which overflow likewise.
 - Java: as C (`RegionMask.mask`): the conversion saturates and the `int` sum wraps, giving the same empty box, and the same pixels on both platforms for these cases; `IntervalTest.masksMatchC` pins the Interval from `src/test/resources/probes/region_null_interval_pointlist_probe.c`, and `RegionOverlapMaskProbeTest.gridBoundsBeyondTheIntRangeMatchC` the Box from `src/test/resources/probes/region_overlap_mask_probe.c`.
 
@@ -913,11 +914,19 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: one element for each base Frame axis.
 - Java: one element for each base Frame axis, the arrays every caller gives.
 
+### The overlap of a PointList and a Box that holds some of its points
+
+- C: region.c `OverlapX` meshes the boundary of one Region and transforms the mesh through the other; when no mesh point is inside, it decides between "apart" and "one inside the other" by whether more than half the points of the first Region's own mesh are inside the second.
+  For the PointList (1, 2), (3, 4) and the Box (0, 0) to (2, 3), which holds only the first point, `astOverlap` gives 4 (partial overlap) with the Box first, from the mesh of the PointList, its two points, one inside the Box and one outside.
+  With the PointList first it gives 1 (apart): the mesh of the Box is all outside the PointList, and of the PointList's own mesh one point of two is inside the Box, which is not more than half. **C quirk.**
+- Rust: as C (`regions/overlap.rs`).
+- Java: as C (`PointListTest.overlapsMatchC`, probe case `pointlist_across_box`).
+
 ### The bounds of a NullRegion with more base than current Frame axes
 
 - C: nullregion.c `GetRegionBounds` writes a bound for each base Frame axis into arrays the caller makes with one element for each current Frame axis, so with more base Frame axes it writes beyond them. **C bug.**
 - Rust: returns one bound for each base Frame axis.
-- Java: as C when there are no more base than current Frame axes, and `AST__INTER` otherwise.
+- Java: as C when there are no more base than current Frame axes, and `AST__INTER` otherwise (`NullRegionTest.boundsWithMoreBaseThanCurrentFrameAxesAreAnError`).
 
 ### Moving an Interval leaves the bounds it keeps
 
@@ -928,8 +937,9 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 ### The overlap of two Intervals with an axis each other's negation
 
 - C: interval.c `Overlap` combines the codes of the axes through a 5 by 5 table, which an axis whose limits are each other's negation (code 6) indexes beyond its end when the Intervals have more than one axis. **C bug.**
+  For one axis C gives 6 (probe case `interval_excluded_negation`); for two Intervals whose limits are each other's negation on one axis and equal on the other, which are apart (1), the pinned build gives 6 in both orders, with that axis first or second (probe cases `interval_negation_on_first_of_two_axes` and `interval_negation_on_second_of_two_axes` of `src/test/resources/probes/region_null_interval_pointlist_probe.c`).
 - Rust: indexes the same table, which panics where C reads beyond it.
-- Java: as C for one axis, and `AST__INTER` for more.
+- Java: as C for one axis (`IntervalTest.overlapsMatchC`), and `AST__INTER` for more (`IntervalTest.limitsEachOthersNegationOnOneOfTwoAxesAreAnError`).
 
 ### The bounds of a mapped Interval with no limit on an axis
 

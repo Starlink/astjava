@@ -455,6 +455,8 @@ class PointListTest {
         check("pointlist_in_box", overlap(pl12(), box2(0, 0, 5, 5)));
         check("pointlist_across_box", overlap(pl12(), box2(0, 0, 2, 3)));
         check("pointlist_beside_box", overlap(pl12(), box2(10, 10, 11, 11)));
+        PointList dup = pointList(2, null, new double[] {1.0, 2.0}, new double[] {1.0, 2.0}, new double[] {3.0, 4.0});
+        check("pointlist_duplicated_point", overlap(dup, pl12()));
     }
 
     @Test

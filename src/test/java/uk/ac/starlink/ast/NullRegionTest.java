@@ -230,6 +230,17 @@ class NullRegionTest {
     }
 
     @Test
+    void boundsWithMoreBaseThanCurrentFrameAxesAreAnError() {
+        // nullregion.c GetRegionBounds writes a bound for each of the two base Frame axes into
+        // arrays with one element; mapRegionInto, unlike the public mapRegion, does not simplify.
+        Mapping pm = new PermMap(2, new int[] {1, -1}, 1, new int[] {1}, new double[] {0.0});
+        Region r = null2().mapRegionInto(pm, new Frame(1));
+        assertEquals(2, r.regionFrameSet().getNin());
+        AstException e = assertThrows(AstException.class, r::getRegionBounds);
+        assertEquals(AstException.AST__INTER, e.getStatus());
+    }
+
+    @Test
     void simplifyMakesTheNullRegionInItsCurrentFrame() {
         NullRegion nr = negated2();
         nr.setMeshSize(50);
