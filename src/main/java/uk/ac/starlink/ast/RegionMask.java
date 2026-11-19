@@ -1,5 +1,7 @@
 package uk.ac.starlink.ast;
 
+import java.math.BigInteger;
+
 /**
  * Masking a grid of data with a Region: region.c {@code Mask<X>}, which a Region's {@link
  * Region#maskData} uses unless its class has its own, and the checks every class's {@code
@@ -80,13 +82,25 @@ final class RegionMask {
         return used;
     }
 
-    /** The number of pixels in the grid, whose bounds {@link #gridRegion} has checked. */
-    static long gridSize(int ndim, int[] lbnd, int[] ubnd) {
-        long npix = 1;
+    /**
+     * The number of pixels in the grid, whose bounds {@link #gridRegion} has checked, after
+     * checking that {@code in} has an element for each. The count is exact, so that a grid with
+     * more pixels than a {@code long} holds is not mistaken for a small one.
+     *
+     * @throws AstException with status {@code AST__DIMIN} if {@code in} has fewer elements than the
+     *     grid has pixels
+     */
+    static int checkedGridSize(String prefix, PixelArray in, int ndim, int[] lbnd, int[] ubnd) {
+        BigInteger npix = BigInteger.ONE;
         for (int idim = 0; idim < ndim; idim++) {
-            npix *= (long) ubnd[idim] - lbnd[idim] + 1;
+            npix = npix.multiply(BigInteger.valueOf((long) ubnd[idim] - lbnd[idim] + 1));
         }
-        return npix;
+        if (npix.compareTo(BigInteger.valueOf(in.length())) > 0) {
+            throw Ast.err(
+                    AstException.AST__DIMIN,
+                    prefix + "The data array has " + in.length() + " elements but its grid has " + npix + ".");
+        }
+        return npix.intValue();
     }
 
     /**
@@ -107,8 +121,7 @@ final class RegionMask {
     static int mask(
             Region reg, Mapping map, boolean inside, int ndim, int[] lbnd, int[] ubnd, PixelArray in, String method) {
         Region used = gridRegion(reg, map, ndim, lbnd, ubnd, method);
-        long npix = gridSize(ndim, lbnd, ubnd);
-        Resample.checkLength(prefix(reg, method), "data", in, npix);
+        int npix = checkedGridSize(prefix(reg, method), in, ndim, lbnd, ubnd);
 
         // The bounding box in grid coordinates as pixel bounds, two pixels wider each way and kept
         // within the grid. C converts each bound with (int)round and widens it in int arithmetic.
@@ -139,7 +152,7 @@ final class RegionMask {
                 for (int ipix = 0; ipix < npix; ipix++) {
                     in.setBad(ipix);
                 }
-                return (int) npix;
+                return npix;
             }
             return 0;
         }
@@ -150,7 +163,7 @@ final class RegionMask {
         PixelArray out;
         long result;
         if (fillOutside) {
-            out = in.filled((int) npix);
+            out = in.filled(npix);
             result = npix - npixg;
         } else {
             out = in;
@@ -185,7 +198,7 @@ final class RegionMask {
             }
         }
         if (fillOutside) {
-            System.arraycopy(out.array(), 0, in.array(), 0, (int) npix);
+            System.arraycopy(out.array(), 0, in.array(), 0, npix);
         }
         return (int) result;
     }

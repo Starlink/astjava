@@ -66,6 +66,34 @@ class RegionMaskArgumentsTest {
         assertArrayEquals(filled(36, 0.5), d);
     }
 
+    /** A mask of {@code reg} on a grid whose pixel count overflows a {@code long}. */
+    private static void checkWrappingGrid(Region reg, int ndim, boolean inside) {
+        int[] lb = new int[ndim];
+        int[] ub = new int[ndim];
+        Arrays.fill(lb, Integer.MIN_VALUE);
+        Arrays.fill(ub, Integer.MAX_VALUE);
+        double[] d = filled(4, 0.5);
+        AstException e =
+                assertThrows(AstException.class, () -> reg.maskD(null, inside, ndim, lb, ub, d, 9.0), "ndim " + ndim);
+        assertEquals(AstException.AST__DIMIN, e.getStatus());
+        String grid = ndim == 2 ? "18446744073709551616" : "79228162514264337593543950336";
+        assertEquals("astMaskD(Box): The data array has 4 elements but its grid has " + grid + ".", e.getMsgText());
+        assertArrayEquals(filled(4, 0.5), d);
+    }
+
+    @Test
+    void aGridWhosePixelCountOverflowsIsDimin() {
+        Region outside2 = new Box(new Frame(2), 1, new double[] {1e10, 1e10}, new double[] {2e10, 2e10}, null);
+        checkWrappingGrid(outside2, 2, false);
+        checkWrappingGrid(box(), 2, false);
+        checkWrappingGrid(box(), 2, true);
+        Region outside3 =
+                new Box(new Frame(3), 1, new double[] {1e10, 1e10, 1e10}, new double[] {2e10, 2e10, 2e10}, null);
+        checkWrappingGrid(outside3, 3, false);
+        Region inside3 = new Box(new Frame(3), 1, new double[] {2, 2, 2}, new double[] {4, 4, 4}, null);
+        checkWrappingGrid(inside3, 3, true);
+    }
+
     @Test
     void shortBoundArraysAreDimin() {
         double[] d = filled(36, 0.5);
