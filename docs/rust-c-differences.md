@@ -887,6 +887,31 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Java: a copy when the Region is of the class of the Region given, and null for any other class (`Region.cast`).
   C's cast into the class of a parent is defined, and is not followed; no Region class of this library is a parent of another (the Stc classes, which are, are not yet ported).
 
+### An Stc's transformation sets Negated on its encapsulated Region
+
+- **C quirk**: `Transform` and `GetBounded` (stc.c) set the encapsulated Region's Negated attribute to the value it already has with `astSetNegated`, around the call and again after it, so it is left set; an Stc reads Negated from its encapsulated Region (stc.c `TestNegated`), so `astTest( stc, "Negated" )` is true once the Stc has transformed points or been asked whether it is bounded, and so is that of a copy (probe `src/test/resources/probes/stc_probe.c`, cases `used_plain` and `used_bounded`).
+  The dump, which writes `Negate` only when it is 1, and `astEqual`, which compares the values, are unchanged.
+- Rust: transforms with the encapsulated Region as it is, so Negated stays unset.
+- Java: as C (`Stc.regBaseMask`, `Stc.isBoundedInner`), putting the value back even when a transformation fails, as C does.
+
+### An Stc dump without its Region or an AstroCoords element
+
+- C: stc.c `astLoadStc` stores a null pointer for a missing `Region` or `Coord<n>` item and reports no error; with no `Region`, the load then dereferences it (`astRegDummyFS`) and crashes unless the Stc was itself written without its Frame, and with a missing `Coord<n>`, the load succeeds and `astGetStcCoord` crashes copying the null KeyMap (probed: SIGSEGV in each). **C bug.**
+- Rust: `AST__LDERR` for either.
+- Java: `AST__LDERR` for either (`Stc(NativeNode)`; `StcProbeTest`).
+
+### An Stc of the abstract class Stc
+
+- C: a dump that begins `Begin Stc` is read by `astLoadStc` as an Stc of the class Stc itself, which transforms points, dumps and compares like any other (`src/test/resources/probes/stc_probe.c`, case `begin_stc`).
+- Rust: no loader for the class name Stc, so the read fails.
+- Java: jniast's `Stc` is abstract, so no Object can be of that class alone; the read fails with `AST__LDERR` (`ObjectRegistry.load`).
+
+### The axis ends of an AstroCoords Error Ellipse fitted to a Circle
+
+- C: an AstroCoords Region in another SkyFrame is mapped into the Stc's Frame and simplified (stc.c `MakeAstroCoordsKeyMap`), so a small Circle becomes the Ellipse that best fits its mapped mesh (ellipse.c `astBestEllipse`); on a near-circle the direction of the fitted axes, and so the ends of the axes the Ellipse is defined by, follow from the last bits of the mesh.
+- Rust: compares the Ellipse's values exactly on the platform its C values were taken on and leaves them out elsewhere (`ERROR_ELLIPSE_LICENSED` in `tests/test_region_stc_oracle.rs`).
+- Java: `java.lang.Math` puts the axis ends about `2e-5` from C's on this platform; `RegionStcOracleTest` leaves out their values from the `sky` and `sky_coord` dumps on every platform, compares the centre within `1e-12`, and compares the two half-lengths within `1e-13`, the spread of the mesh's distances from the centre that C's own two half-lengths show.
+
 ### A value holding `%` set on an Adaptive Region
 
 - C: region.c `SetAttrib` passes a setting of a Frame attribute on an Adaptive Region to `astSet( this->frameset, setting, status )`, so the caller's value is used as a `printf` format (object.c `VSet` hands it to `vsprintf` with no arguments): `Format(1)=%10.3f` stores `     0.000` and `Title=50%s done` stores `50 done`, while a Region that is not Adaptive keeps the value. **C bug.**

@@ -39,6 +39,7 @@ class JniastApiTest {
     static final List<String> IN_SCOPE = Arrays.asList(
             "AstException",
             "AstObject",
+            "AstroCoords",
             "Axis",
             "Box",
             "Channel",
@@ -81,6 +82,8 @@ class JniastApiTest {
             "SpecFrame",
             "SpecMap",
             "SphMap",
+            "Stc",
+            "StcResourceProfile",
             "SwitchMap",
             "TimeFrame",
             "TimeMap",

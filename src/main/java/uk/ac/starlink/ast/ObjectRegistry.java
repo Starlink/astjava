@@ -104,6 +104,8 @@ final class ObjectRegistry {
                 return SpecMap::new;
             case "SphMap":
                 return SphMap::new;
+            case "StcResourceProfile":
+                return StcResourceProfile::new;
             case "SwitchMap":
                 return SwitchMap::new;
             case "TimeFrame":
@@ -139,6 +141,13 @@ final class ObjectRegistry {
     static AstObject load(NativeNode node) {
         Loader loader = loader(node.className);
         if (loader == null) {
+            if ("Stc".equals(node.className)) {
+                // C reads an Stc of the class Stc itself (astLoadStc); jniast's Stc is abstract.
+                throw Ast.err(
+                        AstException.AST__LDERR,
+                        "astLoadStc(Stc): An Object of the abstract class Stc cannot be read; only its "
+                                + "subclasses can.");
+            }
             throw Ast.err(AstException.AST__LDERR, "unknown AST class: " + node.className);
         }
         return loader.load(node);
