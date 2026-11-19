@@ -902,6 +902,42 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: not examined.
 - Java: the Mapping makes an infinite value bad, so every corner is bad and so is every bound (`IntervalTest.mappedUnboundedIntervalMatchesC`).
 
+### Moving an Ellipse (`RegCentre`)
+
+- C: ellipse.c `RegCentre` moves the three defining points with `rptr[ ip ][ 0 ]` and `rptr[ ip ][ 1 ]` for `ip` from 0 to 2, taking the axis and point indices of its PointSet the wrong way round, so it reads and writes through the pointer beyond the two axis pointers: an Ellipse given as the uncertainty of a Region, which `astSetUnc` moves to the Region's first point, crashes. **C bug.**
+- Rust: moves each defining point by the offset from the old centre to the new.
+- Java: as Rust, which is what C's comment describes (`Ellipse.regCentre`); `src/test/resources/probes/region_circle_ellipse_probe.c` is linked with ellipse.c changed to index the points correctly (its header gives the recipe), and `EllipseTest.anEllipseUncertaintyIsMovedToTheRegionMatchesC` takes its values from it.
+
+### An Ellipse whose points do not determine an ellipse
+
+- C: `astInitEllipse` accepts such points; ellipse.c `Cache` reports `AST__BADIN` when the Ellipse is first used, but marks its values up to date all the same, so a second use reads values never set. **C bug.**
+- Rust: reports the error on every use.
+- Java: as Rust: each use reports C's error (`Ellipse.cache`).
+
+### Moving a Circle (`RegCentre`)
+
+- C: circle.c `RegCentre` moves the centre and the point on the circumference, keeping the radius, but does not reset what the Circle and the Region keep, so the bounds and boundary mesh of a Circle of more than two dimensions, which C keeps, stay where they were until something else resets them. **C quirk.**
+- Rust: discards them.
+- Java: as C (`Circle.regCentre`).
+
+### The smaller Circle of a Circle's boundary test (`RegPins`)
+
+- C: circle.c `RegPins` makes a Circle smaller than the one tested by half the border width, with no lower limit on its radius; a negative radius places the point on the circumference the other way, giving a Circle of the radius's magnitude.
+- Rust: limits the radius to zero, and does not re-centre the uncertainties on the Circle before bounding them.
+- Java: as C (`Circle.regPins`).
+
+### The best fitting Ellipse through a mesh with no point away from its centre
+
+- C: `astBestEllipse` looks for the first mesh point that is good and away from the centre, and when there is none reads beyond its arrays. **C bug.**
+- Rust: returns no Ellipse.
+- Java: `AST__INTER` (`Ellipse.bestEllipse`), an error rather than a result C does not define.
+
+### Bad and non-finite coordinates of a Circle or an Ellipse
+
+- C: `astInitCircle` and `astInitEllipse` reject a coordinate equal to `AST__BAD` (`AST__BADIN`) and accept NaN.
+- Rust: rejects `AST__BAD` and NaN.
+- Java: rejects `AST__BAD`, NaN and the infinities with C's message, by the library's rule that a non-finite coordinate is bad, as for a Box.
+
 ## FitsChan
 
 ### An equals sign in a keyword name is reported as an `astPutFits` error from every method

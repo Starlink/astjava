@@ -151,15 +151,12 @@ public class NullRegion extends Region {
     /**
      * The default uncertainty (C's {@code GetDefUnc}, nullregion.c): a Circle of zero radius at the
      * origin of the base Frame.
-     *
-     * @throws AstException with status {@code AST__INTER}: the Circle class is not yet ported
      */
     @Override
     Region getDefUnc() {
-        throw Ast.err(
-                AstException.AST__INTER,
-                "astGetDefUnc(" + astClass() + "): The default uncertainty of a " + astClass()
-                        + " is a Circle, which is not yet ported (internal AST programming error).");
+        Frame bfrm = baseFrame();
+        double[] cen = new double[bfrm.getNaxes()];
+        return new Circle(bfrm, 1, cen, new double[] {0.0}, null);
     }
 
     /**

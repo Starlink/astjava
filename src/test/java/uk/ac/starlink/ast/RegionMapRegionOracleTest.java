@@ -14,8 +14,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * keeps as given (permmap.c {@code MapMerge}, {@code NullPerm}) ({@code
  * oracle/region_mapregion.json}, from {@code tools/oracle_fixtures/region_mapregion_probe.c}).
  *
- * <p>Listed in {@code deferred/rust-tests.txt}: {@code identity_chain_dumps_only_the_frame}
- * (Circle), and {@code public_map_region_simplifies}
+ * <p>Listed in {@code deferred/rust-tests.txt}: {@code public_map_region_simplifies}
  * (needs simplification: {@link Region#mapRegion} of a Box through a PermMap gives C's re-fitted
  * Box only once Box has its own Simplify).
  */
@@ -33,6 +32,17 @@ class RegionMapRegionOracleTest {
         Interval iv = new Interval(new Frame(3), new double[] {0.0, 0.0, 0.0}, new double[] {1.0, 1.0, bad}, null);
         Mapping pm = new PermMap(3, new int[] {1, 2, 0}, 2, new int[] {1, 2}, null);
         assertEquals(expected("DROP_UNBOUNDED"), ChannelText.dump(iv.mapRegionInto(pm, new Frame(2))));
+    }
+
+    @Test
+    void identityChainDumpsOnlyTheFrame() {
+        Frame foo = new Frame(2);
+        foo.setDomain("FOO");
+        Frame bar = new Frame(2);
+        bar.setDomain("BAR");
+        Circle circle = new Circle(foo, new double[] {1.0, 0.5}, 0.1, null);
+        Mapping chain = new CmpMap(new ZoomMap(2, 2.0), new ZoomMap(2, 0.5), true);
+        assertEquals(expected("IDENTITY_CHAIN"), ChannelText.dump(circle.mapRegionInto(chain, bar)));
     }
 
     @Test

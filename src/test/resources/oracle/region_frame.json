@@ -1,0 +1,16 @@
+{
+  "source": "crates/starlink-ast/tests/region_frame_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/region_frame_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "CENTRE": [1.0,1.2],
+    "RADIUS": 0.01,
+    "OFFSET2": [2.3832304469493555,1.1476573411354147,2.3047077453110214],
+    "RESOLVE": [1.2119356637997294,1.2103027933294657,0.07634543637413305,0.08977220512938465],
+    "AX_DISTANCE_OFFSET": [-0.1831853071795857,0.11681469282041412],
+    "PICKED": ["Circle","ICRS"],
+    "SYSTEM": "ICRS",
+    "CONVERTS": [true,true],
+    "MAPPED_BOX_POINTS": [1.0,2.0,1.0,2.0]
+  }
+}

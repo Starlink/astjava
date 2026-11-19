@@ -25,7 +25,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * zoommap_simplified}, {@code cmpmap}, {@code cmpmap_copy}, {@code cmpmap_simplified}, {@code
  * frame}, {@code skyframe}, {@code frameset}, {@code frameset_frame_id}, {@code
  * frameset_part_ids}, {@code cmpframe}, {@code fitschan}, {@code cmpmap_unsimplifiable}, {@code
- * tranmap} and {@code ratemap}.
+ * tranmap}, {@code ratemap} and {@code circle}.
  * {@code simplify} returns the ZoomMap itself, as C's {@code astSimplify} returns a Mapping it cannot simplify, recording it as
  * simplified, and a CmpMap shares its components, as C's does, so the Rust test's exclusions for
  * copies do not arise for them. A case whose dump differs from C's is listed in {@link #EXCLUDED},
@@ -54,7 +54,8 @@ class ObjectIdOracleTest {
             "cmpframe",
             "fitschan",
             "tranmap",
-            "ratemap");
+            "ratemap",
+            "circle");
 
     /** The cases whose dump differs from C's, with the reason. */
     private static final String[][] EXCLUDED = {};
@@ -108,6 +109,11 @@ class ObjectIdOracleTest {
                 return z;
             case "zoommap_blank":
                 return zoom(2.0, "");
+            case "circle": {
+                Circle c = new Circle(frame(2, "cframe"), new double[] {0.0, 0.0}, 1.0, null);
+                c.setID("cid");
+                return c;
+            }
             case "keymap":
                 KeyMap km = new KeyMap();
                 km.setID("km");

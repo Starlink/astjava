@@ -32,6 +32,8 @@ final class ObjectRegistry {
                 return Box::new;
             case "Channel":
                 return Channel::new;
+            case "Circle":
+                return Circle::new;
             case "CmpFrame":
                 return CmpFrame::new;
             case "CmpMap":
@@ -40,6 +42,8 @@ final class ObjectRegistry {
                 return DSBSpecFrame::new;
             case "DssMap":
                 return DssMap::new;
+            case "Ellipse":
+                return Ellipse::new;
             case "FitsChan":
                 return FitsChan::new;
             case "FluxFrame":

@@ -20,7 +20,9 @@ import org.junit.jupiter.api.Test;
  * C's {@code astNormBox} takes a Mapping that leaves a point inside unchanged and makes one outside
  * bad, so here the predicate that rejects a point with a bad axis is a MathMap whose outputs are
  * bad when any input is, and the one that accepts every point is a PermMap of constants. {@code
- * norm_box_bounds_do_not_depend_on_component_order} needs a Circle and is deferred.
+ * norm_box_bounds_do_not_depend_on_component_order}, ported from testcmpframe.c's {@code
+ * check_normbox_component_order}, bounds a Circle on CmpFrames of a SkyFrame and a 1-D Frame in
+ * either order.
  */
 class CmpFrameTest {
 
@@ -319,5 +321,32 @@ class CmpFrameTest {
         assertEquals(1.0, ubnd[0]);
         assertEquals(2.0 * Math.PI, ubnd[1]);
         assertEquals(Math.PI / 2, ubnd[2]);
+    }
+
+    @Test
+    void normBoxBoundsDoNotDependOnComponentOrder() {
+        double radius = 0.5;
+        Frame fplane1 = new Frame(1);
+        fplane1.setDomain("FPLANE");
+        Frame fplane2 = new Frame(1);
+        fplane2.setDomain("FPLANE");
+        SkyFrame sky1 = new SkyFrame();
+        sky1.setSystem("ICRS");
+        SkyFrame sky2 = new SkyFrame();
+        sky2.setSystem("ICRS");
+        Circle c1 = new Circle(new CmpFrame(sky1, fplane1), new double[] {0.0, 1.2707963267948965, 50.0}, radius, null);
+        Circle c2 = new Circle(new CmpFrame(fplane2, sky2), new double[] {50.0, 0.0, 1.2707963267948965}, radius, null);
+        double[][] b1 = c1.getRegionBounds();
+        double[][] b2 = c2.getRegionBounds();
+        for (int axis = 0; axis < 3; axis++) {
+            assertTrue(
+                    b1[0][axis] != BAD && b1[1][axis] != BAD, "axis " + (axis + 1) + " of the sky-first bounds is bad");
+        }
+        assertEquals(b2[0][0], b1[0][2], 1.0e-10);
+        assertEquals(b2[1][0], b1[1][2], 1.0e-10);
+        for (int axis = 0; axis < 2; axis++) {
+            assertEquals(b2[0][axis + 1], b1[0][axis], 1.0e-10, "sky axis " + (axis + 1));
+            assertEquals(b2[1][axis + 1], b1[1][axis], 1.0e-10, "sky axis " + (axis + 1));
+        }
     }
 }

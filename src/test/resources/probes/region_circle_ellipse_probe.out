@@ -1,0 +1,405 @@
+== circle_flat
+tran 1 1 1 1 0 0 0 0 1 1
+bounded 1
+bounds -2 -1 4 5
+points 2 1 4 2 2
+unc Box 0
+bounds 0.99999700000000002 1.999997 1.000003 2.000003
+unc none
+== circle_flat_negated
+tran 0 1 1 0 1 0 0 1 0 1
+bounded 0
+bounds -2 -1 4 5
+== circle_flat_open
+tran 1 0 0 1 0 0 0 0 1 0
+== circle_flat_open_negated
+tran 0 0 0 0 1 0 0 1 0 0
+== circle_form0
+points 2 1 4 2 6
+bounds -4 -3 6 7
+tran 1 1 1 1 1 0 0 0 1 1
+== circle_1d
+tran 1 1 0 0 1
+bounds 7 13
+points 2 10 13
+
+mesh
+
+7
+13
+ENDMESH
+
+== circle_3d
+tran 1 1 1 0 0
+bounds 3 8 -5 7 12 -1
+points 2 5 7 10 10 -3 -3
+== circle_frameset
+domain Y
+points 2 0 1 0 0
+== circle_frameset_inverted
+domain X
+== circle_region_frame
+domain X
+points 2 0 2 0 0
+== circle_form_2
+!! AST: Error in routine frame at line 95 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitCircle(Circle): The value supplied for parameter "form" (2) is illegal - it should be 0 or 1 (programming error).
+status 233933202
+== circle_bad_centre_form1
+!! AST: Error in routine circle at line 101 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitCircle(Circle): The value of axis 1 is undefined at the circle centre.
+status 233933202
+== circle_bad_radius
+!! AST: Error in routine circle at line 101 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitCircle(Circle): The value of axis 1 is undefined on the circumference of the circle.
+status 233933202
+== circle_bad_centre_form0
+!! AST: Error in routine frame at line 95 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitCircle(Circle): The value of axis 1 is undefined at the circle centre.
+status 233933202
+== circle_bad_point
+!! AST: Error in routine frame at line 95 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitCircle(Circle): The value of axis 2 is undefined on the circumference of the circle.
+status 233933202
+== circle_unc_dims
+!! AST: Error in routine circle at line 101 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astSetUnc(Circle): Bad 3 dimensional uncertainty Frame ( 3-d coordinate system) supplied.
+!  Cannot convert it to the Frame of the new Circle.
+status 233933522
+== circle_unc_shape
+!! AST: Error in routine circle at line 101 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astSetUnc(Circle): Bad uncertainty shape (Interval) supplied.
+!  The uncertainty Region must be an instance of a centro-symetric subclass of Region (e.g. Box, Circle, Ellipse, etc).
+status 233933522
+== circle_unc_negated
+unc Box 0
+bounds 0.89999999999999991 1.8500000000000001 1.1000000000000001 2.1499999999999999
+== circle_unc_circle
+unc Circle 0
+bounds 0.99000000000000021 1.9900000000000002 1.0099999999999998 2.0099999999999998
+bounds 0 1 2 3
+== circle_unc_ellipse
+unc Ellipse 0
+bounds 0.98876687433606347 1.9806662103125341 1.0112331256639349 2.0193337896874661
+bounds 0 1 2 3
+== box_unc_ellipse
+unc Ellipse 0
+bounds 14.887668743360644 14.806662103125346 15.112331256639356 15.193337896874656
+points 3 15 15.059104041332269 15.095533648912561 15.000000000000002 15.191067297825123 14.970447979333867
+== circle_negative_radius
+points 2 1 3 2 2
+bounds -1 0 3 4
+tran 1 0 0 0 0 0 0 0 1 0
+== circle_zero_radius
+points 2 1 1 2 2
+bounds 1 2 1 2
+tran 1 0 0 0 0 0 0 0 0 0
+unc Box 0
+bounds 0.99999949999999993 1.9999989999999999 1.0000005000000001 2.0000010000000001
+== circle_mapped
+points 2 2 8 4 4
+bounds -4 -2 8 10
+tran 1 1 1 1 1 0 0 0 1 1
+== circle_show
+ Begin Circle 	# Circular or spherical region
+#   Title = "2-d coordinate system" 	# Title of coordinate system
+#   Naxes = 2 	# Number of coordinate axes
+#   Epoch = 2000 	# Julian epoch of observation
+#   Lbl1 = "Axis 1" 	# Label for axis 1
+#   Lbl2 = "Axis 2" 	# Label for axis 2
+#   System = "Cartesian" 	# Coordinate system type
+ IsA Frame 	# Coordinate system description
+    Adapt = 1 	# Region adapts to coord sys changes
+    Frm = 	# Coordinate system
+       Begin Frame 	# Coordinate system description
+#         Title = "2-d coordinate system" 	# Title of coordinate system
+          Naxes = 2 	# Number of coordinate axes
+#         Lbl1 = "Axis 1" 	# Label for axis 1
+#         Lbl2 = "Axis 2" 	# Label for axis 2
+          Ax1 = 	# Axis number 1
+             Begin Axis 	# Coordinate axis
+             End Axis
+          Ax2 = 	# Axis number 2
+             Begin Axis 	# Coordinate axis
+             End Axis
+       End Frame
+    Points = 	# Points defining the shape
+       Begin PointSet 	# Container for a set of points
+          Npoint = 2 	# Number of points
+          Ncoord = 2 	# Number of coordinates per point
+          X1 = 1 	# Coordinate values...
+          X2 = 2
+          X3 = 4
+          X4 = 2
+       End PointSet
+ IsA Region 	# An area within a coordinate system
+ End Circle
+== circle_show_unc
+ Begin Circle 	# Circular or spherical region
+#   Title = "2-d coordinate system" 	# Title of coordinate system
+#   Naxes = 2 	# Number of coordinate axes
+#   Epoch = 2000 	# Julian epoch of observation
+#   Lbl1 = "Axis 1" 	# Label for axis 1
+#   Lbl2 = "Axis 2" 	# Label for axis 2
+#   System = "Cartesian" 	# Coordinate system type
+ IsA Frame 	# Coordinate system description
+    Adapt = 1 	# Region adapts to coord sys changes
+    Frm = 	# Coordinate system
+       Begin Frame 	# Coordinate system description
+#         Title = "2-d coordinate system" 	# Title of coordinate system
+          Naxes = 2 	# Number of coordinate axes
+#         Lbl1 = "Axis 1" 	# Label for axis 1
+#         Lbl2 = "Axis 2" 	# Label for axis 2
+          Ax1 = 	# Axis number 1
+             Begin Axis 	# Coordinate axis
+             End Axis
+          Ax2 = 	# Axis number 2
+             Begin Axis 	# Coordinate axis
+             End Axis
+       End Frame
+    Points = 	# Points defining the shape
+       Begin PointSet 	# Container for a set of points
+          Npoint = 2 	# Number of points
+          Ncoord = 2 	# Number of coordinates per point
+          X1 = 1 	# Coordinate values...
+          X2 = 2
+          X3 = 2
+          X4 = 2
+       End PointSet
+    Unc = 	# Region defining positional uncertainties.
+       Begin Box 	# Axis intervals
+#         Title = "2-d coordinate system" 	# Title of coordinate system
+#         Naxes = 2 	# Number of coordinate axes
+#         Epoch = 2000 	# Julian epoch of observation
+#         Lbl1 = "Axis 1" 	# Label for axis 1
+#         Lbl2 = "Axis 2" 	# Label for axis 2
+#         System = "Cartesian" 	# Coordinate system type
+       IsA Frame 	# Coordinate system description
+          Adapt = 1 	# Region adapts to coord sys changes
+          Points = 	# Points defining the shape
+             Begin PointSet 	# Container for a set of points
+                Npoint = 2 	# Number of points
+                Ncoord = 2 	# Number of coordinates per point
+                X1 = 1 	# Coordinate values...
+                X2 = 2
+                X3 = 1.1000000000000001
+                X4 = 2.1499999999999999
+             End PointSet
+       IsA Region 	# An area within a coordinate system
+       End Box
+ IsA Region 	# An area within a coordinate system
+ End Circle
+== circle_showmesh
+1	5
+3.12132	4.12132
+4	2
+3.12132	-0.12132
+1	-1
+-1.12132	-0.12132
+-2	2
+-1.12132	4.12132
+ENDMESH
+
+== ellipse_form1
+tran 1 0 0 1 1 0 0 0 1 0
+bounded 1
+bounds -0.1233125663935537 0.066621031253445651 2.1233125663935537 3.9333789687465539
+points 3 1 1.5910404133226792 1.955336489125606 2 3.910672978251212 1.7044797933386604
+unc Box 0
+bounds 0.9999988766874337 1.9999980666210311 1.0000011233125663 2.0000019333789685
+== ellipse_form1_negated
+tran 0 1 1 0 0 0 0 1 0 1
+bounded 0
+== ellipse_form1_open
+tran 1 0 0 1 1 0 0 0 1 0
+== ellipse_form0
+tran 1 1 1 0 1
+bounds -2 -0.99997066623643183 1.9990131207314616 0.99997066623643183
+points 3 0 2 1 0 0 0.86599999999999999
+== ellipse_form_2
+!! AST: Error in routine frame at line 95 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitEllipse(Ellipse): The value supplied for parameter "form" (2) is illegal - it should be 0 or 1 (programming error).
+!  astInitEllipse(Ellipse): The supplied Frame has 0 axes - ellipses must have exactly 2 axes.
+status 233933202
+== ellipse_naxes
+!! AST: Error in routine frame at line 95 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitEllipse(Ellipse): The supplied Frame has 3 axes - ellipses must have exactly 2 axes.
+status 233933202
+== ellipse_bad_centre
+!! AST: Error in routine frame at line 95 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitEllipse(Ellipse): The value of axis 1 is undefined at the ellipse centre.
+status 233933202
+== ellipse_bad_axis
+!! AST: Error in routine frame at line 95 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitEllipse(Ellipse): The value of axis 1 is undefined at point 2 on the circumference of the ellipse.
+status 233933202
+== ellipse_bad_angle
+!! AST: Error in routine frame at line 95 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitEllipse(Ellipse): The value of axis 1 is undefined at point 1 on the circumference of the ellipse.
+status 233933202
+== ellipse_bad_point1
+!! AST: Error in routine frame at line 95 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitEllipse(Ellipse): The value of axis 1 is undefined at point 1 on the circumference of the ellipse.
+status 233933202
+== ellipse_bad_point2
+!! AST: Error in routine frame at line 95 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitEllipse(Ellipse): The value of axis 1 is undefined at point 2 on the circumference of the ellipse.
+status 233933202
+== ellipse_zero_axis
+points 3 0 0 0.95533648912560598 0 0 -0.29552020666133955
+!! AST: Error in routine tran at line 137 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitEllipse(Ellipse): The supplied points do not determine an ellipse.
+status 233933202
+== ellipse_on_its_axis
+!! AST: Error in routine bounds at line 153 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astInitEllipse(Ellipse): The supplied points do not determine an ellipse.
+status 233933202
+== ellipse_negative_axis
+points 3 1 0.40895958667732091 1.955336489125606 2 0.089327021748788038 1.7044797933386604
+tran 1 0 0 1 1 0 0 0 1 0
+== ellipse_unc_dims
+!! AST: Error in routine ellipse at line 118 in file src/test/resources/probes/region_circle_ellipse_probe.c.
+!  astSetUnc(Ellipse): Bad 3 dimensional uncertainty Frame ( 3-d coordinate system) supplied.
+!  Cannot convert it to the Frame of the new Ellipse.
+status 233933522
+== ellipse_unc_box
+unc Box 0
+bounds 0.89999999999999991 1.8500000000000001 1.1000000000000001 2.1499999999999999
+== ellipse_unc_ellipse
+unc Ellipse 0
+bounds 0.98700281043390214 1.9818074833300636 1.0129971895660961 2.0181925166699384
+points 3 0.99999999999999911 1.0095885107720832 1.008775825618903 2.0000000000000009 2.0175516512378087 1.9952057446139593
+== ellipse_axis_rule_sky_first
+bounds -3.1225652576768708 -3.5 3.1225652576768272 3.5
+== ellipse_axis_rule_sky_second
+bounds -4 -3.1185228346592884 3.9980262414629233 3.1185228346593132
+== ellipse_mapped
+points 3 2 3.1820808266453584 3.910672978251212 4 7.8213459565024239 3.4089595866773208
+bounds -0.2466251327871074 0.13324206250689138 4.2466251327871074 7.8667579374931078
+== ellipse_show
+ Begin Ellipse 	# Elliptical region
+#   Title = "2-d coordinate system" 	# Title of coordinate system
+#   Naxes = 2 	# Number of coordinate axes
+#   Epoch = 2000 	# Julian epoch of observation
+#   Lbl1 = "Axis 1" 	# Label for axis 1
+#   Lbl2 = "Axis 2" 	# Label for axis 2
+#   System = "Cartesian" 	# Coordinate system type
+ IsA Frame 	# Coordinate system description
+    Adapt = 1 	# Region adapts to coord sys changes
+    Frm = 	# Coordinate system
+       Begin Frame 	# Coordinate system description
+#         Title = "2-d coordinate system" 	# Title of coordinate system
+          Naxes = 2 	# Number of coordinate axes
+#         Lbl1 = "Axis 1" 	# Label for axis 1
+#         Lbl2 = "Axis 2" 	# Label for axis 2
+          Ax1 = 	# Axis number 1
+             Begin Axis 	# Coordinate axis
+             End Axis
+          Ax2 = 	# Axis number 2
+             Begin Axis 	# Coordinate axis
+             End Axis
+       End Frame
+    Points = 	# Points defining the shape
+       Begin PointSet 	# Container for a set of points
+          Npoint = 3 	# Number of points
+          Ncoord = 2 	# Number of coordinates per point
+          X1 = 1 	# Coordinate values...
+          X2 = 2
+          X3 = 1.5910404133226792
+          X4 = 3.910672978251212
+          X5 = 1.955336489125606
+          X6 = 1.7044797933386604
+       End PointSet
+ IsA Region 	# An area within a coordinate system
+ End Ellipse
+== ellipse_showmesh
+1.59104	3.91067
+2.09345	3.14209
+1.95534	1.70448
+1.2576	0.439986
+0.40896	0.089327
+-0.0934536	0.857915
+0.0446635	2.29552
+0.742404	3.56001
+ENDMESH
+
+== pins_circle
+pins 1 1
+pins 0 0
+pins 0 0
+pins 0 1 0 1
+pins 0 1 0
+pins 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+pins 1 1 1
+== pins_ellipse
+pins 0 0 0 0
+pins 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+pins 0 0
+== fit_circle_of_circle
+fit Circle
+points 2 1 3.9999999999999996 2 2
+pins 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+== fit_circle_of_ellipse
+fit Circle
+points 2 1 2.5811388300841887 2 2
+pins 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+== fit_ellipse_of_ellipse
+fit Ellipse
+points 3 1 1.5910404133226752 1.9553364891256066 2 3.9106729782512133 1.7044797933386624
+pins 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+== fit_ellipse_of_circle
+fit Ellipse
+points 3 1 1.6083618860695374 3.9376684318652901 2 4.9376684318652977 1.3916381139304643
+pins 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+== fit_circle_of_stretched_circle
+fit Circle
+points 2 1 4.4792240514229595 2.6000000000000001 2.6000000000000001
+pins 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+== fit_ellipse_of_stretched_circle
+fit Ellipse
+points 3 1 0.99999999999998834 -1.9999999999999987 2.6000000000000001 -1.3000000000000003 2.6000000000000103
+pins 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+== fit_ellipse_of_sheared_ellipse
+fit Ellipse
+points 3 1.6000000000000001 2.8487008145741743 2.339821337020672 2 3.869153027852624 1.5057571571663169
+pins 0 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1
+== fit_circle_of_sky_circle
+fit Circle
+points 2 1 1.8868002009809872 1.3 1.2120604327766209
+pins 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+== fit_ellipse_of_sky_ellipse
+fit Ellipse
+points 3 1 0.92843387272726285 0.85902809236176347 0.80000000000000004 0.60750972874701281 0.82467482183715601
+pins 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+== fit_circle_of_sky_ellipse
+fit Circle
+points 2 1 1.2569193110816475 0.80000000000000004 0.79498423010282437
+pins 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+== overlap_circle_same
+overlap 5 5
+== overlap_circle_inside
+overlap 3 2
+== overlap_circle_partial
+overlap 4 4
+== overlap_circle_none
+overlap 1 1
+== overlap_circle_negation
+overlap 6 6
+== overlap_circle_box
+overlap 3 2
+== overlap_circle_ellipse
+overlap 3 2
+== overlap_ellipse_same
+overlap 5 5
+== overlap_ellipse_inside
+overlap 3 2
+== null_default_unc
+unc Circle 0
+bounds 0 0 0 0
+unc none
+== null_sky_default_unc
+unc Circle 0
+bounds 0 0 0 0
+== null_mapped_default_unc
+unc Circle 3
+base unc Circle 2

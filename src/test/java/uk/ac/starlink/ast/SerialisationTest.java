@@ -780,4 +780,43 @@ class SerialisationTest {
         assertTrue(region.pointInRegion(new double[] {3.0, 4.0}));
         assertFalse(region.pointInRegion(new double[] {0.0, 0.0}));
     }
+
+    /** Rust {@code round_trip_circle}: a Circle written and read back holds its centre. */
+    @Test
+    void roundTripCircle() {
+        String text = ChannelText.dump(new Circle(new Frame(2), new double[] {10.0, 20.0}, 5.0, null));
+        assertTrue(text.contains("Begin Circle"), "missing Begin Circle");
+        assertTrue(text.contains("End Circle"), "missing End Circle");
+        assertTrue(text.contains("Points"), "missing Points");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {10.0, 20.0}));
+        assertFalse(region.pointInRegion(new double[] {100.0, 100.0}));
+    }
+
+    /** Rust {@code round_trip_ellipse}: an Ellipse written and read back holds its centre. */
+    @Test
+    void roundTripEllipse() {
+        Ellipse e = new Ellipse(
+                new Frame(2), 1, new double[] {5.0, 5.0}, new double[] {3.0, 2.0}, new double[] {Math.PI / 2}, null);
+        String text = ChannelText.dump(e);
+        assertTrue(text.contains("Begin Ellipse"), "missing Begin Ellipse");
+        assertTrue(text.contains("End Ellipse"), "missing End Ellipse");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {5.0, 5.0}));
+        assertFalse(region.pointInRegion(new double[] {50.0, 50.0}));
+    }
+
+    /** Rust {@code round_trip_negated_circle}: a negated Circle read back is still negated. */
+    @Test
+    void roundTripNegatedCircle() {
+        Circle c = new Circle(new Frame(2), new double[] {0.0, 0.0}, 5.0, null);
+        c.negate();
+        String text = ChannelText.dump(c);
+        assertTrue(text.contains("Negate"), "missing Negate attribute");
+        Region region = (Region) ChannelText.read(text);
+        assertFalse(region.pointInRegion(new double[] {0.0, 0.0}));
+        assertTrue(region.pointInRegion(new double[] {100.0, 100.0}));
+    }
 }

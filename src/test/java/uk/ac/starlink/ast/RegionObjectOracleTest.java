@@ -22,7 +22,11 @@ class RegionObjectOracleTest {
     private static final JsonNode DATA = ProbeData.load("region_object");
 
     /** The number of cases whose classes are present. */
-    private static final int CASES_RUN = 2;
+    private static final int CASES_RUN = 4;
+
+    private static Circle circle() {
+        return new Circle(new Frame(2), new double[] {0.0, 0.0}, 1.0, null);
+    }
 
     /** The Region a case builds, or null if its classes are not yet present. */
     private static Region build(String name) {
@@ -37,10 +41,16 @@ class RegionObjectOracleTest {
                 iv.set("UseDefs=0");
                 return iv;
             }
-            case "circle_ident_usedefs":
+            case "circle_ident_usedefs": {
+                Circle c = circle();
+                c.setIdent("Circ");
+                c.set("UseDefs=0");
+                return c;
+            }
+            case "circle_plain":
+                return circle();
             case "polygon_ident":
             case "cmpregion_idents":
-            case "circle_plain":
                 return null;
             default:
                 throw new AssertionError("no construction for case " + name);

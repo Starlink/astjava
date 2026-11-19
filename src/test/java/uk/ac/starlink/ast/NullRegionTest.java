@@ -24,8 +24,9 @@ import org.junit.jupiter.api.Test;
  * probes/region_null_interval_pointlist_probe.c}: membership, Bounded, bounds, mesh, masking,
  * overlap, the constructor's uncertainty checks and the dump, against C.
  *
- * <p>Listed in {@code deferred/rust-tests.txt}: {@code default_uncertainty_is_built_in_the_base_frame},
- * since a NullRegion's default uncertainty is a Circle (nullregion.c {@code GetDefUnc}).
+ * <p>The default uncertainty, a Circle of zero radius at the origin of the base Frame
+ * (nullregion.c {@code GetDefUnc}), is checked against {@code
+ * probes/region_circle_ellipse_probe.c}.
  */
 class NullRegionTest {
 
@@ -285,6 +286,29 @@ class NullRegionTest {
         Region back = assertInstanceOf(NullRegion.class, ChannelText.read(ChannelText.dump(negated2())));
         assertTrue(back.getNegated());
         assertTrue(back.pointInRegion(new double[] {3.0, 4.0}));
+    }
+
+    @Test
+    void defaultUncertaintyIsBuiltInTheBaseFrame() {
+        Mapping pm = new PermMap(2, new int[] {1, 2}, 3, new int[] {1, 2, -1}, new double[] {5.0});
+        Region mapped = null2().mapRegionInto(pm, new Frame(3));
+        assertEquals(3, mapped.getUncFrm(FrameSet.AST__CURRENT).getNaxes());
+        assertEquals(2, mapped.getUncFrm(FrameSet.AST__BASE).getNaxes());
+    }
+
+    @Test
+    void defaultUncertaintiesMatchC() {
+        check(CircleTest.PROBE, "null_default_unc", unc(null2(), true) + unc(null2(), false));
+        check(CircleTest.PROBE, "null_sky_default_unc", unc(new NullRegion(new SkyFrame(), null), true));
+        Mapping pm = new PermMap(2, new int[] {1, 2}, 3, new int[] {1, 2, -1}, new double[] {5.0});
+        Region mapped = null2().mapRegionInto(pm, new Frame(3));
+        Region u = mapped.getUnc(true);
+        Region base = mapped.getUncFrm(FrameSet.AST__BASE);
+        check(
+                CircleTest.PROBE,
+                "null_mapped_default_unc",
+                "unc " + u.astClass() + " " + u.getNaxes() + "\nbase unc " + base.astClass() + " " + base.getNaxes()
+                        + "\n");
     }
 
     @Test

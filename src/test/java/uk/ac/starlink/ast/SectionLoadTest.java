@@ -35,9 +35,6 @@ class SectionLoadTest {
 
     private static Map<String, String> outOfScope() {
         Map<String, String> m = new LinkedHashMap<>();
-        m.put("circle_negate_in_class", "Circle");
-        m.put("circle_negate_placed", "Circle");
-        m.put("circle_ident_in_region", "Circle");
         m.put("polygon_simpvt_in_region", "Polygon");
         m.put("polygon_simpvt_placed", "Polygon");
         m.put("polygon_no_order", "Polygon");
@@ -112,7 +109,7 @@ class SectionLoadTest {
                 }
             }
         }
-        assertEquals(26, run, "cases run");
+        assertEquals(29, run, "cases run");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 }

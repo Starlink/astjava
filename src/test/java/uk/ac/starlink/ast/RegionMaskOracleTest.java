@@ -18,16 +18,13 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * tools/oracle_fixtures/region_mask_probe.c}). The "_prefilled" cases start from an array holding
  * 0, 1, 2 in turn rather than zeros, and the "_ub" cases (also prefilled) mask {@code byte} data,
  * where C masks {@code unsigned char}: the values are the same.
- *
- * <p>The cases of a Circle wait for that class; the number of cases run is asserted, so that the
- * task that adds it raises it.
  */
 class RegionMaskOracleTest {
 
     private static final JsonNode DATA = ProbeData.load("region_mask");
 
-    /** The number of cases whose classes are present. */
-    private static final int CASES_RUN = 7;
+    /** The number of cases. */
+    private static final int CASES_RUN = 18;
 
     private static final int[] G6L = {1, 1};
     private static final int[] G6U = {6, 6};
@@ -55,11 +52,15 @@ class RegionMaskOracleTest {
         return b;
     }
 
+    private static Region circle(double cx, double cy, double r) {
+        return new Circle(new Frame(2), new double[] {cx, cy}, r, null);
+    }
+
     private static Region pointList() {
         return new PointList(new Frame(2), 3, new double[][] {{2.0, 4.0, 10.0}, {3.0, 1.0, 10.0}}, null);
     }
 
-    /** The case of {@code name}, or null if its classes are not yet present. */
+    /** The case of {@code name}. */
     private static Case build(String name) {
         String base = name;
         if (base.endsWith("_prefilled")) {
@@ -85,13 +86,19 @@ class RegionMaskOracleTest {
                         new int[] {1},
                         new int[] {10});
             case "circle_inside":
+                return new Case(circle(3.0, 3.0, 2.0), null, true, new int[] {1, 1}, new int[] {5, 5});
             case "circle_outside":
+                return new Case(circle(3.0, 3.0, 2.0), null, false, new int[] {1, 1}, new int[] {5, 5});
             case "small_circle_inside":
+                return new Case(circle(5.0, 5.0, 1.0), null, true, new int[] {1, 1}, new int[] {10, 10});
             case "small_circle_outside":
+                return new Case(circle(5.0, 5.0, 1.0), null, false, new int[] {1, 1}, new int[] {10, 10});
             case "circle_through_zoommap":
+                return new Case(circle(1.5, 1.5, 1.0), new ZoomMap(2, 2.0), true, G6L, G6U);
             case "map_with_wrong_inputs":
+                return new Case(circle(3.0, 3.0, 2.0), new UnitMap(3), true, new int[] {1, 1}, new int[] {5, 5});
             case "lower_bound_above_upper":
-                return null;
+                return new Case(circle(3.0, 3.0, 2.0), null, true, new int[] {6, 1}, new int[] {5, 5});
             default:
                 throw new AssertionError("no construction for case " + name);
         }
@@ -112,9 +119,6 @@ class RegionMaskOracleTest {
         for (JsonNode c : DATA.get("CASES")) {
             String name = c.get(0).textValue();
             Case k = build(name);
-            if (k == null) {
-                continue;
-            }
             run++;
             int npix = 1;
             for (int i = 0; i < k.lbnd.length; i++) {

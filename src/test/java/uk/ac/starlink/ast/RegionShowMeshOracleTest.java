@@ -18,15 +18,18 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * tools/oracle_fixtures/region_showmesh_probe.c}). Each Region is read from C's dump, and the
  * table is what {@code astShowMesh} wrote to standard output.
  *
- * <p>The cases of a Circle and a Polygon wait for those classes; the number of cases run is
- * asserted, so that the task that adds them raises it.
+ * <p>A Circle's mesh is placed with {@code sin} and {@code cos}, which may differ in the last bit
+ * between {@code java.lang.Math} and the C library, but the table gives each value to at most
+ * seven significant figures, none of them within a few ulps of a rounding boundary, so it is
+ * compared exactly. The case of a Polygon waits for that class; the number of cases run is
+ * asserted, so that the task that adds it raises it.
  */
 class RegionShowMeshOracleTest {
 
     private static final JsonNode DATA = ProbeData.load("region_showmesh");
 
     /** The number of cases whose classes are present. */
-    private static final int CASES_RUN = 3;
+    private static final int CASES_RUN = 6;
 
     /** The class of the Region in a dump: the word after its first "Begin". */
     private static String dumpClass(String dump) {
@@ -40,7 +43,8 @@ class RegionShowMeshOracleTest {
         for (JsonNode c : DATA.get("CASES")) {
             String name = c.get(0).textValue();
             String dump = c.get(1).textValue();
-            if (!"Box".equals(dumpClass(dump))) {
+            String cls = dumpClass(dump);
+            if (!"Box".equals(cls) && !"Circle".equals(cls)) {
                 continue;
             }
             run++;

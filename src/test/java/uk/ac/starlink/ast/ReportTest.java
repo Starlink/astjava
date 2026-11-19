@@ -20,9 +20,6 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * {@code astTran1} and {@code astTran2} print it (mapping.c {@code ReportPoints}), and Report is
  * dumped and read back as C does. The expected text comes from C ({@code oracle/report.json},
  * from {@code tools/oracle_fixtures/report_probe.c}).
- *
- * <p>The Circle parts of {@code reports_follow_the_c_library} and {@code a_clone_clears_report} need
- * a class outside the first phase and are left out.
  */
 class ReportTest {
 
@@ -93,6 +90,11 @@ class ReportTest {
         });
         assertEquals(CASES.get("FRAMESET").asText(), got, "FrameSet");
 
+        Circle circle = new Circle(new Frame(2), new double[] {0.0, 0.0}, 2.0, null);
+        circle.setReport(true);
+        got = reportOf(() -> circle.tran2(x.length, x, y, true));
+        assertEquals(CASES.get("CIRCLE").asText(), got, "Circle");
+
         // Without Report, nothing is written.
         zoom.clear("Report");
         assertEquals("", reportOf(() -> zoom.tran2(x.length, x, y, true)));
@@ -102,9 +104,12 @@ class ReportTest {
         zoomOff.setReport(false);
         List<String> failures = new ArrayList<>();
         String[][] cases = {
-            {"ZoomMap", "ZOOM_DUMP"}, {"ZoomMap Report=0", "ZOOM_DUMP_OFF"}, {"FrameSet", "FRAMESET_DUMP"}
+            {"ZoomMap", "ZOOM_DUMP"},
+            {"ZoomMap Report=0", "ZOOM_DUMP_OFF"},
+            {"FrameSet", "FRAMESET_DUMP"},
+            {"Circle", "CIRCLE_DUMP"}
         };
-        Mapping[] objects = {zoom, zoomOff, fs};
+        Mapping[] objects = {zoom, zoomOff, fs, circle};
         for (int i = 0; i < cases.length; i++) {
             String name = cases[i][0];
             String want = dumpText(cases[i][1]);
@@ -134,6 +139,10 @@ class ReportTest {
         FrameSet fs = new FrameSet(new Frame(2));
         fs.setReport(true);
         assertFalse(fs.copy().test("Report"));
+
+        Circle circle = new Circle(new Frame(2), new double[] {0.0, 0.0}, 2.0, null);
+        circle.setReport(true);
+        assertFalse(circle.copy().test("Report"));
     }
 
     /** Writing a Mapping held as a Mapping reference is not a copy, so the dump records Report. */

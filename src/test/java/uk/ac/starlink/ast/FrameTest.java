@@ -15,11 +15,11 @@ import org.junit.jupiter.api.Test;
  * ast_tester/testframe.c}, and a table of Unit and NormUnit pairs read back from a one-axis C
  * Frame.
  *
- * <p>The parts for a plain Frame, a SkyFrame, a SpecFrame, a TimeFrame, a CmpFrame and a FrameSet
- * holding a SkyFrame are translated here; of {@code
+ * <p>The parts for a plain Frame, a SkyFrame, a SpecFrame, a TimeFrame, a CmpFrame, a FrameSet
+ * holding a SkyFrame and a Circle are translated here; of {@code
  * spectral_time_and_flux_frames_normalise_the_unit_they_report}, the SpecFrame, DSBSpecFrame,
- * TimeFrame and FluxFrame parts (the FluxFrame values checked against the pinned C library). The
- * Circle parts need a class outside this library.
+ * TimeFrame and FluxFrame parts (the FluxFrame values checked against the pinned C library); and
+ * the Circle part of {@code units_of_an_axis_out_of_range_are_an_error}.
  */
 class FrameTest {
 
@@ -348,6 +348,12 @@ class FrameTest {
         assertEquals("rad", cmp.getInternalUnit(1));
         assertEquals("rad", fs.getInternalUnit(1));
         assertEquals("hh:mm:ss.s", fs.getNormUnit(1));
+        Circle circle = new Circle((SkyFrame) skyFrame.copy(), new double[] {0.0, 0.0}, 0.1, null);
+        assertEquals("rad", circle.getInternalUnit(1));
+        assertEquals("hh:mm:ss.s", circle.getNormUnit(1));
+        assertEquals(
+                AstException.AST__AXIIN,
+                assertThrows(AstException.class, () -> circle.getNormUnit(3)).getStatus());
         assertEquals("", cmp.getInternalUnit(3));
     }
 

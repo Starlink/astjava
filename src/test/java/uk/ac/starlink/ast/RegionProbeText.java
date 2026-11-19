@@ -9,24 +9,85 @@ import org.junit.jupiter.api.function.Executable;
 import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
- * The lines {@code probes/region_null_interval_pointlist_probe.c} writes, made here from the
- * Java classes so that a case's text can be compared with C's whole. Each method gives the line
- * or lines the probe's function of the same name writes; values are written as C's {@code %.17g}
- * writes them.
+ * The lines the Region probes ({@code probes/region_null_interval_pointlist_probe.c}, {@code
+ * probes/region_circle_ellipse_probe.c}, {@code probes/region_sky_probe.c}) write, made here from
+ * the Java classes so that a case's text can be compared with C's whole. Each method gives the
+ * line or lines the probes' function of the same name writes; values are written as C's {@code
+ * %.17g} writes them.
  */
 final class RegionProbeText {
 
-    /** The probe's cases. */
+    /** The cases of {@code region_null_interval_pointlist_probe}. */
     static final Map<String, String> PROBE = ProbeOutput.load("region_null_interval_pointlist_probe");
 
     private RegionProbeText() {}
 
     /**
-     * Checks a case: {@code actual} must be C's text for {@code name}, less the line C's error
-     * system writes naming the probe's own source line ({@code !! AST: Error in routine ...}).
+     * Checks a case of {@code region_null_interval_pointlist_probe}: {@code actual} must be C's
+     * text for {@code name}, less the line C's error system writes naming the probe's own source
+     * line ({@code !! AST: Error in routine ...}).
      */
     static void check(String name, String actual) {
-        String want = PROBE.get(name);
+        check(PROBE, name, actual);
+    }
+
+    /**
+     * Checks a case of {@code probe}: {@code actual} must be C's text for {@code name}, less the
+     * line C's error system writes naming the probe's own source line ({@code !! AST: Error in
+     * routine ...}).
+     */
+    static void check(Map<String, String> probe, String name, String actual) {
+        assertEquals(want(probe, name), actual, name);
+    }
+
+    /**
+     * Checks a case of {@code probe} as {@link #check(Map, String, String)} does, except that a
+     * word of each line (separated by a space or a tab) that reads as a number in both texts need
+     * only be within {@code tol} of C's.
+     */
+    static void checkClose(Map<String, String> probe, String name, String actual, double tol) {
+        checkCloseText(want(probe, name), actual, tol, name);
+    }
+
+    /**
+     * Checks that {@code actual} is {@code want}, except that a word of each line that reads as a
+     * number in both texts need only be within {@code tol} of {@code want}'s.
+     */
+    static void checkCloseText(String want, String actual, double tol, String name) {
+        String[] wantLines = want.split("\n", -1);
+        String[] gotLines = actual.split("\n", -1);
+        assertEquals(wantLines.length, gotLines.length, name + ": number of lines\n" + actual);
+        for (int i = 0; i < wantLines.length; i++) {
+            String[] w = wantLines[i].split("[ \t]", -1);
+            String[] g = gotLines[i].split("[ \t]", -1);
+            assertEquals(w.length, g.length, name + ": words of line " + i + "\n" + actual);
+            for (int j = 0; j < w.length; j++) {
+                Double wv = number(w[j]);
+                Double gv = number(g[j]);
+                if (wv != null && gv != null) {
+                    assertEquals(wv, gv, tol, name + ": line " + i + " word " + j + "\n" + actual);
+                } else {
+                    assertEquals(w[j], g[j], name + ": line " + i + " word " + j + "\n" + actual);
+                }
+            }
+        }
+    }
+
+    /** The word as a number, or null if it is not one. */
+    private static Double number(String word) {
+        if (word.isEmpty() || !Character.isDigit(word.charAt(word.length() - 1))) {
+            return null;
+        }
+        try {
+            return Double.valueOf(word);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /** C's text for a case, less the lines naming the probe's source line. */
+    private static String want(Map<String, String> probe, String name) {
+        String want = probe.get(name);
         assertNotNull(want, "no probe case " + name);
         StringBuilder sb = new StringBuilder();
         for (String line : want.split("\n", -1)) {
@@ -34,7 +95,7 @@ final class RegionProbeText {
                 sb.append(line).append('\n');
             }
         }
-        assertEquals(sb.toString(), actual, name);
+        return sb.toString();
     }
 
     private static String g(double v) {
