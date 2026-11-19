@@ -328,7 +328,7 @@ public class Polygon extends Region {
      * @throws AstException with status {@code AST__INTER} if no line across the edge has its end
      *     at the distance asked for, however short, where C does not stop
      */
-    private static double polywidth(Frame frm, Frame.LineDef[] edges, int i, int nv, double[] cen) {
+    private double polywidth(Frame frm, Frame.LineDef[] edges, int i, int nv, double[] cen) {
         double result = AST__BAD;
         double l1 = 0.5 * edges[i].length;
         double[] start = new double[2];
@@ -344,8 +344,8 @@ public class Polygon extends Region {
             if (l2 == 0.0) {
                 throw Ast.err(
                         AstException.AST__INTER,
-                        "astPolygon(Polygon): No line across edge " + (i + 1) + " reaches the distance asked for"
-                                + " (internal AST programming error).");
+                        "astPolygon(" + astClass() + "): No line across edge " + (i + 1)
+                                + " reaches the distance asked for" + " (internal AST programming error).");
             }
             l2 *= 0.5;
         }
@@ -353,7 +353,7 @@ public class Polygon extends Region {
         if (line == null) {
             throw Ast.err(
                     AstException.AST__INTER,
-                    "astPolygon(Polygon): The line across edge " + (i + 1) + " has a bad end (internal AST"
+                    "astPolygon(" + astClass() + "): The line across edge " + (i + 1) + " has a bad end (internal AST"
                             + " programming error).");
         }
         line.infinite = true;

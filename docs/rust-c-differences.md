@@ -990,6 +990,12 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: rejects `AST__BAD` and NaN.
 - Java: rejects `AST__BAD`, NaN and the infinities with C's message, by the library's rule that a non-finite coordinate is bad, as for a Box.
 
+### Bad and non-finite vertices of a Polygon
+
+- C: `astInitPolygon` rejects a vertex with a value equal to `AST__BAD` (`AST__BADIN`) and accepts NaN and the infinities.
+- Rust: as C.
+- Java: rejects `AST__BAD`, NaN and the infinities with C's message, by the library's rule that a non-finite coordinate is bad, as for a Box, a Circle and an Ellipse (`PolygonTest.nonFiniteVertexIsBad`).
+
 ### A Polygon whose edges have no length
 
 - C: polygon.c `Cache` finds a point inside the Polygon from the edges of positive length; when none has any (a Polygon of one vertex, or of vertices that coincide) the point is never set, and `Transform` draws its lines from an uninitialised value. **C bug.**
@@ -1022,6 +1028,7 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
   The line across the edge between two vertices at the same latitude, from which `Cache` takes the point inside, is a meridian; for a triangle round the north pole with its vertices at one latitude, the line from the point inside to the south pole passes through a vertex, and C finds the south pole inside the triangle, so `astGetRegionBounds` gives -pi/2 as its lower latitude.
 - Rust: as C.
 - Java: as C, by the same arithmetic, which rounding decides; `RegionSkyTest` keeps its sky Polygons clear of such lines (`pointsAndPixelsAreClearOfTheBoundaries`).
+  `FrameLineTest` pins the quirk itself in the line functions, where rounding does not decide it: a point 5e-11 radians behind the start of a line is on it, and one 2e-10 radians behind is not (probe `src/test/resources/probes/frame_line_probe.c`).
 
 ### A CmpRegion that ANDs two unbounded Regions, one inside the other
 

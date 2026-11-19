@@ -79,6 +79,8 @@ contains 0 0 0.32938110272039844 0.61627491360308317 : 0
 contains 0 0 0.32937896681616241 0.61627589443544273 : 0
 contains 0 0 1.6148627987705511 1.1589078462249889 : 0
 contains 0 0 0.13054272066264391 0.25829417754138523 : 0
+contains 0 0 0.17453292517677227 0.34906585035362686 : 1
+contains 0 0 0.17453292510879023 0.34906585021791009 : 0
 contains 1 0 0.0067203137479026178 0.086625860734077312 : 1
 contains 1 0 0.0067194124984076538 0.086624073605331822 : 0
 contains 2 0 0.1745329251994312 1.5662634015954635 : 1
@@ -107,39 +109,39 @@ off 0 0.29999999999999999 0.10000000000000001 : 0.4325562195279084 0.56469604291
 cross 0 1 : 0 0.044496616940123232 0.067631858199413614 0.99672628923984075 0.044380241957423273 0.067580311200660659 5.9745291026800844
 contains 0 0 0.32938003476865141 0.61627540401953185 : 1
 == line_error_naxes
-!! AST: Error in routine main at line 459 in file frame_line_probe.c.
+!! AST: Error in routine main at line 463 in file src/test/resources/probes/frame_line_probe.c.
 !  astLineDef(Frame): The supplied Frame is not 2 dimensional (internal AST proramming error).
 def 0 0 1 1 :status 233933410
 == line_error_frame
 def 0 0 1 1 : 1.4142135623730951 0 0 0 1 1 0.70710678118654746 0.70710678118654746 -0.70710678118654746 0.70710678118654746
-!! AST: Error in routine main at line 464 in file frame_line_probe.c.
+!! AST: Error in routine main at line 468 in file src/test/resources/probes/frame_line_probe.c.
 !  astLineCrossing(Frame): First supplied line does not relate to the supplied Frame (AST internal programming error).
 cross 1 0 :status 233933410
-!! AST: Error in routine main at line 464 in file frame_line_probe.c.
+!! AST: Error in routine main at line 468 in file src/test/resources/probes/frame_line_probe.c.
 !  astLineCrossing(Frame): Second supplied line does not relate to the supplied Frame (AST internal programming error).
 cross 0 1 :status 233933410
-!! AST: Error in routine main at line 464 in file frame_line_probe.c.
+!! AST: Error in routine main at line 468 in file src/test/resources/probes/frame_line_probe.c.
 !  astLineOffset(Frame): The supplied line does not relate to the supplied Frame (AST internal programming error).
 off 1 0.5 0 :status 233933410
-!! AST: Error in routine main at line 464 in file frame_line_probe.c.
+!! AST: Error in routine main at line 468 in file src/test/resources/probes/frame_line_probe.c.
 !  astLineContains(Frame): The supplied line does not relate to the supplied Frame (AST internal programming error).
 contains 1 0 0.5 0.5 :status 233933410
 == line_error_sky_frame
 def 0 0 1 1 : 1.2745557823062943 0 1 0 0 0.29192658172642888 0.45464871341284091 0.8414709848078965 -0 0.47535482224236686 0.87979417648159497 0 0.87979417648159497 -0.47535482224236686
-!! AST: Error in routine main at line 473 in file frame_line_probe.c.
+!! AST: Error in routine main at line 477 in file src/test/resources/probes/frame_line_probe.c.
 !  astLineCrossing(SkyFrame): First supplied line does not relate to the supplied SkyFrame (AST internal programming error).
 cross 1 0 :status 233933410
-!! AST: Error in routine main at line 473 in file frame_line_probe.c.
+!! AST: Error in routine main at line 477 in file src/test/resources/probes/frame_line_probe.c.
 !  astLineCrossing(SkyFrame): Second supplied line does not relate to the supplied SkyFrame (AST internal programming error).
 cross 0 1 :status 233933410
-!! AST: Error in routine main at line 473 in file frame_line_probe.c.
+!! AST: Error in routine main at line 477 in file src/test/resources/probes/frame_line_probe.c.
 !  astLineOffset(SkyFrame): The supplied line does not relate to the supplied SkyFrame (AST internal programming error).
 off 1 0.5 0 :status 233933410
-!! AST: Error in routine main at line 473 in file frame_line_probe.c.
+!! AST: Error in routine main at line 477 in file src/test/resources/probes/frame_line_probe.c.
 !  astLineContains(SkyFrame): The supplied line does not relate to the supplied SkyFrame (AST internal programming error).
 contains 1 0 0.5 0.5 :status 233933410
 == line_error_frameset
-!! AST: Error in routine main at line 473 in file frame_line_probe.c.
+!! AST: Error in routine main at line 477 in file src/test/resources/probes/frame_line_probe.c.
 !  astLineContains(SkyFrame): The supplied line does not relate to the supplied SkyFrame (AST internal programming error).
 contains 0 0 0.5 0.5 :status 233933410
 == normbox_frame
@@ -263,13 +265,13 @@ grid 30 -1 2 3 -2 : 10
  1 -2
  2 -2
  3 -2
-!! AST: Error in routine grid at line 233 in file frame_line_probe.c.
+!! AST: Error in routine grid at line 233 in file src/test/resources/probes/frame_line_probe.c.
 !  astInitPointSet(PointSet): Number of points (-2) is not valid.
 grid 30 0 0 1 0 :status 233933586
-!! AST: Error in routine grid at line 233 in file frame_line_probe.c.
+!! AST: Error in routine grid at line 233 in file src/test/resources/probes/frame_line_probe.c.
 !  astFrameGrid(Frame): One of more of the supplied bounds is AST__BAD (programming error).
 grid 30 -1.7976931348623157e+308 0 -1.7976931348623157e+308 1 :status 233933170
-!! AST: Error in routine grid at line 233 in file frame_line_probe.c.
+!! AST: Error in routine grid at line 233 in file src/test/resources/probes/frame_line_probe.c.
 !  astFrameGrid(Frame): The supplied grid size (0) is invalid (programming error).
 grid 0 0 0 10 5 :status 233933170
 == grid_frame_units
@@ -609,14 +611,14 @@ grid 30 0.5 -1.5707963267948966 6.7831853071795862 -1.3999999999999999 : 29
  5.8014376029327774 -1.4284660544658161
  6.194136684631502 -1.4284660544658161
  6.5868357663302266 -1.4284660544658161
-!! AST: Error in routine grid at line 233 in file frame_line_probe.c.
+!! AST: Error in routine grid at line 233 in file src/test/resources/probes/frame_line_probe.c.
 !  astSetNpoint(PointSet): Number of points (0) is not valid.
 !  Should be in the range 1 to 2.
 grid 1 -0.29999999999999999 -0.20000000000000001 0.29999999999999999 0.20000000000000001 :status 233933586
-!! AST: Error in routine grid at line 233 in file frame_line_probe.c.
+!! AST: Error in routine grid at line 233 in file src/test/resources/probes/frame_line_probe.c.
 !  astFrameGrid(SkyFrame): The supplied grid size (0) is invalid (programming error).
 grid 0 -0.29999999999999999 -0.20000000000000001 0.29999999999999999 0.20000000000000001 :status 233933170
-!! AST: Error in routine grid at line 233 in file frame_line_probe.c.
+!! AST: Error in routine grid at line 233 in file src/test/resources/probes/frame_line_probe.c.
 !  astFrameGrid(SkyFrame): One of more of the supplied bounds is AST__BAD (programming error).
 grid 30 -1.7976931348623157e+308 -0.20000000000000001 0.29999999999999999 0.20000000000000001 :status 233933170
 == grid_sky_swapped
@@ -771,7 +773,7 @@ grid 100 -0.29999999999999999 -0.20000000000000001 0 0.29999999999999999 0.20000
  6.5231853071795864 0.14999999999999999 1
  6.5231853071795864 0.14999999999999999 1.5
  6.5231853071795864 0.14999999999999999 2
-!! AST: Error in routine grid at line 233 in file frame_line_probe.c.
+!! AST: Error in routine grid at line 233 in file src/test/resources/probes/frame_line_probe.c.
 !  astFrameGrid(CmpFrame): The supplied grid size (0) is invalid (programming error).
 grid 0 -0.29999999999999999 -0.20000000000000001 0 0.29999999999999999 0.20000000000000001 2 :status 233933170
 == grid_cmpframe_timesky

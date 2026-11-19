@@ -421,6 +421,10 @@ int main( void ) {
    contains_off( 0, 0, 0.3, -1e-6 );
    contains_off( 0, 0, 1.2, 0 );
    contains_off( 0, 0, -0.1, 0 );
+   /* LineIncludes takes a point up to 1e-10 radians behind the start of a
+      line to be on it. */
+   contains_off( 0, 0, -5e-11, 0 );
+   contains_off( 0, 0, -2e-10, 0 );
    contains_off( 1, 1, 0.2, 0 );
    contains_off( 1, 1, 0.2, 2e-6 );
    contains_off( 2, 2, 0.17, 0 );

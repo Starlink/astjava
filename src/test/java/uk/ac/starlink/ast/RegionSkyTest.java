@@ -20,10 +20,11 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  *
  * <p>The bounds of a Box are its centre plus and minus axis distances, normalised by whole turns,
  * and are those of C to the last bit; so are those of a Polygon, which are the axis distances of
- * its vertices from the first, widened to whole turns or a pole by {@code astNormBox}. Those of a Circle come from its boundary mesh, each point
- * placed by {@code astOffset2} through {@code sin}, {@code cos}, {@code asin} and {@code atan2},
- * each within 1 ulp of the true value in {@code java.lang.Math} and in the C library, so that the
- * two may differ by 2 ulp in each: about {@code 1e-15} in a unit vector, a few times that after
+ * its vertices from the first, widened to whole turns or a pole by {@code astNormBox}. Those of a
+ * Circle come from its boundary mesh, each point placed by {@code astOffset2} through {@code sin},
+ * {@code cos}, {@code asin} and {@code atan2}, each within 1 ulp of the true value in the C
+ * library and in {@code java.lang.Math}, except {@code atan2}, within 2 ulp there, so that the two
+ * may differ by 2 or 3 ulp in each: about {@code 1e-15} in a unit vector, a few times that after
  * the products that rotate it. The longitude of a point is the {@code atan2} of components whose
  * modulus is the cosine of its latitude, at least {@code 0.01} for these meshes (the point of a
  * mesh nearest a pole is 0.01 radians from it), which amplifies the error by at most 100; the

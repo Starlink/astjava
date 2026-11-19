@@ -471,6 +471,9 @@ class PolygonTest {
             double[] d = new double[4];
             assertNoInside(() -> p.maskD(null, true, 2, new int[] {1, 1}, new int[] {2, 2}, d, 9.0));
         }
+        // On the sky the bounds ask whether the Polygon holds a pole (skyframe.c NormBox).
+        Polygon sky = poly(new SkyFrame(), null, 1.0, 0.5);
+        assertNoInside(sky::getRegionBounds);
     }
 
     @Test

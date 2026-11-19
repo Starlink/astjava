@@ -14,29 +14,39 @@ import org.junit.jupiter.api.Test;
  * The line geometry the Region classes use ({@code lineDef}, {@code lineOffset}, {@code
  * lineCrossing}, {@code lineContains}) gives C's results, from {@code
  * probes/frame_line_probe.c}: straight lines in a 2-D Frame, great circles on a SkyFrame (across
- * RA 0, over and near a pole, of zero length and of half a turn), on a SkyFrame whose axes are
- * swapped and through a FrameSet, and C's errors.
+ * RA 0, over and near a pole, of zero length and of half a turn, and points just behind the start
+ * of a line, which skyframe.c {@code LineIncludes} takes to be on it within 1e-10 radians), on a
+ * SkyFrame whose axes are swapped and through a FrameSet, and C's errors.
  *
  * <p>A plain Frame's lines use only arithmetic and a square root, which give the same bits on
  * every platform, so its values are compared exactly. A SkyFrame's go through {@code sin}, {@code
- * cos}, {@code acos} and {@code atan2}, each within 1 ulp of the true value in {@code
- * java.lang.Math} and in the C library, so the two may differ by 2 ulp in each: about {@code
- * 5e-16} in a unit-vector component. The cross and dot products of such vectors add a few
- * roundings, and the pole of a line is normalised from a cross product whose modulus is the sine
- * of the angle between its two vectors, at least 0.01 in these cases (the zero-length and
- * half-turn lines take the pole from a point 0.01 radians away), which amplifies an error by at
- * most 100; {@code acos} amplifies by {@code 1/sin(length)}, at most 20 for these lines, and
- * {@code atan2} by the inverse of the distance from the pole, at most about 60 here. That bounds
- * the difference by about {@code 100 * 10 * 5e-16 = 5e-13}, so {@link #SKY_TOL} is {@code 1e-12}.
- * No case puts a crossing or offset point on the 180 degree meridian or at a pole, where the
- * longitude C gives is not a continuous function of the input.
+ * cos} and {@code acos}, each within 1 ulp of the true value in {@code java.lang.Math} and in the
+ * C library, and {@code atan2}, within 2 ulp in {@code java.lang.Math} and 1 ulp in C. Each
+ * component of a unit vector made from a longitude and latitude is a product of two of {@code sin}
+ * and {@code cos}, so Java's and C's vectors for a point may differ by {@code e}, a relative
+ * difference of at most 4 ulp in each component and so at most {@code 9e-16} in all. A line's great circle passes through its start and
+ * end, {@code L} radians apart, or, for the lines of zero length and of half a turn, through its
+ * start and a point 0.01 radians away on each axis, which makes {@code sin(L)} about 0.013. Moving
+ * those two points by {@code e} turns the line's pole by up to {@code 2e / sin(L)} (at most 150e
+ * here, a difference of {@code 1.4e-13}) and moves the circle, at {@code t} radians from the start,
+ * by up to {@code e (|sin(t - L)| + |sin(t)|) / sin(L)}; the length, an {@code acos}, may differ by
+ * {@code 2e / sin(L)}, at most 40e. An offset point moves by that, plus {@code e} from the {@code
+ * sin} and {@code cos} of its offsets, plus its perpendicular offset times the turn of the pole;
+ * a crossing moves by the two circles' movements there divided by the sine of the angle between
+ * them, at least 0.45 here. Converting a point back to a longitude amplifies its movement by
+ * {@code 1 / cos(latitude)}. The largest products are those of {@code off 2 0.17 0}, a point 0.0045
+ * radians from the pole that moves by {@code 2e} (amplified 220 times), and {@code cross 4 0}, a
+ * crossing 1.16 radians along a line of zero length that moves by {@code 268e} at latitude 0.92
+ * (amplified 1.7 times): each about {@code 445e = 4e-13}, so {@link #SKY_TOL} is {@code 1e-12}. No
+ * case puts a crossing or offset point on the 180 degree meridian or at a pole, where the longitude
+ * C gives is not a continuous function of the input.
  *
  * <p>The distance along a great circle to a crossing is the {@code acos} of the dot product of the
- * line's start and the crossing, unit vectors that may differ from C's by some {@code 1e-13} after
- * the amplification above, so the dot product may differ by {@code 2e-13}. {@code acos} turns an
- * error {@code e} in its argument into about {@code e / sin(d)} at a distance {@code d}, and into
- * {@code sqrt(2e)} at a distance of 0 or a half turn; the probe has a crossing at the start of a
- * line, which bounds the difference by {@code sqrt(4e-13) = 6.3e-7}, so {@link #SKY_DIST_TOL} is
+ * line's start and the crossing, unit vectors that may differ from C's by up to {@code 268e =
+ * 2.4e-13} as above, so the dot product may differ by about {@code 2.5e-13}. {@code acos} turns an
+ * error {@code x} in its argument into about {@code x / sin(d)} at a distance {@code d}, and into
+ * {@code sqrt(2x)} at a distance of 0 or a half turn; the probe has a crossing at the start of a
+ * line, which bounds the difference by {@code sqrt(5e-13) = 7.1e-7}, so {@link #SKY_DIST_TOL} is
  * {@code 1e-6}.
  */
 class FrameLineTest {
