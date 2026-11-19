@@ -26,21 +26,10 @@ public final class ProbeOutput {
      * {@code probes/<name>.json}, the form an output takes when it holds words of C's, such as
      * attribute names, that the spelling check of text files would reject.
      *
-     * @throws IllegalStateException if there is neither file, or a case name appears twice
+     * @throws IllegalStateException if there is neither file or both, or a case name appears twice
      */
     public static Map<String, String> load(String name) {
-        String text = resource("/probes/" + name + ".out");
-        if (text == null) {
-            String json = resource("/probes/" + name + ".json");
-            if (json == null) {
-                throw new IllegalStateException("No probe output /probes/" + name + ".out or .json");
-            }
-            try {
-                text = new ObjectMapper().readTree(json).get("output").asText();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
+        String text = text(name, resource("/probes/" + name + ".out"), resource("/probes/" + name + ".json"));
         Map<String, String> cases = new LinkedHashMap<>();
         String current = null;
         StringBuilder sb = new StringBuilder();
@@ -63,6 +52,32 @@ public final class ProbeOutput {
             put(cases, current, sb.toString());
         }
         return cases;
+    }
+
+    /**
+     * The output of probe {@code name}, from the text of its {@code .out} file or of its {@code
+     * .json} file, whichever is given (the other null). Both are an error: a probe whose output
+     * moved from one form to the other leaves a copy of the old one among the compiled test
+     * resources until the build is cleaned.
+     *
+     * @throws IllegalStateException if neither or both are given
+     */
+    static String text(String name, String out, String json) {
+        if (out != null && json != null) {
+            throw new IllegalStateException("Probe output /probes/" + name + " has both a .out and a .json file; one "
+                    + "is stale (mvn clean removes a copy left in target/test-classes)");
+        }
+        if (out != null) {
+            return out;
+        }
+        if (json == null) {
+            throw new IllegalStateException("No probe output /probes/" + name + ".out or .json");
+        }
+        try {
+            return new ObjectMapper().readTree(json).get("output").asText();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /** The text of the resource {@code res}, or null if there is none. */
