@@ -980,6 +980,13 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: as C (`CmpRegion::get_bounded`).
 - Java: as C (`CmpRegion.isBoundedInner`); `CmpRegionTest.nestedUnboundedRegionsMatchC` and `orOfCirclesMatchesC` take their values from `src/test/resources/probes/region_compound_probe.c`.
 
+### A point on the boundary of a negated closed CmpRegion
+
+- C: cmpregion.c `Transform` applies a negated CmpRegion as the other operator of its components' negations (`GetRegions`), and a closed Region holds its boundary whether or not it is negated, so a point on the boundary of a closed CmpRegion is inside both the CmpRegion and its negation.
+  The AND of the square [0, 1] x [0, 1] with the negation of the OR of the unit Circles about (-1, 0) and (1, 0), negated, keeps (0, 0.5), on the square's edge.
+- Rust: `test_regions.rs` `cmpregion_negated_reversal` expects that point to be made bad.
+- Java: as C; `RegionsTest.cmpRegionNegatedReversal` takes the value from `src/test/resources/probes/regions_cross_probe.c`.
+
 ### The overlap of a Prism and a negated Region
 
 - C: prism.c `Overlap` picks from the other Region the axes of each component of the Prism; region.c `PickAxes` gives the Regions it picks the Negated value of the Region they come from (`astRegOverlay`), so each pair of components is compared with that negation already applied, and `Overlap` then adjusts the combined code for the other Region's negation again.
