@@ -28,3 +28,14 @@ points 5 5 10 5
 tran moved_near 5 5.0000020000000003 : 5 5.0000020000000003
 tran moved_off 5 5.0000030000000004 : -1.7976931348623157e+308 -1.7976931348623157e+308
 unc after 4.9999950000000002 5.0000049999999998 4.9999975000000001 5.0000024999999999
+== setunc_dims
+!! AST: Error in routine main at line 158 in file src/test/resources/probes/region_defunc_probe.c.
+!  astSetUnc(Box): Bad 3 dimensional uncertainty Frame ( 3-d coordinate system) supplied.
+!  Cannot convert it to the Frame of the new Box.
+status 233933522
+== setunc_unbounded
+tran near 5 5.4000000000000004 : 5 5.4000000000000004
+tran off 5 5.5999999999999996 : -1.7976931348623157e+308 -1.7976931348623157e+308
+unc after 4.5 5.5 4.5 5.5
+negated 0
+given 1

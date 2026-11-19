@@ -2,7 +2,8 @@
  * library (region.c GetDefUnc, GetUncFrm, ResetCache; box.c Transform,
  * RegCentre) before and after the Box is moved: by the protected
  * astRegCentre, by the protected astMapRegion (the public one simplifies),
- * and by a change of Unit on an Adaptive Box and on one that is not.
+ * and by a change of Unit on an Adaptive Box and on one that is not; and
+ * astSetUnc given an uncertainty of other dimensionality or an unbounded one.
  *
  * Every Box is 0 to 10 on its first axis and has zero width at 5 on its
  * second, so it is widened by its default uncertainty (box.c Transform),
@@ -144,6 +145,35 @@ int main( void ) {
    tran( "moved_near", (AstMapping *) box, 5.0, 5.0 + 2.0e-6 );
    tran( "moved_off", (AstMapping *) box, 5.0, 5.0 + 3.0e-6 );
    unc( "after", (AstRegion *) box );
+
+   /* astSetUnc on a Box: an uncertainty of three axes, which is rejected,
+      and an unbounded one, a negated Box, which region.c SetUnc negates
+      back ("negated" is the Negated attribute of the uncertainty held,
+      "given" that of the Box given). */
+   printf( "== setunc_dims\n" );
+   box = flat( astFrame( 2, " " ) );
+   {
+      double lb3[ 3 ] = { -1.0, -1.0, -1.0 };
+      double ub3[ 3 ] = { 1.0, 1.0, 1.0 };
+      astSetUnc( box, astBox( astFrame( 3, " " ), 1, lb3, ub3, NULL, " " ) );
+      failed();
+   }
+   printf( "== setunc_unbounded\n" );
+   box = flat( astFrame( 2, " " ) );
+   {
+      double lbu[ 2 ] = { -0.5, -0.5 };
+      double ubu[ 2 ] = { 0.5, 0.5 };
+      AstBox *u = astBox( astFrame( 2, " " ), 1, lbu, ubu, NULL, " " );
+      astNegate( u );
+      astSetUnc( box, u );
+      if( !failed() ) {
+         tran( "near", (AstMapping *) box, 5.0, 5.4 );
+         tran( "off", (AstMapping *) box, 5.0, 5.6 );
+         unc( "after", (AstRegion *) box );
+         printf( "negated %d\n", astGetI( astGetUnc( box, 0 ), "Negated" ) );
+         printf( "given %d\n", astGetI( u, "Negated" ) );
+      }
+   }
 
    astEnd;
    return 0;

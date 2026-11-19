@@ -16,10 +16,16 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * whose axes have different units, a sky Box, a 3-D Box and a single-point Box ({@code
  * oracle/region_box.json}, from {@code tools/oracle_fixtures/region_box_probe.c}).
  *
- * <p>Every value is compared exactly. The sky values pass through {@code java.lang.Math} only in
- * SkyAxis distances and offsets of the centre from the corner (normalisation into the range of
- * the axis by adding or subtracting a whole turn), which give C's values to the last bit here;
- * the bounds of the sky Box are the centre plus and minus that distance.
+ * <p>Every value is compared exactly. The membership and bounds of the sky Box use SkyAxis
+ * distances and offsets of the centre from the corner, which are sums and differences normalised
+ * by {@code fmod} ({@code %}) and by adding or subtracting a whole turn, all correctly rounded in
+ * IEEE arithmetic and so the same on every platform; the bounds are the centre plus and minus that
+ * distance. A boundary mesh is made of corners and sums of steps along the edges, also exact; for
+ * the sky Box the number of points on each edge is the truncation of the edge's share of the
+ * MeshSize, in proportion to its length, which {@code SkyFrame.distance} sums through {@code
+ * java.lang.Math}. Those shares, 41.22, 56.95, 41.22 and 60.60, are at least 0.047 from an
+ * integer, where a few ulp in each of the 49 distances summed along an edge change them by about
+ * {@code 1e-13}.
  */
 class RegionBoxOracleTest {
 

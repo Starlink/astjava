@@ -447,7 +447,11 @@ public class Box extends Region {
                 }
             }
         } else {
-            // C divides the integers before taking the root.
+            // C divides the integers before taking the root. When perFace is a perfect power, such
+            // as 25 for a 3-D Box of MeshSize 150, the truncated root is the exact root only if pow
+            // returns it exactly: the specification of Math.pow, like C's library, allows 1 ulp, so
+            // pow(25, 0.5) could truncate to 4, and pow(27, 1.0 / 3), whose correctly rounded value
+            // is 3, could truncate to 2, on Java and C alike.
             int perFace = np / (2 * naxes);
             int npAxis = 1 + (int) Math.pow(perFace, 1.0 / (naxes - 1));
             if (npAxis < 2) {

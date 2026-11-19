@@ -521,6 +521,33 @@ class BoxRegionTest {
         assertEquals(DEFUNC.get("unit_adaptive"), out.text());
     }
 
+    /** An uncertainty of three axes given to a Box of two is rejected, as C rejects it. */
+    @Test
+    void uncertaintyOfOtherDimensionalityMatchesC() {
+        Box b = flat(new Frame(2));
+        Box unc3 = new Box(new Frame(3), 1, new double[] {-1, -1, -1}, new double[] {1, 1, 1}, null);
+        RegionProbeText.check(DEFUNC, "setunc_dims", RegionProbeText.error(() -> b.setUnc(unc3)));
+    }
+
+    /**
+     * An unbounded uncertainty, a negated Box, is negated back when it is set (region.c {@code
+     * SetUnc}) and centred on the Box's first point; it then widens the Box's axis of zero width.
+     */
+    @Test
+    void unboundedUncertaintyMatchesC() {
+        Out out = new Out();
+        Box b = flat(new Frame(2));
+        Box u = new Box(new Frame(2), 1, new double[] {-0.5, -0.5}, new double[] {0.5, 0.5}, null);
+        u.negate();
+        b.setUnc(u);
+        out.tran("near", b, 5.0, 5.4);
+        out.tran("off", b, 5.0, 5.6);
+        out.unc("after", b);
+        out.lines.add("negated " + (b.getUnc(false).getNegated() ? 1 : 0));
+        out.lines.add("given " + (u.getNegated() ? 1 : 0));
+        assertEquals(DEFUNC.get("setunc_unbounded"), out.text());
+    }
+
     /** The default uncertainty after a change of Unit on a Box that is not Adaptive. */
     @Test
     void defaultUncertaintyAfterAChangeOfUnitThatDoesNotAdapt() {

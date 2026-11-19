@@ -813,6 +813,38 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Java: the package-private `setEpochMjd` sets `MJD <value>` on the FrameSet, which keeps the FrameSet's integrity; `setObsLatValue`, `setObsLonValue` and `setObsAlt` set the FrameSet's current Frame directly.
   No public method reaches them.
 
+### A Region read from a dump with an uncertainty or Frame of another class
+
+- C: region.c `astLoadRegion` reads the `Unc`, `Frm` and `FrmSet` items with `astReadObject` and uses them as a Region, a Frame and a FrameSet without checking their classes, so a corrupt dump holding an Object of another class there is used as one of those. **C bug.**
+- Rust: reads each with the reader of its class (`serial/mod.rs`).
+- Java: `AST__REGIN`, naming the class found and the class needed, in the words of the loader's other errors (`Region` loader).
+
+### A value in the Frame part of a Region's dump that needs the current Frame
+
+- C: region.c `astLoadRegion` loads the Frame part of the description, which describes the current Frame, before it reads the FrameSet, so a value in that part whose loading asks for the number of axes (region.c `GetNaxes`, which asks the FrameSet) reads the FrameSet before it exists. **C bug.**
+- Rust: not examined.
+- Java: `AST__BADIN`, saying that the current Frame has not yet been read (`Region.getNaxes`); a dump that C writes holds no such value.
+
+### The grid over an unbounded Region (`RegGrid`)
+
+- C: region.c `RegBaseGrid` returns no PointSet, and reports no error, for an unbounded Region, and `RegGrid` then passes the null pointer on to `astClone` or `astTransform`. **C bug.**
+  `astGetRegionMesh` tests Bounded first and reports `AST__MBBNF`, so only the library's own callers reach it.
+- Rust: not examined.
+- Java: `AST__MBBNF`, in the words of `astGetRegionMesh`'s error (`Region.regGrid`).
+
+### Picking axes of a Region in `MapRegion`
+
+- C: region.c `MapRegion`, given a Mapping with fewer outputs than inputs, picks the Region's axes that the outputs need with `astPickAxes` and uses the result as a Region; `astPickAxes` gives a Frame rather than a Region when the Region cannot be split along those axes, and C then calls Region methods on that Frame. **C bug.**
+- Rust: not examined.
+- Java: `AST__INTER` when the axes picked are not a Region (`Region.mapRegionInto`).
+
+### Casting a Region into the class of another Region (`Cast`)
+
+- C: region.c `Cast` copies a Region as an instance of the class of any Region given to it, with `astCastCopy`, which changes the class of the copy without checking that the Region is of that class or of a subclass of it: a Box cast into the class of a Circle is a Circle holding a Box's values. **C bug.**
+- Rust: not examined.
+- Java: a copy when the Region is of the class of the Region given, and null for any other class (`Region.cast`).
+  C's cast into the class of a parent is defined, and is not followed; no Region class of this library is a parent of another (the Stc classes, which are, are not yet ported).
+
 ### A value holding `%` set on an Adaptive Region
 
 - C: region.c `SetAttrib` passes a setting of a Frame attribute on an Adaptive Region to `astSet( this->frameset, setting, status )`, so the caller's value is used as a `printf` format (object.c `VSet` hands it to `vsprintf` with no arguments): `Format(1)=%10.3f` stores `     0.000` and `Title=50%s done` stores `50 done`, while a Region that is not Adaptive keeps the value. **C bug.**
