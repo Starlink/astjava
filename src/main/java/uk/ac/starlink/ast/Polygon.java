@@ -345,7 +345,7 @@ public class Polygon extends Region {
                 throw Ast.err(
                         AstException.AST__INTER,
                         "astPolygon(" + astClass() + "): No line across edge " + (i + 1)
-                                + " reaches the distance asked for" + " (internal AST programming error).");
+                                + " reaches the distance asked for (internal AST programming error).");
             }
             l2 *= 0.5;
         }
