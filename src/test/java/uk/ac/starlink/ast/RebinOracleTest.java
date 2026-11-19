@@ -270,13 +270,19 @@ class RebinOracleTest {
         return r;
     }
 
-    /** FNV-1a over the bit patterns of every output value, and variance when the arrays are given. */
+    /**
+     * FNV-1a over the bit patterns of every output value, and variance when the arrays are given.
+     *
+     * <p>Every NaN is hashed as Java's canonical NaN, which is the NaN the C probes give on AArch64,
+     * where the oracles were made: the sign of a NaN from an invalid operation such as 0 / 0 is not
+     * fixed by IEEE 754, and x86-64 sets it.
+     */
     static long hash(Result r, boolean varArrays) {
         long h = 0xcbf29ce484222325L;
         for (int k = 0; k < r.out.length; k++) {
-            h = (h ^ Double.doubleToRawLongBits(r.out[k])) * 0x100000001b3L;
+            h = (h ^ Double.doubleToLongBits(r.out[k])) * 0x100000001b3L;
             if (varArrays) {
-                h = (h ^ Double.doubleToRawLongBits(r.outVar[k])) * 0x100000001b3L;
+                h = (h ^ Double.doubleToLongBits(r.outVar[k])) * 0x100000001b3L;
             }
         }
         return h;

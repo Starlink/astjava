@@ -121,12 +121,18 @@ class TranGridOracleTest {
         return new CmpMap(c3, c4, true);
     }
 
-    /** FNV-1a over the bit patterns of every output, position by position. */
+    /**
+     * FNV-1a over the bit patterns of every output, position by position.
+     *
+     * <p>Every NaN is hashed as Java's canonical NaN, which is the NaN the C probes give on AArch64,
+     * where the oracles were made: the sign of a NaN from an invalid operation such as 0 / 0 is not
+     * fixed by IEEE 754, and x86-64 sets it.
+     */
     private static long hash(double[][] out) {
         long h = 0xcbf29ce484222325L;
         for (int i = 0; i < out[0].length; i++) {
             for (double[] axis : out) {
-                h = (h ^ Double.doubleToRawLongBits(axis[i])) * 0x100000001b3L;
+                h = (h ^ Double.doubleToLongBits(axis[i])) * 0x100000001b3L;
             }
         }
         return h;
