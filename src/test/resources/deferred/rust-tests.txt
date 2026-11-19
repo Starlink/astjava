@@ -237,3 +237,5 @@ tests/test_region_convex_oracle.rs::convex_rejects_an_array_smaller_than_its_bou
 tests/test_region_outline_oracle.rs::downsize_matches_the_c_library | astDownsize (not in jniast)
 tests/test_region_outline_oracle.rs::outline_matches_the_c_library | astOutline (not in jniast)
 tests/test_region_outline_oracle.rs::outline_reports_no_selected_pixel_as_c_does | astOutline (not in jniast)
+tests/test_regions_c.rs::check_remove_regions | astRemoveRegions (out-of-scope method)
+tests/test_regions_c.rs::region_gaps_still_differ | Rust-only API (checks that Rust's gap from C in checkEllipse Errors 15 to 17 remains; RegionsCTest.checkEllipse gives C's result)
