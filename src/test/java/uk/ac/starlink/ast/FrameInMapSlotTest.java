@@ -106,8 +106,10 @@ class FrameInMapSlotTest {
      * A Region is a Mapping, so a CmpMap may hold one: every {@code simplify/*.map} fixture nesting
      * a Region inside a CmpMap reads, unless it also holds a SelectorMap, which the library cannot
      * load yet, and then it must fail for that reason alone. The corpus has 34 such fixtures, 6 of
-     * them with a SelectorMap; at least 28 must read, a floor rather than an equality, as in the Rust
-     * test, since fixtures are added.
+     * them with a SelectorMap. At least 28 must read: like the Rust test's count of 33, written when
+     * the corpus had 33, this is a floor, so that a fixture added to the corpus does not fail the
+     * test. The 6 refused are counted exactly, so that a fixture with a SelectorMap added to the
+     * corpus is noticed before SelectorMap is ported.
      */
     @Test
     void aRegionInsideACmpMapStillReads() throws IOException {
