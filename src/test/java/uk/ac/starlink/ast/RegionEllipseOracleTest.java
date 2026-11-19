@@ -17,16 +17,28 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * <p>Membership is compared exactly. {@link #noGridPointLiesNearTheSkyBoundary} shows that no
  * point of the sky grid lies within a relative {@code 1e-9} of the Ellipse's axes of the
  * boundary, far beyond the few ulps by which {@code java.lang.Math} and the C library may place
- * it. The dumps hold the ends of the axes, placed with {@code sin} and {@code cos}, which may
- * differ by 2 ulp between the two: about {@code 4.4e-16} of values at most 4, so {@link #TOL} is
- * {@code 1e-14}.
+ * it.
+ *
+ * <p>The dumps hold the ends of the axes. In a plain Frame each is the centre plus the half-length
+ * times the {@code sin} or {@code cos} of the angle, which may differ by 2 ulp between {@code
+ * java.lang.Math} and the C library: about {@code 4.4e-16} of a product at most 2, added to a
+ * centre at most 2, so {@link #TOL} is {@code 1e-14}. In the SkyFrame each comes from {@code
+ * astOffset2}, which chains the {@code sin} and {@code cos} of the centre's coordinates and of the
+ * offset, then {@code atan2} and {@code asin}: at most six such functions, each 2 ulp apart, through
+ * unit vectors and their products, whose conditioning here (the centre at latitude 0.8, offsets of
+ * 0.2 radians) amplifies by less than 10, on values at most 1.2: about {@code 6 * 10 * 4.4e-16 *
+ * 1.2 = 3e-14}, as {@link RegionFrameOracleTest} finds for the same chain, so {@link #SKY_TOL} is
+ * {@code 1e-12}.
  */
 class RegionEllipseOracleTest {
 
     private static final JsonNode DATA = ProbeData.load("region_ellipse");
 
-    /** The tolerance for the values of a dump (see the class description). */
+    /** The tolerance for the values of a plain Frame's dump (see the class description). */
     private static final double TOL = 1e-14;
+
+    /** The tolerance for the values of a SkyFrame's dump (see the class description). */
+    private static final double SKY_TOL = 1e-12;
 
     private static double[] doubles(JsonNode n) {
         double[] out = new double[n.size()];
@@ -122,7 +134,10 @@ class RegionEllipseOracleTest {
     @Test
     void constructorMatchesAstEllipseForm1() {
         RegionProbeText.checkCloseText(
-                find("sky").get(1).textValue(), ChannelText.dump(form1(icrs(), 1.0, 0.8, 0.2, 0.1, 0.3)), TOL, "sky");
+                find("sky").get(1).textValue(),
+                ChannelText.dump(form1(icrs(), 1.0, 0.8, 0.2, 0.1, 0.3)),
+                SKY_TOL,
+                "sky");
         RegionProbeText.checkCloseText(
                 find("form1").get(1).textValue(),
                 ChannelText.dump(form1(new Frame(2), 1.0, 2.0, 2.0, 1.0, 0.3)),
