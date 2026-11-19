@@ -27,7 +27,7 @@ cap_matrixmap_04 | needs ChebyMap
 cap_permmap_01 | needs NormMap
 cap_pointlist_01 | needs Prism
 cap_pointlist_02 | needs Prism
-cap_slamap_02 | needs Polygon, Prism
+cap_slamap_02 | needs Prism
 cap_slamap_07 | needs CmpRegion
 cap_timemap_02 | needs StcResourceProfile
 cap_unitnormmap_01 | needs UnitNormMap
@@ -81,9 +81,6 @@ cap_cheby_consolidate | needs ChebyMap
 cap_box_permmap_const | needs simplification
 cap_box_permmap_null | needs simplification
 cap_box_permmap_null_first | needs simplification
-cap_poly_unc_frame | needs Polygon
-cap_poly_bent_edges | needs Polygon
-cap_poly_bend_allowed | needs Polygon
 neg_unitnormmap_nonunit_scale | needs UnitNormMap
 defunc_prism_box_interval | needs Prism
 merge_box_fillfactor_product | needs simplification

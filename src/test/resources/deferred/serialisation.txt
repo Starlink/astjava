@@ -12,13 +12,7 @@ simplify/cap_permmap_01.simp | needs NormMap
 simplify/cap_pointlist_01.map | needs Prism
 simplify/cap_pointlist_01.simp | needs Prism
 simplify/cap_pointlist_02.map | needs Prism
-simplify/cap_poly_bend_allowed.map | needs Polygon
-simplify/cap_poly_bend_allowed.simp | needs Polygon
-simplify/cap_poly_bent_edges.map | needs Polygon
-simplify/cap_poly_bent_edges.simp | needs Polygon
-simplify/cap_poly_unc_frame.map | needs Polygon
-simplify/cap_poly_unc_frame.simp | needs Polygon
-simplify/cap_slamap_02.simp | needs Polygon, Prism
+simplify/cap_slamap_02.simp | needs Prism
 simplify/cap_slamap_07.map | needs CmpRegion
 simplify/cap_timemap_02.map | needs StcResourceProfile
 simplify/cap_timemap_02.simp | needs StcResourceProfile
