@@ -154,7 +154,10 @@ public class Ellipse extends Region {
         }
     }
 
-    /** Loads an Ellipse from its description, as C's {@code astLoadEllipse} does: an Ellipse has no items of its own. */
+    /**
+     * Loads an Ellipse from its description, as C's {@code astLoadEllipse} does: an Ellipse has no
+     * items of its own.
+     */
     Ellipse(NativeNode node) {
         super(node);
         node.section("Ellipse");
