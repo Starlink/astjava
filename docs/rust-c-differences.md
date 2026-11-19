@@ -944,7 +944,7 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: polygon.c `Cache` finds a point inside the Polygon from the edges of positive length; when none has any (a Polygon of one vertex, or of vertices that coincide) the point is never set, and `Transform` draws its lines from an uninitialised value. **C bug.**
   `astPolygon` accepts such a Polygon, and its Bounded, bounds and defining points are defined; its boundary mesh is `AST__BADIN` ("undefined length").
 - Rust: the point is bad, and membership reports `AST__INTER`.
-- Java: as Rust: the constructor, Bounded, bounds and points as C (`PolygonTest.fewerThanThreeVerticesMatchC`), and membership `AST__INTER` (`Polygon.inside`), an error rather than a result C does not define.
+- Java: the constructor, Bounded, bounds and points as C (`PolygonTest.fewerThanThreeVerticesMatchC`); membership, and so masking and overlap, report `AST__BADIN`, the vertices being all the same point so that the Polygon has no inside (`Polygon.inside`, `PolygonTest.polygonWhoseVerticesAreOnePointHasNoInside`), an error rather than a result C does not define.
 
 ### A Polygon with a bad vertex read from a dump
 

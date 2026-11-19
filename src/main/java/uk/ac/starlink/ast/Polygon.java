@@ -469,8 +469,8 @@ public class Polygon extends Region {
      * contains it; it is in the un-negated Polygon if inside, and in the negated one if outside;
      * a point on the boundary is in either if Closed. A point with a bad value is in neither.
      *
-     * @throws AstException with status {@code AST__INTER} if no point inside could be found, as
-     *     for a Polygon whose edges all have no length, where C reads an unset value
+     * @throws AstException with status {@code AST__BADIN} if the vertices are all the same point,
+     *     so that no edge has any length and there is no point inside, where C reads an unset value
      */
     private boolean[] inside(double[][] base, int npoint, boolean neg, boolean closed) {
         Frame frm = baseFrame();
@@ -487,10 +487,9 @@ public class Polygon extends Region {
                 Frame.LineDef a = frm.lineDef(in, p);
                 if (a == null) {
                     throw Ast.err(
-                            AstException.AST__INTER,
-                            "astTransform(" + astClass() + "): No point inside the " + astClass() + " could be"
-                                    + " found, as none of its edges has any length (internal AST programming"
-                                    + " error).");
+                            AstException.AST__BADIN,
+                            "astTransform(" + astClass() + "): The " + astClass() + "'s vertices are all the same"
+                                    + " point, so it has no inside.");
                 }
                 int ncross = 0;
                 Pos pos = null;

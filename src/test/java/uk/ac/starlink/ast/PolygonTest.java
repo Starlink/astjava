@@ -16,6 +16,7 @@ import static uk.ac.starlink.ast.RegionProbeText.unc;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
@@ -444,6 +445,32 @@ class PolygonTest {
         checkCase("one", bounded(one) + negated(one) + points(one) + bounds(one) + error(() -> mesh(one)));
         u = poly(0.0, 0.0, 1.0, 0.0, 2.0, 0.0);
         checkCase("line3", bounded(u) + negated(u) + points(u) + tran(u, TWO_TEST) + bounds(u));
+    }
+
+    /**
+     * Asserts that {@code e} reports a Polygon whose vertices are all one point as the bad input it
+     * is: C finds no point inside such a Polygon and reads an unset value (polygon.c {@code Cache}
+     * and {@code Transform}).
+     */
+    private static void assertNoInside(Executable e) {
+        AstException ex = assertThrows(AstException.class, e);
+        assertEquals(AstException.AST__BADIN, ex.getStatus());
+        assertEquals(
+                "astTransform(Polygon): The Polygon's vertices are all the same point, so it has no inside.",
+                ex.getMsgText());
+    }
+
+    @Test
+    void polygonWhoseVerticesAreOnePointHasNoInside() {
+        double[][] pts = {{1.0, 5.0}, {2.0, 5.0}};
+        Polygon[] polys = {poly(1.0, 2.0), poly(1.0, 2.0, 1.0, 2.0, 1.0, 2.0)};
+        for (Polygon p : polys) {
+            assertNoInside(() -> p.transform(pts, 2, true));
+            assertNoInside(() -> p.overlap(circle2(1.0, 2.0, 1.0)));
+            assertNoInside(() -> circle2(1.0, 2.0, 1.0).overlap(p));
+            double[] d = new double[4];
+            assertNoInside(() -> p.maskD(null, true, 2, new int[] {1, 1}, new int[] {2, 2}, d, 9.0));
+        }
     }
 
     @Test
