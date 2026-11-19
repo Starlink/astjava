@@ -893,7 +893,11 @@ public class Box extends Region {
                 return newpoly;
             }
         }
-        throw Ast.err(AstException.AST__OBJIN, "astRegPins(Polygon): Invalid Object pointer given (NULL).");
+        throw Ast.err(
+                AstException.AST__OBJIN,
+                "astSimplify(" + box.astClass() + "): The corners of the " + box.astClass() + ", transformed into "
+                        + "its current Frame, make no Polygon whose inside is the " + box.astClass()
+                        + "'s inside, in either order.");
     }
 
     /**

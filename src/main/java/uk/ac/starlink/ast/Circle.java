@@ -611,7 +611,7 @@ public class Circle extends Region {
         boolean simpler = nw != this;
         Mapping map = nw.getRegFS().getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
         if (!isUnitMap(map)) {
-            Region fit = fitted(nw);
+            Region fit = fittedCircleOrEllipse(this, nw);
             if (fit != null) {
                 nw = fit;
                 simpler = simpler || fit instanceof Ellipse;
@@ -626,13 +626,14 @@ public class Circle extends Region {
 
     /**
      * The Circle, or for two axes the Ellipse, that fits the boundary mesh of {@code nw} in its
-     * current Frame about this Region's centre transformed into that Frame, as C's {@code
-     * Simplify} tries them; null if the centre has a bad value or neither fits.
+     * current Frame about the centre of {@code reg} transformed into that Frame, as the {@code
+     * Simplify} of circle.c and of ellipse.c try them; null if the centre has a bad value or
+     * neither fits.
      */
-    private Region fitted(Region nw) {
+    static Region fittedCircleOrEllipse(Region reg, Region nw) {
         double[][] mesh = nw.regMesh();
         Region unc = nw.getUncFrm(FrameSet.AST__CURRENT);
-        double[][] ps2 = regTransform(null, true);
+        double[][] ps2 = reg.regTransform(null, true);
         int nc = ps2.length;
         double[] cen = new double[nc];
         boolean ok = true;
