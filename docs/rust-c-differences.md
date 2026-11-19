@@ -835,8 +835,17 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 ### Picking axes of a Region in `MapRegion`
 
 - C: region.c `MapRegion`, given a Mapping with fewer outputs than inputs, picks the Region's axes that the outputs need with `astPickAxes` and uses the result as a Region; `astPickAxes` gives a Frame rather than a Region when the Region cannot be split along those axes, and C then calls Region methods on that Frame. **C bug.**
-- Rust: not examined.
+- Rust: keeps the whole Region and the whole Mapping when the axes picked are not a Region (`reg_map_region`).
 - Java: `AST__INTER` when the axes picked are not a Region (`Region.mapRegionInto`).
+
+### Releasing the split Mapping twice in `MapRegion`
+
+- C: region.c `MapRegion`, given a Mapping with fewer outputs than inputs whose inverse leaves the axes it drops bad, such as `PermMap(2, {1,0}, 1, {1})` or `PermMap(2, {0,1}, 1, {2})`, releases the Mapping `astMapSplit` gives in the branch that uses it unchanged (`region.c:5691`, at 3d3f255f) and again in the cleanup common to both branches (`region.c:5719`). **C bug.**
+  The second `astAnnul` of the null pointer fails with `AST__OBJIN`, so `astMapRegion`, and so `astMask<X>` of a Box, fails, and the final `astInvert` is skipped, leaving the caller's Mapping inverted.
+  PointList's `Mask<X>` then reads the points of the Region `astMapRegion` failed to make with no check of the status (`pointlist.c:902`) and crashes, as it does after any failure there.
+  With the second release guarded (`if( tmap )`), C maps the Box or PointList to the Region of the axis kept and masks pixels 1 to 6 with it; a Circle then meets the entry above, `astPickAxes` giving a Frame that C uses as a Region.
+- Rust: `reg_map_region` has no second release, so it takes the branch as C intends; for a Circle it keeps the whole Region (entry above).
+- Java: what C gives with the second release guarded (`Region.mapRegionInto`), and `AST__INTER` for a Circle (entry above); `RegionMapRegionDropAxisTest` pins the mapped Regions and the masks from `src/test/resources/probes/region_mapregion_drop_axis_probe.c`, which is built with that guard.
 
 ### Casting a Region into the class of another Region (`Cast`)
 
