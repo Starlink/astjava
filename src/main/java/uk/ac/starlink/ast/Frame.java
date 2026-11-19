@@ -1910,6 +1910,305 @@ public class Frame extends Mapping {
     }
 
     // ------------------------------------------------------------------
+    // Lines, box normalisation and grids (the methods Regions use)
+    // ------------------------------------------------------------------
+
+    /**
+     * A line segment in a two-dimensional Frame, made by {@link #lineDef} and read by the line
+     * methods of the Frame that made it (C's {@code AstLineDef}). A plain Frame keeps the end
+     * points and the unit vectors along and across the line in its axis coordinates, two values
+     * each; a SkyFrame keeps them as 3-vectors of unit length (C's {@code SkyLineDef}), the
+     * direction being the point 90 degrees along the great circle from the start and the
+     * perpendicular the pole of the great circle.
+     */
+    static final class LineDef {
+
+        /** The Frame that made the line. */
+        final Frame frame;
+
+        /** The length of the line: a distance in the Frame, or an arc in radians on the sky. */
+        final double length;
+
+        /**
+         * Whether the line extends from its start without end, so that its end point is
+         * disregarded. {@link #lineDef} makes a line that ends; a caller may change it.
+         */
+        boolean infinite;
+
+        /** The start of the line. */
+        final double[] start;
+
+        /** The end of the line. */
+        final double[] end;
+
+        /** The unit vector along the line. */
+        final double[] dir;
+
+        /** The unit vector across the line, to the left of {@link #dir}. */
+        final double[] q;
+
+        LineDef(Frame frame, double length, double[] start, double[] end, double[] dir, double[] q) {
+            this.frame = frame;
+            this.length = length;
+            this.start = start;
+            this.end = end;
+            this.dir = dir;
+            this.q = q;
+        }
+    }
+
+    /**
+     * Describes the line segment from {@code start} to {@code end} in this two-dimensional Frame,
+     * for {@link #lineCrossing}, {@link #lineContains} and {@link #lineOffset} (C's {@code
+     * astLineDef}). A plain Frame's line is straight, its length the {@link #distance} between
+     * its ends.
+     *
+     * @param start the axis values at the start of the line
+     * @param end the axis values at the end of the line
+     * @return the line, or null if any of the axis values is bad
+     * @throws AstException with status {@code AST__INTER} if the Frame does not have two axes
+     */
+    LineDef lineDef(double[] start, double[] end) {
+        if (getNaxes() != 2) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    "astLineDef(" + astClass() + "): The supplied " + astClass() + " is not 2 dimensional "
+                            + "(internal AST proramming error)."); // codespell:ignore proramming
+        }
+        if (isBad(start[0]) || isBad(start[1]) || isBad(end[0]) || isBad(end[1])) {
+            return null;
+        }
+        double length = distance(start, end);
+        double[] dir;
+        if (length > 0.0) {
+            dir = new double[] {(end[0] - start[0]) / length, (end[1] - start[1]) / length};
+        } else {
+            dir = new double[] {1.0, 0.0};
+        }
+        double[] q = {-dir[1], dir[0]};
+        return new LineDef(this, length, new double[] {start[0], start[1]}, new double[] {end[0], end[1]}, dir, q);
+    }
+
+    /**
+     * Throws C's error for a line that this Frame did not make.
+     *
+     * @param which the line's description in the message: "The", "First" or "Second"
+     */
+    // C compares the line's Frame pointer with this one.
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"})
+    final void checkLine(String method, LineDef line, String which) {
+        if (line.frame != this) {
+            throw Ast.err(
+                    AstException.AST__INTER,
+                    method + "(" + astClass() + "): " + which + " supplied line does not relate to the supplied "
+                            + astClass() + " (AST internal programming error).");
+        }
+    }
+
+    /**
+     * Finds where two lines cross (C's {@code astLineCrossing}): for a plain Frame, where the
+     * straight lines through them cross, using the line along which the crossing is nearer the
+     * start to reduce rounding error, and bad values if the lines are parallel.
+     *
+     * @param l1 the first line, made by this Frame's {@link #lineDef}
+     * @param l2 the second line, made by this Frame's {@link #lineDef}
+     * @param cross an array of at least five elements in which to return the axis values at the
+     *     crossing, which are given even if it lies beyond the ends of a line (a SkyFrame writes
+     *     the crossing as a 3-vector after them, which {@link #lineContains} reads); or null
+     * @return true if the crossing lies on both lines, at or after their start and before their
+     *     end (a line marked {@link LineDef#infinite} has no end)
+     * @throws AstException with status {@code AST__INTER} if a line was made by another Frame
+     */
+    boolean lineCrossing(LineDef l1, LineDef l2, double[] cross) {
+        checkLine("astLineCrossing", l1, "First");
+        checkLine("astLineCrossing", l2, "Second");
+        double[] c = cross != null ? cross : new double[5];
+        boolean result = false;
+        double den = l1.dir[0] * l2.dir[1] - l2.dir[0] * l1.dir[1];
+        if (den != 0.0) {
+            double dx = l2.start[0] - l1.start[0];
+            double dy = l2.start[1] - l1.start[1];
+            double t1 = (l2.dir[1] * dx - l2.dir[0] * dy) / den;
+            double t2 = (l1.dir[1] * dx - l1.dir[0] * dy) / den;
+            if (Math.abs(t1) < Math.abs(t2)) {
+                c[0] = l1.start[0] + t1 * l1.dir[0];
+                c[1] = l1.start[1] + t1 * l1.dir[1];
+            } else {
+                c[0] = l2.start[0] + t2 * l2.dir[0];
+                c[1] = l2.start[1] + t2 * l2.dir[1];
+            }
+            double len1 = l1.infinite ? Double.MAX_VALUE : l1.length;
+            double len2 = l2.infinite ? Double.MAX_VALUE : l2.length;
+            result = t1 >= 0.0 && t1 < len1 && t2 >= 0.0 && t2 < len2;
+        } else {
+            c[0] = AST__BAD;
+            c[1] = AST__BAD;
+        }
+        return result;
+    }
+
+    /**
+     * Whether a line contains a point (C's {@code astLineContains}): for a plain Frame, whether the
+     * nearest point of the line lies at or after its start and before its end, and the point is
+     * no further from it than 1e-7 of the line's length.
+     *
+     * @param l the line, made by this Frame's {@link #lineDef}
+     * @param def non-zero if {@code point} was filled by {@link #lineCrossing}, so that it holds
+     *     the values a SkyFrame writes after the axis values
+     * @param point the point's axis values, possibly followed by those values
+     * @return true if the line contains the point; false if it does not, or if an axis value is bad
+     * @throws AstException with status {@code AST__INTER} if the line was made by another Frame
+     */
+    boolean lineContains(LineDef l, int def, double[] point) {
+        checkLine("astLineContains", l, "The");
+        if (isBad(point[0]) || isBad(point[1])) {
+            return false;
+        }
+        double dx = point[0] - l.start[0];
+        double dy = point[1] - l.start[1];
+        double p = dx * l.dir[0] + dy * l.dir[1];
+        return p >= 0.0 && p < l.length && Math.abs(dx * l.q[0] + dy * l.q[1]) <= 1.0E-7 * l.length;
+    }
+
+    /**
+     * Finds the point a distance {@code par} along a line from its start, and then {@code prp} at
+     * right angles to it, positive to the left (C's {@code astLineOffset}).
+     *
+     * @param line the line, made by this Frame's {@link #lineDef}
+     * @param par the distance along the line
+     * @param prp the distance across the line
+     * @param point an array in which to return the two axis values of the point
+     * @throws AstException with status {@code AST__INTER} if the line was made by another Frame
+     */
+    void lineOffset(LineDef line, double par, double prp, double[] point) {
+        checkLine("astLineOffset", line, "The");
+        point[0] = line.start[0] + par * line.dir[0] + prp * line.q[0];
+        point[1] = line.start[1] + par * line.dir[1] + prp * line.q[1];
+    }
+
+    /**
+     * Widens a box so that it takes in the singularities of the coordinate system that lie inside
+     * it, such as a celestial pole (C's {@code astNormBox}). A plain Frame has none, and leaves
+     * the box as it is.
+     *
+     * @param lbnd the lower bounds of the box on each axis, replaced by the widened ones
+     * @param ubnd the upper bounds of the box on each axis, replaced by the widened ones
+     * @param reg a Mapping that leaves a position inside the box unchanged and makes one outside it
+     *     bad, as a Region does
+     */
+    void normBox(double[] lbnd, double[] ubnd, Mapping reg) {
+        // C's Frame class leaves the box unchanged.
+    }
+
+    /**
+     * Spreads about {@code size} points through a box, as a grid (C's {@code astFrameGrid}). A
+     * plain Frame puts ticks at even spacing along each axis, from the lower to the upper bound
+     * inclusive, at least two on each, their number in proportion to the axis's length among the
+     * axes of the same unit, and takes every combination; the first axis varies fastest.
+     *
+     * @param size the number of points wanted, at least 1
+     * @param lbnd the lower bound of the box on each axis
+     * @param ubnd the upper bound of the box on each axis
+     * @return the points, {@code [naxes][npoint]}
+     * @throws AstException with status {@code AST__ATTIN} if both bounds of an axis are bad or
+     *     {@code size} is less than 1, or {@code AST__NPTIN} if the product of the counts, which
+     *     wraps as C's {@code int} product does, is less than 1
+     */
+    double[][] frameGrid(int size, double[] lbnd, double[] ubnd) {
+        int numAxes = getNaxes();
+        double[] gmean = new double[numAxes];
+        int[] nsame = new int[numAxes];
+        boolean bad = false;
+        for (int iax = 0; iax < numAxes; iax++) {
+            nsame[iax] = 1;
+            if (isBad(ubnd[iax]) && isBad(lbnd[iax])) {
+                bad = true;
+                break;
+            }
+            gmean[iax] = ubnd[iax] - lbnd[iax];
+            String unit = getUnit(iax + 1);
+            for (int jax = 0; jax < numAxes; jax++) {
+                if (jax != iax && unit.equals(getUnit(jax + 1))) {
+                    nsame[iax]++;
+                    gmean[iax] *= ubnd[jax] - lbnd[jax];
+                }
+            }
+        }
+        if (bad) {
+            throw Ast.err(
+                    AstException.AST__ATTIN,
+                    "astFrameGrid(" + astClass() + "): One of more of the supplied bounds is AST__BAD "
+                            + "(programming error).");
+        }
+        if (size < 1) {
+            throw Ast.err(
+                    AstException.AST__ATTIN,
+                    "astFrameGrid(" + astClass() + "): The supplied grid size (" + size
+                            + ") is invalid (programming error).");
+        }
+        // C assigns each count to an int, truncating; a value beyond the range of an int (an
+        // axis of zero width makes one infinite) or a NaN is converted as Java does, saturating
+        // and giving 0 for a NaN, as the pinned library on AArch64 does, and the product of the
+        // counts wraps as it does there.
+        int ntick0 = (int) Math.pow(size, 1.0 / numAxes);
+        if (ntick0 < 2) {
+            ntick0 = 2;
+        }
+        for (int iax = 0; iax < numAxes; iax++) {
+            gmean[iax] = Math.pow(Math.abs(gmean[iax]), 1.0 / nsame[iax]);
+        }
+        int[] ntick = new int[numAxes];
+        int np = 1;
+        for (int iax = 0; iax < numAxes; iax++) {
+            ntick[iax] = (int) (ntick0 * (ubnd[iax] - lbnd[iax]) / gmean[iax]);
+            if (ntick[iax] < 2) {
+                ntick[iax] = 2;
+            }
+            np *= ntick[iax];
+        }
+        double[][] ptr = newPoints(numAxes, np);
+        double[] step = new double[numAxes];
+        int[] pi = new int[numAxes];
+        for (int iax = 0; iax < numAxes; iax++) {
+            step[iax] = (ubnd[iax] - lbnd[iax]) / (ntick[iax] - 1);
+        }
+        int ipp = 0;
+        int iax = 0;
+        while (iax < numAxes) {
+            for (iax = 0; iax < numAxes; iax++) {
+                ptr[iax][ipp] = lbnd[iax] + pi[iax] * step[iax];
+            }
+            ipp++;
+            iax = 0;
+            while (iax < numAxes) {
+                pi[iax]++;
+                if (pi[iax] > ntick[iax] - 1) {
+                    pi[iax] = 0;
+                    iax++;
+                } else {
+                    break;
+                }
+            }
+        }
+        return ptr;
+    }
+
+    /**
+     * An array for {@code npoint} points of {@code ncoord} coordinates, {@code [ncoord][npoint]},
+     * as C's {@code astPointSet} makes one.
+     *
+     * @throws AstException with status {@code AST__NPTIN} if {@code npoint} is less than 1
+     */
+    static double[][] newPoints(int ncoord, int npoint) {
+        if (npoint < 1) {
+            throw Ast.err(
+                    AstException.AST__NPTIN,
+                    "astInitPointSet(PointSet): Number of points (" + npoint + ") is not valid.");
+        }
+        return new double[ncoord][npoint];
+    }
+
+    // ------------------------------------------------------------------
     // Frame attributes
     // ------------------------------------------------------------------
 

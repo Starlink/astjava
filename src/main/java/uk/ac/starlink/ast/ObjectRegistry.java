@@ -62,6 +62,8 @@ final class ObjectRegistry {
                 return PcdMap::new;
             case "PermMap":
                 return PermMap::new;
+            case "PointSet":
+                return PointSet::new;
             case "PolyMap":
                 return PolyMap::new;
             case "RateMap":

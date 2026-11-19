@@ -1,5 +1,7 @@
 package uk.ac.starlink.ast;
 
+import java.util.Arrays;
+import uk.ac.starlink.ast.internal.erfa.C2s;
 import uk.ac.starlink.ast.internal.erfa.Pn;
 import uk.ac.starlink.ast.internal.pal.Pal;
 
@@ -20,8 +22,7 @@ import uk.ac.starlink.ast.internal.pal.Pal;
  * <p>Ported from C {@code skyframe.c}, with Rust {@code frames/skyframe.rs}. The SkyFrame holds a
  * {@link SkyAxis} for each axis and reaches its per-axis behaviour (formatting, axis distances and
  * offsets) through {@link #getAxis}, as C does; it overrides the Frame methods C's SkyFrame
- * overrides. Axis numbers count from 1. The Plot-only methods of C's SkyFrame ({@code FrameGrid},
- * {@code Gap}, {@code LineDef} and its family, {@code NormBox}) are not ported.
+ * overrides. Axis numbers count from 1. C's {@code Gap}, which only Plot uses, is not ported.
  */
 public class SkyFrame extends Frame {
 
@@ -2019,6 +2020,327 @@ public class SkyFrame extends Frame {
             }
         }
         return new double[][] {d1, d2};
+    }
+
+    // ------------------------------------------------------------------
+    // Lines, box normalisation and grids (the methods Regions use)
+    // ------------------------------------------------------------------
+
+    /**
+     * Describes the arc of great circle from {@code start} to {@code end}, the short way round
+     * (C's {@code LineDef}, skyframe.c). The line holds the ends as unit 3-vectors, its length in
+     * radians, the pole of its great circle (to the left of the line as seen from the centre of
+     * the sphere) and the point 90 degrees along it from the start. A line of zero length or of
+     * half a turn has no defined pole, so the pole is taken from the start and a point 0.01
+     * radians away on each axis. C also keeps the normalised (longitude, latitude) of the ends,
+     * which none of the line functions reads.
+     */
+    @Override
+    LineDef lineDef(double[] start, double[] end) {
+        if (isBad(start[0]) || isBad(start[1]) || isBad(end[0]) || isBad(end[1])) {
+            return null;
+        }
+        int[] perm = getPerm();
+        double[] p1 = internal(perm, start);
+        double[] p2 = internal(perm, end);
+        double[] s = Pal.dcs2c(p1[0], p1[1]);
+        double[] e = Pal.dcs2c(p2[0], p2[1]);
+        // The length corrected for the rounding in dcs2c that leaves the vectors not quite of
+        // unit length.
+        double length = Pal.dvdv(s, e);
+        double ls = s[0] * s[0] + s[1] * s[1] + s[2] * s[2];
+        double le = e[0] * e[0] + e[1] * e[1] + e[2] * e[2];
+        double coslength = length / Math.sqrt(ls * le);
+        if (coslength < -1.0) {
+            length = PI;
+        } else if (coslength > 1.0) {
+            length = 0.0;
+        } else {
+            length = Math.acos(coslength);
+        }
+        double[] pole;
+        if (length == 0.0 || length > PI - 5.0E-11) {
+            double[] temp = Pal.dcs2c(p1[0] + 0.01, p1[1] + 0.01);
+            pole = Pal.dvxv(temp, s);
+        } else {
+            pole = Pal.dvxv(e, s);
+        }
+        double[] q = Pal.dvn(pole).unit.clone();
+        double[] dir = Pal.dvxv(s, q);
+        return new LineDef(this, length, s, e, dir, q);
+    }
+
+    /**
+     * Whether a great-circle line includes a point given as a unit 3-vector: whether the distance
+     * along the line from its start, going forwards, is less than its length (C's {@code
+     * LineIncludes}). A line of zero length includes only its start, and an infinite line every
+     * point.
+     */
+    private static boolean lineIncludes(LineDef l, double[] point) {
+        double t1 = Pal.dvdv(l.start, point);
+        double t2 = Math.acos(t1);
+        // A point more than 90 degrees from the quarter point is on the half of the great circle
+        // behind the start.
+        double t3 = Pal.dvdv(l.dir, point);
+        if (t3 < -1.0E-10) {
+            t2 = 2 * PI - t2;
+        }
+        if (l.infinite) {
+            return true;
+        }
+        return l.length > 0 ? t2 < l.length : t2 == 0.0;
+    }
+
+    /**
+     * Finds where two great-circle lines cross (C's {@code LineCrossing}, skyframe.c): of the two
+     * points where their great circles meet, the one on both lines, or else the opposite one,
+     * which is returned even if it is not on both. After the two axis values, {@code cross} holds
+     * the crossing as a unit 3-vector, which {@link #lineContains} reads when its {@code def} is
+     * non-zero. When the great circles are the same, the crossing is the zero vector, at (0, 0).
+     */
+    @Override
+    boolean lineCrossing(LineDef l1, LineDef l2, double[] cross) {
+        checkLine("astLineCrossing", l1, "First");
+        checkLine("astLineCrossing", l2, "Second");
+        double[] c = cross != null ? cross : new double[5];
+        double[] b = Pal.dvn(Pal.dvxv(l1.q, l2.q)).unit.clone();
+        boolean result = lineIncludes(l2, b) && lineIncludes(l1, b);
+        if (!result) {
+            b[0] *= -1.0;
+            b[1] *= -1.0;
+            b[2] *= -1.0;
+            result = lineIncludes(l2, b) && lineIncludes(l1, b);
+        }
+        c[2] = b[0];
+        c[3] = b[1];
+        c[4] = b[2];
+        double[] p = sphericalOf(b);
+        int[] perm = getPerm();
+        c[0] = p[perm[0]];
+        c[1] = p[perm[1]];
+        return result;
+    }
+
+    /**
+     * The (longitude, latitude) of a 3-vector, as C's {@code palDcc2s} gives them. The vector is
+     * converted as it is, without {@link Pal#dcc2s}'s change of a negative zero, since it was
+     * computed by the same operations as C's.
+     */
+    private static double[] sphericalOf(double[] v) {
+        return C2s.c2s(v);
+    }
+
+    /**
+     * Whether a great-circle line contains a point (C's {@code LineContains}, skyframe.c): whether
+     * the point lies along the line from its start and before its end, and its distance from the
+     * great circle is no more than 1e-7 of the line's length, or 1e-10 radians if that is more.
+     */
+    @Override
+    boolean lineContains(LineDef l, int def, double[] point) {
+        checkLine("astLineContains", l, "The");
+        if (isBad(point[0]) || isBad(point[1])) {
+            return false;
+        }
+        double[] b;
+        if (def != 0) {
+            b = new double[] {point[2], point[3], point[4]};
+        } else {
+            double[] p1 = internal(getPerm(), point);
+            b = Pal.dcs2c(p1[0], p1[1]);
+        }
+        if (!lineIncludes(l, b)) {
+            return false;
+        }
+        double t1 = Pal.dvdv(l.q, b);
+        double t2 = 1.0E-7 * l.length;
+        if (t2 < 1.0E-10) {
+            t2 = 1.0E-10;
+        }
+        return Math.abs(t1) <= t2;
+    }
+
+    /**
+     * Finds the point {@code par} radians along a great-circle line from its start, and then
+     * {@code prp} radians towards the pole of its great circle (C's {@code LineOffset},
+     * skyframe.c).
+     */
+    @Override
+    void lineOffset(LineDef line, double par, double prp, double[] point) {
+        checkLine("astLineOffset", line, "The");
+        double c = Math.cos(par);
+        double s = Math.sin(par);
+        double nx = c * line.start[0] + s * line.dir[0];
+        double ny = c * line.start[1] + s * line.dir[1];
+        double nz = c * line.start[2] + s * line.dir[2];
+        double[] v;
+        if (prp != 0.0) {
+            c = Math.cos(prp);
+            s = Math.sin(prp);
+            v = new double[] {c * nx + s * line.q[0], c * ny + s * line.q[1], c * nz + s * line.q[2]};
+        } else {
+            v = new double[] {nx, ny, nz};
+        }
+        double[] p = sphericalOf(v);
+        int[] perm = getPerm();
+        point[0] = p[perm[0]];
+        point[1] = p[perm[1]];
+    }
+
+    /**
+     * Widens a box that holds a celestial pole (C's {@code NormBox}, skyframe.c): if {@code reg}
+     * keeps the north pole, the box takes in all longitudes, 0 to 2pi, and latitudes from the
+     * lower of its normalised latitude bounds (bad if either bound is bad) up to the pole; the
+     * south pole likewise.
+     */
+    @Override
+    void normBox(double[] lbnd, double[] ubnd, Mapping reg) {
+        int[] perm = getPerm();
+        double[] lb = internal(perm, lbnd);
+        double[] ub = internal(perm, ubnd);
+        double[] x = new double[2];
+        double[] y = new double[2];
+        if (perm[0] == 0) {
+            x[0] = 0.0;
+            y[0] = PIBY2;
+            x[1] = 0.0;
+            y[1] = -PIBY2;
+        } else {
+            x[0] = PIBY2;
+            y[0] = 0.0;
+            x[1] = -PIBY2;
+            y[1] = 0.0;
+        }
+        double[] xo = reg.tran2(2, x, y, true)[0];
+        if (!isBad(xo[0])) {
+            double t;
+            if (!isBad(ub[1]) && !isBad(lb[1])) {
+                t = Pal.drange(ub[1]);
+                double t2 = Pal.drange(lb[1]);
+                if (t2 < t) {
+                    t = t2;
+                }
+            } else {
+                t = AST__BAD;
+            }
+            lb[1] = t;
+            ub[1] = PIBY2;
+            lb[0] = 0;
+            ub[0] = 2 * PI;
+        }
+        if (!isBad(xo[1])) {
+            double t;
+            if (!isBad(ub[1]) && !isBad(lb[1])) {
+                t = Pal.drange(ub[1]);
+                double t2 = Pal.drange(lb[1]);
+                if (t2 > t) {
+                    t = t2;
+                }
+            } else {
+                t = AST__BAD;
+            }
+            lb[1] = -PIBY2;
+            ub[1] = t;
+            lb[0] = 0;
+            ub[0] = 2 * PI;
+        }
+        lbnd[0] = lb[perm[0]];
+        lbnd[1] = lb[perm[1]];
+        ubnd[0] = ub[perm[0]];
+        ubnd[1] = ub[perm[1]];
+    }
+
+    /**
+     * Spreads about {@code size} points through a box of longitude and latitude (C's {@code
+     * FrameGrid}, skyframe.c): rows along parallels through the middles of equal bands of
+     * latitude, as many as make the cells roughly square, each with points evenly spaced in
+     * longitude and their number in proportion to its length, the longitudes running from the
+     * lower bound eastwards to the upper one (across RA 0 if the upper is less, all the way round
+     * if they are equal after normalisation but not as given).
+     *
+     * @throws AstException with status {@code AST__ATTIN} if a bound is bad or {@code size} is
+     *     less than 1, or {@code AST__NPTIN} if no row has a point (C's {@code astSetNpoint} of 0)
+     */
+    @Override
+    double[][] frameGrid(int size, double[] lbnd, double[] ubnd) {
+        int ilon = getLonAxis() - 1;
+        int ilat = 1 - ilon;
+        double lolat;
+        double hilat;
+        if (lbnd[ilat] <= ubnd[ilat]) {
+            lolat = lbnd[ilat];
+            hilat = ubnd[ilat];
+        } else {
+            lolat = ubnd[ilat];
+            hilat = lbnd[ilat];
+        }
+        double lolon = lbnd[ilon];
+        double hilon = ubnd[ilon];
+        if (size < 1) {
+            throw Ast.err(
+                    AstException.AST__ATTIN,
+                    "astFrameGrid(" + astClass() + "): The supplied grid size (" + size
+                            + ") is invalid (programming error).");
+        }
+        if (isBad(lolat) || isBad(hilat) || isBad(lolon) || isBad(hilon)) {
+            throw Ast.err(
+                    AstException.AST__ATTIN,
+                    "astFrameGrid(" + astClass() + "): One of more of the supplied bounds is AST__BAD "
+                            + "(programming error).");
+        }
+        lolon = Pal.dranrm(lolon);
+        hilon = Pal.dranrm(hilon);
+        if (hilon <= lolon && ubnd[ilon] != lbnd[ilon]) {
+            hilon += 2 * PI;
+        }
+        double dlon = hilon - lolon;
+        double boxArea = Math.abs(dlon * (Math.sin(hilat) - Math.sin(lolat)));
+        double latSize = Math.sqrt(boxArea / size);
+        // C assigns each count to an int, truncating; a value beyond the range of an int or a NaN
+        // is converted as Java does, saturating and giving 0 for a NaN, as the pinned library on
+        // AArch64 does.
+        int npar = (int) (0.5 + (hilat - lolat) / latSize);
+        if (npar < 2) {
+            npar = 2;
+        }
+        latSize = (hilat - lolat) / npar;
+        double totlen = 0.0;
+        double lat = lolat + 0.5 * latSize;
+        for (int ipar = 0; ipar < npar; ipar++) {
+            totlen += dlon * Math.cos(lat);
+            lat += latSize;
+        }
+        double lonSize = totlen / size;
+        // Room for the points the truncations add.
+        int ipmax = 2 * size;
+        double[][] ptr = newPoints(2, ipmax);
+        int ip = 0;
+        lat = lolat + 0.5 * latSize;
+        for (int ipar = 0; ipar < npar; ipar++) {
+            double cl = Math.cos(lat);
+            double inclon = cl != 0.0 ? lonSize / cl : 0.0;
+            int nmer = (int) (dlon / inclon);
+            // C adds in int; the sum is taken as a long here so that a count near the limit of an
+            // int does not wrap past the end of the array.
+            if ((long) ip + nmer >= ipmax) {
+                nmer = ipmax - ip;
+            }
+            inclon = dlon / nmer;
+            double lon = lolon + 0.5 * inclon;
+            for (int imer = 0; imer < nmer; imer++) {
+                ptr[ilon][ip] = lon;
+                ptr[ilat][ip] = lat;
+                lon += inclon;
+                ip++;
+            }
+            lat += latSize;
+        }
+        if (ip < 1) {
+            throw Ast.err(
+                    AstException.AST__NPTIN,
+                    "astSetNpoint(PointSet): Number of points (" + ip + ") is not valid.\nShould be in the range 1 to "
+                            + ipmax + ".");
+        }
+        return new double[][] {Arrays.copyOf(ptr[0], ip), Arrays.copyOf(ptr[1], ip)};
     }
 
     // ------------------------------------------------------------------

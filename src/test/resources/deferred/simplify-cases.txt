@@ -7,7 +7,7 @@ normmap_inverse_cancel | needs NormMap
 normmap_duplicate_elim | needs NormMap
 unitnormmap_inverse_cancel | needs UnitNormMap
 unitnormmap_diff_centre_to_shift | needs UnitNormMap
-selectormap_inverse_cancel | needs Box, PointSet, SelectorMap
+selectormap_inverse_cancel | needs Box, SelectorMap
 neg_spline_same_direction | needs SplineMap
 neg_normmap_parallel | needs NormMap
 neg_normmap_different_frames | needs NormMap
@@ -17,28 +17,28 @@ neg_normmap_nonnorm_neighbour | needs NormMap
 neg_spline_different_coeffs | needs SplineMap
 normmap_inverse_cancel_upper | needs NormMap
 unitnormmap_inv_fwd_cancel | needs UnitNormMap
-box_parallel_merge | needs Box, PointSet
-interval_parallel_merge | needs Box, Interval, PointSet
-box_self_simplify | needs Box, PointSet
-interval_self_simplify | needs Box, Interval, PointSet
+box_parallel_merge | needs Box
+interval_parallel_merge | needs Box, Interval
+box_self_simplify | needs Box
+interval_self_simplify | needs Box, Interval
 nullregion_self_simplify | needs NullRegion
-nullregion_parallel_merge | needs Box, NullRegion, PointSet
-pointlist_self_simplify | needs PointList, PointSet
+nullregion_parallel_merge | needs Box, NullRegion
+pointlist_self_simplify | needs PointList
 cap_normmap_cmpframe | needs NormMap
-selectormap_region_simplify | needs Box, PointSet, SelectorMap
-neg_box_asymmetric_2d | needs Box, PointSet
-cap_interval_01 | needs Box, Interval, NullRegion, PointSet, Prism
+selectormap_region_simplify | needs Box, SelectorMap
+neg_box_asymmetric_2d | needs Box
+cap_interval_01 | needs Box, Interval, NullRegion, Prism
 cap_matrixmap_04 | needs ChebyMap
 cap_permmap_01 | needs NormMap
-cap_pointlist_01 | needs Box, PointList, PointSet, Prism
-cap_pointlist_02 | needs Interval, PointList, PointSet, Prism
-cap_slamap_02 | needs Box, PointSet, Polygon, Prism
-cap_slamap_07 | needs Box, Circle, CmpRegion, NullRegion, PointSet
-cap_timemap_02 | needs Box, Interval, PointSet, StcResourceProfile
+cap_pointlist_01 | needs Box, PointList, Prism
+cap_pointlist_02 | needs Interval, PointList, Prism
+cap_slamap_02 | needs Box, Polygon, Prism
+cap_slamap_07 | needs Box, Circle, CmpRegion, NullRegion
+cap_timemap_02 | needs Box, Interval, StcResourceProfile
 cap_unitnormmap_01 | needs UnitNormMap
 cap_xphmap_01 | needs XphMap
 cap_xphmap_02 | needs XphMap
-cap_zoommap_04 | needs Box, PointList, PointSet
+cap_zoommap_04 | needs Box, PointList
 neg_normmap_diff_frame | needs NormMap
 neg_normmap_inv_diff_frame | needs NormMap
 neg_normmap_parallel_sky | needs NormMap
@@ -49,21 +49,21 @@ neg_xph_not_opposite | needs XphMap
 nullregion_parallel_merge_pair | needs NullRegion
 neg_nullregion_series | needs NullRegion
 neg_nullregion_parallel_nonregion | needs NullRegion
-pointlist_parallel_merge_pair | needs PointList, PointSet
-interval_self_simplify_cmp | needs Box, Interval, PointSet
-neg_pointlist_series | needs PointList, PointSet
-neg_pointlist_parallel_nonregion | needs PointList, PointSet
-neg_box_series | needs Box, PointSet
-neg_box_parallel_nonregion | needs Box, PointSet
-neg_interval_series | needs Interval, PointSet
-neg_interval_parallel_nonregion | needs Interval, PointSet
-neg_interval_unbounded_pointlist | needs Interval, PointList, PointSet
-selectormap_region_simplify_real | needs Box, Interval, PointSet, SelectorMap
-neg_selectormap_series_upper | needs Box, PointSet, SelectorMap
-neg_selectormap_series_lower | needs Box, PointSet, SelectorMap
-neg_selectormap_not_equal | needs Box, PointSet, SelectorMap
-neg_selectormap_parallel | needs Box, PointSet, SelectorMap
-selectormap_inverse_cancel_tail | needs Box, PointSet, SelectorMap
+pointlist_parallel_merge_pair | needs PointList
+interval_self_simplify_cmp | needs Box, Interval
+neg_pointlist_series | needs PointList
+neg_pointlist_parallel_nonregion | needs PointList
+neg_box_series | needs Box
+neg_box_parallel_nonregion | needs Box
+neg_interval_series | needs Interval
+neg_interval_parallel_nonregion | needs Interval
+neg_interval_unbounded_pointlist | needs Interval, PointList
+selectormap_region_simplify_real | needs Box, Interval, SelectorMap
+neg_selectormap_series_upper | needs Box, SelectorMap
+neg_selectormap_series_lower | needs Box, SelectorMap
+neg_selectormap_not_equal | needs Box, SelectorMap
+neg_selectormap_parallel | needs Box, SelectorMap
+selectormap_inverse_cancel_tail | needs Box, SelectorMap
 unitnormmap_shift_fwd_merge | needs UnitNormMap
 unitnormmap_winmap_fwd_merge | needs UnitNormMap
 unitnormmap_inv_shift_merge | needs UnitNormMap
@@ -80,49 +80,49 @@ unitnormmap_fwd_winmap_refused | needs UnitNormMap
 unitnormmap_shift_merge_tail | needs UnitNormMap
 chebymap_inverse_cancel | needs ChebyMap
 neg_chebymap_standalone | needs ChebyMap
-interval_nullregion_merge | needs Interval, NullRegion, PointSet
-interval_pointlist_merge | needs Interval, PointList, PointSet
-interval_unc_fillfactor_merge | needs Box, Interval, PointSet
-box_pointlist_merge | needs Box, PointList, PointSet
-box_nullregion_merge | needs Box, Interval, NullRegion, PointSet
-box_unc_fillfactor_merge | needs Box, PointSet
-neg_box_unc_mismatch | needs Box, PointSet
-nullregion_unc_fillfactor_merge | needs Box, NullRegion, PointSet
-pointlist_unc_fillfactor_merge | needs Box, PointList, PointSet
+interval_nullregion_merge | needs Interval, NullRegion
+interval_pointlist_merge | needs Interval, PointList
+interval_unc_fillfactor_merge | needs Box, Interval
+box_pointlist_merge | needs Box, PointList
+box_nullregion_merge | needs Box, Interval, NullRegion
+box_unc_fillfactor_merge | needs Box
+neg_box_unc_mismatch | needs Box
+nullregion_unc_fillfactor_merge | needs Box, NullRegion
+pointlist_unc_fillfactor_merge | needs Box, PointList
 nullregion_merge_tail | needs NullRegion
-interval_remapped_simplify | needs Interval, PointSet
-interval_halfinf_simplify | needs Interval, PointSet
+interval_remapped_simplify | needs Interval
+interval_halfinf_simplify | needs Interval
 cheby_linear_lone_reduce | needs ChebyMap
 neg_cheby_quadratic_no_reduce | needs ChebyMap
 cap_cheby_consolidate | needs ChebyMap
-cap_box_permmap_const | needs Box, PointSet
-cap_box_permmap_null | needs Box, NullRegion, PointSet
-cap_box_permmap_null_first | needs Box, NullRegion, PointSet
-cap_box_permmap_nonbidi | needs Box, PointSet
-neg_circle_cmpframe_sky_second | needs Circle, PointSet
-cap_poly_unc_frame | needs Box, PointSet, Polygon
-cap_poly_bent_edges | needs Box, PointSet, Polygon
-cap_poly_bend_allowed | needs Box, PointSet, Polygon
+cap_box_permmap_const | needs Box
+cap_box_permmap_null | needs Box, NullRegion
+cap_box_permmap_null_first | needs Box, NullRegion
+cap_box_permmap_nonbidi | needs Box
+neg_circle_cmpframe_sky_second | needs Circle
+cap_poly_unc_frame | needs Box, Polygon
+cap_poly_bent_edges | needs Box, Polygon
+cap_poly_bend_allowed | needs Box, Polygon
 neg_unitnormmap_nonunit_scale | needs UnitNormMap
-cefit_circle_conformal | needs Circle, PointSet
-cefit_circle_nonconformal_keep | needs Circle, PointSet
-cefit_circle_to_ellipse | needs Ellipse, PointSet
-cefit_ellipse_to_circle | needs Circle, PointSet
-defunc_cmpregion_component_unc | needs Box, PointSet
-defunc_interval_unbounded | needs Box, PointSet
-defunc_interval_point_at_origin | needs Box, PointSet
-defunc_pointlist_origin_axis | needs Box, PointSet
-defunc_nullregion_2d | needs Circle, PointSet
-defunc_prism_box_interval | needs Box, PointSet, Prism
-merge_box_fillfactor_product | needs Box, PointSet
-merge_box_meshsize_scaled | needs Box, PointSet
-merge_interval_meshsize_scaled | needs Interval, PointSet
-regbasepick_circle_permaxes | needs Circle, PointSet
-regbasepick_cmpregion_subset | needs CmpRegion, Interval, PointSet
-regbasepick_prism_subset | needs Box, PointSet
-setunc_box_remapped_unc | needs Box, PointSet
-setunc_unbounded_negated | needs Box, PointSet
-setunc_unitmap_regionfs_omitted | needs Box, PointSet
-simpstab_box_linear_unc | needs Box, PointSet
-simpstab_box_nonlinear_unc | needs Box, PointSet
-simpstab_permmap_slice_unc | needs Box, PointSet
+cefit_circle_conformal | needs Circle
+cefit_circle_nonconformal_keep | needs Circle
+cefit_circle_to_ellipse | needs Ellipse
+cefit_ellipse_to_circle | needs Circle
+defunc_cmpregion_component_unc | needs Box
+defunc_interval_unbounded | needs Box
+defunc_interval_point_at_origin | needs Box
+defunc_pointlist_origin_axis | needs Box
+defunc_nullregion_2d | needs Circle
+defunc_prism_box_interval | needs Box, Prism
+merge_box_fillfactor_product | needs Box
+merge_box_meshsize_scaled | needs Box
+merge_interval_meshsize_scaled | needs Interval
+regbasepick_circle_permaxes | needs Circle
+regbasepick_cmpregion_subset | needs CmpRegion, Interval
+regbasepick_prism_subset | needs Box
+setunc_box_remapped_unc | needs Box
+setunc_unbounded_negated | needs Box
+setunc_unitmap_regionfs_omitted | needs Box
+simpstab_box_linear_unc | needs Box
+simpstab_box_nonlinear_unc | needs Box
+simpstab_permmap_slice_unc | needs Box

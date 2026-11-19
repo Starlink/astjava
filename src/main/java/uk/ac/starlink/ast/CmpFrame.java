@@ -30,8 +30,8 @@ import java.util.Objects;
  * values.
  *
  * <p>Ported from C {@code cmpframe.c}, with Rust {@code frames/cmpframe.rs}. The Plot methods of
- * C's CmpFrame ({@code Abbrev}, {@code Centre}, {@code Fields}, {@code FrameGrid}, {@code Gap},
- * {@code NormBox}) and its Region handling ({@code RemoveRegions}) are not ported.
+ * C's CmpFrame ({@code Abbrev}, {@code Centre}, {@code Fields}, {@code Gap}) and its Region
+ * handling ({@code RemoveRegions}) are not ported.
  */
 public class CmpFrame extends Frame {
 
@@ -770,6 +770,137 @@ public class CmpFrame extends Frame {
             }
         }
         return new double[][] {d1, d2};
+    }
+
+    /**
+     * Widens a box to take in the singularities of each component Frame (C's {@code NormBox},
+     * cmpframe.c). Each component widens its part of the box, testing a position with the Mapping
+     * {@code reg} applied to a position with the component's coordinates and bad values on the
+     * other component's axes. As in C, that position is put into the CmpFrame's axis order before
+     * {@code reg} is applied, but {@code reg}'s outputs are passed back in that order rather than
+     * the components' (C's inverse of its permuting PermMap copies each coordinate to the same
+     * position), so on a CmpFrame whose axes are permuted a component tests the outputs on the
+     * axes that come first.
+     */
+    @Override
+    void normBox(double[] lbnd, double[] ubnd, Mapping reg) {
+        int numAxes = getNaxes();
+        int naxes1 = frame1.getNaxes();
+        double[] vl = new double[numAxes];
+        double[] vu = new double[numAxes];
+        for (int axis = 0; axis < numAxes; axis++) {
+            vl[perm[axis]] = lbnd[axis];
+            vu[perm[axis]] = ubnd[axis];
+        }
+        // pm1 reorders an internal position into the external order; the CmpMaps record each
+        // component's Invert attribute when made, so inverting pm1 afterwards does not change m1.
+        // C annuls the CmpMaps before returning, so they do not mark reg as shared.
+        PermMap pm1 = PermMap.fromInternal(numAxes, null, numAxes, perm, null);
+        CmpMap m1 = CmpMap.transientCmpMap(pm1, reg, true);
+        pm1.invert();
+        CmpMap m2 = CmpMap.transientCmpMap(m1, pm1, true);
+
+        // pm2 copies the first component's coordinates and makes the others bad.
+        int[] inperm = new int[naxes1];
+        for (int axis = 0; axis < naxes1; axis++) {
+            inperm[axis] = axis;
+        }
+        PermMap pm2 = PermMap.fromInternal(naxes1, inperm, numAxes, null, null);
+        CmpMap m3 = CmpMap.transientCmpMap(pm2, m2, true);
+        pm2.invert();
+        CmpMap m4 = CmpMap.transientCmpMap(m3, pm2, true);
+        double[] vl1 = Arrays.copyOfRange(vl, 0, naxes1);
+        double[] vu1 = Arrays.copyOfRange(vu, 0, naxes1);
+        frame1.normBox(vl1, vu1, m4);
+        System.arraycopy(vl1, 0, vl, 0, naxes1);
+        System.arraycopy(vu1, 0, vu, 0, naxes1);
+
+        // pm3 copies the second component's coordinates to the upper axes and makes the lower
+        // ones bad (a negative entry with no constants gives a bad value).
+        int naxes2 = numAxes - naxes1;
+        int[] inperm3 = new int[naxes2];
+        int[] outperm3 = new int[numAxes];
+        for (int axis = 0; axis < naxes1; axis++) {
+            outperm3[axis] = -1;
+        }
+        for (int axis = 0; axis < naxes2; axis++) {
+            inperm3[axis] = naxes1 + axis;
+            outperm3[naxes1 + axis] = axis;
+        }
+        PermMap pm3 = PermMap.fromInternal(naxes2, inperm3, numAxes, outperm3, null);
+        CmpMap m5 = CmpMap.transientCmpMap(pm3, m2, true);
+        pm3.invert();
+        CmpMap m6 = CmpMap.transientCmpMap(m5, pm3, true);
+        double[] vl2 = Arrays.copyOfRange(vl, naxes1, numAxes);
+        double[] vu2 = Arrays.copyOfRange(vu, naxes1, numAxes);
+        frame2.normBox(vl2, vu2, m6);
+        System.arraycopy(vl2, 0, vl, naxes1, naxes2);
+        System.arraycopy(vu2, 0, vu, naxes1, naxes2);
+
+        for (int axis = 0; axis < numAxes; axis++) {
+            lbnd[axis] = vl[perm[axis]];
+            ubnd[axis] = vu[perm[axis]];
+        }
+    }
+
+    /**
+     * Spreads about {@code size} points through a box (C's {@code FrameGrid}, cmpframe.c): each
+     * component Frame makes a grid of its part of the box, of a size in proportion to its number
+     * of axes, and every point of the first is paired with every point of the second, the second
+     * varying fastest.
+     *
+     * @throws AstException with status {@code AST__ATTIN} if {@code size} is less than 1, or the
+     *     error of a component's grid
+     */
+    @Override
+    double[][] frameGrid(int size, double[] lbnd, double[] ubnd) {
+        int nax1 = frame1.getNaxes();
+        int nax2 = frame2.getNaxes();
+        int numAxes = nax1 + nax2;
+        if (size <= 0) {
+            throw Ast.err(
+                    AstException.AST__ATTIN,
+                    "astFrameGrid(" + astClass() + "): The supplied grid size (" + size
+                            + ") is invalid (programming error).");
+        }
+        double[] lbnd1 = new double[nax1];
+        double[] ubnd1 = new double[nax1];
+        double[] lbnd2 = new double[nax2];
+        double[] ubnd2 = new double[nax2];
+        for (int axis = 0; axis < numAxes; axis++) {
+            int iaxis = perm[axis];
+            if (iaxis < nax1) {
+                lbnd1[iaxis] = lbnd[axis];
+                ubnd1[iaxis] = ubnd[axis];
+            } else {
+                iaxis -= nax1;
+                lbnd2[iaxis] = lbnd[axis];
+                ubnd2[iaxis] = ubnd[axis];
+            }
+        }
+        int size1 = (int) FitsMakeIntWorld.roundHalfAway(Math.pow(size, (double) nax1 / numAxes));
+        int size2 = (int) FitsMakeIntWorld.roundHalfAway((double) size / size1);
+        double[][] ptr1 = frame1.frameGrid(size1, lbnd1, ubnd1);
+        double[][] ptr2 = frame2.frameGrid(size2, lbnd2, ubnd2);
+        int npoint1 = ptr1[0].length;
+        int npoint2 = ptr2[0].length;
+        double[][] ptr = newPoints(numAxes, npoint1 * npoint2);
+        int ip = 0;
+        for (int ip1 = 0; ip1 < npoint1; ip1++) {
+            for (int ip2 = 0; ip2 < npoint2; ip2++, ip++) {
+                for (int iax1 = 0; iax1 < nax1; iax1++) {
+                    ptr[iax1][ip] = ptr1[iax1][ip1];
+                }
+                for (int iax2 = 0; iax2 < nax2; iax2++) {
+                    ptr[iax2 + nax1][ip] = ptr2[iax2][ip2];
+                }
+            }
+        }
+        double[][] result = new double[numAxes][];
+        for (int axis = 0; axis < numAxes; axis++) {
+            result[axis] = ptr[perm[axis]];
+        }
+        return result;
     }
 
     // ------------------------------------------------------------------

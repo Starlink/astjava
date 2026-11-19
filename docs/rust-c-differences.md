@@ -64,6 +64,13 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Java: as C.
   An integer beyond the range of an `int` (or of a `long`, for `ReadInt64`) is AST__BADIN too, where the result of C's `sscanf` is undefined (the pinned library on macOS keeps the low 32 bits).
 
+### PointSet accuracies and empty PointSets
+
+- **C bug**: `astLoadPointSet` (pointset.c), when the first accuracy item it reads (`AccN`) is for an axis after the first, sets the accuracies of the axes before it to bad only up to the one before last (`i < coord - 1`), leaving that one uninitialised; `Dump` writes it and `Equal` uses it.
+  A PointSet read with `Empty` set holds no values, and `astGetPoints` gives it values it allocates without initialising, which `Equal` compares.
+- Rust: `read_pointset_node` (`serial/mod.rs`) reads neither the accuracies nor `Empty`, so an empty PointSet reads its `X` items, all bad when there are none, and `write_pointset_node` writes no accuracies.
+- Java: an axis without an accuracy item has none; an empty PointSet is read and written as C writes it, and asking for its values, as `Equal` does, raises AST__INTER (`PointSetTest`).
+
 ## Mappings
 
 ### An explicit `Nout = 0` in a Mapping dump
@@ -766,6 +773,24 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
   **C quirk**: `Cast` compares the classes through CmpFrame's own `class_vtab`, which is initialised only when a plain CmpFrame is first made, so in a process that has made SpecFluxFrames but no CmpFrame a SpecFluxFrame match that fails dereferences null in `astClassCompare` (probed: SIGSEGV converting a SpecFluxFrame whose SpecFrame has Domain `FOO` to a default one).
 - Rust: SpecFluxFrame has no `cast`, and `CmpFrame::cast` in `frames/cmpframe.rs` copies a CmpFrame only into a CmpFrame, so neither becomes the other and these conversions find nothing.
 - Java: as C once a CmpFrame has been made: a FluxFrame or SpecFrame that does not match a SpecFluxFrame directly converts through `MakeSFMapping` (or gives C's error, such as AST__ATSER from `GetSpecFrame`).
+
+### `astNormBox` on a CmpFrame whose axes are permuted
+
+- **C quirk**: `NormBox` (cmpframe.c) applies the caller's Mapping to a position in the CmpFrame's external axis order, through a PermMap made with a null `inperm`, and then inverts that PermMap to bring the outputs back; but the inverse of a PermMap made with a null `inperm` copies each coordinate to the same position, so the outputs stay in the external order and each component tests the outputs on the axes that come first.
+  On a CmpFrame(SkyFrame, TimeFrame) whose axes are permuted to (time, latitude, longitude), a Mapping that keeps the north pole and ignores the time axis gives the SkyFrame (bad, pi/2) for its pole, so the box is not widened (probe `src/test/resources/probes/frame_line_probe.c`, case `normbox_cmpframe_permuted`).
+  A Region gives either all bad outputs or its inputs unchanged, so only a negated Region (whose outputs for the component's probe position carry the bad values on the other component's axes) is affected.
+- Rust: `norm_box` (`frames/cmpframe.rs`) takes a predicate, not a Mapping, and asks it whether the position is inside, so it has no outputs to put back in order, and a predicate that accepts the position widens the box.
+- Java: as C (`NormBoxTest.aPermutedCmpFrameAsksEachComponent`).
+
+### `astFrameGrid` counts beyond the range of `int`
+
+- **C quirk**: `FrameGrid` (frame.c) assigns each axis's tick count, `ntick0*(ubnd-lbnd)/gmean`, to an `int` without a range check, and multiplies the counts in `int`; an axis of zero width makes the geometric mean zero, so the count of another axis of the same unit is infinite and its own is a NaN, and the conversions are undefined.
+  The pinned library on AArch64 saturates the infinite count and converts the NaN to 0 (then 2), so the product wraps to -2 and `astPointSet` reports AST__NPTIN, "Number of points (-2) is not valid" (probe case `grid_frame`); on x86-64 the conversion gives `INT_MIN`, raised to 2, and C makes a grid of four points.
+  `FrameGrid` (skyframe.c) likewise converts `0.5 + (hilat-lolat)/lat_size` to the number of parallels, which is infinite for a box of zero width in longitude: on AArch64 C walks 2^31 parallels (about 30 seconds) before finding no point, on x86-64 two.
+  The same box has no grid point on either, so `astSetNpoint` reports AST__NPTIN (probe case `grid_sky`).
+  `FrameGrid` (frame.c) also reports bad bounds only when both bounds of an axis are bad.
+- Rust: `frame_grid_default` converts with `as`, which saturates as AArch64 does, and multiplies the counts in `i32`, which panics on overflow in a debug build; its SkyFrame `frame_grid` returns an empty PointSet where C's `astSetNpoint` reports AST__NPTIN.
+- Java: as the pinned library on AArch64, Java's conversion saturating and giving 0 for a NaN (`FrameGridTest`); the SkyFrame case takes as long as C's.
 
 ## FitsChan
 
