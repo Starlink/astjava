@@ -813,6 +813,12 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Java: the package-private `setEpochMjd` sets `MJD <value>` on the FrameSet, which keeps the FrameSet's integrity; `setObsLatValue`, `setObsLonValue` and `setObsAlt` set the FrameSet's current Frame directly.
   No public method reaches them.
 
+### A value holding `%` set on an Adaptive Region
+
+- C: region.c `SetAttrib` passes a setting of a Frame attribute on an Adaptive Region to `astSet( this->frameset, setting, status )`, so the caller's value is used as a `printf` format (object.c `VSet` hands it to `vsprintf` with no arguments): `Format(1)=%10.3f` stores `     0.000` and `Title=50%s done` stores `50 done`, while a Region that is not Adaptive keeps the value. **C bug.**
+- Rust: has no string route.
+- Java: keeps the value as given, Adaptive or not (`RegionAttributeValueTest`).
+
 ### Bad and non-finite coordinates of a Box
 
 - C: `astInitBox` rejects a coordinate equal to `AST__BAD` (`AST__BADIN`) and accepts NaN.
