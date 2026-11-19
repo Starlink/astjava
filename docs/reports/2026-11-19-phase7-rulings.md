@@ -181,11 +181,11 @@ The phase report is [`2026-11-19-phase7-report.md`](2026-11-19-phase7-report.md)
 - Ruling: `RegionsCTest` and `RegionsTest` leave out C's `astGetRegionDisc` checks (not in jniast) and use the package-private `regMesh`/`regGrid` (C's protected `astRegMesh`/`astRegGrid`) where C calls `astGetRegionMesh` — cost if wrong: none for the values checked.
 - Ruling: `checkBoxSky` follows C where Rust diverged: it sets Negated on the FrameSet and checks the Box added is unchanged, and transforms the CmpFrame of two Regions directly (a Frame is a Mapping here, as in C) — cost if wrong: none.
 - Ruling: `check_remove_regions` is listed as `astRemoveRegions (out-of-scope method)` (next phase), and `region_gaps_still_differ` as Rust-only API (it asserts Rust's gap, which Java does not have) — cost if wrong: none.
-- Ruling: JniastRegionTest, RegionsCTest and RegionsTest were written after the implementation (RegionsCTest/RegionsTest RED shown at 8508417 instead) — cost if wrong: none for the code; TDD order not kept for those files.
+- Ruling: JniastRegionTest, RegionsCTest and RegionsTest were written after the implementation (RegionsCTest/RegionsTest RED shown against the code at the end of Task 7 instead) — cost if wrong: none for the code; TDD order not kept for those files.
 
 ### Controller
 
-- Ruling: split Task 8 — review its commits `f767bae..306be80`, and give the rest of `test_regions.rs` to a second implementer (Task 8b) in parallel, adding tests and fixing only what they expose — the remaining translation is independent of the review of the delivered code — cost if wrong: a fix from the review and one from Task 8b touch the same lines and need merging in order.
+- Ruling: split Task 8 — review its commits, Simplify Regions to Record the differences in Region simplification, and give the rest of `test_regions.rs` to a second implementer (Task 8b) in parallel, adding tests and fixing only what they expose — the remaining translation is independent of the review of the delivered code — cost if wrong: a fix from the review and one from Task 8b touch the same lines and need merging in order.
 - Correction (of a minor carried from Task 5): the end of the primary axis of the Ellipse fitted to `cefit_circle_to_ellipse` is decided by C's algorithm (exactly equidistant mesh points and a strict `>`), not by rounding, so `SimplifyRegressionTest` compares it as it compares every other row.
 
 ## Task 8b: The rest of `test_regions.rs`

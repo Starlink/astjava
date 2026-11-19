@@ -9,8 +9,8 @@ A `Region` is an abstract `Frame`, and so a `Mapping`, as in C: it encapsulates 
 Every fixture of C's corpora built only from these classes now reads, writes and simplifies as C's does: 121 rows left `simplify.txt` and 68 left `simplify-cases.txt`, and 123 left each of `full-dumps.txt`, `read-warnings.txt` and `serialisation.txt`.
 What still keeps fixtures and tests out is SelectorMap and the Stc classes (the next phase), Moc and MocChan (not in jniast), and the Mapping classes jniast lacks.
 Of the Rust port's Region tests, every test function is translated or listed in `deferred/rust-tests.txt` with its reason; 21 Region oracle files and `box_axin` were converted with `CasesToJson`, and every case of each runs.
-Ten new C probes give the values no oracle held; three of them link a C file corrected by one line (two C files in all), because the pinned library crashes on the paths they need (see "Patched C builds of three probes").
-The work found 26 defects in the C library, which were reported to the user privately and are not described here.
+Eleven new C probes give the values no oracle held; four of them link a C file corrected by one line (three C files in all), because the pinned library crashes or fails on the paths they need (see "Patched C builds of four probes").
+The work found 28 defects in the C library, which were reported to the user privately and are not described here.
 Against the branch base `05f8461` the work adds 12,893 lines of main code and 22,350 lines of tests, and removes 4 and 753; `mvn verify` passes with 4,540 tests on JDK 21 (3,848 at the end of phase 6), and the tests pass on the JDK 27 runtime.
 
 ## What was ported
@@ -34,7 +34,7 @@ Each task was done by one implementer subagent, reviewed by a second, and verifi
 The reviews found no Critical problem and eight Important ones, each fixed in one fix round: a departure not recorded (an Adaptive Region's attribute value holding `%`, Task 2); a mask grid whose pixel count overflowed a `long` (Task 3); a PointList left changed when `regPins` threw, a NullRegion from `mapRegion` that could not give its bounds, and probe rows taken from a crashing C build (Task 4); a tolerance derived too tightly for a sky dump (Task 5); `overlap` raising `AST__INTER` for CmpRegions holding a PointList, where C answers (Task 7); and a test helper that never took effect (Task 8).
 A ninth, a Task 4 minor about Interval's `OneToOne` that the controller re-graded, was withdrawn when C was read again.
 Tasks 1, 6 and 8b were approved at the first review.
-The tasks were committed between 23:11 on 18 November (`e354c7c`) and 05:31 on 19 November (`c1f94e5`), after the plan at 22:27.
+The tasks were committed between 23:11 on 18 November (Add Frame line geometry, NormBox, FrameGrid and PointSet) and 05:31 on 19 November (Report phase 7), after the plan at 22:27.
 
 New main classes: `PointSet`, `Region`, `Box`, `NullRegion`, `Interval`, `PointList`, `Circle`, `Ellipse`, `Polygon`, `Prism`, `CmpRegion`, `RegionOverlap`, `RegionMask`, `RegionMerge`.
 New test classes, with their tests: `FrameLineTest` (6), `NormBoxTest` (7), `FrameGridTest` (4), `PointSetTest` (7), `BoxRegionTest` (38), `BoxAxInTest` (1), `RegionBoxOracleTest` (3), `RegionAttrTestOracleTest` (2), `RegionAttribOracleTest` (1), `RegionAttributeValueTest` (1), `RegionObjectOracleTest` (1), `RegionEqualOracleTest` (1), `RegionErrorsOracleTest` (13), `RegionFrameSetTest` (9), `RegionOverlapOracleTest` (1), `RegionMaskOracleTest` (1), `RegionMapRegionOracleTest` (4), `RegionShowMeshOracleTest` (2), `RegionMaskArgumentsTest` (10), `RegionOverlapMaskProbeTest` (6), `NullRegionTest` (29), `IntervalTest` (47), `PointListTest` (42), `RegionIntervalOracleTest` (2), `RegionIntervalRemapOracleTest` (2), `RegionNullTranOracleTest` (1), `RegionBoundedOracleTest` (4), `CircleTest` (46), `EllipseTest` (35), `RegionBestFitTest` (7), `RegionEllipseOracleTest` (3), `RegionFrameOracleTest` (5), `RegionSkyTest` (6), `PolygonTest` (43), `RegionPolygonOracleTest` (2), `RegionMaskingTest` (3), `CmpRegionTest` (47), `PrismTest` (38), `RegionOverlapTest` (22), `RegionMaskTest` (8), `RegionGridTest` (2), `RegionCmpRegionOracleTest` (4), `RegionCmpListOracleTest` (2), `RegionCompoundAttrOracleTest` (2), `RegionsTest` (110), `RegionsCTest` (16), `JniastRegionTest` (14).
@@ -92,7 +92,7 @@ Values that pass through `sin`, `cos`, `atan2`, `asin` or `acos` are compared wi
 
 | Where | Bound | Derivation |
 | --- | --- | --- |
-| `FrameLineTest` | 1e-12 for sky lines, 1e-6 for the sky `dist` | Unit vectors within 9e-16 of C's (`atan2` 2 ulp in Java); great circles moved by at most 140× that where a line's two points are 0.013 rad apart, crossings by twice that, and longitudes amplified 220× at 0.0045 rad from the pole: at most 445× in all, 4e-13; `acos` at distance 0 for `dist` |
+| `FrameLineTest` | 1e-12 for sky lines, 1e-6 for the sky `dist` | Unit vectors within `e` = 1.1e-15 of C's (5 ulp in each component: `sin` and `cos` within 2 ulp of C's, and the product's rounding); a line's pole turned by at most 150`e` where its two points are 0.013 rad apart, a crossing moved by up to 268`e`, and longitudes amplified 220× at 0.0045 rad from the pole: at most 445`e` in all, 5e-13; `acos` at distance 0 for `dist` |
 | `EllipseTest`, `RegionFrameOracleTest`, `RegionEllipseOracleTest` | 1e-12 (1e-14 for plain-Frame Ellipse dumps) | At most three to six libm calls, amplification below 10, values at most 10 |
 | `RegionSkyTest` sky Circle bounds | 1e-11 | `atan2` amplification at most 100 at 0.01 rad from a pole |
 | `RegionBestFitTest` | 1e-9 | The quadratic fit divides ulp errors by radius differences of about 1e-4 |
@@ -107,7 +107,7 @@ Every discrete result that a last-bit difference could change (a point's members
 Each is an entry of [`docs/rust-c-differences.md`](../rust-c-differences.md), "Regions" section, and its three new "Frames" entries (PointSet accuracies, `astNormBox` on a permuted CmpFrame, `astFrameGrid` counts beyond `int`); they fall into four kinds.
 
 - **Where C's result is undefined, Java gives an error or C's evident intent.**
-  Where C reads or writes past an array, dereferences a null pointer or loops for ever, Java raises `AST__INTER` or C's own status (`BndBaseMesh` making its own CmpRegion again for a Region with no mesh, a dump whose uncertainty or Frame is of another class or whose Frame part needs the current Frame, `RegGrid` of an unbounded Region, `MapRegion` picking axes that are not a Region, `Cast` into another Region class, an Interval overlap with an axis of code 6 on several axes, a NullRegion's bounds with more base than current axes, a Polygon whose edges have no length or that was read with a bad vertex, `Polywidth`, a Prism mesh with other than its base Frame's axis count, `OverlapX` widening more bounds than its arrays hold, a best-fit Ellipse with no usable mesh point); Ellipse's `RegCentre` moves its three points as C's comment says; PointList's `RegPins` checks each of its points, C's stated intent.
+  Where C reads or writes past an array, dereferences a null pointer or loops for ever, Java raises `AST__INTER` or C's own status (`BndBaseMesh` making its own CmpRegion again for a Region with no mesh, a dump whose uncertainty or Frame is of another class or whose Frame part needs the current Frame, `RegGrid` of an unbounded Region, `MapRegion` picking axes that are not a Region, an Interval overlap with an axis of code 6 on several axes, a NullRegion's bounds with more base than current axes, a Polygon whose edges have no length or that was read with a bad vertex, `Polywidth`, a Prism mesh with other than its base Frame's axis count, `OverlapX` widening more bounds than its arrays hold, a best-fit Ellipse with no usable mesh point); Ellipse's `RegCentre` moves its three points as C's comment says; PointList's `RegPins` checks each of its points, C's stated intent; `Cast` into the class of another Region gives null, where C gives a copy of the wrong class.
 - **C's quirks are kept** where C's result is defined: the default uncertainty kept when a Region moves (Rust differs), `RegSetAttrib`'s one-word axis test, the bounds Circle's and Ellipse's `RegBaseMesh` take from their first mesh point, the overlap of a PointList and a Box holding some of its points (4 one way, 1 the other), the stale negation of an Adaptive Region, the empty grid box in `Mask<X>` of a Region whose grid bounds pass the `int` range, a point with a bad value in a PointList, the bounds an Interval and a Circle keep after a move, Circle's unclamped smaller radius in `RegPins`, bad points counted as on a Polygon's boundary, the sky Polygon line through a vertex, the bounded AND of nested unbounded Regions, a Prism's overlap with a negated Region, the truncated MeshSize of a parallel merge, and the Simplify quirks of Box, Circle, Interval and Prism.
 - **Non-finite coordinates are bad.**
   NaN and infinite coordinates of a Box, Interval, PointList, Circle, Ellipse and Polygon are treated as `AST__BAD`, by the library's rule, where C rejects only `AST__BAD`.
@@ -116,32 +116,33 @@ Each is an entry of [`docs/rust-c-differences.md`](../rust-c-differences.md), "R
 Java also departs where C's own call is mistaken: an Adaptive Region's attribute value holding `%` is kept as given, where region.c passes it to `astSet` as a format; the protected `setEpoch` and observatory setters of a Region set what jniast means.
 The departures that the rulings alone recorded at the final review were added to it afterwards (see "Minors fixed after the final review").
 
-## Patched C builds of three probes
+## Patched C builds of four probes
 
-Three probes link the pinned library with one of two C files, each corrected by one line, because the unpatched library crashes on the paths they need and so gives no values:
+Four probes link the pinned library with one of three C files, each corrected by one line, because the unpatched library crashes or fails on the paths they need and so gives no values:
 
 - `region_null_interval_pointlist_probe.c` and `region_compound_probe.c` link a `pointlist.c` whose `RegPins` allocates its mask with the right size; without it, the overlap of a PointList with another Region, and of a CmpRegion or Prism holding a PointList, crashes in most runs.
 - `region_circle_ellipse_probe.c` links an `ellipse.c` whose `RegCentre` indexes its points the right way round; without it, every moved Ellipse crashes the library, and an Ellipse given as the uncertainty of another Region is moved.
+- `region_mapregion_drop_axis_probe.c` links a `region.c` whose `MapRegion` releases the Mapping split from the caller's only once; without it, mapping or masking a Region through a Mapping that drops an axis its inverse leaves bad fails, and masking a PointList that way crashes (see "Follow-ups after the minors").
 
 Each probe's header gives the build recipe; each was run several times with identical output, and the values agree with C's algorithm as the C source states it.
 Task 4's first probe rows had come from the runs of the unpatched build that completed; the review regenerated them with the corrected file, with the same values, and they now come from the deterministic build.
 
 ## Defects found in the C library
 
-The tasks and the final review found 26 defects in the pinned C library (`3d3f255f`): memory errors, undefined behaviour and wrong results, in region.c, the Region class files, pointset.c, frame.c, skyframe.c and cmpframe.c.
-25 of them are still present at the tip of the upstream pull request the C library is being hardened in, and one is already fixed there.
+The tasks, the final review and the follow-ups found 28 defects in the pinned C library (`3d3f255f`): memory errors, undefined behaviour and wrong results, in region.c, the Region class files, pointset.c, frame.c, skyframe.c and cmpframe.c.
+27 of them are still present at the tip of the upstream pull request the C library is being hardened in, and one is already fixed there.
 They were reported to the user privately, for upstream, and are not described in this repository beyond the behaviour `docs/rust-c-differences.md` records for each departure.
 Java follows C in every case that has a defined result, and gives an error or C's evident intent where C's result is undefined.
 
 ## Final review
 
-A whole-branch review of `05f8461..c673576` found nothing Critical and one Important defect.
-It built and tested `c673576` and compared with C the overlaps of 17 Regions taken in every pair and order, 289 in all: every result C defines agrees, and the others are C crashes.
+A whole-branch review of the branch from its base `05f8461` to the report as first revised (05:40 on 19 November) found nothing Critical and one Important defect.
+It built and tested that state and compared with C the overlaps of 17 Regions taken in every pair and order, 289 in all: every result C defines agrees, and the others are C crashes.
 Simplification of Regions inside CmpMaps, the five Review Focus items and a Channel round trip of the 17 Regions also match C.
 The Important defect was that `overlap` could throw `StackOverflowError` on ordinary input.
 For a Region with no mesh of its own, such as a Prism with an open end or a negated component, region.c `BndBaseMesh` meshes the part inside a box as the CmpRegion ANDing the two, whose `RegBaseMesh` calls `BndBaseMesh` with the same box again; a Circle, Ellipse, Polygon or AND CmpRegion overlapped with such a Prism, in either order, reaches it, and C recurses until the stack overflows.
-The CmpRegion that `BndBaseMesh` makes now reports instead that the overlap cannot be determined (`AST__INTER`, with region.c `OverlapX`'s message) and leaves the Regions as they were (in `a1b66a9`, Add Prism and CmpRegion); tests cover both kinds of Prism against each kind of Region in both orders, and the mesh of an AND that takes the same path.
-The same pass fixed three minor findings: the `docs/rust-c-differences.md` entry on `Mask<X>`'s empty grid box now covers any Region whose bounds in grid coordinates pass the `int` range, with a probe case of a Box through a ZoomMap of 1e12 (in `627527f`, Add NullRegion, Interval and PointList); a Polygon whose vertices are all one point reports `AST__BADIN` describing the input rather than an internal error (in `dbd8086`, Add Polygon); and the Javadoc of `Prism.regPins` says that a component whose Closed is set false stays open (in `a1b66a9`).
+The CmpRegion that `BndBaseMesh` makes now reports instead that the overlap cannot be determined (`AST__INTER`, with region.c `OverlapX`'s message) and leaves the Regions as they were (in Add Prism and CmpRegion); tests cover both kinds of Prism against each kind of Region in both orders, and the mesh of an AND that takes the same path.
+The same pass fixed three minor findings: the `docs/rust-c-differences.md` entry on `Mask<X>`'s empty grid box now covers any Region whose bounds in grid coordinates pass the `int` range, with a probe case of a Box through a ZoomMap of 1e12 (in Add NullRegion, Interval and PointList); a Polygon whose vertices are all one point reports `AST__BADIN` describing the input rather than an internal error (in Add Polygon); and the Javadoc of `Prism.regPins` says that a component whose Closed is set false stays open (in Add Prism and CmpRegion).
 After the fixes `mvn verify` passes with 4,540 tests, and the tests pass on the JDK 27 runtime.
 
 Left as minor: the other minor items, which were fixed afterwards.
@@ -158,6 +159,20 @@ The user asked for the deferred minor findings to be fixed; each was checked aga
 
 `mvn verify` passes with 4,550 tests, the tests pass on the JDK 27 runtime, and rewriting the deferred lists changes nothing.
 
+## Follow-ups after the minors
+
+- **The mask difference the final review saw through a PermMap is not a PermMap problem.**
+  Masking a Box or a PointList through `PermMap(2, {1,0}, 1, {1})` or `PermMap(2, {0,1}, 1, {2})`, which drop an axis their inverse leaves bad, gave different results in Java and C because region.c `MapRegion` releases the Mapping split from the caller's twice, so that C fails (and crashes for a PointList); with the second release guarded, C gives Java's mapped Regions and masks value for value.
+  `docs/rust-c-differences.md` ("Releasing the split Mapping twice in `MapRegion`") records it, and `RegionMapRegionDropAxisTest` pins the values from the new `region_mapregion_drop_axis_probe.c`, built with that guard, and Java's `AST__INTER` for a Circle, whose picked axis is a Frame that C goes on to use as a Region.
+  These are the two new C defects.
+- **The two rounding helpers described as C's `round` are now `CMath.roundHalfAway`.**
+  winmap.c `PermGet` and fitschan.c's readers of WCSAXES call `round`, so `WinMapMerge` and `FitsWcsKeywords` use the exact version, where their private helpers computed `floor(x + 0.5)`.
+  A header with `WCSAXES = 0.49999999999999994` now fails as one with `WCSAXES = 0` does, as in C, where it read one WCS axis; `FitsWcsKeywordsTest.wcsaxesIsRoundedAsCRoundsIt` pins it from the new `fitschan_wcsaxes_round_probe.c`.
+  No input reaches the difference in `PermGet`, whose values are whole axis indices.
+- **The review of the minors** found only small faults, now fixed: `FrameLineTest`'s unit-vector bound left out the rounding of the product (5 ulp, 1.1e-15, not 4 ulp; the total, 5e-13, is still within its 1e-12) and this report's table now quotes its figures; `FrameGridTest` says `pow(16, 0.5)` must be at most 4, not exactly 4; this report cited commits by hashes that squashing changes, and named `Cast` among the cases that raise an error; two over-long lines, a split string literal and a missing comment on the duplicated-point overlap.
+
+`mvn verify` passes with 4,555 tests, the tests pass on the JDK 27 runtime, and rewriting the deferred lists changes nothing.
+
 ## Gaps and risks
 
 - **Runtimes.**
@@ -165,12 +180,8 @@ The user asked for the deferred minor findings to be fixed; each was checked aga
 - **`rust-tests.txt` has no automated checker.**
   Task 9 swept the Region files by matching each Rust test name, in camel case, against the Java test methods and checked each mismatch by hand.
   The same match over every Rust test file finds about 350 tests outside the Region files neither matched by name nor listed (among them `src/serial/object_text.rs::every_class_name_matches_the_class_its_dump_names`, a Rust-only check over every fixture); many are translated under other names, but some whole files of classes jniast lacks (ChebyMap, NormMap, XphMap, SplineMap, FitsTable) and the Rust port's own meta-tests are listed nowhere.
-- **Two rounding helpers differ from C's `round`.**
-  `WinMapMerge` and `FitsWcsKeywords` each have a private `roundHalfAway`, described as C's `round`, which their C callers use, but computed as `floor(x + 0.5)`, which differs from it for 0.49999999999999994 and for odd values above 2^52; they were not merged into `CMath.roundHalfAway`, since that would change their results, and no test reaches the difference.
 - **Test-first order** was not kept for `BoxRegionTest` and the other Task 2 tests, or for `RegionsCTest`, `RegionsTest` and `JniastRegionTest`, whose failing runs were shown against the code before the task instead.
 - **Rulings that describe C:** several rulings explain a departure by the C behaviour it avoids, as `docs/rust-c-differences.md` does.
-- **A PermMap difference seen in passing.**
-  The final review saw a PermMap with an `inperm` value of 0 give different results in Java and C in a mask probe; that is phase-1 PermMap code, not investigated in this phase.
 
 ## Future work
 
