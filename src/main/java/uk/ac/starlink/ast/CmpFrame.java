@@ -30,8 +30,7 @@ import java.util.Objects;
  * values.
  *
  * <p>Ported from C {@code cmpframe.c}, with Rust {@code frames/cmpframe.rs}. The Plot methods of
- * C's CmpFrame ({@code Abbrev}, {@code Centre}, {@code Fields}, {@code Gap}) and its Region
- * handling ({@code RemoveRegions}) are not ported.
+ * C's CmpFrame ({@code Abbrev}, {@code Centre}, {@code Fields}, {@code Gap}) are not ported.
  */
 public class CmpFrame extends Frame {
 
@@ -212,6 +211,27 @@ public class CmpFrame extends Frame {
         flags[1] = inv != frame1.getInvert();
         flags[2] = inv != frame2.getInvert();
         return new Mapping[] {frame1, frame2};
+    }
+
+    /**
+     * cmpframe.c {@code RemoveRegions}: removes the Regions from both component Frames. When
+     * neither changed it is the CmpFrame itself; otherwise it is a copy of the CmpFrame, of the same
+     * class, keeping its attributes, that holds the new components. A component that did not change
+     * is the original's own, shared, as C's copy holds a clone of it, so that a change made to it
+     * through either CmpFrame, such as an axis Label, is seen in both.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Frame removeRegions() {
+        Frame new1 = frame1.removeRegions();
+        Frame new2 = frame2.removeRegions();
+        if (new1 == frame1 && new2 == frame2) {
+            return this;
+        }
+        CmpFrame result = (CmpFrame) copy();
+        result.frame1 = keptComponent(new1, frame1);
+        result.frame2 = keptComponent(new2, frame2);
+        return result;
     }
 
     /** The first component Frame, the CmpFrame's own (C's {@code frame1}). */

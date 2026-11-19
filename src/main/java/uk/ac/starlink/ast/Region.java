@@ -936,6 +936,16 @@ public abstract class Region extends Frame {
         return (Frame) frameset.getFrame(FrameSet.AST__CURRENT).copy();
     }
 
+    /**
+     * region.c {@code RemoveRegions}: a copy of the Frame the Region represents ({@link
+     * #getRegionFrame}), for a Region of every class. A container holding Mappings replaces it with a
+     * UnitMap.
+     */
+    @Override
+    Frame removeRegions() {
+        return getRegionFrame();
+    }
+
     /** A copy of the encapsulated FrameSet (C's {@code astGetRegionFrameSet}). */
     FrameSet regionFrameSet() {
         return (FrameSet) frameset.copy();

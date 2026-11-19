@@ -1133,6 +1133,21 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: sets the uncertainty on a new Region, and returns a copy of the Prism when nothing simplifies, so the Prism given is not changed (`regions/prism.rs`).
 - Java: as C (`Prism.simplifyStep`).
 
+### What removing the Regions from a Mapping gives (`RemoveRegions`)
+
+- C: region.c `RemoveRegions` returns a copy of the Region's current Frame, for every Region class.
+  A container turns a component result that is a Frame (`astIsAFrame`) into a UnitMap: cmpmap.c and tranmap.c every such component, so also a plain Frame component that did not change when the other one did; ratemap.c, switchmap.c and frameset.c only a component that changed, so a plain Frame route of a SwitchMap or a Frame used as a Mapping of a FrameSet stays a Frame.
+  A CmpFrame or FrameSet that changed is a copy holding clones of its unchanged components, so they are shared with the original, and an axis Label set on one is seen in the other.
+- Rust: a Region's `mapping_without_regions` returns a UnitMap, and its Frames are not Mappings, so a plain Frame component cannot arise; the copies own their components.
+- Java: as C (`removeRegions`); `RemoveRegionsTest` pins each case from `src/test/resources/probes/remove_regions_extra_probe.c`.
+
+### A FrameSet component loses its Mapping when the Regions are removed
+
+- C: `astIsAFrame` is true of a FrameSet, so tranmap.c `RemoveRegions` turns a FrameSet component of a TranMap into a UnitMap whenever either component changed, and ratemap.c and switchmap.c turn a FrameSet component that held a Region into a UnitMap, dropping the FrameSet's Mapping: a TranMap of a FrameSet holding a ZoomMap and a Box becomes a UnitMap. **C quirk.**
+  A CmpMap is not affected, since `astInitCmpMap` holds a FrameSet's Mapping in its place.
+- Rust: keeps a FrameSet component, with its own Regions removed.
+- Java: as C (`Mapping.frameToUnitMap`); `RemoveRegionsTest.aTranMapTurnsAFrameSetIntoAUnitMap` pins it.
+
 ## FitsChan
 
 ### An equals sign in a keyword name is reported as an `astPutFits` error from every method

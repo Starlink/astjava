@@ -606,6 +606,56 @@ public class CmpMap extends Mapping {
         return invert2;
     }
 
+    /**
+     * cmpmap.c {@code RemoveRegions}: removes the Regions from both components. When neither
+     * changed it is the CmpMap itself. Otherwise each component result that is a Frame becomes a
+     * UnitMap, whether or not that component changed; a series CmpMap with a UnitMap component
+     * becomes a copy of the other component, with the Invert value the CmpMap records for it and
+     * inverted again if the CmpMap is inverted; a parallel CmpMap of two UnitMaps becomes one
+     * UnitMap; and any other is a copy of the CmpMap holding the new components. A component that
+     * did not change is the original's own, shared, as C's copy holds a clone of it.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Mapping removeRegions() {
+        Mapping new1 = map1.removeRegions();
+        Mapping new2 = map2.removeRegions();
+        if (new1 == map1 && new2 == map2) {
+            return this;
+        }
+        new1 = frameToUnitMap(new1);
+        new2 = frameToUnitMap(new2);
+        boolean unit1 = new1 instanceof UnitMap;
+        boolean unit2 = new2 instanceof UnitMap;
+        if (series) {
+            if (unit1) {
+                return invertedCopy(new2, invert2);
+            }
+            if (unit2) {
+                return invertedCopy(new1, invert1);
+            }
+        } else if (unit1 && unit2) {
+            return new UnitMap(new1.getNin() + new2.getNin());
+        }
+        CmpMap result = (CmpMap) copy();
+        result.map1 = keptComponent(new1, map1);
+        result.map2 = keptComponent(new2, map2);
+        return result;
+    }
+
+    /**
+     * A copy of the component {@code map} with the Invert value {@code invert}, inverted again if
+     * the CmpMap is inverted: what remains of a series CmpMap whose other component is a UnitMap.
+     */
+    private Mapping invertedCopy(Mapping map, boolean invert) {
+        Mapping result = (Mapping) map.copy();
+        result.setInvert(invert);
+        if (getInvert()) {
+            result.invert();
+        }
+        return result;
+    }
+
     // ------------------------------------------------------------------
     // Transformation
     // ------------------------------------------------------------------

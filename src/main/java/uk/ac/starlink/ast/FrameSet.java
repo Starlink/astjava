@@ -374,6 +374,49 @@ public class FrameSet extends Frame {
         integrityMethod = "";
     }
 
+    /**
+     * frameset.c {@code RemoveRegions}, for the FrameSet as a Frame and as a Mapping alike: removes
+     * the Regions from every Mapping between nodes and every Frame. A Mapping that changed and is
+     * now a Frame becomes a UnitMap; one that did not change is kept as it is, a Frame included; a
+     * Frame that is a Region becomes a copy of its current Frame. When none changed it is the
+     * FrameSet itself; otherwise it is a copy of the FrameSet, keeping its attributes, that holds
+     * the new Frames and Mappings. Those that did not change are the original's own, shared, as
+     * C's copy holds clones of them, so that a change made to one through either FrameSet is seen
+     * in both.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Frame removeRegions() {
+        boolean changed = false;
+        int nmap = nnode - 1;
+        Mapping[] newmaps = new Mapping[nmap];
+        for (int i = 0; i < nmap; i++) {
+            newmaps[i] = maps[i].removeRegions();
+            if (newmaps[i] != maps[i]) {
+                changed = true;
+                newmaps[i] = frameToUnitMap(newmaps[i]);
+            }
+        }
+        Frame[] newfrms = new Frame[nframe];
+        for (int i = 0; i < nframe; i++) {
+            newfrms[i] = frames[i].removeRegions();
+            if (newfrms[i] != frames[i]) {
+                changed = true;
+            }
+        }
+        if (!changed) {
+            return this;
+        }
+        FrameSet result = (FrameSet) copy();
+        for (int i = 0; i < nmap; i++) {
+            result.maps[i] = keptComponent(newmaps[i], maps[i]);
+        }
+        for (int i = 0; i < nframe; i++) {
+            result.frames[i] = keptComponent(newfrms[i], frames[i]);
+        }
+        return result;
+    }
+
     // ------------------------------------------------------------------
     // Frames, Base and Current
     // ------------------------------------------------------------------

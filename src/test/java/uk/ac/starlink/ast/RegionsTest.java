@@ -34,9 +34,7 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * without their checks of the bounding disc ({@code astGetRegionDisc}, not in jniast), as {@link
  * #generalCircleBounds} and {@link #fitsChanSkyCircleBounds}. Listed in {@code
  * deferred/rust-tests.txt}: {@code sky_circle_disc} and {@code sky_polygon_disc} ({@code
- * astGetRegionDisc}), {@code remove_regions_from_frameset} and {@code
- * remove_regions_unit_passthrough} ({@code astRemoveRegions}, not in this phase), and {@code
- * convex_hull_basic} ({@code astConvex}, not in jniast).
+ * astGetRegionDisc}), and {@code convex_hull_basic} ({@code astConvex}, not in jniast).
  */
 class RegionsTest {
 
@@ -1514,6 +1512,47 @@ class RegionsTest {
                         orig[0][i], simp[0][i], 1.0e-10, "Point " + i + ": interior coordinate values should match");
             }
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Removing Regions (testregions.c checkRemoveRegions)
+    // ------------------------------------------------------------------
+
+    /**
+     * A Circle clips a point outside it, and the Mapping of the ICRS to Galactic FrameSet, with its
+     * Regions removed, passes that point. The FrameSet {@code convert} gives holds no Region; {@code
+     * RegionsCTest.checkRemoveRegions} and {@code RemoveRegionsTest} remove Regions a FrameSet holds.
+     */
+    @Test
+    void removeRegionsFromFrameSet() {
+        SkyFrame sf1 = sky("ICRS");
+        Circle circle = circleRadius(sf1, new double[] {0.0, 0.0}, 0.001);
+        assertNotEquals(BAD, tranRows(circle, true, new double[] {0.0, 0.0})[0][0], "centre should be inside");
+        assertEquals(BAD, tranRows(circle, true, new double[] {0.01, 0.01})[0][0], "distant point should be clipped");
+
+        FrameSet fs = sf1.convert(sky("GALACTIC"), "");
+        Mapping map = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        assertNotEquals(
+                BAD, tranRows(map, true, new double[] {0.0, 0.0})[0][0], "origin should transform through FrameSet");
+
+        Mapping clean = map.removeRegions();
+        assertNotEquals(
+                BAD,
+                tranRows(clean, true, new double[] {0.01, 0.01})[0][0],
+                "remove_regions should eliminate clipping");
+    }
+
+    /** Removing Regions from a Mapping that holds none gives an equivalent Mapping. */
+    @Test
+    void removeRegionsUnitPassthrough() {
+        FrameSet fs = new FrameSet(new Frame(2));
+        Mapping map = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        Mapping clean = map.removeRegions();
+        assertEquals(2, clean.getNin());
+        assertEquals(2, clean.getNout());
+        double[] out = tranRows(clean, true, new double[] {3.0, 4.0})[0];
+        assertEquals(3.0, out[0], 1e-10);
+        assertEquals(4.0, out[1], 1e-10);
     }
 
     // ------------------------------------------------------------------

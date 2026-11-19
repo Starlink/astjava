@@ -332,6 +332,57 @@ public class SwitchMap extends Mapping {
         routeinv = routeinv.clone();
     }
 
+    /**
+     * switchmap.c {@code RemoveRegions}: removes the Regions from each route Mapping and each
+     * selector. A Mapping that changed and is now a Frame becomes a UnitMap; one that did not change
+     * is kept as it is, a Frame included. When none changed it is the SwitchMap itself; otherwise it
+     * is a copy of the SwitchMap holding the new Mappings, sharing with the original those that did
+     * not change, as C's copy holds clones of them.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Mapping removeRegions() {
+        boolean changed = false;
+        Mapping[] newroutes = new Mapping[routemap.length];
+        for (int i = 0; i < routemap.length; i++) {
+            newroutes[i] = routemap[i].removeRegions();
+            if (newroutes[i] != routemap[i]) {
+                changed = true;
+                newroutes[i] = frameToUnitMap(newroutes[i]);
+            }
+        }
+        Mapping newfsmap = null;
+        if (fsmap != null) {
+            newfsmap = fsmap.removeRegions();
+            if (newfsmap != fsmap) {
+                changed = true;
+                newfsmap = frameToUnitMap(newfsmap);
+            }
+        }
+        Mapping newismap = null;
+        if (ismap != null) {
+            newismap = ismap.removeRegions();
+            if (newismap != ismap) {
+                changed = true;
+                newismap = frameToUnitMap(newismap);
+            }
+        }
+        if (!changed) {
+            return this;
+        }
+        SwitchMap result = (SwitchMap) copy();
+        for (int i = 0; i < routemap.length; i++) {
+            result.routemap[i] = keptComponent(newroutes[i], routemap[i]);
+        }
+        if (newfsmap != null) {
+            result.fsmap = keptComponent(newfsmap, fsmap);
+        }
+        if (newismap != null) {
+            result.ismap = keptComponent(newismap, ismap);
+        }
+        return result;
+    }
+
     // ------------------------------------------------------------------
     // Selectors and routes
     // ------------------------------------------------------------------

@@ -21,8 +21,7 @@ import org.junit.jupiter.api.Test;
  * REGIONS_C_GAP_EXCLUDED}): an Ellipse with a Box uncertainty mapped through a full MatrixMap and
  * back gives C's result, an Ellipse with no FrameSet each way that overlaps the original as the
  * same Region. Rust's {@code region_gaps_still_differ}, which checks that Rust's gap persists, is
- * listed in {@code deferred/rust-tests.txt}, as is {@code check_remove_regions} ({@code
- * astRemoveRegions}, which is not in this phase).
+ * listed in {@code deferred/rust-tests.txt}.
  */
 class RegionsCTest {
 
@@ -88,6 +87,51 @@ class RegionsCTest {
         if (!s1.equals(s2)) {
             assertEquals(Region.OVERLAP_SAME, reg.overlap(assertInstanceOf(Region.class, back, text)), text);
         }
+    }
+
+    /** Whether {@code a} and {@code b} agree on both axes to within 1e-10, C's test. */
+    private static boolean near(double[] a, double[] b) {
+        return Math.abs(a[0] - b[0]) <= 1.0e-10 && Math.abs(a[1] - b[1]) <= 1.0e-10;
+    }
+
+    /**
+     * {@code checkRemoveRegions}: a Circle clips a point outside it, and so does the FrameSet that
+     * converts Galactic coordinates to the Circle; with its Regions removed that FrameSet passes the
+     * point. A TranMap of two Regions becomes a UnitMap with the TranMap's own number of axes.
+     */
+    @Test
+    void checkRemoveRegions() {
+        SkyFrame sf1 = sky("ICRS");
+        Region reg = new Circle(sf1, new double[] {0.0, 0.0}, 0.001, null);
+        double[][] iin = {{0.0, 0.0}, {0.01, 0.01}};
+
+        double[][] out = tran2(reg, iin, true);
+        assertTrue(out[0][0] != BAD && out[0][1] != BAD, "RemoveRegions test 1 failed");
+        assertTrue(near(out[0], iin[0]), "RemoveRegions test 2 failed");
+        assertArrayEquals(new double[] {BAD, BAD}, out[1], "RemoveRegions test 3 failed");
+
+        SkyFrame sf2 = sky("Galactic");
+        FrameSet fs = sf1.convert(sf2, " ");
+        double[][] gin = tran2(fs, iin, true);
+        FrameSet fs2 = new FrameSet(sf2);
+        fs2.addFrame(FrameSet.AST__BASE, new UnitMap(2), sf2);
+        fs = fs2.convert(reg, " ");
+        Mapping map = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        out = tran2(map, gin, true);
+        assertTrue(out[0][0] != BAD && out[0][1] != BAD, "RemoveRegions test 4 failed");
+        assertTrue(near(out[0], iin[0]), "RemoveRegions test 5 failed");
+        assertArrayEquals(new double[] {BAD, BAD}, out[1], "RemoveRegions test 6 failed");
+
+        FrameSet removed = (FrameSet) fs.removeRegions();
+        map = removed.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        out = tran2(map, gin, true);
+        assertTrue(out[0][0] != BAD && out[0][1] != BAD, "RemoveRegions test 7 failed");
+        assertTrue(near(out[0], iin[0]), "RemoveRegions test 8 failed");
+        assertTrue(near(out[1], iin[1]), "RemoveRegions test 9 failed");
+
+        map = new TranMap(reg, reg).removeRegions();
+        assertInstanceOf(UnitMap.class, map, "RemoveRegions test 10 failed");
+        assertEquals(2, map.getNin(), "RemoveRegions test 11 failed");
     }
 
     /**

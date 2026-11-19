@@ -1236,6 +1236,49 @@ public abstract class Mapping extends AstObject {
         return false;
     }
 
+    /**
+     * Removes the Regions from the Mapping (C's {@code astRemoveRegions}): the Mapping that results
+     * when every Region it holds is replaced by an equivalent Mapping that does not mask points.
+     * This base version, mapping.c's {@code RemoveRegions}, returns the Mapping itself, as C's
+     * {@code astClone} does. A Region returns a copy of its current Frame, and a class that holds
+     * other Mappings or Frames removes their Regions: it returns itself when none of them changed,
+     * and otherwise a new Mapping, which may share with this one the components that did not
+     * change. A result that is the Mapping itself, or shares components with it, should be copied
+     * before it is changed.
+     *
+     * @return this Mapping, or a new Mapping holding no Regions
+     */
+    Mapping removeRegions() {
+        return this;
+    }
+
+    /**
+     * What a container that holds Mappings puts in place of a component's {@code removeRegions}
+     * result: a UnitMap with as many coordinates as {@code map} has inputs if {@code map} is a
+     * Frame (C's {@code astIsAFrame}, true of a FrameSet and a Region too), which is what a Region
+     * gives, and otherwise {@code map}.
+     */
+    static Mapping frameToUnitMap(Mapping map) {
+        if (map instanceof Frame) {
+            return new UnitMap(map.getNin());
+        }
+        return map;
+    }
+
+    /**
+     * A component of a container made by {@code removeRegions} from a copy of the container: the
+     * {@code removeRegions} result {@code now} of the original's component {@code old}. When it is
+     * {@code old} itself, the copy and the original hold the same Object, as C's {@code astClone}
+     * of the new pointer gives them, so it is marked shared.
+     */
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    static <T extends AstObject> T keptComponent(T now, T old) {
+        if (now == old) {
+            now.markShared();
+        }
+        return now;
+    }
+
     // ------------------------------------------------------------------
     // Attributes
     // ------------------------------------------------------------------
