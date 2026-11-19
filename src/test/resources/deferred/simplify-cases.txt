@@ -18,25 +18,22 @@ neg_spline_different_coeffs | needs SplineMap
 normmap_inverse_cancel_upper | needs NormMap
 unitnormmap_inv_fwd_cancel | needs UnitNormMap
 box_parallel_merge | needs simplification
-interval_parallel_merge | needs Interval
-interval_self_simplify | needs Interval
-nullregion_self_simplify | needs NullRegion
-nullregion_parallel_merge | needs NullRegion
-pointlist_self_simplify | needs PointList
+interval_parallel_merge | needs simplification
+interval_self_simplify | needs simplification
 cap_normmap_cmpframe | needs NormMap
 selectormap_region_simplify | needs SelectorMap
-cap_interval_01 | needs Interval, NullRegion, Prism
+cap_interval_01 | needs Prism
 cap_matrixmap_04 | needs ChebyMap
 cap_permmap_01 | needs NormMap
-cap_pointlist_01 | needs PointList, Prism
-cap_pointlist_02 | needs Interval, PointList, Prism
+cap_pointlist_01 | needs Prism
+cap_pointlist_02 | needs Prism
 cap_slamap_02 | needs Polygon, Prism
-cap_slamap_07 | needs Circle, CmpRegion, NullRegion
-cap_timemap_02 | needs Interval, StcResourceProfile
+cap_slamap_07 | needs Circle, CmpRegion
+cap_timemap_02 | needs StcResourceProfile
 cap_unitnormmap_01 | needs UnitNormMap
 cap_xphmap_01 | needs XphMap
 cap_xphmap_02 | needs XphMap
-cap_zoommap_04 | needs PointList
+cap_zoommap_04 | needs simplification
 neg_normmap_diff_frame | needs NormMap
 neg_normmap_inv_diff_frame | needs NormMap
 neg_normmap_parallel_sky | needs NormMap
@@ -44,17 +41,10 @@ xph_inverse_cancel | needs XphMap
 neg_xph_parallel | needs XphMap
 neg_xph_nonxph_neighbour | needs XphMap
 neg_xph_not_opposite | needs XphMap
-nullregion_parallel_merge_pair | needs NullRegion
-neg_nullregion_series | needs NullRegion
-neg_nullregion_parallel_nonregion | needs NullRegion
-pointlist_parallel_merge_pair | needs PointList
-interval_self_simplify_cmp | needs Interval
-neg_pointlist_series | needs PointList
-neg_pointlist_parallel_nonregion | needs PointList
-neg_interval_series | needs Interval
-neg_interval_parallel_nonregion | needs Interval
-neg_interval_unbounded_pointlist | needs Interval, PointList
-selectormap_region_simplify_real | needs Interval, SelectorMap
+nullregion_parallel_merge_pair | needs simplification
+pointlist_parallel_merge_pair | needs simplification
+interval_self_simplify_cmp | needs simplification
+selectormap_region_simplify_real | needs SelectorMap
 neg_selectormap_series_upper | needs SelectorMap
 neg_selectormap_series_lower | needs SelectorMap
 neg_selectormap_not_equal | needs SelectorMap
@@ -76,23 +66,21 @@ unitnormmap_fwd_winmap_refused | needs UnitNormMap
 unitnormmap_shift_merge_tail | needs UnitNormMap
 chebymap_inverse_cancel | needs ChebyMap
 neg_chebymap_standalone | needs ChebyMap
-interval_nullregion_merge | needs Interval, NullRegion
-interval_pointlist_merge | needs Interval, PointList
-interval_unc_fillfactor_merge | needs Interval
-box_pointlist_merge | needs PointList
-box_nullregion_merge | needs Interval, NullRegion
+interval_nullregion_merge | needs simplification
+interval_pointlist_merge | needs simplification
+interval_unc_fillfactor_merge | needs simplification
+box_pointlist_merge | needs simplification
+box_nullregion_merge | needs simplification
 box_unc_fillfactor_merge | needs simplification
-nullregion_unc_fillfactor_merge | needs NullRegion
-pointlist_unc_fillfactor_merge | needs PointList
-nullregion_merge_tail | needs NullRegion
-interval_remapped_simplify | needs Interval
-interval_halfinf_simplify | needs Interval
+nullregion_unc_fillfactor_merge | needs simplification
+pointlist_unc_fillfactor_merge | needs simplification
+nullregion_merge_tail | needs simplification
 cheby_linear_lone_reduce | needs ChebyMap
 neg_cheby_quadratic_no_reduce | needs ChebyMap
 cap_cheby_consolidate | needs ChebyMap
 cap_box_permmap_const | needs simplification
-cap_box_permmap_null | needs NullRegion
-cap_box_permmap_null_first | needs NullRegion
+cap_box_permmap_null | needs simplification
+cap_box_permmap_null_first | needs simplification
 neg_circle_cmpframe_sky_second | needs Circle
 cap_poly_unc_frame | needs Polygon
 cap_poly_bent_edges | needs Polygon
@@ -106,7 +94,7 @@ defunc_nullregion_2d | needs Circle
 defunc_prism_box_interval | needs Prism
 merge_box_fillfactor_product | needs simplification
 merge_box_meshsize_scaled | needs simplification
-merge_interval_meshsize_scaled | needs Interval
+merge_interval_meshsize_scaled | needs simplification
 regbasepick_circle_permaxes | needs Circle
-regbasepick_cmpregion_subset | needs CmpRegion, Interval
+regbasepick_cmpregion_subset | needs CmpRegion
 simpstab_permmap_slice_unc | needs simplification

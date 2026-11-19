@@ -13,7 +13,7 @@ tests/test_nan_protocol.rs::nan_protocol_carries_a_bad_output_of_a_mapping_witho
 tests/test_bulk_kernels.rs::unitnormmap_kernel_keeps_each_points_state_across_blocks | UnitNormMap (out of scope)
 tests/test_bulk_kernels.rs::unitnormmap_inverse_kernel_keeps_each_points_state | UnitNormMap (out of scope)
 tests/test_bulk_kernels.rs::unitnormmap_forward_kernel_matches_c_for_each_axis_count | UnitNormMap (out of scope)
-tests/test_bulk_kernels.rs::transforms_that_fill_every_output_leave_surplus_axes_alone | UnitNormMap and NullRegion (out of scope)
+tests/test_bulk_kernels.rs::transforms_that_fill_every_output_leave_surplus_axes_alone | UnitNormMap (out of scope)
 tests/test_unitnormmap.rs::forward_basic_origin | UnitNormMap (out of scope)
 tests/test_unitnormmap.rs::forward_with_centre | UnitNormMap (out of scope)
 tests/test_unitnormmap.rs::forward_zero_vector | UnitNormMap (out of scope)
@@ -88,7 +88,6 @@ tests/test_tran_definedness.rs::chebymap_forward_only_has_no_inverse | ChebyMap 
 tests/test_numeric_rate.rs::numeric_rate_chebymap_quadratic | ChebyMap (out of scope)
 tests/test_numeric_rate.rs::numeric_rate_chebymap_cubic | ChebyMap (out of scope)
 tests/test_rate_oracle.rs::rates_match_the_c_library | SelectorMap (Region, out of scope)
-tests/test_region_nulltran_oracle.rs::transform_matches_the_c_library | NullRegion (Region, out of scope)
 src/mappings/linear_approx.rs::returns_correct_type | Rust-only API (LinearFit)
 tests/test_transform_oracle.rs::fma_substitutions_replace_rows_that_really_differ | Rust-only API (FMA_SUBSTITUTIONS_LICENSED is empty; a row that differs for that cause goes on the deferred lists)
 tests/test_transform_oracle.rs::transform_oracle_report | Rust-only API (ignored investigative JSON report; the gates list every failure)
@@ -187,12 +186,9 @@ tests/test_serialisation.rs::any_object_skyframe_not_a_mapping | Rust-only API (
 tests/test_serialisation.rs::a_keymap_is_neither_a_mapping_nor_a_frame_nor_a_region | Rust-only API (AnyObject)
 tests/test_serialisation.rs::round_trip_circle | Circle (Region, out of scope)
 tests/test_serialisation.rs::round_trip_polygon | Polygon (Region, out of scope)
-tests/test_serialisation.rs::round_trip_interval | Interval (Region, out of scope)
-tests/test_serialisation.rs::round_trip_null_region | NullRegion (Region, out of scope)
 tests/test_serialisation.rs::round_trip_ellipse | Ellipse (Region, out of scope)
-tests/test_serialisation.rs::round_trip_pointlist | PointList (Region, out of scope)
 tests/test_serialisation.rs::round_trip_cmpregion | CmpRegion and Circle (Region, out of scope)
-tests/test_serialisation.rs::round_trip_prism | Prism, Circle and Interval (Region, out of scope)
+tests/test_serialisation.rs::round_trip_prism | Prism and Circle (Region, out of scope)
 tests/test_serialisation.rs::round_trip_negated_circle | Circle (Region, out of scope)
 tests/test_fitschan_read.rs::unset_system_still_leaves_system_unset | Rust-only API (SkyFrame::unset_system)
 tests/test_fitschan_c_inline.rs::show_fits_succeeds | astShowFits (out-of-scope method; jniast has no showFits)
@@ -237,6 +233,12 @@ tests/test_box_region.rs::simplify_permmap_slice_outside_constant_first_is_null 
 tests/test_box_region.rs::simplify_permmap_slice_outside_constant_last_is_null | needs simplification
 tests/test_box_region.rs::simplify_permmap_slice_both_constants_outside_is_null | needs simplification
 src/regions/box_region.rs::permmap_bad_output_simplifies_to_unbounded_interval | needs simplification
-tests/test_region_mapregion_oracle.rs::bad_limit_keeps_every_axis | Interval (Region, out of scope)
 tests/test_region_mapregion_oracle.rs::identity_chain_dumps_only_the_frame | Circle (Region, out of scope)
 tests/test_region_mapregion_oracle.rs::public_map_region_simplifies | needs simplification
+tests/test_nullregion.rs::default_uncertainty_is_built_in_the_base_frame | Circle (Region, out of scope)
+tests/test_interval.rs::centre_of_bounded_interval | astGetRegionDisc (not in jniast)
+tests/test_interval.rs::mesh_of_an_unbounded_interval_names_the_class | astGetRegionMesh (not in jniast)
+tests/test_interval.rs::wide_interval_does_not_merge_into_a_pointlist | Prism (Region, out of scope)
+tests/test_interval.rs::point_interval_merges_into_a_pointlist | Prism (Region, out of scope)
+tests/test_region_interval_remap_oracle.rs::mapped_interval_is_redefined_in_the_new_frame | needs simplification
+tests/test_region_bounded_oracle.rs::negated_prism_tests_negated_components | Prism (Region, out of scope)
