@@ -26,8 +26,9 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * <p>Expected values are C's: those of {@code testregions.c} where the Rust test takes them from
  * it; C's bounds, from the probe {@code probes/regions_cross_probe.c}, where the Rust test checks
  * bounds of its own; and otherwise those the Rust test records, which the probe finds C gives for
- * each overlap and each membership test on the sky. The one the probe finds C does not give is
- * replaced by C's ({@link #cmpRegionNegatedReversal}).
+ * each overlap and for several of the membership tests on the sky. The one the probe finds C does
+ * not give is replaced by C's ({@link #cmpRegionNegatedReversal}). The other membership tests on
+ * the sky, which the probe does not make, test points well clear of every boundary.
  *
  * <p>{@code general_circle_bounds_and_disc} and {@code fitschan_sky_circle_bounds} are translated
  * without their checks of the bounding disc ({@code astGetRegionDisc}, not in jniast), as {@link
@@ -47,11 +48,12 @@ class RegionsTest {
     /**
      * The tolerance on bounds compared with C's. The bounds of a Region on a SkyFrame come from
      * its boundary mesh, each point of which is found by a few calls of {@code sin}, {@code cos},
-     * {@code asin} and {@code atan2} (each within 1 ulp of the true value in {@code java.lang.Math}
-     * and in C's library) and a few roundings, then normalised; a bound is the extreme of those
-     * points, so it differs from C's by a few ulps of values below 2*pi, under 1e-14. 1e-12 leaves
-     * a wide margin and is still far below any change in the mesh or in the normalisation, which
-     * moves a bound by more than 1e-6.
+     * {@code asin} and {@code atan2} (each within 1 ulp of the true value in C's library and in {@code
+     * java.lang.Math}, except {@code atan2}, within 2 ulp there) and a few roundings, then normalised;
+     * a bound is the extreme of those points, so it differs from C's by a few ulps of values below
+     * 2*pi, which {@code asin} and {@code atan2} amplify near a pole, by up to about 10 for the meshes
+     * here: under 1e-13. 1e-12 leaves a margin and is still far below any change in the mesh or in
+     * the normalisation, which moves a bound by more than 1e-6.
      */
     private static final double BOUNDS_TOL = 1e-12;
 
@@ -1111,7 +1113,9 @@ class RegionsTest {
     /**
      * {@code checkCircle}, Circle Errors AA1 to AA4: C's bounds of a Circle of radius 0.01 at
      * latitude 1.0, with C's tolerance. Errors AA5 to AA7, the disc, need {@code
-     * astGetRegionDisc}, which jniast lacks.
+     * astGetRegionDisc}, which jniast lacks. C's values come from {@code testregions.c}, whose
+     * header has another reference point and scale than this one (the Rust test's), but the Circle
+     * is defined in the header's ICRS SkyFrame, and its bounds depend on that alone.
      */
     @Test
     void fitsChanSkyCircleBounds() {
@@ -1131,7 +1135,8 @@ class RegionsTest {
 
     /**
      * {@code checkCircle}, the second set of Circle Errors AA5 to AA8: C's bounds of a Circle of
-     * radius 0.01 near the pole, with C's tolerance.
+     * radius 0.01 near the pole, with C's tolerance. As for {@link #fitsChanSkyCircleBounds}, C's
+     * header differs from this one, but the bounds depend only on its ICRS SkyFrame.
      */
     @Test
     void fitsChanSkyCircleNearPoleBounds() {
