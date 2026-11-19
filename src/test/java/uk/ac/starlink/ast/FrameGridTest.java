@@ -15,9 +15,18 @@ import org.junit.jupiter.api.Test;
  * Frame's.
  *
  * <p>The points are sums of bounds and multiples of steps, so they are compared exactly. The
- * number of ticks or of points on a parallel is a truncation; for a SkyFrame it depends on {@code
+ * number of ticks or of points on a parallel is a truncation. For a SkyFrame it depends on {@code
  * sin}, {@code cos} and {@code sqrt}, which may differ in the last bit between platforms, but in
- * every case here the truncated value is at least 0.01 from an integer, far beyond that.
+ * every case here the truncated value is at least 0.01 from an integer, far beyond that. For a
+ * plain Frame, the number of ticks on an axis is {@code ntick0 * width / gmean}, where {@code
+ * gmean} is {@code pow} of the product of the widths of the axes sharing its unit, to the power
+ * {@code 1 / nsame}, and several of these are exact integers. Where an axis has a unit of its own,
+ * {@code gmean} is {@code pow(width, 1.0)}, which is the width exactly by the specification of
+ * {@code Math.pow}, and the quotient is exact. Two cases rely on {@code pow} of a perfect power:
+ * {@code grid_frame}'s second row gives 5 ticks only if {@code pow(16, 0.5)} is exactly 4, which
+ * fdlibm, the JIT intrinsics and C's library give, though the specification allows an error of 1
+ * ulp; and {@code grid_frame3} gives 3 and 6 ticks if {@code pow(8,
+ * 1.0 / 3)} is at most 2, its correctly rounded value, which the specification's 1 ulp ensures.
  */
 class FrameGridTest {
 
