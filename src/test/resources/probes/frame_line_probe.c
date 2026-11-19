@@ -597,8 +597,6 @@ int main( void ) {
       grid( (AstFrame *) sky, 60, lb2, ub2 );
       double lb3[ 2 ] = { 6.0, 0.3 }, ub3[ 2 ] = { 0.5, -0.1 };
       grid( (AstFrame *) sky, 40, lb3, ub3 );
-      double lb4[ 2 ] = { 1.0, -0.5 }, ub4[ 2 ] = { 1.0, 0.5 };
-      grid( (AstFrame *) sky, 40, lb4, ub4 );
       double lb5[ 2 ] = { 0.5, -M_PI_2 }, ub5[ 2 ] = { 0.5 + 2 * M_PI, -1.4 };
       grid( (AstFrame *) sky, 30, lb5, ub5 );
       grid( (AstFrame *) sky, 1, lb1, ub1 );

@@ -787,10 +787,10 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - **C quirk**: `FrameGrid` (frame.c) assigns each axis's tick count, `ntick0*(ubnd-lbnd)/gmean`, to an `int` without a range check, and multiplies the counts in `int`; an axis of zero width makes the geometric mean zero, so the count of another axis of the same unit is infinite and its own is a NaN, and the conversions are undefined.
   The pinned library on AArch64 saturates the infinite count and converts the NaN to 0 (then 2), so the product wraps to -2 and `astPointSet` reports AST__NPTIN, "Number of points (-2) is not valid" (probe case `grid_frame`); on x86-64 the conversion gives `INT_MIN`, raised to 2, and C makes a grid of four points.
   `FrameGrid` (skyframe.c) likewise converts `0.5 + (hilat-lolat)/lat_size` to the number of parallels, which is infinite for a box of zero width in longitude: on AArch64 C walks 2^31 parallels (about 30 seconds) before finding no point, on x86-64 two.
-  The same box has no grid point on either, so `astSetNpoint` reports AST__NPTIN (probe case `grid_sky`).
+  The same box has no grid point on either, so `astSetNpoint` reports AST__NPTIN, the error probe case `grid_sky` shows for a grid of size 1; the probe leaves the box of zero width in longitude out for its run time.
   `FrameGrid` (frame.c) also reports bad bounds only when both bounds of an axis are bad.
 - Rust: `frame_grid_default` converts with `as`, which saturates as AArch64 does, and multiplies the counts in `i32`, which panics on overflow in a debug build; its SkyFrame `frame_grid` returns an empty PointSet where C's `astSetNpoint` reports AST__NPTIN.
-- Java: as the pinned library on AArch64, Java's conversion saturating and giving 0 for a NaN (`FrameGridTest`); the SkyFrame case takes as long as C's.
+- Java: as the pinned library on AArch64, Java's conversion saturating and giving 0 for a NaN (`FrameGridTest`); the SkyFrame box of zero width in longitude takes as long as C's and is not tested.
 
 ## FitsChan
 

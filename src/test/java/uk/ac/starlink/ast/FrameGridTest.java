@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
  * ({@code astFrameGrid}, from {@code probes/frame_line_probe.c}) and C's errors: a Frame's grid
  * with ticks on each axis in proportion to its length among the axes of the same unit, reversed
  * and zero-width bounds; a SkyFrame's rows of points along parallels, across RA 0, around a pole,
- * with reversed latitude bounds, all the way round, of zero width and too small; a CmpFrame's
+ * with reversed latitude bounds, all the way round and too small; a CmpFrame's
  * product of its components' grids, permuted or not; and a FrameSet's, which is its current
  * Frame's.
  *
