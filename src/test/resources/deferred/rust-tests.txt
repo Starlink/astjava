@@ -319,3 +319,4 @@ tests/test_selectormap.rs::selectormap_dump_matches_the_c_library | SelectorMap 
 tests/test_remove_regions_oracle.rs::removing_regions_matches_the_c_library | astRemoveRegions (out-of-scope method)
 tests/traits_compile.rs::dummy_region_implements_all_traits | Rust-only API (Region trait)
 tests/traits_compile.rs::region_is_object_safe | Rust-only API (Region trait)
+tests/traits_compile.rs::dyn_types_are_send | Rust-only API (Send trait bound)

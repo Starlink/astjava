@@ -788,7 +788,7 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
   The pinned library on AArch64 saturates the infinite count and converts the NaN to 0 (then 2), so the product wraps to -2 and `astPointSet` reports AST__NPTIN, "Number of points (-2) is not valid" (probe case `grid_frame`); on x86-64 the conversion gives `INT_MIN`, raised to 2, and C makes a grid of four points.
   `FrameGrid` (skyframe.c) likewise converts `0.5 + (hilat-lolat)/lat_size` to the number of parallels, which is infinite for a box of zero width in longitude: on AArch64 C walks 2^31 parallels (about 30 seconds) before finding no point, on x86-64 two.
   The same box has no grid point on either, so `astSetNpoint` reports AST__NPTIN, the error probe case `grid_sky` shows for a grid of size 1; the probe leaves the box of zero width in longitude out for its run time.
-  `FrameGrid` (frame.c) also reports bad bounds only when both bounds of an axis are bad.
+  Apart from the quirk, `FrameGrid` (frame.c) reports bad bounds only when both bounds of an axis are bad, which looks deliberate: `AST__BAD` (-DBL_MAX) is also a usable lower bound for an axis with no lower limit.
 - Rust: `frame_grid_default` converts with `as`, which saturates as AArch64 does, and multiplies the counts in `i32`, which panics on overflow in a debug build; its SkyFrame `frame_grid` returns an empty PointSet where C's `astSetNpoint` reports AST__NPTIN.
 - Java: as the pinned library on AArch64, Java's conversion saturating and giving 0 for a NaN (`FrameGridTest`); the SkyFrame box of zero width in longitude takes as long as C's and is not tested.
 
@@ -983,8 +983,8 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 ### A point on the boundary of a negated closed CmpRegion
 
 - C: cmpregion.c `Transform` applies a negated CmpRegion as the other operator of its components' negations (`GetRegions`), and a closed Region holds its boundary whether or not it is negated, so a point on the boundary of a closed CmpRegion is inside both the CmpRegion and its negation.
-  The AND of the square [0, 1] x [0, 1] with the negation of the OR of the unit Circles about (-1, 0) and (1, 0), negated, keeps (0, 0.5), on the square's edge.
-- Rust: `test_regions.rs` `cmpregion_negated_reversal` expects that point to be made bad.
+  The AND of the square [0, 1] x [0, 1] with the negation of the OR of the unit Circles about (-1, 0) and (1, 0), negated, keeps (0, 0.5), on the square's edge. **C quirk.**
+- Rust: `test_regions.rs` `cmpregion_negated_reversal` expects that point to be made bad; the Rust library was not examined beyond its test.
 - Java: as C; `RegionsTest.cmpRegionNegatedReversal` takes the value from `src/test/resources/probes/regions_cross_probe.c`.
 
 ### The overlap of a Prism and a negated Region
