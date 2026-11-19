@@ -370,11 +370,6 @@ public abstract class Stc extends Region {
         return (Region) region.copy();
     }
 
-    /** The encapsulated Region, the Stc's own. */
-    Region stcRegion() {
-        return region;
-    }
-
     /**
      * A copy of AstroCoords element {@code icoord}, counting from 1 (C's {@code astGetStcCoord}).
      * When the Mapping from the base to the current Frame does not simplify to a UnitMap, each
@@ -769,11 +764,18 @@ public abstract class Stc extends Region {
         }
     }
 
-    /** Which base Frame points are in the encapsulated Region as if it were not negated. */
+    /**
+     * Not used: {@link Region#regBaseMask} is this hook's only caller, and Stc replaces it with C's
+     * {@code Transform} ({@link #regBaseMask}), as stc.c installs no other membership test.
+     *
+     * @throws AstException with status {@code AST__INTER} always
+     */
     @Override
     boolean[] regBaseInside(double[][] base, int npoint) {
-        Region reg = region.getNegated() ? region.getNegation() : region;
-        return goodPoints(reg.transform(base, npoint, false), base.length, npoint);
+        throw Ast.err(
+                AstException.AST__INTER,
+                "astRegBaseInside(" + astClass() + "): An Stc decides membership through its encapsulated Region "
+                        + "(internal AST programming error).");
     }
 
     /** For each point, whether some one of its first {@code ncoord} coordinates is good. */

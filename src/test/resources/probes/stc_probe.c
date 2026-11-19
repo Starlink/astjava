@@ -13,8 +13,7 @@
  *     and astGetStcCoord then show them, and the read-only RegionClass;
  *   - testregions.c's checkStcNegated;
  *   - dumps edited by hand and read: "Begin Stc", the abstract class, which
- *     C reads; an Stc without its Region; an Stc with fewer Coord<n> items
- *     than Ncoord; and Ncoord below zero.
+ *     C reads, and Ncoord below zero.
  *
  * Each case starts with a line "== <name>"; error reports, which the error
  * module writes to standard error, are merged in order (stdout unbuffered).

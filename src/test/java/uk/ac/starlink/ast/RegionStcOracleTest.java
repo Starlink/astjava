@@ -36,26 +36,63 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * the numbers in that dump are compared to within {@link #SKY_TOL}, {@code 1e-12}.
  *
  * <p>The AstroCoords Error Region of the {@code sky} case, and so {@code SKY_COORD}, is a Galactic
- * Circle of radius {@code 1e-4} that the Stc re-expresses in ICRS as the Ellipse that best fits its
- * mapped boundary mesh (ellipse.c {@code astBestEllipse}; {@code ERROR_ELLIPSE_LICENSED} in the Rust
- * test). The Ellipse's three defining points are its centre and the ends of its two axes. The
- * centre is the Circle's centre mapped into ICRS, through the same chain of functions as the
- * Circle's own points, and is compared within {@link #SKY_TOL}. The ends of the axes are not
- * determined by the values: the fit takes the direction of the primary axis from the mesh point
- * farthest from the centre and a parabola through it and its neighbours, and on the mapped
- * Circle, all but circular, the distances of the mesh points from the centre differ by less than
- * {@code 1e-13}, so a difference of a few ulps in the mesh moves that direction anywhere around
- * the centre. No tolerance on those points short of the radius itself follows from the
- * computation (this machine's {@code java.lang.Math} puts them about {@code 2e-5} away from C's,
- * as the Rust test finds of other platforms), and one of the radius tests nothing, so {@link
+ * Circle of radius {@code R = 1e-4} that the Stc re-expresses in ICRS as the Ellipse that best fits
+ * its mapped boundary mesh of {@code N = 200} points (ellipse.c {@code astBestEllipse}, {@link
+ * Ellipse#bestEllipse}; {@code ERROR_ELLIPSE_LICENSED} in the Rust test). The Ellipse's three defining
+ * points are its centre and the ends of its primary and secondary axes. The centre is the Circle's
+ * centre converted from Galactic to ICRS (the sines and cosines of its coordinates, a product of
+ * rotation matrices, then {@code atan2} and {@code asin}), a few ulps of values below 2, and is
+ * compared within {@link #SKY_TOL}.
+ *
+ * <p>The ends of the axes are not determined by the values. The conversion is a rotation, so the
+ * exact mesh is a circle about the centre and its points' distances from the centre differ only by
+ * rounding. The fit takes the direction of the primary axis from the vertex of the parabola through
+ * the farthest mesh point and its neighbours, so a difference of a few ulps in the mesh moves that
+ * direction anywhere within a mesh step around the centre: this machine's {@code java.lang.Math}
+ * puts the axis ends about {@code 2e-5} away from C's, as the Rust test finds of other platforms. No
+ * tolerance on them short of the radius follows, and one of the radius tests nothing, so {@link
  * #withoutEllipseAxisEnds} leaves out their values, as the Rust test leaves out the Ellipse's values
  * off the platform its C values were taken on, as phase 7 compares an Ellipse fitted to a Circle,
- * and as {@code docs/rust-c-differences.md} records. What the axis ends do determine, the two
- * half-lengths, is compared instead ({@link #assertHalfLengths}): each is the distance from the
- * centre of a point the fit places on or near the mesh, so it lies within the spread of the mesh
- * points' distances from the centre, which C's own fit shows by its two half-lengths, {@code 5.2e-14}
- * apart, beside rounding of order {@code 1e-17} in distances of {@code 1e-4}; {@link
- * #HALF_LENGTH_TOL} is twice that spread, {@code 1e-13}, a part in {@code 1e9} of the radius.
+ * and as {@code docs/rust-c-differences.md} records. The two half-lengths, which the direction does
+ * not decide, are compared instead ({@link #assertHalfLengths}), within bounds worked out from
+ * {@code bestEllipse}'s arithmetic as follows.
+ *
+ * <p>Each platform's mesh coordinates are within {@link #DELTA}, {@code 1e-14}, of their exact
+ * values: {@code SkyFrame.offset2} with an offset of {@code 1e-4} on values below 2, then the
+ * conversion above, each step a few ulps (below {@code 4.4e-16} each) of well-conditioned values,
+ * about 20 ulps in all. A distance of {@code 1e-4} from the centre is then within {@link #EPS_D},
+ * {@code 3 DELTA}, of the exact {@code R} (both points move, by up to {@code sqrt(2) DELTA} each,
+ * and the distance's own rounding is below {@code 1e-16}); the components {@code px} and {@code py}
+ * of a mesh point along and across the primary axis are within {@link #ETA}, {@code 4 DELTA} (as the
+ * distance, and the axis end the components are resolved against moves the direction by {@code
+ * DELTA / R} radians, which moves {@code py} by up to {@code DELTA} more).
+ *
+ * <p>Primary half-length {@code mx}: it is the largest distance {@code r2}, or the vertex of the
+ * parabola through {@code r2} and its neighbours {@code r1} and {@code r3}, at equal steps of angle
+ * (the mesh is uniform), whose height above {@code r2} is {@code (a - b)^2 / (8 (a + b)) <= (a + b) /
+ * 8} with {@code a = r2 - r1}, {@code b = r2 - r3}. The distances are all {@code R} within {@code
+ * EPS_D}, so {@code a + b <= 4 EPS_D} and each platform's {@code mx} is within {@link #DMX}, {@code
+ * 1.5 EPS_D}, of {@code R}. The dumped axis end is {@code astOffset2} of the centre by {@code mx},
+ * whose distance the test measures again within {@code EPS_D}. So the two platforms' primary
+ * half-lengths agree within {@code 2 DMX + 2 EPS_D = 1.5e-13}.
+ *
+ * <p>Secondary half-length {@code mn}: the mean of {@code T_i / w_i} weighted by {@code w_i = |py_i|},
+ * with {@code T_i = mx py_i^2 / sqrt(mx^2 - px_i^2)}. In exact arithmetic it is {@code R} plus a
+ * systematic term from the sphere: by the spherical Pythagoras theorem {@code px^2 + py^2 = d^2 +
+ * px^2 py^2 / 3} to leading order, so {@code T_i / w_i = mx (1 + px_i^2 / 6)} and {@code mn - mx = mx
+ * sum(px_i^2 |py_i|) / (6 sum |py_i|)}, about {@code R^3 / 18 = 5.6e-14}, the offset seen between
+ * each platform's two half-lengths. That term depends on the direction only through how the mesh
+ * samples the circle; {@link #curvature} gives it for each platform's direction and the bound takes
+ * their difference ({@code 1.3e-17} here). Rounding moves each platform's {@code mn} from the exact
+ * value at its own direction by, to first order, {@code DMX} through the factor {@code mx}, {@code 3
+ * N mx ETA / sum|py|} through {@code py^2} and the weights, and {@code mx R (DMX + ETA) sum(1/|py|) /
+ * sum|py|} through {@code mx^2 - px^2}, which is about {@code py^2} and moves by up to {@code 2 R (DMX
+ * + ETA)}. That last term is large for a mesh point close to the axis; {@link #roundingBound} computes
+ * it for each platform's direction, requires the relative change of {@code mx^2 - px^2} to be at
+ * most 0.1 at every point, where the first-order term is within a factor 1.2 of the true change of
+ * {@code 1/sqrt}, and takes 1.2 times it. The dumped axis end is measured again within {@code EPS_D}
+ * on each side. The two platforms' secondary half-lengths agree within the sum, about {@code 4e-12}
+ * here, a part in {@code 2.5e7} of the radius; they differ by {@code 6.4e-15} on this machine.
  */
 class RegionStcOracleTest {
 
@@ -68,8 +105,20 @@ class RegionStcOracleTest {
     private static final List<String> CASES_RUN =
             Arrays.asList("plain", "negated", "sky", "mapped", "from_mapped", "mapped_simplified");
 
-    /** The tolerance on the half-lengths of the fitted Error Ellipse (see the class description). */
-    private static final double HALF_LENGTH_TOL = 1.0e-13;
+    /** The radius of the Error Circle, {@code R} in the class description. */
+    private static final double ERROR_RADIUS = 1.0e-4;
+
+    /** How far each platform's mesh coordinates may be from exact (see the class description). */
+    private static final double DELTA = 1.0e-14;
+
+    /** How far a distance from the centre may be from exact (see the class description). */
+    private static final double EPS_D = 3.0 * DELTA;
+
+    /** How far a component along or across the axis may be from exact (see the class description). */
+    private static final double ETA = 4.0 * DELTA;
+
+    /** How far the primary half-length may be from the radius (see the class description). */
+    private static final double DMX = 1.5 * EPS_D;
 
     /** The cases whose dump holds the fitted Error Ellipse (see the class description). */
     private static final List<String> ERROR_ELLIPSE_CASES = Arrays.asList("sky", "catalog_entry", "sky_coord");
@@ -185,6 +234,57 @@ class RegionStcOracleTest {
         return out;
     }
 
+    /** The boundary mesh of the Error Circle in ICRS, from which the Ellipse is fitted. */
+    private static double[][] errorMesh() {
+        Circle err = circle(sky("Galactic"), new double[] {2.0, -0.3}, ERROR_RADIUS);
+        FrameSet fs = err.convert(sky(null), "");
+        return err.mapRegionInto(
+                        fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT), fs.getFrame(FrameSet.AST__CURRENT))
+                .regMesh();
+    }
+
+    /**
+     * The components of the mesh points along and across the primary axis of an Ellipse with
+     * defining points {@code p}, as {@code bestEllipse} resolves them.
+     */
+    private static double[][] resolved(SkyFrame icrs, double[][] mesh, double[][] p) {
+        return icrs.resolvePoints(p[0], p[1], mesh, mesh[0].length);
+    }
+
+    /** {@code sum(px^2 |py|) / sum|py|}, the sampling of the systematic term (see the class description). */
+    private static double curvature(double[][] r) {
+        double num = 0.0;
+        double den = 0.0;
+        for (int i = 0; i < r[0].length; i++) {
+            double py = Math.abs(r[1][i]);
+            num += r[0][i] * r[0][i] * py;
+            den += py;
+        }
+        return num / den;
+    }
+
+    /**
+     * The first-order bound on how far rounding moves one platform's secondary half-length from
+     * its exact value at its own direction (see the class description).
+     */
+    private static double roundingBound(String name, double[][] r, double mx) {
+        int n = r[0].length;
+        double sumAbs = 0.0;
+        double sumInv = 0.0;
+        double minAbs = Double.MAX_VALUE;
+        for (int i = 0; i < n; i++) {
+            double py = Math.abs(r[1][i]);
+            sumAbs += py;
+            sumInv += 1.0 / py;
+            minAbs = Math.min(minAbs, py);
+        }
+        double change = 2.0 * ERROR_RADIUS * (DMX + ETA);
+        assertTrue(
+                change / (minAbs * minAbs) <= 0.1,
+                name + ": a mesh point is too close to the axis for the first-order bound (|py| = " + minAbs + ")");
+        return DMX + mx * (3.0 * n * ETA + 1.2 * ERROR_RADIUS * (DMX + ETA) * sumInv) / sumAbs;
+    }
+
     /** Compares the half-lengths of the Ellipses in two dumps (see the class description). */
     private static void assertHalfLengths(String name, String got, String want) {
         List<double[][]> g = ellipsePoints(got);
@@ -192,14 +292,24 @@ class RegionStcOracleTest {
         assertFalse(w.isEmpty(), name + ": C's dump holds an Ellipse");
         assertEquals(w.size(), g.size(), name + ": Ellipses");
         SkyFrame icrs = new SkyFrame();
+        double[][] mesh = errorMesh();
         for (int i = 0; i < w.size(); i++) {
-            for (int axis = 1; axis <= 2; axis++) {
-                assertEquals(
-                        icrs.distance(w.get(i)[0], w.get(i)[axis]),
-                        icrs.distance(g.get(i)[0], g.get(i)[axis]),
-                        HALF_LENGTH_TOL,
-                        name + ": Ellipse " + i + " half-length " + axis);
-            }
+            double[][] pw = w.get(i);
+            double[][] pg = g.get(i);
+            double mx = icrs.distance(pw[0], pw[1]);
+            assertEquals(
+                    mx, icrs.distance(pg[0], pg[1]), 2.0 * DMX + 2.0 * EPS_D, name + ": Ellipse " + i + " primary");
+            double[][] rw = resolved(icrs, mesh, pw);
+            double[][] rg = resolved(icrs, mesh, pg);
+            double tol = roundingBound(name + " (C)", rw, mx)
+                    + roundingBound(name, rg, mx)
+                    + mx * Math.abs(curvature(rw) - curvature(rg)) / 6.0
+                    + 2.0 * EPS_D;
+            assertEquals(
+                    icrs.distance(pw[0], pw[2]),
+                    icrs.distance(pg[0], pg[2]),
+                    tol,
+                    name + ": Ellipse " + i + " secondary");
         }
     }
 
