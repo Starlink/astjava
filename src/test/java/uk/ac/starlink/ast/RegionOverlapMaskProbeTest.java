@@ -210,6 +210,14 @@ class RegionOverlapMaskProbeTest {
     }
 
     @Test
+    void gridBoundsBeyondTheIntRangeMatchC() {
+        // The ZoomMap takes the Box's bounds to +/-1e12 in grid coordinates, beyond the int range,
+        // and C's Mask<X> then finds an empty grid box (region.c Mask<X>, C bug): every pixel is
+        // inside the Box, but masking its outside sets all 16.
+        checkMaskD("huge_zoom_outside", unit2(-1, -1, 1, 1), new ZoomMap(2, 1.0e12), false, 2, G1, new int[] {4, 4});
+    }
+
+    @Test
     void masksOfEachTypeMatchC() {
         Region a = unit2(2, 2, 4, 4);
         int n = 36;

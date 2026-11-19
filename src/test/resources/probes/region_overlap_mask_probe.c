@@ -11,8 +11,9 @@
  * it with the second, and negating it back leaves Negated set.
  *
  * Mask: astMask<X> of a Box, its inside and outside, negated or not, with no
- * Mapping and through a ZoomMap, partly and wholly off the grid, in one and
- * three dimensions, and for each jniast type. Each array starts as 0, 1, 2
+ * Mapping and through a ZoomMap (one taking the Box's bounds in grid
+ * coordinates beyond the int range), partly and wholly off the grid, in one
+ * and three dimensions, and for each jniast type. Each array starts as 0, 1, 2
  * in turn. A "mask" line gives the count C returns, then the array as %.17g
  * values, then whether Negated is set on the Box afterwards: region.c Mask<X>
  * negates the Region it masks with in place when it masks the inside, and
@@ -173,7 +174,7 @@ int main( void ) {
    double rot[ 4 ];
    double lb3[ 3 ] = { 0.0, 0.0, 0.0 }, ub3[ 3 ] = { 1.0, 1.0, 1.0 };
    double lc3[ 3 ] = { 0.5, 0.5, -1.0 }, uc3[ 3 ] = { 2.0, 2.0, 0.5 };
-   int g1[ 2 ] = { 1, 1 }, g6[ 2 ] = { 6, 6 }, g2[ 2 ] = { 1, 2 };
+   int g1[ 2 ] = { 1, 1 }, g6[ 2 ] = { 6, 6 }, g2[ 2 ] = { 1, 2 }, g4[ 2 ] = { 4, 4 };
    int lone[ 1 ] = { 1 }, uten[ 1 ] = { 10 };
    int l3[ 3 ] = { 1, 1, 1 }, u3[ 3 ] = { 4, 4, 4 };
    int lbad[ 2 ] = { 4, 1 }, ubad[ 2 ] = { 3, 6 };
@@ -252,6 +253,8 @@ int main( void ) {
    m = (AstMapping *) astZoomMap( 2, 2.0, " " );
    maskd( "zoomed_inside", unit2( 1, 1, 2, 2 ), m, 1, 2, g1, g6 );
    maskd( "zoomed_outside", unit2( 1, 1, 2, 2 ), m, 0, 2, g1, g6 );
+   maskd( "huge_zoom_outside", unit2( -1, -1, 1, 1 ),
+          (AstMapping *) astZoomMap( 2, 1.0e12, " " ), 0, 2, g1, g4 );
    maskd( "off_edge_inside", unit2( 4, -3, 9, 2 ), NULL, 1, 2, g1, g6 );
    maskd( "off_edge_outside", unit2( 4, -3, 9, 2 ), NULL, 0, 2, g1, g6 );
    maskd( "off_grid_inside", unit2( 20, 20, 30, 30 ), NULL, 1, 2, g1, g6 );

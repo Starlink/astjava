@@ -845,12 +845,14 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: doubles one bound for each base Frame axis.
 - Java: as C when the arrays are long enough, and `AST__INTER` otherwise.
 
-### The grid box of a Region unbounded above in `Mask<X>`
+### A grid box beyond the `int` range in `Mask<X>`
 
 - C: region.c `Mask<X>` turns each bound of the Region's bounding box in grid coordinates into a pixel index with `(int)round( bound ) + 2` in `int` arithmetic.
-  On an axis with no upper limit the bound is `DBL_MAX`, whose conversion to `int` is undefined (AArch64 gives `INT_MAX`, x86-64 `INT_MIN`) and whose sum then overflows, so the box is empty and every pixel is taken to be on the side of the Region its outside is: masking the inside of the Interval x >= 3 on pixels 1 to 10 sets none, and masking its outside sets all ten. **C bug.**
+  For a bound beyond the `int` range the conversion is undefined (AArch64 saturates, giving `INT_MAX` or `INT_MIN`; x86-64 gives `INT_MIN` for either), and the sum can then overflow, so any Region whose bounds in grid coordinates pass the `int` range can get an empty box, and every pixel is then taken to be on the side of the Region its outside is.
+  An Interval with no upper limit, whose bound is `DBL_MAX`, is one: masking the inside of the Interval x >= 3 on pixels 1 to 10 sets none, and masking its outside sets all ten.
+  A bounded Region taken there by the Mapping is another: the Box from (-1, -1) to (1, 1) through a ZoomMap of 1e12, masked outside on a 4 by 4 grid, sets all 16 pixels though every pixel is inside it (and a PointList so mapped sets 15). **C bug.**
 - Rust: computes the index in 64-bit integers, which overflow likewise.
-- Java: as C on AArch64 (`RegionMask.mask`): the conversion saturates and the `int` sum wraps, giving the same empty box; `IntervalTest.masksMatchC` pins it from `src/test/resources/probes/region_null_interval_pointlist_probe.c`.
+- Java: as C (`RegionMask.mask`): the conversion saturates and the `int` sum wraps, giving the same empty box, and the same pixels on both platforms for these cases; `IntervalTest.masksMatchC` pins the Interval from `src/test/resources/probes/region_null_interval_pointlist_probe.c`, and `RegionOverlapMaskProbeTest.gridBoundsBeyondTheIntRangeMatchC` the Box from `src/test/resources/probes/region_overlap_mask_probe.c`.
 
 ### Non-finite limits of an Interval and coordinates of a PointList
 

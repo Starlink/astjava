@@ -54,6 +54,8 @@ mask 1 0 1 2 0 1 2 0 1 2 0 1 2 0 1 9 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 1
 mask 1 0 1 2 0 1 2 0 1 2 0 1 2 0 1 9 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0
 == zoomed_outside
 mask 27 9 9 9 9 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 9 9 9 9 9 9 9 9 9 9 9 0
+== huge_zoom_outside
+mask 16 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 0
 == off_edge_inside
 mask 2 0 1 2 0 9 9 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 1
 == off_edge_outside
@@ -85,27 +87,27 @@ mask 27 9 9 9 9 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 9 9 9 9 9 9 9 9 9 9 9 
 == byte_inside
 mask 1 0 1 2 0 1 2 0 1 2 0 1 2 0 1 9 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 1
 == map_wrong_inputs
-!! AST: Error in routine maskd at line 117 in file src/test/resources/probes/region_overlap_mask_probe.c.
+!! AST: Error in routine maskd at line 118 in file src/test/resources/probes/region_overlap_mask_probe.c.
 !  astMaskD(Box): Bad number of mapping inputs (3).
 !  The Box given requires 2 coordinate values to specify a position.
 status 233933850
 == map_wrong_outputs
-!! AST: Error in routine maskd at line 117 in file src/test/resources/probes/region_overlap_mask_probe.c.
+!! AST: Error in routine maskd at line 118 in file src/test/resources/probes/region_overlap_mask_probe.c.
 !  astMaskD(Box): Bad number of mapping outputs (3).
 !  The pixel grid requires 2 coordinate values to specify a position.
 status 233933850
 == wrong_ndim
-!! AST: Error in routine maskd at line 117 in file src/test/resources/probes/region_overlap_mask_probe.c.
+!! AST: Error in routine maskd at line 118 in file src/test/resources/probes/region_overlap_mask_probe.c.
 !  astMaskD(Box): Bad number of input grid dimensions (1).
 !  The Box given requires 2 coordinate values to specify an input position.
 status 233933850
 == zero_ndim
-!! AST: Error in routine maskd at line 117 in file src/test/resources/probes/region_overlap_mask_probe.c.
+!! AST: Error in routine maskd at line 118 in file src/test/resources/probes/region_overlap_mask_probe.c.
 !  astMaskD(Box): Bad number of input grid dimensions (0).
 !  The Box given requires 1 coordinate value to specify an input position.
 status 233933850
 == lower_above_upper
-!! AST: Error in routine maskd at line 117 in file src/test/resources/probes/region_overlap_mask_probe.c.
+!! AST: Error in routine maskd at line 118 in file src/test/resources/probes/region_overlap_mask_probe.c.
 !  astMaskD(Box): Lower bound of input grid (4) exceeds corresponding upper bound (3).
 !  Error in input dimension 1.
 status 233933842
