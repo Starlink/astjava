@@ -181,8 +181,6 @@ tests/test_serialisation.rs::any_object_debug | Rust-only API (Debug formatting)
 tests/test_serialisation.rs::round_trip_skyframe_into_frame | Rust-only API (AnyObject)
 tests/test_serialisation.rs::any_object_skyframe_not_a_mapping | Rust-only API (AnyObject::as_mapping; in AST every Frame is a Mapping)
 tests/test_serialisation.rs::a_keymap_is_neither_a_mapping_nor_a_frame_nor_a_region | Rust-only API (AnyObject)
-tests/test_serialisation.rs::round_trip_cmpregion | CmpRegion (Region, out of scope)
-tests/test_serialisation.rs::round_trip_prism | Prism (Region, out of scope)
 tests/test_fitschan_read.rs::unset_system_still_leaves_system_unset | Rust-only API (SkyFrame::unset_system)
 tests/test_fitschan_c_inline.rs::show_fits_succeeds | astShowFits (out-of-scope method; jniast has no showFits)
 tests/test_fitschan_wcs_write.rs::a_splinemap_frameset_writes_nothing_at_a_tight_fits_tol | SplineMap (out of scope)
@@ -229,10 +227,9 @@ src/regions/box_region.rs::permmap_bad_output_simplifies_to_unbounded_interval |
 tests/test_region_mapregion_oracle.rs::public_map_region_simplifies | needs simplification
 tests/test_interval.rs::centre_of_bounded_interval | astGetRegionDisc (not in jniast)
 tests/test_interval.rs::mesh_of_an_unbounded_interval_names_the_class | astGetRegionMesh (not in jniast)
-tests/test_interval.rs::wide_interval_does_not_merge_into_a_pointlist | Prism (Region, out of scope)
-tests/test_interval.rs::point_interval_merges_into_a_pointlist | Prism (Region, out of scope)
+tests/test_interval.rs::wide_interval_does_not_merge_into_a_pointlist | needs simplification
+tests/test_interval.rs::point_interval_merges_into_a_pointlist | needs simplification
 tests/test_region_interval_remap_oracle.rs::mapped_interval_is_redefined_in_the_new_frame | needs simplification
-tests/test_region_bounded_oracle.rs::negated_prism_tests_negated_components | Prism (Region, out of scope)
 tests/test_circle.rs::construct_with_radius | astCirclePars (not in jniast)
 tests/test_circle.rs::construct_with_edge_point | astCirclePars (not in jniast)
 tests/test_circle.rs::radius_round_trips_exactly_on_a_sky_frame | astCirclePars (not in jniast)

@@ -3,17 +3,11 @@
 # Rewritten by SerialisationCorpusTest with -Dast.writeDeferred=true.
 simplify/cap_cheby_consolidate.map | needs ChebyMap
 simplify/cap_cheby_consolidate.simp | needs ChebyMap
-simplify/cap_interval_01.map | needs Prism
 simplify/cap_matrixmap_04.map | needs ChebyMap
 simplify/cap_normmap_cmpframe.map | needs NormMap
 simplify/cap_normmap_cmpframe.simp | needs NormMap
 simplify/cap_permmap_01.map | needs NormMap
 simplify/cap_permmap_01.simp | needs NormMap
-simplify/cap_pointlist_01.map | needs Prism
-simplify/cap_pointlist_01.simp | needs Prism
-simplify/cap_pointlist_02.map | needs Prism
-simplify/cap_slamap_02.simp | needs Prism
-simplify/cap_slamap_07.map | needs CmpRegion
 simplify/cap_timemap_02.map | needs StcResourceProfile
 simplify/cap_timemap_02.simp | needs StcResourceProfile
 simplify/cap_unitnormmap_01.map | needs UnitNormMap
@@ -23,7 +17,6 @@ simplify/cap_xphmap_02.map | needs XphMap
 simplify/cap_xphmap_02.simp | needs XphMap
 simplify/cheby_linear_lone_reduce.map | needs ChebyMap
 simplify/chebymap_inverse_cancel.map | needs ChebyMap
-simplify/defunc_prism_box_interval.map | needs Prism
 simplify/neg_cheby_quadratic_no_reduce.map | needs ChebyMap
 simplify/neg_chebymap_standalone.map | needs ChebyMap
 simplify/neg_normmap_diff_frame.map | needs NormMap
@@ -56,8 +49,6 @@ simplify/normmap_duplicate_elim.map | needs NormMap
 simplify/normmap_duplicate_elim.simp | needs NormMap
 simplify/normmap_inverse_cancel.map | needs NormMap
 simplify/normmap_inverse_cancel_upper.map | needs NormMap
-simplify/regbasepick_cmpregion_subset.map | needs CmpRegion
-simplify/regbasepick_cmpregion_subset.simp | needs CmpRegion
 simplify/selectormap_inverse_cancel.map | needs SelectorMap
 simplify/selectormap_inverse_cancel_tail.map | needs SelectorMap
 simplify/selectormap_region_simplify.map | needs SelectorMap
@@ -85,4 +76,3 @@ simplify/unitnormmap_winmap_inv_refused.simp | needs UnitNormMap
 simplify/xph_inverse_cancel.map | needs XphMap
 programs/testmocchan/backcompat_json.ast | needs MocChan
 programs/testmocchan/backcompat_string.ast | needs MocChan
-programs/teststcschan/stcschan-test1-doc3.ast | needs Prism
