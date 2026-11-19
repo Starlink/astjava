@@ -62,7 +62,7 @@ The scope survey this plan was written from is summarised in Shared Design; its 
 
 ### Taken from C rather than Rust
 
-1. **A Region's `removeRegions` returns a copy of its current Frame**, and each container turns a component that comes back as a Frame into a `UnitMap`, including a plain Frame component that was already there when another component changed (`cmpmap.c`, `tranmap.c`, `switchmap.c`, `frameset.c`); Rust returns a UnitMap directly and cannot show the second case, since its Frames are not Mappings.
+1. **A Region's `removeRegions` returns a copy of its current Frame**, and each container turns a component that comes back as a Frame into a `UnitMap`, as `cmpmap.c`, `tranmap.c`, `switchmap.c` and `frameset.c` do; `cmpmap.c` and `tranmap.c` convert even a plain Frame component that was already there when another component changed, while `switchmap.c` and `frameset.c` convert only a component that changed; Rust returns a UnitMap directly and cannot show the second case, since its Frames are not Mappings.
 2. **SelectorMap's Transform negates and re-closes its own Regions in place**, restoring the old values in a `finally`, as `selectormap.c` does; the attributes are left set, as C's `astSetNegated` and `astSetClosed` leave them, and the probe pins what that changes in a later dump.
    Rust transforms negated copies.
 3. **SelectorMap's MapMerge detects a simplified Region by identity** (`simplify()` returned a different object), for any Region class, as C compares pointers; Rust compares with `equals` against a fixed list of nine classes.
