@@ -1,6 +1,8 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.CompoundProbe.BAD;
 import static uk.ac.starlink.ast.CompoundProbe.boxc;
 import static uk.ac.starlink.ast.CompoundProbe.check;
@@ -179,5 +181,88 @@ class RegionOverlapTest {
         check(
                 "ov_negated_circle_circle",
                 overlap(negatedCopy(circle2(0.0, 0.0, 1.0)), negatedCopy(circle2(0.5, 0.0, 1.0))));
+    }
+    // ---- A Region with no mesh inside a box that needs its own mesh inside that box ----
+
+    /** The Prism of the Interval x &gt;= 0 and the Box 0 &lt;= y &lt;= 1, which has an open end. */
+    private static Prism openEndedPrism() {
+        Interval open = new Interval(new Frame(1), new double[] {0.0}, new double[] {BAD}, null);
+        return new Prism(open, new Box(new Frame(1), 1, new double[] {0.0}, new double[] {1.0}, null));
+    }
+
+    /** The Prism of the negated Box 0 &lt;= x &lt;= 1 and the Box 0 &lt;= y &lt;= 1. */
+    private static Prism negatedComponentPrism() {
+        Box side = new Box(new Frame(1), 1, new double[] {0.0}, new double[] {1.0}, null);
+        return new Prism(negatedCopy(side), (Region) side.copy());
+    }
+
+    /**
+     * Asserts that {@code a.overlap(b)} reports region.c {@code OverlapX}'s error for Regions whose
+     * overlap it cannot determine, naming the classes in the order C's message does, and leaves
+     * both Regions as they were.
+     */
+    private static void assertOverlapUndetermined(Region a, Region b) {
+        Region a0 = (Region) a.copy();
+        Region b0 = (Region) b.copy();
+        AstException ex = assertThrows(AstException.class, () -> a.overlap(b));
+        assertEquals(AstException.AST__INTER, ex.getStatus());
+        assertTrue(
+                ex.getMsgText().contains("cannot determine the overlap between the supplied Regions"), ex.getMsgText());
+        assertTrue(a.astEqual(a0));
+        assertTrue(b.astEqual(b0));
+        // Nothing is left behind that changes a second attempt.
+        AstException again = assertThrows(AstException.class, () -> a.overlap(b));
+        assertEquals(ex.getMsgText(), again.getMsgText());
+    }
+
+    @Test
+    void prismWithAnOpenEndAgainstACircleIsAnErrorInBothOrders() {
+        // prism.c Overlap takes the Prism first whichever order the Regions are given in.
+        String message = "astOverlap(Prism): The current implementation of astOverlap cannot determine the overlap"
+                + " between the supplied Regions (a Prism and a Circle).";
+        assertEquals(
+                message,
+                assertThrows(AstException.class, () -> circle2(5.0, 0.5, 0.25).overlap(openEndedPrism()))
+                        .getMsgText());
+        assertEquals(
+                message,
+                assertThrows(AstException.class, () -> openEndedPrism().overlap(circle2(5.0, 0.5, 0.25)))
+                        .getMsgText());
+        assertOverlapUndetermined(circle2(5.0, 0.5, 0.25), openEndedPrism());
+        assertOverlapUndetermined(openEndedPrism(), circle2(5.0, 0.5, 0.25));
+    }
+
+    @Test
+    void prismWithANegatedComponentAgainstACircleIsAnErrorInBothOrders() {
+        assertOverlapUndetermined(circle2(5.0, 0.5, 0.25), negatedComponentPrism());
+        assertOverlapUndetermined(negatedComponentPrism(), circle2(5.0, 0.5, 0.25));
+    }
+
+    @Test
+    void prismWithNoMeshAgainstAnEllipsePolygonOrAndIsAnErrorInBothOrders() {
+        Region[] others = {
+            new Ellipse(new Frame(2), 1, new double[] {5.0, 0.5}, new double[] {0.3, 0.2}, new double[] {0.3}, null),
+            new Polygon(new Frame(2), 3, new double[] {4.8, 5.2, 5.0}, new double[] {0.2, 0.2, 0.8}, null),
+            new CmpRegion(circle2(5.0, 0.5, 0.25), circle2(5.1, 0.5, 0.25), CmpRegion.AST__AND)
+        };
+        for (Region other : others) {
+            assertOverlapUndetermined(other, openEndedPrism());
+            assertOverlapUndetermined(openEndedPrism(), other);
+            assertOverlapUndetermined(other, negatedComponentPrism());
+            assertOverlapUndetermined(negatedComponentPrism(), other);
+        }
+    }
+
+    @Test
+    void meshOfTheAndOfAPrismWithNoMeshIsAnError() {
+        // cmpregion.c RegBaseMesh meshes the Prism inside the bounds of the Circle, which cross the
+        // open end of the Prism, with region.c BndBaseMesh.
+        CmpRegion c = new CmpRegion(openEndedPrism(), circle2(0.0, 0.5, 0.25), CmpRegion.AST__AND);
+        AstException ex = assertThrows(AstException.class, c::regMesh);
+        assertEquals(AstException.AST__INTER, ex.getStatus());
+        assertEquals(
+                "astOverlap(Prism): The current implementation of astOverlap cannot determine the overlap"
+                        + " between the supplied Regions (a Prism and a Box).",
+                ex.getMsgText());
     }
 }

@@ -253,11 +253,15 @@ final class RegionOverlap {
      * partly, are the same or each other's negation, the boundary mesh of the CmpRegion ANDing them
      * (which is in the CmpRegion's base Frame, the Region's current Frame, as in C); otherwise a
      * single point with every coordinate bad, one for each base Frame axis of the Region.
+     *
+     * @throws AstException with status {@code AST__INTER} if the CmpRegion is needed and the Region
+     *     has no mesh of its own, where C recurses until the stack overflows ({@link
+     *     CmpRegion#baseMeshInsideBox})
      */
     static double[][] bndBaseMesh(Region reg, double[] lbnd, double[] ubnd) {
         Box box = new Box(reg, 1, lbnd, ubnd, null);
         if (reg.overlap(box) > Region.OVERLAP_OUTSIDE) {
-            return new CmpRegion(reg, box, CmpRegion.AST__AND).regBaseMesh();
+            return CmpRegion.baseMeshInsideBox(reg, box);
         }
         int nc = reg.getRegFS().getNin();
         double[][] result = new double[nc][1];

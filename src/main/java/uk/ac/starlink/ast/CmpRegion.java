@@ -51,6 +51,14 @@ public class CmpRegion extends Region {
     /** Whether the CmpRegion is bounded, 0 or 1, kept once found, or {@link #UNSET}. */
     private int bounded = UNSET;
 
+    /**
+     * Whether this is the AND of a Region and a Box that {@link RegionOverlap#bndBaseMesh} makes
+     * to mesh the part of the Region's boundary inside the Box ({@link #baseMeshInsideBox}). When
+     * the Region has no mesh of its own, meshing it inside the bounds of the Box ({@link
+     * #bndMesh}) would make this CmpRegion again.
+     */
+    private boolean meshesInsideBox;
+
     /** What {@code astInitCmpRegion} works out before the Region part is made. */
     private static final class Parts {
         Frame frm;
@@ -773,7 +781,8 @@ public class CmpRegion extends Region {
      * every coordinate bad.
      *
      * @throws AstException with status {@code AST__INTER} if neither component has a mesh, or one
-     *     has none and the operator is OR
+     *     has none and the operator is OR, or the first has none in a CmpRegion made by {@link
+     *     #baseMeshInsideBox}
      */
     @Override
     double[][] regBaseMesh() {
@@ -806,6 +815,14 @@ public class CmpRegion extends Region {
                 mesh2 = region2.bndMesh(b[0], b[1]);
             }
         } else {
+            if (meshesInsideBox) {
+                // C's BndBaseMesh would make this CmpRegion again, without end.
+                throw Ast.err(
+                        AstException.AST__INTER,
+                        "astOverlap(" + region1.astClass() + "): The current implementation of astOverlap"
+                                + " cannot determine the overlap between the supplied Regions (a "
+                                + region1.astClass() + " and a " + region2.astClass() + ").");
+            }
             mesh2 = region2.regMesh();
             double[][] b = region2.getRegionBounds();
             mesh1 = region1.bndMesh(b[0], b[1]);
@@ -844,6 +861,20 @@ public class CmpRegion extends Region {
         }
         keepBaseMesh(result);
         return result;
+    }
+
+    /**
+     * The boundary mesh, in the base Frame of {@code reg}, of the part of {@code reg} inside {@code
+     * box}: the mesh of the CmpRegion ANDing them, as region.c {@code BndBaseMesh} makes it.
+     *
+     * @throws AstException with status {@code AST__INTER} if {@code reg} has no mesh of its own,
+     *     where meshing it inside the bounds of the Box makes the same CmpRegion again, and C
+     *     recurses until the stack overflows
+     */
+    static double[][] baseMeshInsideBox(Region reg, Box box) {
+        CmpRegion cmp = new CmpRegion(reg, box, AST__AND);
+        cmp.meshesInsideBox = true;
+        return cmp.regBaseMesh();
     }
 
     /** Whether a component has a mesh: whether it is bounded, negated or not. */

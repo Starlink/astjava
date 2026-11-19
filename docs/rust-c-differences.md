@@ -1000,6 +1000,13 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: not examined.
 - Java: `AST__INTER` (`Prism.regBaseMesh`), an error rather than a result C does not define.
 
+### Meshing a Region with no mesh inside a box (`BndBaseMesh`)
+
+- C: region.c `BndBaseMesh` meshes the part of a Region's boundary inside a box as the boundary mesh of the CmpRegion ANDing the Region and the box; when the Region has no mesh of its own (a Prism with an open end, such as the Interval x >= 0 extruded along the Box 0 <= y <= 1, or with a negated component), cmpregion.c `RegBaseMesh` meshes it inside the bounds of the box with `astBndMesh`, which calls `BndBaseMesh` with the same box again, so C recurses until the stack overflows (segfault).
+  `astOverlap` of such a Prism and a Circle, Ellipse, Polygon or AND CmpRegion, in either order, reaches it when the other Region is wholly inside or outside the Prism, and so does the mesh of the AND of such a Prism and a Region whose bounds cross its boundary. **C bug.**
+- Rust: not examined.
+- Java: `AST__INTER` with region.c `OverlapX`'s message that it cannot determine the overlap, from the CmpRegion that `BndBaseMesh` makes (`CmpRegion.baseMeshInsideBox`); the Regions are left as they were (`RegionOverlapTest`).
+
 ### Moving a Prism (`RegCentre`)
 
 - C: prism.c `RegCentre` moves its components but does not reset what the Prism keeps, so its boundary mesh stays where it was until something else resets it. **C quirk.**
