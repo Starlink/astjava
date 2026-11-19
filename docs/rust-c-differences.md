@@ -1109,16 +1109,19 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 ### The limits an Interval's simplification makes unequal
 
 - C: interval.c `Simplify` replaces an upper limit equal to its lower limit by the larger of the two times `1.0E6*DBL_EPSILON`, not by a value just above it. **C quirk.**
+- Rust: as C (`regions/interval.rs`).
 - Java: as C (`Interval.simplifyStep`).
 
 ### The mean limit of a best-fitting Box on the negative side of an axis
 
 - C: box.c `BestBox` sets the clipping limit of a mean to `100*mean*DBL_EPSILON` when the values scatter less than that, which is negative for a negative mean, so no value is kept and the limit falls back to the extreme value. **C quirk.**
+- Rust: as C (`regions/box_region.rs`).
 - Java: as C (`Box.bestBox`).
 
 ### An uncertainty set on a Prism that does not simplify
 
 - C: prism.c `Simplify` sets the Prism's own uncertainty on the Region it returns, which is the Prism itself when nothing simplifies, so the Prism given is changed. **C quirk.**
+- Rust: sets the uncertainty on a new Region, and returns a copy of the Prism when nothing simplifies, so the Prism given is not changed (`regions/prism.rs`).
 - Java: as C (`Prism.simplifyStep`).
 
 ## FitsChan
