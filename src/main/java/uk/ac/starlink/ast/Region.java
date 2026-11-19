@@ -253,7 +253,10 @@ public abstract class Region extends Frame {
 
     /**
      * Writes the Region class's part of a description, as C's {@code Dump} (region.c) does, after
-     * the Frame part, which describes the current Frame: Negate, Fill, MeshSz, Closed and Adapt;
+     * the Frame part, which describes the current Frame: Negate, Fill, MeshSz, Closed and Adapt,
+     * each the value held by the Region class itself where it is set, and otherwise the value the
+     * class's accessor gives, so that a class reading these attributes from elsewhere (an Stc
+     * reads its encapsulated Region's) still writes its own settings;
      * the current Frame ({@code Frm}) if the Mapping from the base Frame is a UnitMap, unless
      * RegionFS is zero, and otherwise the FrameSet ({@code FrmSet}); RegFS; the defining points or
      * the number of axes; and the uncertainty, if one is set.
@@ -262,18 +265,18 @@ public abstract class Region extends Frame {
     void dump(NativeNode node) {
         super.dump(node);
         node.writeIsA("Frame", "Coordinate system description");
-        boolean set;
-        int ival = getNegated() ? 1 : 0;
+        boolean set = negated != UNSET;
+        int ival = set ? negated : (getNegated() ? 1 : 0);
         node.writeInt("Negate", ival != 0, false, ival, ival != 0 ? "Region negated" : "Region not negated");
-        set = testFillFactor();
-        node.writeDouble("Fill", set, false, getFillFactor(), "Region fill factor");
-        set = testMeshSize();
-        node.writeInt("MeshSz", set, false, getMeshSize(), "No. of points used to represent boundary");
-        set = testClosed();
-        ival = getClosed() ? 1 : 0;
+        set = fillFactor != AST__BAD;
+        node.writeDouble("Fill", set, false, set ? fillFactor : getFillFactor(), "Region fill factor");
+        set = meshSize != UNSET;
+        node.writeInt("MeshSz", set, false, set ? meshSize : getMeshSize(), "No. of points used to represent boundary");
+        set = closed != UNSET;
+        ival = set ? closed : (getClosed() ? 1 : 0);
         node.writeInt("Closed", set, false, ival, ival != 0 ? "Boundary is inside" : "Boundary is outside");
-        set = testAdaptive();
-        ival = getAdaptive() ? 1 : 0;
+        set = adaptive != UNSET;
+        ival = set ? adaptive : (getAdaptive() ? 1 : 0);
         node.writeInt(
                 "Adapt",
                 ival != 0 || set,
