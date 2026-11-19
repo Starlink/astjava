@@ -518,18 +518,17 @@ class CmpRegionTest {
     /**
      * When every point of another Region's mesh is near a point of a PointList component but there
      * are more of them than the PointList has points, pointlist.c {@code RegPins} reads beyond the
-     * PointList's points; Java reports {@code AST__INTER}, as {@code PointList.regPins} does (see
-     * {@code docs/rust-c-differences.md}). The mesh of the second CmpRegion is the PointList's two
-     * points and the corner of the Box that coincides with one of them.
+     * PointList's points in checking that each of them is near a point given; Java checks every
+     * PointList point, which is C's stated intent and gives C's answer (see {@code
+     * docs/rust-c-differences.md}). The mesh of the second CmpRegion is the PointList's two points
+     * and the corner of the Box that coincides with one of them.
      */
     @Test
-    void pointListComponentGivenMorePointsThanItHasIsInternalError() {
+    void pointListComponentGivenMorePointsThanItHasMatchesC() {
         PointList pl = new PointList(new Frame(2), 2, new double[][] {{0.0, 1.0}, {0.0, 1.0}}, null);
         CmpRegion a = cmp(pl, box2(-1.0, -1.0, 3.0, 3.0), CmpRegion.AST__AND);
         CmpRegion b = cmp(pl, box2(0.0, 0.0, 2.0, 2.0), CmpRegion.AST__AND);
-        assertEquals(3, b.regMesh()[0].length);
-        AstException e = assertThrows(AstException.class, () -> a.overlap(b));
-        assertEquals(AstException.AST__INTER, e.getStatus());
+        check("pl_more_points", mesh(b, true) + "overlap " + a.overlap(b) + "\n");
     }
 
     @Test

@@ -703,6 +703,21 @@ int main( void ) {
       pins( r, ps, NULL );
    }
 
+/* Two CmpRegions holding the PointList (0, 0), (1, 1): the mesh of the
+   second is the PointList's two points and the corner of its Box at one of
+   them, so pointlist.c RegPins is given more points than the PointList has,
+   all near its points. */
+   {
+      double plv[ 4 ] = { 0.0, 1.0, 0.0, 1.0 };
+      AstRegion *pl = (AstRegion *) astPointList( frame( 2, NULL ), 2, 2, 2, plv, NULL, " " );
+      a = cmp( pl, box2( -1.0, -1.0, 3.0, 3.0 ), AST__AND );
+      b = cmp( pl, box2( 0.0, 0.0, 2.0, 2.0 ), AST__AND );
+      title( "pl_more_points" );
+      mesh( b, 1 );
+      printf( "overlap %d\n", astOverlap( a, b ) );
+      failed();
+   }
+
 /* Prisms. */
    {
       double pts[ 27 ] = { 1.0, 1.0, 5.0, 1.0, 1.0, 10.0, 10.0, 10.0, 5.0,

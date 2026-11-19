@@ -867,11 +867,11 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 ### Whether a set of points is the boundary of a PointList (`RegPins`)
 
 - C: pointlist.c `RegPins` allocates one byte, not one `int`, for each element of the mask it returns, so for more than a few points it writes beyond the allocation; `astOverlap` of a PointList and a Box, which asks for the mask of the Box's 200 mesh points, corrupts the heap and usually crashes.
-  Its second test, that each of the PointList's points is near one of the points given, looks at as many of the PointList's points as there are points given: fewer than it has are not all looked at, and more are read beyond its points. **C bug.**
+  Its second test, which its comment says checks that each of the PointList's points is near one of the points given, looks at as many of the PointList's points as there are points given: fewer than it has are not all looked at, and with more it reads beyond its points (within PointSet's allocation for all but the last axis, beyond it for the last). **C bug.**
 - Rust: holds the mask correctly and looks at every point of the PointList.
-- Java: holds the mask correctly; looks at as many of the PointList's points as there are points given, as C does, and raises `AST__INTER` where C would read beyond them, leaving the PointList's current Frame and Negated as they were.
+- Java: holds the mask correctly; looks at as many of the PointList's points as there are points given when there are no more of them than it has, as C does, and at every PointList point when given more, as C's comment intends, without C's undefined read; the PointList's current Frame and Negated are left as they were.
   `src/test/resources/probes/region_null_interval_pointlist_probe.c` is linked with pointlist.c changed to allocate an `int` for each element of the mask (its header gives the recipe), so its overlaps of a PointList and a Box are C's without the overrun.
-  A CmpRegion or Prism with a PointList component asks it about the points of another Region's boundary mesh (cmpregion.c and prism.c `RegPins`), so an overlap of such a Region reaches both defects; `src/test/resources/probes/region_compound_probe.c` is linked with the same change, and `CmpRegionTest.pointListComponentGivenMorePointsThanItHasIsInternalError` pins Java's `AST__INTER` where C reads beyond the points.
+  A CmpRegion or Prism with a PointList component asks it about the points of another Region's boundary mesh (cmpregion.c and prism.c `RegPins`), so an overlap of such a Region reaches both defects; `src/test/resources/probes/region_compound_probe.c` is linked with the same change, and `CmpRegionTest.pointListComponentGivenMorePointsThanItHasMatchesC` compares with C's answer for two CmpRegions whose PointList component is given more points than it has (C answers 5, the Regions being the same).
 
 ### The bounding box of a PointList (`RegBaseBox`)
 

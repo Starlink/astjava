@@ -458,28 +458,24 @@ class PointListTest {
     }
 
     @Test
-    void regPinsWithMorePointsThanThePointListHasIsAnError() {
+    void regPinsWithMorePointsThanThePointListHasChecksEachOfItsPoints() {
         // pointlist.c RegPins reads as many of this PointList's points as there are points
-        // given, beyond its own when there are more.
+        // given, beyond its own when there are more; this library checks each of its own.
         PointList pl = pointList(2, null, new double[] {1.0, 2.0});
-        AstException e = assertThrows(
-                AstException.class,
-                () -> pl.regPins(rows(new double[] {1, 2}, new double[] {1, 2}), pointUnc(1e-6), null));
-        assertEquals(AstException.AST__INTER, e.getStatus());
+        assertTrue(pl.regPins(rows(new double[] {1, 2}, new double[] {1, 2}), pointUnc(1e-6), null));
     }
 
     @Test
     void anErrorFromRegPinsLeavesThePointListAsItWas() {
-        // q's mesh is its three points, all on p's two, so p's RegPins reaches its second test
-        // with more points than p has, which C reads beyond and this library refuses.
+        // With no uncertainty for the points given, RegPins cannot make its second test, which C
+        // would make with a null Frame.
         PointList p = pl12();
         p.negate();
-        PointList q = pointList(2, null, new double[] {1, 2}, new double[] {3, 4}, new double[] {3, 4});
-        q.negate();
         int icurr = p.getRegFS().getCurrent();
         double[][] pts = rows(new double[] {1, 2}, new double[] {0, 0});
         double[][] before = p.transform(pts, 2, true);
-        AstException e = assertThrows(AstException.class, () -> p.overlap(q));
+        AstException e = assertThrows(
+                AstException.class, () -> p.regPins(rows(new double[] {1, 2}, new double[] {3, 4}), null, null));
         assertEquals(AstException.AST__INTER, e.getStatus());
         assertTrue(p.getNegated());
         assertEquals(icurr, p.getRegFS().getCurrent());

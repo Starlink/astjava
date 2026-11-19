@@ -302,13 +302,14 @@ public class PointList extends Region {
      * pointlist.c): whether each is in the PointList, not negated and with its base Frame as its
      * current Frame; and, if so, whether each of this PointList's points is in a PointList made of
      * the points given, with {@code pointUnc} as its Frame and uncertainty. That second test looks
-     * at as many of this PointList's points as there are points given, as C does. The Negated
-     * attribute is set to its value afterwards, and the current Frame restored, even when an
-     * error is raised.
+     * at as many of this PointList's points as there are points given, as C does, but at no more
+     * than the PointList has: C's loop bound is the number of points given, and with more of them
+     * it reads beyond the PointList's points, where its comment says it checks each of them. The
+     * Negated attribute is set to its value afterwards, and the current Frame restored, even when
+     * an error is raised.
      *
-     * @throws AstException with status {@code AST__INTER} if the second test is reached with more
-     *     points given than the PointList has, where C reads beyond its points, or with no {@code
-     *     pointUnc}, for which C has no Frame
+     * @throws AstException with status {@code AST__INTER} if the second test is reached with no
+     *     {@code pointUnc}, for which C has no Frame
      */
     @Override
     boolean regPins(double[][] pset, Region pointUnc, boolean[] mask) {
@@ -358,18 +359,19 @@ public class PointList extends Region {
         }
         if (result) {
             double[][] own = getPoints();
-            if (pointUnc == null || np > own[0].length) {
+            if (pointUnc == null) {
                 throw Ast.err(
                         AstException.AST__INTER,
                         "astRegPins(" + astClass() + "): Cannot compare the " + own[0].length + " points of the "
-                                + astClass() + " with " + np + " points"
-                                + (pointUnc == null ? " that have no uncertainty" : "")
+                                + astClass() + " with " + np + " points that have no uncertainty"
                                 + " (internal AST programming error).");
             }
             PointList pl = new PointList(pointUnc, copyPoints(pset), pointUnc);
-            double[][] pset3 = pl.transform(own, own[0].length, true);
+            int npl = own[0].length;
+            double[][] pset3 = pl.transform(own, npl, true);
+            int ncheck = Math.min(np, npl);
             for (int ic = 0; ic < nc && result; ic++) {
-                for (int ip = 0; ip < np; ip++) {
+                for (int ip = 0; ip < ncheck; ip++) {
                     if (pset3[ic][ip] == AST__BAD) {
                         result = false;
                         break;
