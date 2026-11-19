@@ -1459,14 +1459,20 @@ public abstract class Region extends Frame {
     /**
      * Whether every point of {@code pset}, in the base Frame, is on the boundary of the Region,
      * allowing for the uncertainty of the Region and that of the points, {@code unc}, in the base
-     * Frame (C's {@code astRegPins}).
+     * Frame (C's {@code astRegPins}). This version, region.c's, is for a class that cannot tell.
      *
      * @param pset the points, {@code [ncoord][npoint]}
      * @param pointUnc the uncertainty of the points, or null
      * @param mask null, or an array of at least one element per point, which receives whether each
      *     point is on the boundary
+     * @throws AstException with status {@code AST__NOIMP}
      */
-    abstract boolean regPins(double[][] pset, Region pointUnc, boolean[] mask);
+    boolean regPins(double[][] pset, Region pointUnc, boolean[] mask) {
+        throw Ast.err(
+                AstException.AST__NOIMP,
+                "astRegPins(" + astClass() + "): The " + astClass() + " class does not implement the astRegPins "
+                        + "method inherited from the Region class (internal AST programming error).");
+    }
 
     /**
      * A Region of the base Frame axes {@code axes}, numbered from 0, or null if none can be made
@@ -1523,7 +1529,7 @@ public abstract class Region extends Frame {
      * The boundary mesh in the current Frame (C's {@code astRegMesh}); the base Frame mesh itself
      * when the Mapping between the Frames is a UnitMap.
      */
-    final double[][] regMesh() {
+    double[][] regMesh() {
         double[][] bmesh = regBaseMesh();
         Mapping map = regMapping();
         if (isUnitMap(map)) {
@@ -1566,8 +1572,11 @@ public abstract class Region extends Frame {
         return new double[][] {lbnd, ubnd};
     }
 
-    /** C's {@code GetRegionBounds} (region.c), into the arrays given. */
-    final void regionBounds(double[] lbnd, double[] ubnd) {
+    /**
+     * C's {@code GetRegionBounds}, into the arrays given, which have an element for each axis of
+     * the current Frame. This version is region.c's.
+     */
+    void regionBounds(double[] lbnd, double[] ubnd) {
         Mapping smap = regMapping();
         if (isUnitMap(smap)) {
             regBaseBox(lbnd, ubnd);

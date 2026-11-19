@@ -50,6 +50,8 @@ final class ObjectRegistry {
                 return FrameSet::new;
             case "GrismMap":
                 return GrismMap::new;
+            case "Interval":
+                return Interval::new;
             case "IntraMap":
                 return IntraMap::new;
             case "KeyMap":
@@ -60,10 +62,14 @@ final class ObjectRegistry {
                 return MathMap::new;
             case "MatrixMap":
                 return MatrixMap::new;
+            case "NullRegion":
+                return NullRegion::new;
             case "PcdMap":
                 return PcdMap::new;
             case "PermMap":
                 return PermMap::new;
+            case "PointList":
+                return PointList::new;
             case "PointSet":
                 return PointSet::new;
             case "PolyMap":

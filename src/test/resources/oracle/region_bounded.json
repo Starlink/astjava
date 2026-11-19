@@ -1,0 +1,15 @@
+{
+  "source": "crates/starlink-ast/tests/region_bounded_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/region_bounded_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "POINTLIST": true,
+    "POINTLIST_NEGATED": false,
+    "SKY_POINTLIST_NEGATED": true,
+    "PRISM": true,
+    "PRISM_NEGATED": false,
+    "EXCLUDED_BOUNDS": [[3.0,4.0],[1.0,2.0]],
+    "SKY_BOUNDS": [[6.2,0.1],[0.01,0.2]],
+    "SKY_UNC_BOUNDS": [[3.104996905,0.14999995000000002],[3.105003095,0.15000005000000002]]
+  }
+}

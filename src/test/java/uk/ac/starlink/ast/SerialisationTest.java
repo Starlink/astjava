@@ -20,10 +20,9 @@ import org.junit.jupiter.api.Test;
  * library documents, and the values set before writing. The Rust test's bounds on transformed and
  * read-back values are kept.
  *
- * <p>Deferred: the Region round trips ({@code round_trip_circle}, {@code round_trip_box_region},
- * {@code round_trip_polygon}, {@code round_trip_interval}, {@code round_trip_null_region}, {@code
- * round_trip_ellipse}, {@code round_trip_pointlist}, {@code round_trip_cmpregion}, {@code
- * round_trip_prism}, {@code round_trip_negated_circle}) need Region classes, which are out of scope;
+ * <p>Deferred: the Region round trips ({@code round_trip_circle}, {@code round_trip_polygon},
+ * {@code round_trip_ellipse}, {@code round_trip_cmpregion}, {@code round_trip_prism}, {@code
+ * round_trip_negated_circle}) need Region classes that are not yet present;
  * the {@code any_object_*} tests, {@code round_trip_skyframe_into_frame} and {@code
  * a_keymap_is_neither_a_mapping_nor_a_frame_nor_a_region} test Rust's {@code AnyObject}, in which a
  * Frame is not a Mapping where in AST every Frame is one; {@code any_object_debug} tests Rust's
@@ -742,5 +741,43 @@ class SerialisationTest {
         assertTrue(region.pointInRegion(new double[] {5.0, 5.0}));
         assertTrue(region.pointInRegion(new double[] {6.0, 5.5}));
         assertFalse(region.pointInRegion(new double[] {50.0, 50.0}));
+    }
+
+    /** Rust {@code round_trip_interval}: an Interval written and read back keeps its area. */
+    @Test
+    void roundTripInterval() {
+        Interval iv = new Interval(new Frame(2), new double[] {1.0, 2.0}, new double[] {10.0, 20.0}, null);
+        String text = ChannelText.dump(iv);
+        assertTrue(text.contains("Begin Interval"), "missing Begin Interval");
+        assertTrue(text.contains("End Interval"), "missing End Interval");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {5.0, 10.0}));
+        assertFalse(region.pointInRegion(new double[] {0.0, 0.0}));
+    }
+
+    /** Rust {@code round_trip_null_region}: a NullRegion written and read back holds no point. */
+    @Test
+    void roundTripNullRegion() {
+        String text = ChannelText.dump(new NullRegion(new Frame(2), null));
+        assertTrue(text.contains("Begin NullRegion"), "missing Begin NullRegion");
+        assertTrue(text.contains("End NullRegion"), "missing End NullRegion");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertFalse(region.pointInRegion(new double[] {0.0, 0.0}));
+    }
+
+    /** Rust {@code round_trip_pointlist}: a PointList written and read back holds its points. */
+    @Test
+    void roundTripPointList() {
+        PointList pl = new PointList(new Frame(2), 3, new double[][] {{1.0, 3.0, 5.0}, {2.0, 4.0, 6.0}}, null);
+        String text = ChannelText.dump(pl);
+        assertTrue(text.contains("Begin PointList"), "missing Begin PointList");
+        assertTrue(text.contains("End PointList"), "missing End PointList");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {1.0, 2.0}));
+        assertTrue(region.pointInRegion(new double[] {3.0, 4.0}));
+        assertFalse(region.pointInRegion(new double[] {0.0, 0.0}));
     }
 }

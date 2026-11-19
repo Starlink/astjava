@@ -19,15 +19,15 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * 0, 1, 2 in turn rather than zeros, and the "_ub" cases (also prefilled) mask {@code byte} data,
  * where C masks {@code unsigned char}: the values are the same.
  *
- * <p>The cases of a Circle, a PointList and an Interval wait for those classes; the number of
- * cases run is asserted, so that the task that adds them raises it.
+ * <p>The cases of a Circle wait for that class; the number of cases run is asserted, so that the
+ * task that adds it raises it.
  */
 class RegionMaskOracleTest {
 
     private static final JsonNode DATA = ProbeData.load("region_mask");
 
     /** The number of cases whose classes are present. */
-    private static final int CASES_RUN = 2;
+    private static final int CASES_RUN = 7;
 
     private static final int[] G6L = {1, 1};
     private static final int[] G6U = {6, 6};
@@ -55,6 +55,10 @@ class RegionMaskOracleTest {
         return b;
     }
 
+    private static Region pointList() {
+        return new PointList(new Frame(2), 3, new double[][] {{2.0, 4.0, 10.0}, {3.0, 1.0, 10.0}}, null);
+    }
+
     /** The case of {@code name}, or null if its classes are not yet present. */
     private static Case build(String name) {
         String base = name;
@@ -69,14 +73,22 @@ class RegionMaskOracleTest {
                 return new Case(negatedBox(), null, true, G6L, G6U);
             case "negated_box_outside":
                 return new Case(negatedBox(), null, false, G6L, G6U);
+            case "pointlist_inside":
+                return new Case(pointList(), null, true, new int[] {1, 1}, new int[] {5, 5});
+            case "pointlist_outside":
+                return new Case(pointList(), null, false, new int[] {1, 1}, new int[] {5, 5});
+            case "interval_inside":
+                return new Case(
+                        new Interval(new Frame(1), new double[] {3.0}, new double[] {7.0}, null),
+                        null,
+                        true,
+                        new int[] {1},
+                        new int[] {10});
             case "circle_inside":
             case "circle_outside":
             case "small_circle_inside":
             case "small_circle_outside":
             case "circle_through_zoommap":
-            case "pointlist_inside":
-            case "pointlist_outside":
-            case "interval_inside":
             case "map_with_wrong_inputs":
             case "lower_bound_above_upper":
                 return null;

@@ -22,7 +22,7 @@ class RegionObjectOracleTest {
     private static final JsonNode DATA = ProbeData.load("region_object");
 
     /** The number of cases whose classes are present. */
-    private static final int CASES_RUN = 1;
+    private static final int CASES_RUN = 2;
 
     /** The Region a case builds, or null if its classes are not yet present. */
     private static Region build(String name) {
@@ -32,8 +32,12 @@ class RegionObjectOracleTest {
                 b.setIdent("B");
                 return b;
             }
+            case "interval_usedefs": {
+                Interval iv = new Interval(new Frame(2), new double[] {-1.0, -2.0}, new double[] {1.0, 2.0}, null);
+                iv.set("UseDefs=0");
+                return iv;
+            }
             case "circle_ident_usedefs":
-            case "interval_usedefs":
             case "polygon_ident":
             case "cmpregion_idents":
             case "circle_plain":

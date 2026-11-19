@@ -850,7 +850,57 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: region.c `Mask<X>` turns each bound of the Region's bounding box in grid coordinates into a pixel index with `(int)round( bound ) + 2` in `int` arithmetic.
   On an axis with no upper limit the bound is `DBL_MAX`, whose conversion to `int` is undefined (AArch64 gives `INT_MAX`, x86-64 `INT_MIN`) and whose sum then overflows, so the box is empty and every pixel is taken to be on the side of the Region its outside is: masking the inside of the Interval x >= 3 on pixels 1 to 10 sets none, and masking its outside sets all ten. **C bug.**
 - Rust: computes the index in 64-bit integers, which overflow likewise.
-- Java: as C on AArch64 (`RegionMask.mask`): the conversion saturates and the `int` sum wraps, giving the same empty box.
+- Java: as C on AArch64 (`RegionMask.mask`): the conversion saturates and the `int` sum wraps, giving the same empty box; `IntervalTest.masksMatchC` pins it from `src/test/resources/probes/region_null_interval_pointlist_probe.c`.
+
+### Non-finite limits of an Interval and coordinates of a PointList
+
+- C: `astInitInterval` takes `AST__BAD` as a missing limit and any other value as a limit, NaN and the infinities included; `astInitPointList` keeps every value as given.
+- Rust: takes a value that is not finite as bad (`is_bad`), a missing limit of an Interval.
+- Java: a value that is not finite is bad, by the library's rule, so a NaN or infinite limit is a missing one and a NaN or infinite coordinate of a PointList is `AST__BAD`, which C's code then handles as it handles `AST__BAD`.
+
+### A point with a bad value tested against a PointList
+
+- C: pointlist.c `Transform` passes the points through the PointList's uncertainty, negated and centred on each of its points in turn, and then looks at the first axis alone of the result: a point whose first value is bad is kept as given by a PointList that is not negated (so that `astPointInRegion`, which looks at the first good value, finds (bad, 2) inside the PointList (1, 2), (3, 4)), and one whose first value is good and outside every uncertainty is kept, bad values and all, by a negated PointList. **C quirk.**
+- Rust: a point with a bad value is outside, and `test_pointlist.rs` (`point_with_bad_value_not_inside`) pins that.
+- Java: as C (`PointList.regBaseMask`); `PointListTest.pointWithBadValueIsAsCLeavesIt` takes its values from `src/test/resources/probes/region_null_interval_pointlist_probe.c`.
+
+### Whether a set of points is the boundary of a PointList (`RegPins`)
+
+- C: pointlist.c `RegPins` allocates one byte, not one `int`, for each element of the mask it returns, so for more than a few points it writes beyond the allocation; `astOverlap` of a PointList and a Box, which asks for the mask of the Box's 200 mesh points, corrupts the heap and usually crashes.
+  Its second test, that each of the PointList's points is near one of the points given, looks at as many of the PointList's points as there are points given: fewer than it has are not all looked at, and more are read beyond its points. **C bug.**
+- Rust: holds the mask correctly and looks at every point of the PointList.
+- Java: holds the mask correctly; looks at as many of the PointList's points as there are points given, as C does, and raises `AST__INTER` where C would read beyond them.
+  The probe's overlaps of a PointList and a Box come from the runs that completed, all of which agreed.
+
+### The bounding box of a PointList (`RegBaseBox`)
+
+- C: pointlist.c `RegBaseBox` allocates its kept bounds, and copies them out, with one element for each axis of the current Frame, but finds one for each base Frame axis, so with more base than current Frame axes it writes beyond them. **C bug.**
+- Rust: one element for each base Frame axis.
+- Java: one element for each base Frame axis, the arrays every caller gives.
+
+### The bounds of a NullRegion with more base than current Frame axes
+
+- C: nullregion.c `GetRegionBounds` writes a bound for each base Frame axis into arrays the caller makes with one element for each current Frame axis, so with more base Frame axes it writes beyond them. **C bug.**
+- Rust: returns one bound for each base Frame axis.
+- Java: as C when there are no more base than current Frame axes, and `AST__INTER` otherwise.
+
+### Moving an Interval leaves the bounds it keeps
+
+- C: interval.c `RegCentre` moves the equivalent Box and takes the new limits from it, but does not mark the limits the Interval keeps as stale, so `RegBaseBox`, and the bounds of an Interval uncertainty, which `astSetUnc` moves to the Region's first point, stay where they were: the uncertainty of the Box (0, 0) to (10, 10) set to the Interval (-0.1, -0.1) to (0.1, 0.1) still has those bounds. **C quirk.**
+- Rust: marks them stale.
+- Java: as C (`Interval.regCentre`); `IntervalTest.anIntervalUncertaintyKeepsTheBoundsItHadBeforeItWasMoved` takes its values from `src/test/resources/probes/region_null_interval_pointlist_probe.c`.
+
+### The overlap of two Intervals with an axis each other's negation
+
+- C: interval.c `Overlap` combines the codes of the axes through a 5 by 5 table, which an axis whose limits are each other's negation (code 6) indexes beyond its end when the Intervals have more than one axis. **C bug.**
+- Rust: indexes the same table, which panics where C reads beyond it.
+- Java: as C for one axis, and `AST__INTER` for more.
+
+### The bounds of a mapped Interval with no limit on an axis
+
+- C: region.c `GetRegionBounds` maps the corners of the base Frame box, the largest double on an axis with no limit, through the Mapping; a ZoomMap of 2 makes them infinite, and the bounds come out infinite or NaN.
+- Rust: not examined.
+- Java: the Mapping makes an infinite value bad, so every corner is bad and so is every bound (`IntervalTest.mappedUnboundedIntervalMatchesC`).
 
 ## FitsChan
 

@@ -12,15 +12,15 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * {@code OverlapX}, each pair in both orders ({@code oracle/region_overlap.json}, from {@code
  * tools/oracle_fixtures/region_overlap_probe.c}).
  *
- * <p>The cases of an Interval, a NullRegion and a Prism wait for those classes; the number of
- * cases run is asserted, so that the task that adds them raises it.
+ * <p>The cases of a Prism wait for that class; the number of cases run is asserted, so that the
+ * task that adds it raises it.
  */
 class RegionOverlapOracleTest {
 
     private static final JsonNode DATA = ProbeData.load("region_overlap");
 
     /** The number of cases whose classes are present. */
-    private static final int CASES_RUN = 1;
+    private static final int CASES_RUN = 6;
 
     private static Region boxed(String domain, double[] lbnd, double[] ubnd) {
         Frame frame = new Frame(2);
@@ -28,6 +28,20 @@ class RegionOverlapOracleTest {
             frame.setDomain(domain);
         }
         return new Box(frame, 1, lbnd, ubnd, null);
+    }
+
+    /** The probe's Interval x >= 0. */
+    private static Region halfPlane() {
+        double bad = AstObject.AST__BAD;
+        return new Interval(new Frame(2), new double[] {0.0, bad}, new double[] {bad, bad}, null);
+    }
+
+    private static Region nullRegion(boolean negated) {
+        NullRegion nr = new NullRegion(new Frame(2), null);
+        if (negated) {
+            nr.negate();
+        }
+        return nr;
     }
 
     /** The pair a case builds, or null if its classes are not yet present. */
@@ -39,10 +53,15 @@ class RegionOverlapOracleTest {
                     boxed("BBB", new double[] {0.0, 0.0}, new double[] {1.0, 1.0})
                 };
             case "box_beside_half_plane":
+                return new Region[] {boxed("", new double[] {-10.0, -1.0}, new double[] {-9.0, 1.0}), halfPlane()};
             case "box_across_half_plane_edge":
+                return new Region[] {boxed("", new double[] {-1.0, -1.0}, new double[] {1.0, 1.0}), halfPlane()};
             case "box_inside_half_plane":
+                return new Region[] {boxed("", new double[] {5.0, -1.0}, new double[] {6.0, 1.0}), halfPlane()};
             case "box_and_null_region":
+                return new Region[] {boxed("", new double[] {0.0, 0.0}, new double[] {1.0, 1.0}), nullRegion(false)};
             case "box_and_negated_null_region":
+                return new Region[] {boxed("", new double[] {0.0, 0.0}, new double[] {1.0, 1.0}), nullRegion(true)};
             case "prism_in_box":
             case "prism_in_rotated_box":
             case "prism_across_box":

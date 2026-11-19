@@ -11,7 +11,8 @@ import java.math.BigInteger;
  * than {@code ndim}, or a data array with fewer elements than the grid has pixels, is {@code
  * AST__DIMIN}, which C cannot check, and a longer one is accepted with its leading elements used.
  *
- * <p>Ported from C {@code region.c} ({@code Mask<X>}), with Rust {@code regions/masking.rs}.
+ * <p>Ported from C {@code region.c} and {@code pointlist.c} ({@code Mask<X>}), with Rust {@code
+ * regions/masking.rs}.
  */
 final class RegionMask {
 
@@ -201,5 +202,68 @@ final class RegionMask {
             System.arraycopy(out.array(), 0, in.array(), 0, npix);
         }
         return (int) result;
+    }
+
+    /**
+     * pointlist.c {@code Mask<X>}: sets to the bad value of {@code in} the pixels holding the
+     * PointList's points (if {@code inside} and the PointList is not negated, or neither), or
+     * every other pixel, returning the number set. A point is in the pixel whose centre is nearest
+     * to it, rounding halves away from zero; a point outside the grid, or with a bad value, is
+     * ignored. As in C, the count is the number of points in the grid, or the number of pixels
+     * less that, so that two points in one pixel are counted twice.
+     *
+     * @param method C's name of the function, such as {@code astMaskD}, for error messages
+     * @throws AstException with the statuses of {@link #gridRegion}, or {@code AST__DIMIN} if
+     *     {@code in} has fewer elements than the grid has pixels
+     */
+    static int pointListMask(
+            Region reg, Mapping map, boolean inside, int ndim, int[] lbnd, int[] ubnd, PixelArray in, String method) {
+        Region used = gridRegion(reg, map, ndim, lbnd, ubnd, method);
+        int vlen = checkedGridSize(prefix(reg, method), in, ndim, lbnd, ubnd);
+        double[][] ptr2 = used.regTransform(used.getPoints(), true);
+        int npnt = ptr2[0].length;
+        int[] iv = new int[npnt];
+        int nvalid = 0;
+        for (int i = 0; i < npnt; i++) {
+            int stride = 1;
+            int ii = 0;
+            for (int j = 0; j < ndim && ii >= 0; j++) {
+                double v = ptr2[j][i];
+                double gpix = FitsMakeIntWorld.roundHalfAway(v);
+                if (Mapping.isBad(v) || gpix < lbnd[j] || gpix > ubnd[j]) {
+                    ii = -1;
+                } else {
+                    ii += stride * ((int) gpix - lbnd[j]);
+                    stride *= ubnd[j] - lbnd[j] + 1;
+                }
+            }
+            iv[i] = ii;
+            if (ii >= 0) {
+                nvalid++;
+            }
+        }
+        if (inside != used.getNegated()) {
+            for (int i = 0; i < npnt; i++) {
+                if (iv[i] >= 0) {
+                    in.setBad(iv[i]);
+                }
+            }
+            return nvalid;
+        }
+        PixelArray temp = in.filled(npnt);
+        for (int i = 0; i < npnt; i++) {
+            if (iv[i] >= 0) {
+                temp.copy(i, in, iv[i]);
+            }
+        }
+        for (int i = 0; i < vlen; i++) {
+            in.setBad(i);
+        }
+        for (int i = 0; i < npnt; i++) {
+            if (iv[i] >= 0) {
+                in.copy(iv[i], temp, i);
+            }
+        }
+        return vlen - nvalid;
     }
 }

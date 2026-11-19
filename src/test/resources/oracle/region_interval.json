@@ -1,0 +1,13 @@
+{
+  "source": "crates/starlink-ast/tests/region_interval_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/region_interval_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "ZERO_Y": [5.0,5.000000000001,5.000001,5.001],
+    "SKY_X": [0.05,6.3,3.0],
+    "SKY_Y": [0.2,0.2,0.2],
+    "EXCLUDED_XY": [1.5,5.0],
+    "CASES": [["bounded_slice","1110",true],["unbounded_slice","1110",false],["unbounded_slice_negated_open","0001",false],["sky","110",true],["all_axes_excluded","01",false]],
+    "MESH": [200,[0.0,0.0,0.019999999999999383,0.0]]
+  }
+}

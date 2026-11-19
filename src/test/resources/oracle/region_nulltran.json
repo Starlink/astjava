@@ -1,0 +1,9 @@
+{
+  "source": "crates/starlink-ast/tests/region_nulltran_oracle/cases.rs",
+  "generator": "tools/oracle_fixtures/region_nulltran_probe.c",
+  "rustCommit": "10f61689f19a5f1eacc7e653c7eab9b03809939f",
+  "consts": {
+    "POINTS": [[1.0,2.0],["BAD",3.0],[4.0,"BAD"]],
+    "CASES": [["negated",[1.0,2.0,"BAD",3.0,4.0,"BAD"]],["negated_zoomed",[1.0,2.0,"BAD",3.0,4.0,"BAD"]],["plain",["BAD","BAD","BAD","BAD","BAD","BAD"]]]
+  }
+}
