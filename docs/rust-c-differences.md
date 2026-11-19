@@ -871,6 +871,7 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: holds the mask correctly and looks at every point of the PointList.
 - Java: holds the mask correctly; looks at as many of the PointList's points as there are points given, as C does, and raises `AST__INTER` where C would read beyond them, leaving the PointList's current Frame and Negated as they were.
   `src/test/resources/probes/region_null_interval_pointlist_probe.c` is linked with pointlist.c changed to allocate an `int` for each element of the mask (its header gives the recipe), so its overlaps of a PointList and a Box are C's without the overrun.
+  A CmpRegion or Prism with a PointList component asks it about the points of another Region's boundary mesh (cmpregion.c and prism.c `RegPins`), so an overlap of such a Region reaches both defects; `src/test/resources/probes/region_compound_probe.c` is linked with the same change, and `CmpRegionTest.pointListComponentGivenMorePointsThanItHasIsInternalError` pins Java's `AST__INTER` where C reads beyond the points.
 
 ### The bounding box of a PointList (`RegBaseBox`)
 
@@ -970,6 +971,33 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
   The line across the edge between two vertices at the same latitude, from which `Cache` takes the point inside, is a meridian; for a triangle round the north pole with its vertices at one latitude, the line from the point inside to the south pole passes through a vertex, and C finds the south pole inside the triangle, so `astGetRegionBounds` gives -pi/2 as its lower latitude.
 - Rust: as C.
 - Java: as C, by the same arithmetic, which rounding decides; `RegionSkyTest` keeps its sky Polygons clear of such lines (`pointsAndPixelsAreClearOfTheBoundaries`).
+
+### A CmpRegion that ANDs two unbounded Regions, one inside the other
+
+- C: cmpregion.c `GetBounded` takes an AND of two unbounded Regions to be bounded unless `astOverlap` finds them apart (1), partly overlapping (4) or each other's negation (6); when one is inside the other (2, 3) or they are the same (5) the AND is the inner Region, which is unbounded, yet it is reported bounded, and its bounds then fail with `AST__INTER` ("No mesh can be produced ... neither of its component Regions has a mesh"), since `RegBaseBox` meshes a bounded CmpRegion.
+  Conversely an AND of Regions apart is empty but reported unbounded. **C quirk.**
+  A negated OR of two nested bounded Regions is such an AND, and is reported bounded too.
+- Rust: as C (`CmpRegion::get_bounded`).
+- Java: as C (`CmpRegion.isBoundedInner`); `CmpRegionTest.nestedUnboundedRegionsMatchC` and `orOfCirclesMatchesC` take their values from `src/test/resources/probes/region_compound_probe.c`.
+
+### The overlap of a Prism and a negated Region
+
+- C: prism.c `Overlap` picks from the other Region the axes of each component of the Prism; region.c `PickAxes` gives the Regions it picks the Negated value of the Region they come from (`astRegOverlay`), so each pair of components is compared with that negation already applied, and `Overlap` then adjusts the combined code for the other Region's negation again.
+  A Prism inside a Box and the Box's negation give 2 and 3 (one inside the other) rather than 1, and a Prism and its own negation give 5 one way round and 6 the other. **C bug.**
+- Rust: not examined.
+- Java: as C (`Prism.prismOverlap`); `PrismTest.overlapsMatchC` takes its codes from `src/test/resources/probes/region_compound_probe.c`.
+
+### The boundary mesh of a Prism with other than its base Frame's number of axes
+
+- C: prism.c `RegBaseMesh` makes a PointSet with one coordinate for each axis of the Prism's current Frame and fills it from its components' meshes and grids, one coordinate for each base Frame axis, so a Prism mapped into a Frame of more or fewer axes is written or read beyond the arrays. **C bug.**
+- Rust: not examined.
+- Java: `AST__INTER` (`Prism.regBaseMesh`), an error rather than a result C does not define.
+
+### Moving a Prism (`RegCentre`)
+
+- C: prism.c `RegCentre` moves its components but does not reset what the Prism keeps, so its boundary mesh stays where it was until something else resets it. **C quirk.**
+- Rust: discards it.
+- Java: as C (`Prism.regCentre`).
 
 ## FitsChan
 

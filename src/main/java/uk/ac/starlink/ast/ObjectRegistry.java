@@ -38,6 +38,8 @@ final class ObjectRegistry {
                 return CmpFrame::new;
             case "CmpMap":
                 return CmpMap::new;
+            case "CmpRegion":
+                return CmpRegion::new;
             case "DSBSpecFrame":
                 return DSBSpecFrame::new;
             case "DssMap":
@@ -80,6 +82,8 @@ final class ObjectRegistry {
                 return PolyMap::new;
             case "Polygon":
                 return Polygon::new;
+            case "Prism":
+                return Prism::new;
             case "RateMap":
                 return RateMap::new;
             case "ShiftMap":

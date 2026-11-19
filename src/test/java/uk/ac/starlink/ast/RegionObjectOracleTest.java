@@ -13,22 +13,16 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * Frame part (object.c {@code Dump}), while UseDefs set through it goes to the encapsulated Frame
  * and is written in that Frame's dump (region.c {@code SetAttrib}, {@code GetUseDefs}). Whether
  * UseDefs is set is asked as C's probe asks it, through the attribute ({@code astTest}).
- *
- * <p>The cases of other Region classes wait for those classes; the number of cases run is
- * asserted, so that the task that adds them raises it.
  */
 class RegionObjectOracleTest {
 
     private static final JsonNode DATA = ProbeData.load("region_object");
 
-    /** The number of cases whose classes are present. */
-    private static final int CASES_RUN = 5;
-
     private static Circle circle() {
         return new Circle(new Frame(2), new double[] {0.0, 0.0}, 1.0, null);
     }
 
-    /** The Region a case builds, or null if its classes are not yet present. */
+    /** The Region a case builds. */
     private static Region build(String name) {
         switch (name) {
             case "box_ident": {
@@ -55,8 +49,15 @@ class RegionObjectOracleTest {
                 p.setIdent("P");
                 return p;
             }
-            case "cmpregion_idents":
-                return null;
+            case "cmpregion_idents": {
+                Circle c = circle();
+                c.setIdent("A");
+                Box b = new Box(new Frame(2), 0, new double[] {0.0, 0.0}, new double[] {1.0, 2.0}, null);
+                b.setIdent("B");
+                CmpRegion r = new CmpRegion(c, b, CmpRegion.AST__OR);
+                r.setIdent("AB");
+                return r;
+            }
             default:
                 throw new AssertionError("no construction for case " + name);
         }
@@ -72,9 +73,6 @@ class RegionObjectOracleTest {
         for (JsonNode c : DATA.get("CASES")) {
             String name = c.get(0).textValue();
             Region r = build(name);
-            if (r == null) {
-                continue;
-            }
             run++;
             String want = c.get(1).textValue() + " " + c.get(2).booleanValue() + " "
                     + c.get(3).booleanValue();
@@ -83,6 +81,6 @@ class RegionObjectOracleTest {
             assertEquals(dump, ChannelText.dump(r), name + ": dump");
             assertEquals(want, objectPart((Region) ChannelText.read(dump)), name + ": read back");
         }
-        assertEquals(CASES_RUN, run);
+        assertEquals(6, run);
     }
 }

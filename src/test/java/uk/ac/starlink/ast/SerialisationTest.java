@@ -20,9 +20,7 @@ import org.junit.jupiter.api.Test;
  * library documents, and the values set before writing. The Rust test's bounds on transformed and
  * read-back values are kept.
  *
- * <p>Deferred: the Region round trips {@code round_trip_cmpregion} and {@code round_trip_prism}
- * need Region classes that are not yet present;
- * the {@code any_object_*} tests, {@code round_trip_skyframe_into_frame} and {@code
+ * <p>Not translated: the {@code any_object_*} tests, {@code round_trip_skyframe_into_frame} and {@code
  * a_keymap_is_neither_a_mapping_nor_a_frame_nor_a_region} test Rust's {@code AnyObject}, in which a
  * Frame is not a Mapping where in AST every Frame is one; {@code any_object_debug} tests Rust's
  * {@code Debug} formatting.
@@ -804,6 +802,39 @@ class SerialisationTest {
         assertEquals(2, region.getNaxes());
         assertTrue(region.pointInRegion(new double[] {2.0, 2.0}));
         assertFalse(region.pointInRegion(new double[] {8.0, 8.0}));
+    }
+
+    /** Rust {@code round_trip_cmpregion}: a CmpRegion written and read back holds its intersection. */
+    @Test
+    void roundTripCmpRegion() {
+        Circle c1 = new Circle(new Frame(2), new double[] {0.0, 0.0}, 5.0, null);
+        Circle c2 = new Circle(new Frame(2), new double[] {3.0, 0.0}, 5.0, null);
+        String text = ChannelText.dump(new CmpRegion(c1, c2, CmpRegion.AST__AND));
+        assertTrue(text.contains("Begin CmpRegion"), "missing Begin CmpRegion");
+        assertTrue(text.contains("End CmpRegion"), "missing End CmpRegion");
+        assertTrue(text.contains("RegionA"), "missing RegionA");
+        assertTrue(text.contains("RegionB"), "missing RegionB");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {1.5, 0.0}));
+        assertFalse(region.pointInRegion(new double[] {-4.0, 0.0}));
+    }
+
+    /** Rust {@code round_trip_prism}: a Prism written and read back holds its cylinder. */
+    @Test
+    void roundTripPrism() {
+        Circle circle = new Circle(new Frame(2), new double[] {0.0, 0.0}, 5.0, null);
+        Interval interval = new Interval(new Frame(1), new double[] {0.0}, new double[] {10.0}, null);
+        String text = ChannelText.dump(new Prism(circle, interval));
+        assertTrue(text.contains("Begin Prism"), "missing Begin Prism");
+        assertTrue(text.contains("End Prism"), "missing End Prism");
+        assertTrue(text.contains("RegionA"), "missing RegionA");
+        assertTrue(text.contains("RegionB"), "missing RegionB");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(3, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {0.0, 0.0, 5.0}));
+        assertFalse(region.pointInRegion(new double[] {0.0, 0.0, 15.0}));
+        assertFalse(region.pointInRegion(new double[] {10.0, 10.0, 5.0}));
     }
 
     /** Rust {@code round_trip_ellipse}: an Ellipse written and read back holds its centre. */

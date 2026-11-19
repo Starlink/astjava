@@ -35,7 +35,8 @@ import org.junit.jupiter.api.Test;
  * <p>Listed in {@code deferred/rust-tests.txt}: {@code centre_of_bounded_interval} ({@code
  * astGetRegionDisc}, not in jniast), {@code mesh_of_an_unbounded_interval_names_the_class}
  * ({@code astGetRegionMesh}, not in jniast), and the two Prism merges ({@code
- * wide_interval_does_not_merge_into_a_pointlist}, {@code point_interval_merges_into_a_pointlist}).
+ * wide_interval_does_not_merge_into_a_pointlist}, {@code point_interval_merges_into_a_pointlist}),
+ * which need the Simplify of a Prism.
  */
 class IntervalTest {
 

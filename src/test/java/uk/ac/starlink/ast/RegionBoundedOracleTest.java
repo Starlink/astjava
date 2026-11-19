@@ -11,7 +11,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * Translation of Rust {@code tests/test_region_bounded_oracle.rs}: whether Regions are bounded,
  * and their bounding boxes, against C where a class's own {@code GetBounded} or {@code
  * RegBaseBox} decides them: a PointList, negated in a Cartesian Frame and in a SkyFrame (region.c
- * {@code GetBounded}); an Interval excluding a range on each axis (interval.c {@code RegBaseBox});
+ * {@code GetBounded}); a Prism, negated (prism.c {@code GetBounded}); an Interval excluding a range on each axis (interval.c {@code RegBaseBox});
  * and a sky PointList either side of RA 0, with its default uncertainty (pointlist.c {@code
  * RegBaseBox}) ({@code oracle/region_bounded.json}, from {@code
  * tools/oracle_fixtures/region_bounded_probe.c}).
@@ -21,8 +21,6 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * uncertainty's from sums and products of those with 0.5 and 0.5e-6: correctly rounded operations
  * only, with no call of an elementary function, so they are the same on every platform.
  *
- * <p>{@code negated_prism_tests_negated_components} waits for Prism and is listed in {@code
- * deferred/rust-tests.txt}.
  */
 class RegionBoundedOracleTest {
 
@@ -64,6 +62,16 @@ class RegionBoundedOracleTest {
         PointList sky = pointList(icrs(), POINTS);
         sky.negate();
         assertEquals(DATA.get("SKY_POINTLIST_NEGATED").booleanValue(), sky.getBounded());
+    }
+
+    @Test
+    void negatedPrismTestsNegatedComponents() {
+        Box bx = new Box(new Frame(2), 1, new double[] {0.0, 0.0}, new double[] {1.0, 1.0}, null);
+        Interval iv = new Interval(new Frame(1), new double[] {0.0}, new double[] {1.0}, null);
+        Prism prism = new Prism(bx, iv);
+        assertEquals(DATA.get("PRISM").booleanValue(), prism.getBounded());
+        prism.negate();
+        assertEquals(DATA.get("PRISM_NEGATED").booleanValue(), prism.getBounded());
     }
 
     @Test

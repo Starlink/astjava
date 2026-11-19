@@ -799,7 +799,7 @@ public abstract class Region extends Frame {
      * The axis number in {@code attrib} if it is {@code name(n)}, or null, as C's {@code
      * "%[^(](%d)"} reads it in {@code RegSetAttrib} and {@code RegClearAttrib}.
      */
-    private static Integer attribAxis(String attrib) {
+    static Integer attribAxis(String attrib) {
         int open = attrib.indexOf('(');
         if (open <= 0) {
             return null;
@@ -872,7 +872,7 @@ public abstract class Region extends Frame {
      * Whether a value is a single word, with nothing else but white space around it, as C's {@code
      * "= %n%*s %n"} reads it.
      */
-    private static boolean isOneWord(String value) {
+    static boolean isOneWord(String value) {
         String t = value.trim();
         if (t.isEmpty()) {
             return false;
@@ -952,7 +952,7 @@ public abstract class Region extends Frame {
     }
 
     /** The base Frame of the encapsulated FrameSet, the FrameSet's own. */
-    Frame baseFrame() {
+    final Frame baseFrame() {
         return frameset.getFrame(FrameSet.AST__BASE);
     }
 
@@ -968,7 +968,7 @@ public abstract class Region extends Frame {
     }
 
     /** Whether the FrameSet is the stand-in a description without a Frame gives (C's {@code astRegDummyFS}). */
-    boolean regDummyFS() {
+    final boolean regDummyFS() {
         return DUMMY_FS.equals(frameset.getIdent());
     }
 
@@ -2175,13 +2175,23 @@ public abstract class Region extends Frame {
     }
 
     /**
-     * C's {@code astBndBaseMesh}: the boundary mesh, in the base Frame, of the part of the Region
-     * inside the box from {@code lbnd} to {@code ubnd} in the current Frame, or one point with every
-     * coordinate bad if the boundary does not cross the box. This version is region.c's ({@link
+     * C's {@code astBndBaseMesh}: the boundary mesh of the part of the Region inside the box from
+     * {@code lbnd} to {@code ubnd} in the current Frame, or one point with every coordinate bad if
+     * the boundary does not cross the box. This version is region.c's ({@link
      * RegionOverlap#bndBaseMesh}).
      */
     double[][] bndBaseMesh(double[] lbnd, double[] ubnd) {
         return RegionOverlap.bndBaseMesh(this, lbnd, ubnd);
+    }
+
+    /**
+     * C's {@code astBndMesh} (region.c {@code BndMesh}): the mesh of {@link #bndBaseMesh} taken by
+     * the inverse of the Mapping from the current to the base Frame, so into the current Frame.
+     */
+    final double[][] bndMesh(double[] lbnd, double[] ubnd) {
+        Mapping map = frameset.getMapping(FrameSet.AST__CURRENT, FrameSet.AST__BASE);
+        double[][] ps1 = bndBaseMesh(lbnd, ubnd);
+        return map.transform(ps1, ps1[0].length, false);
     }
 
     /**

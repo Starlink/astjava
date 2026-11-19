@@ -248,21 +248,16 @@ final class RegionOverlap {
     }
 
     /**
-     * C's generic {@code BndBaseMesh}: the boundary mesh, in the base Frame of {@code reg}, of the
-     * part of {@code reg} inside the box from {@code lbnd} to {@code ubnd} in its current Frame, or
-     * a single point with every coordinate bad if the boundary does not cross the box.
-     *
-     * @throws AstException with status {@code AST__INTER} if the boundary crosses the box: the mesh
-     *     is that of a CmpRegion, which is not yet ported
+     * C's generic {@code BndBaseMesh}: the boundary mesh of the part of {@code reg} inside the box
+     * from {@code lbnd} to {@code ubnd} in its current Frame: if the Region and the box overlap
+     * partly, are the same or each other's negation, the boundary mesh of the CmpRegion ANDing them
+     * (which is in the CmpRegion's base Frame, the Region's current Frame, as in C); otherwise a
+     * single point with every coordinate bad, one for each base Frame axis of the Region.
      */
     static double[][] bndBaseMesh(Region reg, double[] lbnd, double[] ubnd) {
         Box box = new Box(reg, 1, lbnd, ubnd, null);
         if (reg.overlap(box) > Region.OVERLAP_OUTSIDE) {
-            throw Ast.err(
-                    AstException.AST__INTER,
-                    "astBndBaseMesh(" + reg.astClass() + "): The mesh of the intersection of a " + reg.astClass()
-                            + " and a Box needs a CmpRegion, which is not yet ported (internal AST programming"
-                            + " error).");
+            return new CmpRegion(reg, box, CmpRegion.AST__AND).regBaseMesh();
         }
         int nc = reg.getRegFS().getNin();
         double[][] result = new double[nc][1];

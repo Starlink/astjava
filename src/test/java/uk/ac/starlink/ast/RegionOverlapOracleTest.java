@@ -11,16 +11,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * against C for Region pairs that exercise the per-class dispatch of region.c {@code Overlap} and
  * {@code OverlapX}, each pair in both orders ({@code oracle/region_overlap.json}, from {@code
  * tools/oracle_fixtures/region_overlap_probe.c}).
- *
- * <p>The cases of a Prism wait for that class; the number of cases run is asserted, so that the
- * task that adds it raises it.
  */
 class RegionOverlapOracleTest {
 
     private static final JsonNode DATA = ProbeData.load("region_overlap");
-
-    /** The number of cases whose classes are present. */
-    private static final int CASES_RUN = 6;
 
     private static Region boxed(String domain, double[] lbnd, double[] ubnd) {
         Frame frame = new Frame(2);
@@ -44,7 +38,31 @@ class RegionOverlapOracleTest {
         return nr;
     }
 
-    /** The pair a case builds, or null if its classes are not yet present. */
+    private static Region box3(double[] lbnd, double[] ubnd) {
+        return new Box(new Frame(3), 1, lbnd, ubnd, null);
+    }
+
+    /** The probe's Prism of the unit Circle at the origin and the Interval 0 to 1. */
+    private static Region prism(boolean negated) {
+        Circle circle = new Circle(new Frame(2), 1, new double[] {0.0, 0.0}, new double[] {1.0}, null);
+        Interval interval = new Interval(new Frame(1), new double[] {0.0}, new double[] {1.0}, null);
+        Prism p = new Prism(circle, interval);
+        if (negated) {
+            p.negate();
+        }
+        return p;
+    }
+
+    /** The probe's Box [-5, 5]^3 rotated by 0.5 radians in the x-z plane, by the public mapRegion. */
+    private static Region rotatedBox() {
+        double s = Math.sin(0.5);
+        double c = Math.cos(0.5);
+        MatrixMap rot = new MatrixMap(3, 3, new double[][] {{c, 0.0, -s}, {0.0, 1.0, 0.0}, {s, 0.0, c}});
+        return box3(new double[] {-5.0, -5.0, -5.0}, new double[] {5.0, 5.0, 5.0})
+                .mapRegion(rot, new Frame(3));
+    }
+
+    /** The pair a case builds. */
     private static Region[] pair(String name) {
         switch (name) {
             case "different_domains":
@@ -63,10 +81,13 @@ class RegionOverlapOracleTest {
             case "box_and_negated_null_region":
                 return new Region[] {boxed("", new double[] {0.0, 0.0}, new double[] {1.0, 1.0}), nullRegion(true)};
             case "prism_in_box":
+                return new Region[] {prism(false), box3(new double[] {-5.0, -5.0, -5.0}, new double[] {5.0, 5.0, 5.0})};
             case "prism_in_rotated_box":
+                return new Region[] {prism(false), rotatedBox()};
             case "prism_across_box":
+                return new Region[] {prism(false), box3(new double[] {0.0, -5.0, -5.0}, new double[] {5.0, 5.0, 5.0})};
             case "negated_prism_and_box":
-                return null;
+                return new Region[] {prism(true), box3(new double[] {-5.0, -5.0, -5.0}, new double[] {5.0, 5.0, 5.0})};
             default:
                 throw new AssertionError("no construction for case " + name);
         }
@@ -78,13 +99,10 @@ class RegionOverlapOracleTest {
         for (JsonNode c : DATA.get("CASES")) {
             String name = c.get(0).textValue();
             Region[] ab = pair(name);
-            if (ab == null) {
-                continue;
-            }
             run++;
             assertEquals(c.get(1).intValue(), ab[0].overlap(ab[1]), name + ": a, b");
             assertEquals(c.get(2).intValue(), ab[1].overlap(ab[0]), name + ": b, a");
         }
-        assertEquals(CASES_RUN, run);
+        assertEquals(10, run);
     }
 }

@@ -14,16 +14,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * to, and to its uncertainty ({@code RegSetAttrib}, {@code RegClearAttrib}). Each case is compared
  * with C's dump, byte for byte, and with whether C finds (0.5, 0.5) inside ({@code
  * oracle/region_attrib.json}, from {@code tools/oracle_fixtures/region_attrib_probe.c}).
- *
- * <p>The cases of a CmpRegion and a Prism wait for those classes; the number of cases run is
- * asserted, so that the task that adds them raises it.
  */
 class RegionAttribOracleTest {
 
     private static final JsonNode DATA = ProbeData.load("region_attrib");
-
-    /** The number of cases whose classes are present. */
-    private static final int CASES_RUN = 6;
 
     /** The unit square in a Frame with axes in metres and ActiveUnit set. */
     private static Region metreBox() {
@@ -45,7 +39,7 @@ class RegionAttribOracleTest {
         return reg;
     }
 
-    /** The Region a case builds, or null if its classes are not yet present. */
+    /** The Region a case builds. */
     private static Region region(String name) {
         switch (name) {
             case "unit_km_adaptive": {
@@ -83,9 +77,23 @@ class RegionAttribOracleTest {
                 reg.setTitle("Titled");
                 return reg;
             }
-            case "label_cmpregion":
-            case "labels_prism":
-                return null;
+            case "label_cmpregion": {
+                Region reg = new CmpRegion(
+                        unitBox(new double[] {0.0, 0.0}, new double[] {1.0, 1.0}, null),
+                        unitBox(new double[] {0.5, 0.5}, new double[] {2.0, 2.0}, null),
+                        CmpRegion.AST__OR);
+                reg.setAdaptive(false);
+                reg.setLabel(1, "Joined");
+                return reg;
+            }
+            case "labels_prism": {
+                Interval interval = new Interval(new Frame(1), new double[] {0.0}, new double[] {1.0}, null);
+                Region reg = new Prism(unitBox(new double[] {0.0, 0.0}, new double[] {1.0, 1.0}, null), interval);
+                reg.setAdaptive(false);
+                reg.setLabel(3, "Height");
+                reg.setSymbol(1, "X");
+                return reg;
+            }
             default:
                 throw new AssertionError("no construction for case " + name);
         }
@@ -106,13 +114,10 @@ class RegionAttribOracleTest {
         for (JsonNode c : DATA.get("CASES")) {
             String name = c.get(0).textValue();
             Region reg = region(name);
-            if (reg == null) {
-                continue;
-            }
             run++;
             assertEquals(c.get(1).intValue(), inside(reg), name + ": (0.5, 0.5)");
             assertEquals(c.get(2).textValue(), ChannelText.dump(reg), name + ": dump");
         }
-        assertEquals(CASES_RUN, run);
+        assertEquals(8, run);
     }
 }
