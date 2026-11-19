@@ -220,16 +220,8 @@ tests/test_rebinseq.rs::test12_generated_variance_weighted | astRebinSeq (not in
 tests/test_rebinseq_oracle.rs::sequences_match_c | astRebinSeq (not in jniast)
 tests/test_rebinseq_oracle.rs::errors_match_c | astRebinSeq (not in jniast)
 tests/test_huge.rs::huge | astOutline and Moc (not in jniast)
-tests/test_box_region.rs::simplify_permmap_slice_outside_constant_first_is_null | needs simplification
-tests/test_box_region.rs::simplify_permmap_slice_outside_constant_last_is_null | needs simplification
-tests/test_box_region.rs::simplify_permmap_slice_both_constants_outside_is_null | needs simplification
-src/regions/box_region.rs::permmap_bad_output_simplifies_to_unbounded_interval | needs simplification
-tests/test_region_mapregion_oracle.rs::public_map_region_simplifies | needs simplification
 tests/test_interval.rs::centre_of_bounded_interval | astGetRegionDisc (not in jniast)
 tests/test_interval.rs::mesh_of_an_unbounded_interval_names_the_class | astGetRegionMesh (not in jniast)
-tests/test_interval.rs::wide_interval_does_not_merge_into_a_pointlist | needs simplification
-tests/test_interval.rs::point_interval_merges_into_a_pointlist | needs simplification
-tests/test_region_interval_remap_oracle.rs::mapped_interval_is_redefined_in_the_new_frame | needs simplification
 tests/test_circle.rs::construct_with_radius | astCirclePars (not in jniast)
 tests/test_circle.rs::construct_with_edge_point | astCirclePars (not in jniast)
 tests/test_circle.rs::radius_round_trips_exactly_on_a_sky_frame | astCirclePars (not in jniast)
