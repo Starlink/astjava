@@ -30,11 +30,22 @@ import org.junit.jupiter.api.Test;
  * the difference by about {@code 100 * 10 * 5e-16 = 5e-13}, so {@link #SKY_TOL} is {@code 1e-12}.
  * No case puts a crossing or offset point on the 180 degree meridian or at a pole, where the
  * longitude C gives is not a continuous function of the input.
+ *
+ * <p>The distance along a great circle to a crossing is the {@code acos} of the dot product of the
+ * line's start and the crossing, unit vectors that may differ from C's by some {@code 1e-13} after
+ * the amplification above, so the dot product may differ by {@code 2e-13}. {@code acos} turns an
+ * error {@code e} in its argument into about {@code e / sin(d)} at a distance {@code d}, and into
+ * {@code sqrt(2e)} at a distance of 0 or a half turn; the probe has a crossing at the start of a
+ * line, which bounds the difference by {@code sqrt(4e-13) = 6.3e-7}, so {@link #SKY_DIST_TOL} is
+ * {@code 1e-6}.
  */
 class FrameLineTest {
 
     /** The tolerance for a SkyFrame's values (see the class description). */
     private static final double SKY_TOL = 1e-12;
+
+    /** The tolerance for a distance along a great circle to a crossing (see the class description). */
+    private static final double SKY_DIST_TOL = 1e-6;
 
     private static SkyFrame swappedSky() {
         SkyFrame s = new SkyFrame();
@@ -121,12 +132,14 @@ class FrameLineTest {
                         op.assertFails(() -> frame.lineCrossing(l1, l2, c));
                         break;
                     }
-                    boolean r = frame.lineCrossing(l1, l2, c);
+                    double[] dist = {bad};
+                    boolean r = frame.lineCrossing(l1, l2, c, dist);
                     assertEquals(op.result(0) != 0.0, r, op.line);
                     int nc = sky ? 5 : 2;
                     double[] got = new double[nc];
                     System.arraycopy(c, 0, got, 0, nc);
                     FrameProbe.assertClose(op.resultRange(1, 1 + nc), got, tol, op.line);
+                    assertEquals(op.result(1 + nc), dist[0], sky ? SKY_DIST_TOL : 0.0, op.line + ": distance");
                     lastCross = c;
                     break;
                 }

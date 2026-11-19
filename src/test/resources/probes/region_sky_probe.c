@@ -1,5 +1,5 @@
-/* region_sky_probe -- Boxes and Circles on a SkyFrame that straddle RA 0
- * or hold a celestial pole, by the pinned C library.
+/* region_sky_probe -- Boxes, Circles and Polygons on a SkyFrame that
+ * straddle RA 0 or hold a celestial pole, by the pinned C library.
  *
  * Each Region is in an ICRS SkyFrame. For each:
  *
@@ -14,6 +14,11 @@
  *   and latitudes -pi/2 + (j - 0.5)*pi/12; the array starts as 0, 1, 2 in
  *   turn, the pixels inside are set to 9, and the values are written as
  *   integers.
+ *
+ * A Polygon case first gives "negated", the Negated attribute, and
+ * "points", the number of vertices then their longitudes and latitudes
+ * from astGetRegionPoints, which show whether the vertices given were put
+ * in the other order.
  *
  * Each "overlap" line gives astOverlap( a, b ), then astOverlap( b, a ).
  *
@@ -71,6 +76,17 @@ static AstRegion *circle( double cx, double cy, double r ) {
    return (AstRegion *) astCircle( sky(), 1, c, &r, NULL, " " );
 }
 
+/* A Polygon of "n" vertices given as longitude, latitude pairs. */
+static AstRegion *polygon( int n, const double *pts ) {
+   double v[ 20 ];
+   int i;
+   for( i = 0; i < n; i++ ) {
+      v[ i ] = pts[ 2*i ];
+      v[ n + i ] = pts[ 2*i + 1 ];
+   }
+   return (AstRegion *) astPolygon( sky(), n, n, v, NULL, " " );
+}
+
 /* Which of "np" points, given as longitude, latitude pairs, "r" leaves good. */
 static void tran( AstRegion *r, int np, const double *pts ) {
    double x[ 20 ], y[ 20 ], xo[ 20 ], yo[ 20 ];
@@ -122,6 +138,20 @@ static void overlap( const char *name, AstRegion *a, AstRegion *b ) {
    printf( "overlap %d %d\n", ab, ba );
 }
 
+/* The Negated attribute and the vertices of a Polygon. */
+static void vertices( AstRegion *r ) {
+   double pts[ 20 ];
+   int n, i, neg;
+   neg = astGetI( r, "Negated" );
+   astGetRegionPoints( r, 0, 0, &n, NULL );
+   if( failed() ) return;
+   astGetRegionPoints( r, n, 2, &n, pts );
+   if( failed() ) return;
+   printf( "negated %d\npoints %d", neg, n );
+   for( i = 0; i < 2*n; i++ ) printf( " %.17g", pts[ i ] );
+   printf( "\n" );
+}
+
 /* Membership, bounds and the two masks of "r". */
 static void region( const char *name, AstRegion *r, int np, const double *pts ) {
    title( name );
@@ -156,6 +186,19 @@ int main( void ) {
    AstRegion *box_ra0, *box_pole, *circle_ra0, *circle_pole;
    AstRegion *circle_south, *circle_near_pole, *circle_ra0_2, *box_pole_2;
    AstRegion *neg;
+   AstRegion *poly_ra0, *poly_pole, *poly_south;
+
+/* A quadrilateral straddling RA 0, and its vertices in the other order,
+   which make the Polygon the rest of the sky; a triangle holding the north
+   pole; and one holding the south pole. No two vertices of a triangle share
+   a latitude: if they did, the line across the edge between them, from which
+   the Polygon finds its point inside, would be a meridian through the pole,
+   and could pass through a vertex, where rounding decides which edge it
+   crosses. */
+   double vra0[ 8 ] = { 6.0, 0.5, 0.25, 0.52, 0.27, 0.1, 6.0, 0.12 };
+   double vra0r[ 8 ] = { 6.0, 0.12, 0.27, 0.1, 0.25, 0.52, 6.0, 0.5 };
+   double vpole[ 6 ] = { 4.7, 1.2, 2.6, 1.25, 0.5, 1.15 };
+   double vsouth[ 6 ] = { 1.0, -1.25, 3.0, -1.2, 5.0, -1.3 };
 
    setvbuf( stdout, NULL, _IONBF, 0 );
    astBegin;
@@ -204,6 +247,38 @@ int main( void ) {
    overlap( "overlap_circle_inside_pole", circle_pole, circle( 3.0, 1.55, 0.01 ) );
    overlap( "overlap_circle_box_pole_inside", circle_pole, box_pole_2 );
    overlap( "overlap_poles", circle_pole, circle_south );
+
+/* Polygons across RA 0 and holding each pole. */
+   poly_ra0 = polygon( 4, vra0 );
+   title( "polygon_ra0_vertices" );
+   vertices( poly_ra0 );
+   region( "polygon_ra0", poly_ra0, 8, ra0 );
+   neg = polygon( 4, vra0r );
+   title( "polygon_ra0_reversed_vertices" );
+   vertices( neg );
+   region( "polygon_ra0_reversed", neg, 8, ra0 );
+   poly_pole = polygon( 3, vpole );
+   title( "polygon_pole_vertices" );
+   vertices( poly_pole );
+   region( "polygon_pole", poly_pole, 8, north );
+   poly_south = polygon( 3, vsouth );
+   title( "polygon_south_vertices" );
+   vertices( poly_south );
+   region( "polygon_south", poly_south, 6, south );
+
+/* Overlaps of the Polygons. */
+   overlap( "overlap_polygon_box_ra0", poly_ra0, box_ra0 );
+   overlap( "overlap_polygon_circle_ra0", poly_ra0, circle_ra0 );
+   overlap( "overlap_polygon_circle_inside_ra0", poly_ra0, circle( 0.1, 0.35, 0.05 ) );
+   overlap( "overlap_polygon_reversed_ra0", poly_ra0, polygon( 4, vra0r ) );
+   overlap( "overlap_polygon_reversed_box_ra0", polygon( 4, vra0r ), box_ra0 );
+   neg = astCopy( poly_ra0 );
+   astNegate( neg );
+   overlap( "overlap_polygon_negation_ra0", poly_ra0, neg );
+   overlap( "overlap_polygon_circle_pole", poly_pole, circle_pole );
+   overlap( "overlap_polygon_box_pole_inside", poly_pole, box_pole_2 );
+   overlap( "overlap_polygon_circle_south", poly_pole, circle_south );
+   overlap( "overlap_polygon_poles", poly_pole, poly_south );
 
    astEnd;
    return 0;

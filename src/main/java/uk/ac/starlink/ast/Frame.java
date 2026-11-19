@@ -2019,16 +2019,30 @@ public class Frame extends Mapping {
      *     end (a line marked {@link LineDef#infinite} has no end)
      * @throws AstException with status {@code AST__INTER} if a line was made by another Frame
      */
-    boolean lineCrossing(LineDef l1, LineDef l2, double[] cross) {
+    final boolean lineCrossing(LineDef l1, LineDef l2, double[] cross) {
+        return lineCrossing(l1, l2, cross, null);
+    }
+
+    /**
+     * Finds where two lines cross, as {@link #lineCrossing(LineDef, LineDef, double[])} does, and
+     * the distance along the first line from its start to the crossing (C's {@code
+     * astLineCrossing} with its {@code dist} argument): for a plain Frame, the signed distance
+     * along the straight line, or {@link #AST__BAD} if the lines are parallel.
+     *
+     * @param dist null, or an array of at least one element in which to return the distance; it
+     *     is the distance to the crossing returned whenever the result is true
+     */
+    boolean lineCrossing(LineDef l1, LineDef l2, double[] cross, double[] dist) {
         checkLine("astLineCrossing", l1, "First");
         checkLine("astLineCrossing", l2, "Second");
         double[] c = cross != null ? cross : new double[5];
         boolean result = false;
+        double t1;
         double den = l1.dir[0] * l2.dir[1] - l2.dir[0] * l1.dir[1];
         if (den != 0.0) {
             double dx = l2.start[0] - l1.start[0];
             double dy = l2.start[1] - l1.start[1];
-            double t1 = (l2.dir[1] * dx - l2.dir[0] * dy) / den;
+            t1 = (l2.dir[1] * dx - l2.dir[0] * dy) / den;
             double t2 = (l1.dir[1] * dx - l1.dir[0] * dy) / den;
             if (Math.abs(t1) < Math.abs(t2)) {
                 c[0] = l1.start[0] + t1 * l1.dir[0];
@@ -2043,6 +2057,10 @@ public class Frame extends Mapping {
         } else {
             c[0] = AST__BAD;
             c[1] = AST__BAD;
+            t1 = AST__BAD;
+        }
+        if (dist != null) {
+            dist[0] = t1;
         }
         return result;
     }

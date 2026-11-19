@@ -66,6 +66,7 @@ class JniastApiTest {
             "PermMap",
             "PointList",
             "PolyMap",
+            "Polygon",
             "RateMap",
             "Region",
             "ResampleFlags",

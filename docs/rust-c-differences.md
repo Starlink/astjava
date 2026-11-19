@@ -938,6 +938,39 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: rejects `AST__BAD` and NaN.
 - Java: rejects `AST__BAD`, NaN and the infinities with C's message, by the library's rule that a non-finite coordinate is bad, as for a Box.
 
+### A Polygon whose edges have no length
+
+- C: polygon.c `Cache` finds a point inside the Polygon from the edges of positive length; when none has any (a Polygon of one vertex, or of vertices that coincide) the point is never set, and `Transform` draws its lines from an uninitialised value. **C bug.**
+  `astPolygon` accepts such a Polygon, and its Bounded, bounds and defining points are defined; its boundary mesh is `AST__BADIN` ("undefined length").
+- Rust: the point is bad, and membership reports `AST__INTER`.
+- Java: as Rust: the constructor, Bounded, bounds and points as C (`PolygonTest.fewerThanThreeVerticesMatchC`), and membership `AST__INTER` (`Polygon.inside`), an error rather than a result C does not define.
+
+### A Polygon with a bad vertex read from a dump
+
+- C: `astInitPolygon` rejects a bad vertex, but `astLoadPolygon` does not check, and `Cache` then reads the length of the edge `astLineDef` could not describe, through a null pointer. **C bug.**
+- Rust: reports `AST__INTER` when the edges are described.
+- Java: as Rust (`Polygon.cache`).
+
+### The line across an edge that never reaches its length (`Polywidth`)
+
+- C: polygon.c `Polywidth` halves the length of the line it draws across an edge until the line's end is that distance from its start; if no length does, the loop does not end.
+- Rust: as C.
+- Java: `AST__INTER` once the length reaches zero (`Polygon.polywidth`); no Frame of this library reaches it.
+
+### Points with a bad value in a Polygon's boundary test (`RegPins`)
+
+- C: polygon.c `RegPins` marks each point found within the margin of an edge by setting it bad, then reports a point on the boundary if it is bad, so a point given with a bad value counts as on the boundary. **C quirk.**
+- Rust: counts such a point as off the boundary.
+- Java: as C (`Polygon.regPins`); `PolygonTest.boundaryTestsMatchC` takes its values from `src/test/resources/probes/region_polygon_probe.c`.
+
+### A line from a sky Polygon's point inside that passes through a vertex
+
+- C: polygon.c `Transform` counts the edges crossed by the line from the Polygon's point inside to the point tested; an edge includes its start and not its end, so a line through a vertex should cross one of the two edges there.
+  On the sky, skyframe.c `LineIncludes` takes a point up to `1e-10` radians behind the start of a line to be on it (its test of the cosine of the distance from the line's quarter point), so a crossing found within that distance before a vertex, as rounding may place one at the vertex, is on both the edge ending there and the edge starting there, and is counted twice. **C bug.**
+  The line across the edge between two vertices at the same latitude, from which `Cache` takes the point inside, is a meridian; for a triangle round the north pole with its vertices at one latitude, the line from the point inside to the south pole passes through a vertex, and C finds the south pole inside the triangle, so `astGetRegionBounds` gives -pi/2 as its lower latitude.
+- Rust: as C.
+- Java: as C, by the same arithmetic, which rounding decides; `RegionSkyTest` keeps its sky Polygons clear of such lines (`pointsAndPixelsAreClearOfTheBoundaries`).
+
 ## FitsChan
 
 ### An equals sign in a keyword name is reported as an `astPutFits` error from every method

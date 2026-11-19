@@ -14,7 +14,8 @@
  * perpendicular vectors C keeps (3-vectors for a SkyFrame); "off", "cross"
  * and "contains" lines name lines by those numbers and give their inputs
  * before the colon and C's results after it ("cross" gives the five values
- * a SkyFrame writes, which "contains" with def 1 reads). A "box" line gives
+ * a SkyFrame writes, which "contains" with def 1 reads, then the distance
+ * along the first line to the crossing, astLineCrossing's "dist"). A "box" line gives
  * the bounds and the name of the Mapping (see makemap) before the colon and
  * the normalised bounds after it. A "grid" line gives the size and bounds
  * and the number of points, followed by one line per point. A "pointset"
@@ -136,12 +137,13 @@ static void off( int i, double par, double prp ) {
 
 static void cross( int i, int j ) {
    double c[ 5 ] = { BAD, BAD, BAD, BAD, BAD };
-   int r = astLineCrossing_( lframe, lines[ i ], lines[ j ], c, NULL, astGetStatusPtr );
+   double d = BAD;
+   int r = astLineCrossing_( lframe, lines[ i ], lines[ j ], c, &d, astGetStatusPtr );
    printf( "cross %d %d :", i, j );
    if( failed() ) return;
    printf( " %d", r );
    vec( c, lsky ? 5 : 2 );
-   printf( "\n" );
+   printf( " %.17g\n", d );
    memcpy( last_cross, c, sizeof( c ) );
 }
 

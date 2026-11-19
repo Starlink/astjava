@@ -78,6 +78,8 @@ final class ObjectRegistry {
                 return PointSet::new;
             case "PolyMap":
                 return PolyMap::new;
+            case "Polygon":
+                return Polygon::new;
             case "RateMap":
                 return RateMap::new;
             case "ShiftMap":

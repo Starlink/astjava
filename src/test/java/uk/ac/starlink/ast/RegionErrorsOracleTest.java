@@ -19,9 +19,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * given a Frame it cannot convert or an uncertainty whose current Frame is in another Domain,
  * FillFactor out of range, set and read, a dump with {@code MeshSz} below 5, and {@code
  * astEllipse} given a 3-D Frame, BAD values, a negative or zero axis, or points that do not
- * determine an ellipse. The cases that need a Polygon ({@code set_uncertainty_rejects_a_shape_that_cannot_be_recentred},
- * {@code failed_set_uncertainty_drops_the_old_one} and the Polygon constructors) wait for that
- * class; the number of checks made by the Box test is asserted.
+ * determine an ellipse; {@code astSetUnc} given a Polygon, which cannot be re-centred, and which
+ * discards the uncertainty set before; and {@code astPolygon} (polygon.c {@code astInitPolygon})
+ * given a 3-D Frame, no vertices, one or two, or a BAD vertex. The number of checks made by the
+ * Box test is asserted.
  */
 class RegionErrorsOracleTest {
 
@@ -77,6 +78,52 @@ class RegionErrorsOracleTest {
 
     private static Circle circle() {
         return new Circle(frame(2, null), new double[] {0.0, 0.0}, 1.0, null);
+    }
+
+    private static Polygon triangle() {
+        return new Polygon(frame(2, null), 3, new double[] {0.0, 1.0, 0.0}, new double[] {0.0, 0.0, 1.0}, null);
+    }
+
+    @Test
+    void setUncertaintyRejectsAShapeThatCannotBeRecentred() {
+        Polygon poly = triangle();
+        assertStatus("SETUNC_SHAPE", () -> circle().setUnc(poly));
+    }
+
+    @Test
+    void failedSetUncertaintyDropsTheOldOne() {
+        Circle c = circle();
+        c.setUnc(bounds(new double[] {0.0, 0.0}, new double[] {1.0, 1.0}));
+        Polygon poly = triangle();
+        assertThrows(AstException.class, () -> c.setUnc(poly));
+        assertEquals(DATA.get("SETUNC_KEEPS_OLD").booleanValue(), c.testUnc());
+    }
+
+    private static Polygon polygon(int naxes, double[] x, double[] y) {
+        return new Polygon(frame(naxes, null), x.length, x, y, null);
+    }
+
+    @Test
+    void polygonConstructorErrorsMatchC() {
+        double[] tx = {0.0, 1.0, 0.0};
+        double[] ty = {0.0, 0.0, 1.0};
+        assertStatus("POLY_NAXES", () -> polygon(3, tx, ty));
+        assertStatus("POLY_EMPTY", () -> polygon(2, new double[0], new double[0]));
+        AstException e = assertThrows(
+                AstException.class, () -> polygon(2, new double[] {0.0, 1.0, BAD}, new double[] {0.0, BAD, 1.0}));
+        assertEquals(DATA.get("POLY_BAD").intValue(), e.getStatus());
+        assertEquals(
+                "astInitPolygon(Polygon): One or more bad axis values supplied for the vertex number 3.",
+                e.getMsgText());
+    }
+
+    @Test
+    void polygonOfOneOrTwoVerticesIsAccepted() {
+        assertEquals(0, DATA.get("POLY_FEW").intValue());
+        Polygon one = polygon(2, new double[] {0.0}, new double[] {0.0});
+        assertEquals(DATA.get("POLY_ONE_BOUNDED").booleanValue(), one.getBounded());
+        Polygon two = polygon(2, new double[] {0.0, 1.0}, new double[] {0.0, 0.0});
+        assertEquals(DATA.get("POLY_TWO_BOUNDED").booleanValue(), two.getBounded());
     }
 
     @Test

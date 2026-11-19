@@ -12,13 +12,15 @@ import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
- * Boxes and Circles on a SkyFrame that straddle RA 0 or hold a celestial pole give C's results,
- * from {@code probes/region_sky_probe.c}: which test points they hold, their bounds ({@code
- * astGetRegionBounds}), the masks of the inside and the outside of each over an all-sky grid of
- * 24 by 12 pixels, and the overlaps of such Regions with each other.
+ * Boxes, Circles and Polygons on a SkyFrame that straddle RA 0 or hold a celestial pole give C's
+ * results, from {@code probes/region_sky_probe.c}: which test points they hold, their bounds
+ * ({@code astGetRegionBounds}), the masks of the inside and the outside of each over an all-sky
+ * grid of 24 by 12 pixels, and the overlaps of such Regions with each other; and for a Polygon,
+ * whether its vertices were put in the other order (Negated and the vertices it holds).
  *
  * <p>The bounds of a Box are its centre plus and minus axis distances, normalised by whole turns,
- * and are those of C to the last bit. Those of a Circle come from its boundary mesh, each point
+ * and are those of C to the last bit; so are those of a Polygon, which are the axis distances of
+ * its vertices from the first, widened to whole turns or a pole by {@code astNormBox}. Those of a Circle come from its boundary mesh, each point
  * placed by {@code astOffset2} through {@code sin}, {@code cos}, {@code asin} and {@code atan2},
  * each within 1 ulp of the true value in {@code java.lang.Math} and in the C library, so that the
  * two may differ by 2 ulp in each: about {@code 1e-15} in a unit vector, a few times that after
@@ -31,7 +33,10 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * <p>Membership, the masks and the overlaps are compared exactly. {@link
  * #pointsAndPixelsAreClearOfTheBoundaries} shows that every test point and pixel centre is at
  * least {@code 1e-6} radians from each boundary, far beyond the few ulps by which the two
- * libraries may place a point.
+ * libraries may place a point, and beyond the {@code 1e-7} of an edge's length within which a
+ * point counts as on the edge of a Polygon; and that none of them, nor a pole, lies within that
+ * distance of the great circle from a Polygon's interior point through a vertex, where the count
+ * of edges crossed on the way to it changes.
  */
 class RegionSkyTest {
 
@@ -69,6 +74,30 @@ class RegionSkyTest {
     private static Circle circle(double cx, double cy, double r) {
         return new Circle(icrs(), new double[] {cx, cy}, r, null);
     }
+
+    /** A Polygon of the vertices given as longitude, latitude pairs. */
+    private static Polygon polygon(double... pts) {
+        int n = pts.length / 2;
+        double[] lon = new double[n];
+        double[] lat = new double[n];
+        for (int i = 0; i < n; i++) {
+            lon[i] = pts[2 * i];
+            lat[i] = pts[2 * i + 1];
+        }
+        return new Polygon(icrs(), n, lon, lat, null);
+    }
+
+    /** A quadrilateral straddling RA 0. */
+    private static final double[] V_RA0 = {6.0, 0.5, 0.25, 0.52, 0.27, 0.1, 6.0, 0.12};
+
+    /** The quadrilateral's vertices in the other order, which make the Polygon the rest of the sky. */
+    private static final double[] V_RA0_REVERSED = {6.0, 0.12, 0.27, 0.1, 0.25, 0.52, 6.0, 0.5};
+
+    /** A triangle holding the north pole. */
+    private static final double[] V_POLE = {4.7, 1.2, 2.6, 1.25, 0.5, 1.15};
+
+    /** A triangle holding the south pole. */
+    private static final double[] V_SOUTH = {1.0, -1.25, 3.0, -1.2, 5.0, -1.3};
 
     private static Box boxRa0() {
         return box(6.2, 0.3, 0.1, 0.45);
@@ -118,7 +147,7 @@ class RegionSkyTest {
     private static void checkRegion(String name, Region r, double[] pts) {
         String bounds = RegionProbeText.bounds(r);
         String text = tran(r, 2, pts) + bounds + mask(r, true) + mask(r, false);
-        if (r instanceof Box) {
+        if (r instanceof Box || r instanceof Polygon) {
             check(PROBE, name, text);
         } else {
             checkClose(PROBE, name, text, SKY_TOL);
@@ -137,6 +166,45 @@ class RegionSkyTest {
         checkRegion("circle_pole", circlePole(), NORTH);
         checkRegion("circle_south", circleSouth(), SOUTH);
         checkRegion("circle_near_pole", circleNearPole(), NEARPOLE);
+    }
+
+    /** The probe's vertices line: Negated, then the vertices the Polygon holds. */
+    private static String vertices(Polygon p) {
+        return "negated " + (p.getNegated() ? 1 : 0) + "\n" + RegionProbeText.points(p);
+    }
+
+    @Test
+    void polygonsMatchC() {
+        Polygon ra0 = polygon(V_RA0);
+        check(PROBE, "polygon_ra0_vertices", vertices(ra0));
+        checkRegion("polygon_ra0", ra0, RA0);
+        Polygon reversed = polygon(V_RA0_REVERSED);
+        check(PROBE, "polygon_ra0_reversed_vertices", vertices(reversed));
+        checkRegion("polygon_ra0_reversed", reversed, RA0);
+        Polygon pole = polygon(V_POLE);
+        check(PROBE, "polygon_pole_vertices", vertices(pole));
+        checkRegion("polygon_pole", pole, NORTH);
+        Polygon south = polygon(V_SOUTH);
+        check(PROBE, "polygon_south_vertices", vertices(south));
+        checkRegion("polygon_south", south, SOUTH);
+    }
+
+    @Test
+    void polygonOverlapsMatchC() {
+        Polygon ra0 = polygon(V_RA0);
+        Polygon pole = polygon(V_POLE);
+        check(PROBE, "overlap_polygon_box_ra0", overlap(ra0, boxRa0()));
+        check(PROBE, "overlap_polygon_circle_ra0", overlap(ra0, circleRa0()));
+        check(PROBE, "overlap_polygon_circle_inside_ra0", overlap(ra0, circle(0.1, 0.35, 0.05)));
+        check(PROBE, "overlap_polygon_reversed_ra0", overlap(ra0, polygon(V_RA0_REVERSED)));
+        check(PROBE, "overlap_polygon_reversed_box_ra0", overlap(polygon(V_RA0_REVERSED), boxRa0()));
+        Region neg = (Region) ra0.copy();
+        neg.negate();
+        check(PROBE, "overlap_polygon_negation_ra0", overlap(ra0, neg));
+        check(PROBE, "overlap_polygon_circle_pole", overlap(pole, circlePole()));
+        check(PROBE, "overlap_polygon_box_pole_inside", overlap(pole, box(2.0, PIBY2, 1.0, PIBY2 - 0.1)));
+        check(PROBE, "overlap_polygon_circle_south", overlap(pole, circleSouth()));
+        check(PROBE, "overlap_polygon_poles", overlap(pole, polygon(V_SOUTH)));
     }
 
     @Test
@@ -179,9 +247,21 @@ class RegionSkyTest {
         return margin;
     }
 
-    private static void assertClear(double[] pts, double[][] circles, double[][] boxes) {
+    /**
+     * The least distance of a point from an edge of a sky Polygon, and from the great circle from
+     * the Polygon's interior point through a vertex wherever that reaches the point.
+     */
+    private static double polygonMargin(Polygon poly, double[] p) {
+        return RegionMaskingTest.clearance(poly, new double[][] {{p[0]}, {p[1]}}, 1, true);
+    }
+
+    private static void assertClear(double[] pts, double[][] circles, double[][] boxes, Polygon... polys) {
         for (int k = 0; k < pts.length; k += 2) {
             double[] p = {pts[k], pts[k + 1]};
+            for (Polygon poly : polys) {
+                double m = polygonMargin(poly, p);
+                assertTrue(m > 1e-6, "point " + p[0] + " " + p[1] + " is " + m + " from a polygon");
+            }
             for (double[] c : circles) {
                 double m = circleMargin(new double[] {c[0], c[1]}, c[2], p);
                 assertTrue(m > 1e-6, "point " + p[0] + " " + p[1] + " is " + m + " from a circle");
@@ -199,9 +279,11 @@ class RegionSkyTest {
             {6.2, 0.3, 0.25}, {1.0, 1.4, 0.3}, {2.0, -1.45, 0.2}, {0.0, PIBY2 - 0.3, 0.29},
         };
         double[][] boxes = {{6.2, 0.3, 0.1, 0.45}, {0.0, PIBY2, 3.0, PIBY2 - 0.2}};
-        assertClear(RA0, new double[][] {circles[0]}, new double[][] {boxes[0]});
-        assertClear(NORTH, new double[][] {circles[1]}, new double[][] {boxes[1]});
-        assertClear(SOUTH, new double[][] {circles[2]}, new double[0][]);
+        Polygon[] polys = {polygon(V_RA0), polygon(V_RA0_REVERSED), polygon(V_POLE), polygon(V_SOUTH)};
+        assertClear(RA0, new double[][] {circles[0]}, new double[][] {boxes[0]}, polys[0], polys[1]);
+        assertClear(NORTH, new double[][] {circles[1]}, new double[][] {boxes[1]}, polys[2]);
+        assertClear(SOUTH, new double[][] {circles[2]}, new double[0][], polys[3]);
+        assertClear(new double[] {0.0, PIBY2, 0.0, -PIBY2}, new double[0][], new double[0][], polys);
         assertClear(NEARPOLE, new double[][] {circles[3]}, new double[0][]);
         double[] pixels = new double[2 * 24 * 12];
         int k = 0;
@@ -211,7 +293,7 @@ class RegionSkyTest {
                 pixels[k++] = -PIBY2 + (j - 0.5) * Math.PI / 12;
             }
         }
-        assertClear(pixels, circles, boxes);
+        assertClear(pixels, circles, boxes, polys);
         assertEquals(2 * 24 * 12, k);
     }
 }

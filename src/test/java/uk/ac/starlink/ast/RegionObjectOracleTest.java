@@ -22,7 +22,7 @@ class RegionObjectOracleTest {
     private static final JsonNode DATA = ProbeData.load("region_object");
 
     /** The number of cases whose classes are present. */
-    private static final int CASES_RUN = 4;
+    private static final int CASES_RUN = 5;
 
     private static Circle circle() {
         return new Circle(new Frame(2), new double[] {0.0, 0.0}, 1.0, null);
@@ -49,7 +49,12 @@ class RegionObjectOracleTest {
             }
             case "circle_plain":
                 return circle();
-            case "polygon_ident":
+            case "polygon_ident": {
+                Polygon p =
+                        new Polygon(new Frame(2), 3, new double[] {0.0, 1.0, 0.0}, new double[] {0.0, 0.0, 1.0}, null);
+                p.setIdent("P");
+                return p;
+            }
             case "cmpregion_idents":
                 return null;
             default:

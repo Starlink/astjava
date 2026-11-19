@@ -2316,8 +2316,8 @@ public class FrameSet extends Frame {
     }
 
     @Override
-    boolean lineCrossing(LineDef l1, LineDef l2, double[] cross) {
-        return currentFrame().lineCrossing(l1, l2, cross);
+    boolean lineCrossing(LineDef l1, LineDef l2, double[] cross, double[] dist) {
+        return currentFrame().lineCrossing(l1, l2, cross, dist);
     }
 
     @Override

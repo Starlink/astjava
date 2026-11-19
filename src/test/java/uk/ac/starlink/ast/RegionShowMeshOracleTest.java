@@ -21,21 +21,15 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * <p>A Circle's mesh is placed with {@code sin} and {@code cos}, which may differ in the last bit
  * between {@code java.lang.Math} and the C library, but the table gives each value to at most
  * seven significant figures, none of them within a few ulps of a rounding boundary, so it is
- * compared exactly. The case of a Polygon waits for that class; the number of cases run is
- * asserted, so that the task that adds it raises it.
+ * compared exactly. A Polygon's mesh in a plain Frame comes from arithmetic on its vertices. The
+ * number of cases run is asserted.
  */
 class RegionShowMeshOracleTest {
 
     private static final JsonNode DATA = ProbeData.load("region_showmesh");
 
-    /** The number of cases whose classes are present. */
-    private static final int CASES_RUN = 6;
-
-    /** The class of the Region in a dump: the word after its first "Begin". */
-    private static String dumpClass(String dump) {
-        String rest = dump.substring(dump.indexOf("Begin ") + "Begin ".length());
-        return rest.substring(0, rest.indexOf(' '));
-    }
+    /** The number of cases. */
+    private static final int CASES_RUN = 7;
 
     @Test
     void showMeshTextMatchesC() {
@@ -43,10 +37,6 @@ class RegionShowMeshOracleTest {
         for (JsonNode c : DATA.get("CASES")) {
             String name = c.get(0).textValue();
             String dump = c.get(1).textValue();
-            String cls = dumpClass(dump);
-            if (!"Box".equals(cls) && !"Circle".equals(cls)) {
-                continue;
-            }
             run++;
             Region region = (Region) ChannelText.read(dump);
             String ttl = c.get(3).isNull() ? null : c.get(3).textValue();

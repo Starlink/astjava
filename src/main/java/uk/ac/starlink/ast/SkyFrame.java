@@ -2075,8 +2075,10 @@ public class SkyFrame extends Frame {
      * along the line from its start, going forwards, is less than its length (C's {@code
      * LineIncludes}). A line of zero length includes only its start, and an infinite line every
      * point.
+     *
+     * @param dist null, or an array in which to return that distance, in radians
      */
-    private static boolean lineIncludes(LineDef l, double[] point) {
+    private static boolean lineIncludes(LineDef l, double[] point, double[] dist) {
         double t1 = Pal.dvdv(l.start, point);
         double t2 = Math.acos(t1);
         // A point more than 90 degrees from the quarter point is on the half of the great circle
@@ -2084,6 +2086,9 @@ public class SkyFrame extends Frame {
         double t3 = Pal.dvdv(l.dir, point);
         if (t3 < -1.0E-10) {
             t2 = 2 * PI - t2;
+        }
+        if (dist != null) {
+            dist[0] = t2;
         }
         if (l.infinite) {
             return true;
@@ -2097,19 +2102,25 @@ public class SkyFrame extends Frame {
      * which is returned even if it is not on both. After the two axis values, {@code cross} holds
      * the crossing as a unit 3-vector, which {@link #lineContains} reads when its {@code def} is
      * non-zero. When the great circles are the same, the crossing is the zero vector, at (0, 0).
+     * The distance is the arc from the start of {@code l1} to the crossing, going forwards, in
+     * radians; as in C it is that of the last point found on {@code l2}, or 0 if neither was.
      */
     @Override
-    boolean lineCrossing(LineDef l1, LineDef l2, double[] cross) {
+    boolean lineCrossing(LineDef l1, LineDef l2, double[] cross, double[] dist) {
         checkLine("astLineCrossing", l1, "First");
         checkLine("astLineCrossing", l2, "Second");
         double[] c = cross != null ? cross : new double[5];
+        double[] d = {0.0};
         double[] b = Pal.dvn(Pal.dvxv(l1.q, l2.q)).unit.clone();
-        boolean result = lineIncludes(l2, b) && lineIncludes(l1, b);
+        boolean result = lineIncludes(l2, b, null) && lineIncludes(l1, b, d);
         if (!result) {
             b[0] *= -1.0;
             b[1] *= -1.0;
             b[2] *= -1.0;
-            result = lineIncludes(l2, b) && lineIncludes(l1, b);
+            result = lineIncludes(l2, b, null) && lineIncludes(l1, b, d);
+        }
+        if (dist != null) {
+            dist[0] = d[0];
         }
         c[2] = b[0];
         c[3] = b[1];
@@ -2148,7 +2159,7 @@ public class SkyFrame extends Frame {
             double[] p1 = internal(getPerm(), point);
             b = Pal.dcs2c(p1[0], p1[1]);
         }
-        if (!lineIncludes(l, b)) {
+        if (!lineIncludes(l, b, null)) {
             return false;
         }
         double t1 = Pal.dvdv(l.q, b);

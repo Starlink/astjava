@@ -2809,8 +2809,8 @@ public abstract class Region extends Frame {
     }
 
     @Override
-    boolean lineCrossing(LineDef l1, LineDef l2, double[] cross) {
-        return frameset.lineCrossing(l1, l2, cross);
+    boolean lineCrossing(LineDef l1, LineDef l2, double[] cross, double[] dist) {
+        return frameset.lineCrossing(l1, l2, cross, dist);
     }
 
     @Override
