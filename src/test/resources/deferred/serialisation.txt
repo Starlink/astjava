@@ -8,8 +8,6 @@ simplify/cap_normmap_cmpframe.map | needs NormMap
 simplify/cap_normmap_cmpframe.simp | needs NormMap
 simplify/cap_permmap_01.map | needs NormMap
 simplify/cap_permmap_01.simp | needs NormMap
-simplify/cap_timemap_02.map | needs StcResourceProfile
-simplify/cap_timemap_02.simp | needs StcResourceProfile
 simplify/cap_unitnormmap_01.map | needs UnitNormMap
 simplify/cap_unitnormmap_01.simp | needs UnitNormMap
 simplify/cap_xphmap_01.map | needs XphMap

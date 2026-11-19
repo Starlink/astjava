@@ -19,7 +19,6 @@ unitnormmap_inv_fwd_cancel | needs UnitNormMap
 cap_normmap_cmpframe | needs NormMap
 cap_matrixmap_04 | needs ChebyMap
 cap_permmap_01 | needs NormMap
-cap_timemap_02 | needs StcResourceProfile
 cap_unitnormmap_01 | needs UnitNormMap
 cap_xphmap_01 | needs XphMap
 cap_xphmap_02 | needs XphMap
