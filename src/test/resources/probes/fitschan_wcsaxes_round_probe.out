@@ -1,0 +1,12 @@
+== 0
+!  AST: Error in routine run at line 46 in file fitschan_wcsaxes_round_probe.c.
+!  astInitMatrixMap(MatrixMap): NULL matrix supplied.
+status 233933490
+== 0.49999999999999994
+!  AST: Error in routine run at line 46 in file fitschan_wcsaxes_round_probe.c.
+!  astInitMatrixMap(MatrixMap): NULL matrix supplied.
+status 233933490
+== 0.5
+read FrameSet 1 1
+== 1
+read FrameSet 1 1

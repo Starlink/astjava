@@ -561,6 +561,11 @@ final class WinMapMerge {
      * orientation, found by transforming the positions {@code [0, 1, 2, ...]} and {@code [-1, -1,
      * ...]} each way: an axis whose two values are the same takes a constant, which gets a slot of
      * its own, and any other copies the axis whose index its first value is.
+     *
+     * <p>C takes that index with {@code round}. A PermMap copies a value, gives a constant or gives
+     * a bad value, the same at both positions, so an index that is not a constant is one of the
+     * whole numbers given, and no input reaches the values (just below a half, or odd above 2^52)
+     * where {@code round} and {@code floor(x + 0.5)} differ.
      */
     static PermParts permGet(PermMap map) {
         int nin = map.getNin();
@@ -584,7 +589,7 @@ final class WinMapMerge {
                 outprm[i] = -(nc + 1);
                 nc++;
             } else {
-                outprm[i] = (int) roundHalfAway(op);
+                outprm[i] = (int) CMath.roundHalfAway(op);
             }
         }
 
@@ -602,15 +607,10 @@ final class WinMapMerge {
                 inprm[i] = -(nc + 1);
                 nc++;
             } else {
-                inprm[i] = (int) roundHalfAway(ip);
+                inprm[i] = (int) CMath.roundHalfAway(ip);
             }
         }
         return new PermParts(outprm, inprm, cnst);
-    }
-
-    /** C's {@code round}: to the nearest integer, halfway cases away from zero. */
-    private static double roundHalfAway(double x) {
-        return x < 0.0 ? -Math.floor(-x + 0.5) : Math.floor(x + 0.5);
     }
 
     /**
