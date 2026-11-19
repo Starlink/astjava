@@ -204,6 +204,16 @@ public class NullRegion extends Region {
         return result;
     }
 
+    /**
+     * C's {@code MapMerge} (nullregion.c): {@link RegionMerge#mapMerge} with {@link
+     * RegionMerge#mergeNullRegion}.
+     */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        return RegionMerge.mapMerge(
+                this, list, where, series, (reg, first) -> RegionMerge.mergeNullRegion(this, reg, first));
+    }
+
     // ------------------------------------------------------------------
     // Overlap
     // ------------------------------------------------------------------

@@ -1,5 +1,6 @@
 package uk.ac.starlink.ast;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -641,8 +642,8 @@ public class Prism extends Region {
                 bc[i] = ptr[i][index];
             }
         }
-        region1.regCentre(java.util.Arrays.copyOf(bc, nax1), null, 0, FrameSet.AST__CURRENT);
-        region2.regCentre(java.util.Arrays.copyOfRange(bc, nax1, nax1 + nax2), null, 0, FrameSet.AST__CURRENT);
+        region1.regCentre(Arrays.copyOf(bc, nax1), null, 0, FrameSet.AST__CURRENT);
+        region2.regCentre(Arrays.copyOfRange(bc, nax1, nax1 + nax2), null, 0, FrameSet.AST__CURRENT);
         return null;
     }
 
@@ -668,12 +669,12 @@ public class Prism extends Region {
         }
         Region frm1 = null;
         if (naxes1 > 0) {
-            Frame f = region1.pickAxes(naxes1, java.util.Arrays.copyOf(axes1, naxes1), null);
+            Frame f = region1.pickAxes(naxes1, Arrays.copyOf(axes1, naxes1), null);
             frm1 = f instanceof Region ? (Region) f : null;
         }
         Region frm2 = null;
         if (naxes2 > 0) {
-            Frame f = region2.pickAxes(naxes2, java.util.Arrays.copyOf(axes2, naxes2), null);
+            Frame f = region2.pickAxes(naxes2, Arrays.copyOf(axes2, naxes2), null);
             frm2 = f instanceof Region ? (Region) f : null;
         }
         if (naxes1 > 0 && naxes2 == 0 && frm1 != null) {
@@ -722,7 +723,7 @@ public class Prism extends Region {
         int nax2 = region2.getNaxes();
         double[][] ps1 = new double[nax1][];
         for (int i = 0; i < nax1; i++) {
-            ps1[i] = java.util.Arrays.copyOf(pset[i], np);
+            ps1[i] = Arrays.copyOf(pset[i], np);
         }
         double[][] ps1b = region1.regTransform(ps1, false);
         boolean[] mask1 = new boolean[np];
@@ -730,7 +731,7 @@ public class Prism extends Region {
         double[][] ps1b2 = region1.transform(ps1b, np, true);
         double[][] ps2 = new double[nax2][];
         for (int i = 0; i < nax2; i++) {
-            ps2[i] = java.util.Arrays.copyOf(pset[nax1 + i], np);
+            ps2[i] = Arrays.copyOf(pset[nax1 + i], np);
         }
         double[][] ps2b = region2.regTransform(ps2, false);
         boolean[] mask2 = new boolean[np];
@@ -890,5 +891,169 @@ public class Prism extends Region {
             return result;
         }
         return result;
+    }
+    // ------------------------------------------------------------------
+    // Simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * Simplifies the Prism (C's {@code Simplify}, prism.c). The two components in parallel are
+     * simplified, which merges neighbouring Regions ({@link RegionMerge}); a Region, or a pair of
+     * Regions other than the components, that results is mapped into the current Frame and
+     * simplified. Failing that, a component whose axes the Mapping from the base to the current
+     * Frame keeps apart is mapped into its current Frame axes and simplified: the Prism is that
+     * Region, negated if the Prism is and with its axes permuted into their place, if the other
+     * component has no current Frame axes; and otherwise, if either component simplifies, the
+     * Prism of the two, so negated and permuted. An uncertainty set on the Prism is given to the
+     * result, which then has the Region-generic simplification and takes this Prism's Negated,
+     * Closed, MeshSize, FillFactor and Adaptive values.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Mapping simplifyStep() {
+        Region reg1 = region1;
+        Region reg2 = region2;
+        boolean neg = getNegated();
+        FrameSet fs = getRegFS();
+        Frame cfrm = fs.getFrame(FrameSet.AST__CURRENT);
+        Mapping bcmap = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        Mapping smap = CmpMap.transientCmpMap(reg1, reg2, false).simplify();
+        Region nw = null;
+        if (smap instanceof Region) {
+            nw = (Region) smap;
+        } else if (smap instanceof CmpMap) {
+            boolean[] flags = new boolean[3];
+            Mapping[] parts = smap.decomposeInto(flags);
+            if (!flags[0]
+                    && parts[0] instanceof Region
+                    && parts[1] instanceof Region
+                    && (parts[0] != reg1 || parts[1] != reg2)) {
+                nw = new Prism((Region) parts[0], (Region) parts[1]);
+            }
+        }
+        if (nw != null) {
+            nw = (Region) nw.mapRegionInto(bcmap, cfrm).simplify();
+        } else {
+            int nax1 = reg1.getNaxes();
+            int nax2 = reg2.getNaxes();
+            MapSplit split1 = bcmap.mapSplit(indexRange(0, nax1));
+            MapSplit split2 = bcmap.mapSplit(indexRange(nax1, nax2));
+            nw = this;
+            int naxout1 = split1 != null ? split1.map.getNout() : 0;
+            int naxout2 = split2 != null ? split2.map.getNout() : 0;
+            int naxt = bcmap.getNout();
+            if (naxout1 == naxt && naxout2 == 0) {
+                nw = onAxes(reg1, split1, cfrm, neg, naxout1);
+            } else if (naxout1 == 0 && naxout2 == naxt) {
+                nw = onAxes(reg2, split2, cfrm, neg, naxout2);
+            } else if (split1 != null && split2 != null) {
+                Frame newfrm1 = cfrm.pickAxes(naxout1, plusOne(split1.outputs, naxout1), null);
+                Region newreg1 = reg1.mapRegionInto(split1.map, newfrm1);
+                Mapping snewreg1 = newreg1.simplify();
+                Frame newfrm2 = cfrm.pickAxes(naxout2, plusOne(split2.outputs, naxout2), null);
+                Region newreg2 = reg2.mapRegionInto(split2.map, newfrm2);
+                Mapping snewreg2 = newreg2.simplify();
+                if (snewreg1 != newreg1 || snewreg2 != newreg2) {
+                    nw = new Prism((Region) snewreg1, (Region) snewreg2);
+                    if (neg) {
+                        nw.negate();
+                    }
+                    int[] perm = new int[naxout1 + naxout2];
+                    for (int i = 0; i < naxout1; i++) {
+                        perm[i] = split1.outputs[i] + 1;
+                    }
+                    for (int i = naxout1; i < naxout1 + naxout2; i++) {
+                        perm[i] = split2.outputs[i - naxout1] + 1;
+                    }
+                    nw.permAxes(perm);
+                }
+            }
+        }
+        if (testUnc()) {
+            nw.setUnc(getUnc(false));
+        }
+        Region result = nw.parentSimplify();
+        if (result != this) {
+            result.regOverlay(this, false);
+        }
+        return result;
+    }
+
+    /**
+     * A component of a Prism alone, as prism.c {@code Simplify} makes it when the other component
+     * has no current Frame axes: mapped by its split of the Mapping into the current Frame axes it
+     * has, simplified, negated if the Prism is, and with its axes permuted into their place.
+     */
+    private static Region onAxes(Region reg, MapSplit split, Frame cfrm, boolean neg, int naxout) {
+        Frame newfrm = cfrm.pickAxes(naxout, plusOne(split.outputs, naxout), null);
+        Region newreg = reg.mapRegionInto(split.map, newfrm);
+        Region nw = (Region) newreg.simplify();
+        if (neg) {
+            nw.negate();
+        }
+        nw.permAxes(plusOne(split.outputs, naxout));
+        return nw;
+    }
+
+    /**
+     * A Region split into a Prism of two Regions of separate current Frame axes, if one of them
+     * simplifies (C's {@code astConvertToPrism}, prism.c): each subset of the current Frame axes is
+     * tried in turn, in the order the bits of a counter give, until both it and the remaining axes
+     * can be picked from the Region as Regions ({@link Region#pickAxes}) and one of the two
+     * simplifies. The Prism of the two simplified Regions, its axes permuted into the Region's
+     * order and given the Region's current Frame, is then simplified. If no subset will do, the
+     * Region itself is returned.
+     */
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    static Region convertToPrism(Region reg) {
+        Mapping map = reg.getRegFS().getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        int nout = map.getNout();
+        int[] ax = new int[nout];
+        Region result = null;
+        int topmask = 1 << nout;
+        for (int bitmask = 1; bitmask < topmask && result == null; bitmask++) {
+            int nsel = 0;
+            int mask = 1;
+            for (int axis = 0; axis < nout; axis++) {
+                if ((bitmask & mask) != 0) {
+                    ax[nsel++] = axis;
+                }
+                mask <<= 1;
+            }
+            Frame pickfrm1 = reg.pickAxes(nsel, plusOne(ax, nsel), new Mapping[1]);
+            if (pickfrm1 instanceof Region) {
+                nsel = 0;
+                mask = 1;
+                for (int axis = 0; axis < nout; axis++) {
+                    if ((bitmask & mask) == 0) {
+                        ax[nsel++] = axis;
+                    }
+                    mask <<= 1;
+                }
+                Frame pickfrm2 = reg.pickAxes(nsel, plusOne(ax, nsel), new Mapping[1]);
+                if (pickfrm2 instanceof Region) {
+                    Mapping sp1 = pickfrm1.simplify();
+                    Mapping sp2 = pickfrm2.simplify();
+                    if (sp1 != pickfrm1 || sp2 != pickfrm2) {
+                        Prism prism = new Prism((Region) sp1, (Region) sp2);
+                        int[] perm = new int[nout];
+                        Arrays.fill(perm, -1);
+                        for (int i = 0; i < nsel; i++) {
+                            perm[ax[i]] = i + (nout - nsel);
+                        }
+                        nsel = 0;
+                        for (int i = 0; i < nout; i++) {
+                            if (perm[i] == -1) {
+                                perm[i] = nsel++;
+                            }
+                        }
+                        prism.permAxes(plusOne(perm, nout));
+                        Region newprism = prism.mapRegionInto(new UnitMap(nout), reg.regFrame());
+                        result = (Region) newprism.simplify();
+                    }
+                }
+            }
+        }
+        return result == null ? reg : result;
     }
 }

@@ -587,4 +587,70 @@ public class Circle extends Region {
         }
         return null;
     }
+
+    // ------------------------------------------------------------------
+    // Simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * Simplifies the Circle (C's {@code Simplify}, circle.c): after the Region-generic
+     * simplification, a Circle whose base and current Frames are not joined by a UnitMap is fitted
+     * in the current Frame, about its centre transformed there, with a Circle ({@link
+     * #bestCircle}) and, for two axes, failing that, an Ellipse ({@link Ellipse#bestEllipse}); the
+     * first fit whose boundary holds every point of the Circle's boundary mesh in that Frame,
+     * within the uncertainty, is the result. As in C, a fitted Circle is returned only when the
+     * Region-generic simplification changed the Circle, since C does not count the fit itself as a
+     * simplification; a fitted Ellipse always is. A new Region takes this Circle's Negated,
+     * Closed, MeshSize, FillFactor and Adaptive values, and has no uncertainty if this one has
+     * none set.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Mapping simplifyStep() {
+        Region nw = parentSimplify();
+        boolean simpler = nw != this;
+        Mapping map = nw.getRegFS().getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        if (!isUnitMap(map)) {
+            Region fit = fitted(nw);
+            if (fit != null) {
+                nw = fit;
+                simpler = simpler || fit instanceof Ellipse;
+            }
+        }
+        if (simpler) {
+            nw.regOverlay(this, true);
+            return nw;
+        }
+        return this;
+    }
+
+    /**
+     * The Circle, or for two axes the Ellipse, that fits the boundary mesh of {@code nw} in its
+     * current Frame about this Region's centre transformed into that Frame, as C's {@code
+     * Simplify} tries them; null if the centre has a bad value or neither fits.
+     */
+    private Region fitted(Region nw) {
+        double[][] mesh = nw.regMesh();
+        Region unc = nw.getUncFrm(FrameSet.AST__CURRENT);
+        double[][] ps2 = regTransform(null, true);
+        int nc = ps2.length;
+        double[] cen = new double[nc];
+        boolean ok = true;
+        for (int ic = 0; ic < nc; ic++) {
+            cen[ic] = ps2[ic][0];
+            if (cen[ic] == AST__BAD) {
+                ok = false;
+            }
+        }
+        Region newreg = ok ? bestCircle(mesh, cen, unc) : null;
+        if (newreg != null && newreg.regPins(mesh, null, null)) {
+            return newreg;
+        } else if (ok && nc == 2) {
+            newreg = Ellipse.bestEllipse(mesh, cen, unc);
+            if (newreg != null && newreg.regPins(mesh, null, null)) {
+                return newreg;
+            }
+        }
+        return null;
+    }
 }

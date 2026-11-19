@@ -29,14 +29,11 @@ import org.junit.jupiter.api.Test;
  *
  * <p>{@code construct_mismatched_axes_error} gives an lbnd array longer than the Frame has axes,
  * which jniast accepts; here it is shorter, which is {@code AST__DIMIN}. {@code
- * interval_centre_is_given_in_the_frame_asked_for} asks the protected {@code astRegCentre}. {@code
- * interval_negate_after_first_use} uses the Region-generic simplification.
+ * interval_centre_is_given_in_the_frame_asked_for} asks the protected {@code astRegCentre}.
  *
  * <p>Listed in {@code deferred/rust-tests.txt}: {@code centre_of_bounded_interval} ({@code
  * astGetRegionDisc}, not in jniast), {@code mesh_of_an_unbounded_interval_names_the_class}
- * ({@code astGetRegionMesh}, not in jniast), and the two Prism merges ({@code
- * wide_interval_does_not_merge_into_a_pointlist}, {@code point_interval_merges_into_a_pointlist}),
- * which need the Simplify of a Prism.
+ * ({@code astGetRegionMesh}, not in jniast).
  */
 class IntervalTest {
 
@@ -541,5 +538,38 @@ class IntervalTest {
         Interval back = assertInstanceOf(Interval.class, ChannelText.read(ChannelText.dump(iv)));
         assertTrue(back.pointInRegion(new double[] {5.0, -100.0}));
         assertFalse(back.pointInRegion(new double[] {0.0, 0.0}));
+    }
+
+    /**
+     * Absorbing a PointList into an Interval attaches one constant per Interval axis to every
+     * point, which is only equivalent when the Interval is a point (interval.c {@code
+     * MergeInterval}). An Interval spanning 0 to 10 on axis 1 and unbounded above on axis 2 is not a
+     * point, so the simplified Prism holds every (x, y, z) with x in 0 to 10, y at least 0 and z 3
+     * or 4.
+     */
+    @Test
+    void wideIntervalDoesNotMergeIntoAPointlist() {
+        PointList pl = new PointList(new Frame(1), 2, new double[][] {{3.0, 4.0}}, null);
+        Interval iv = interval(new Frame(2), new double[] {0.0, 0.0}, new double[] {10.0, BAD});
+        Region simp = (Region) new Prism(iv, pl).simplify();
+        assertFalse(simp instanceof PointList, "a wide Interval must not merge into a PointList");
+        assertTrue(simp.pointInRegion(new double[] {2.0, 7.0, 3.0}), "(2,7,3) is inside the Prism");
+        assertFalse(simp.pointInRegion(new double[] {20.0, 1.0, 3.0}), "(20,1,3) is outside the Prism");
+    }
+
+    /**
+     * An Interval of zero width on every axis is a point, so the Prism is the PointList with the
+     * point's axis values attached to every member.
+     */
+    @Test
+    void pointIntervalMergesIntoAPointlist() {
+        PointList pl = new PointList(new Frame(1), 2, new double[][] {{3.0, 4.0}}, null);
+        Interval iv = interval(new Frame(2), new double[] {5.0, 0.0}, new double[] {5.0, 0.0});
+        PointList merged = assertInstanceOf(PointList.class, new Prism(iv, pl).simplify());
+        double[][] pts = merged.getPoints();
+        assertEquals(2, pts[0].length);
+        assertArrayEquals(new double[] {5.0, 5.0}, pts[0]);
+        assertArrayEquals(new double[] {0.0, 0.0}, pts[1]);
+        assertArrayEquals(new double[] {3.0, 4.0}, pts[2]);
     }
 }

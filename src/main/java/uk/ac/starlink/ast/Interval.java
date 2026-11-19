@@ -1,5 +1,6 @@
 package uk.ac.starlink.ast;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -864,5 +865,228 @@ public class Interval extends Region {
             result[split.outputs[0]] = i;
         }
         return result;
+    }
+    // ------------------------------------------------------------------
+    // Simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * Simplifies the Interval (C's {@code Simplify}, interval.c). An Interval equivalent to a Box
+     * gives that Box's simplification. Otherwise, after the Region-generic simplification, an
+     * Interval whose base and current Frames are not joined by a UnitMap is tried in the current
+     * Frame: a Box in the base Frame is made from its limits, with arbitrary values for missing
+     * ones, widened to take in the base Frame values its corners go back to through the Mapping and
+     * then held within the Interval's limits; that Box is mapped into the current Frame and
+     * simplified. If that gives a NullRegion, the Interval is the NullRegion; if it gives a Box or
+     * an Interval, each current Frame axis is matched with the base Frame axis whose value changes
+     * most along it, and the Interval is made again in the current Frame from the simplified
+     * Region's limits, a limit missing on the matched base Frame axis being missing again, and
+     * each axis including or excluding its range as before. A new Region takes this Interval's
+     * Negated, Closed, MeshSize, FillFactor and Adaptive values, and has no uncertainty if this
+     * one has none set.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Mapping simplifyStep() {
+        Box box = cache();
+        if (box != null) {
+            return box.simplify();
+        }
+        Region nw = parentSimplify();
+        boolean simpler = nw != this;
+        Mapping map = nw.getRegFS().getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        if (!isUnitMap(map)) {
+            double[][] ptr = nw.getPoints();
+            int nc = ptr.length;
+            double[] lb = new double[nc];
+            double[] ub = new double[nc];
+            for (int ic = 0; ic < nc; ic++) {
+                lb[ic] = ptr[ic][0];
+                ub[ic] = ptr[ic][1];
+                if (ub[ic] == AST__BAD) {
+                    if (lb[ic] == AST__BAD) {
+                        ub[ic] = 1.0;
+                    } else if (lb[ic] > 0.0) {
+                        ub[ic] = lb[ic] * 1.01;
+                    } else if (lb[ic] < 0.0) {
+                        ub[ic] = lb[ic] * 0.99;
+                    } else {
+                        ub[ic] = 1.0;
+                    }
+                }
+                if (lb[ic] == AST__BAD) {
+                    if (ub[ic] > 0.0) {
+                        lb[ic] = ub[ic] * 0.99;
+                    } else if (ub[ic] < 0.0) {
+                        lb[ic] = ub[ic] * 1.01;
+                    } else {
+                        lb[ic] = 1.0;
+                    }
+                }
+            }
+            double[][] ptrb = new double[nc][2];
+            for (int ic = 0; ic < nc; ic++) {
+                ptrb[ic][0] = lb[ic];
+                ptrb[ic][1] = ub[ic];
+            }
+            double[][] psetc = map.transform(ptrb, 2, true);
+            ptrb = map.transform(psetc, 2, false);
+            for (int ic = 0; ic < nc; ic++) {
+                double v = ptrb[ic][0];
+                if (v != AST__BAD) {
+                    if (v < lb[ic]) {
+                        lb[ic] = v;
+                    }
+                    if (v > ub[ic]) {
+                        ub[ic] = v;
+                    }
+                }
+                v = ptrb[ic][1];
+                if (v != AST__BAD) {
+                    if (v < lb[ic]) {
+                        lb[ic] = v;
+                    }
+                    if (v > ub[ic]) {
+                        ub[ic] = v;
+                    }
+                }
+            }
+            cache();
+            for (int ic = 0; ic < nc; ic++) {
+                double lo = lbnd[ic];
+                double hi = ubnd[ic];
+                if (lo <= hi) {
+                    if (lb[ic] < lo) {
+                        lb[ic] = lo;
+                    } else if (lb[ic] > hi) {
+                        lb[ic] = hi;
+                    }
+                    if (ub[ic] < lo) {
+                        ub[ic] = lo;
+                    } else if (ub[ic] > hi) {
+                        ub[ic] = hi;
+                    }
+                } else {
+                    double lwid = lo - lb[ic];
+                    double uwid = ub[ic] - hi;
+                    if (lwid > uwid) {
+                        if (lb[ic] > lo) {
+                            lb[ic] = lo;
+                        }
+                        if (ub[ic] > lo) {
+                            ub[ic] = lo;
+                        }
+                    } else {
+                        if (lb[ic] < hi) {
+                            lb[ic] = hi;
+                        }
+                        if (ub[ic] < hi) {
+                            ub[ic] = hi;
+                        }
+                    }
+                }
+                if (lb[ic] == 0.0 && ub[ic] == 0.0) {
+                    ub[ic] = 1.0;
+                } else if (MappingHelpers.astEquals(lb[ic], ub[ic], 1.0E9)) {
+                    // C's expression, kept as it is: the larger limit times 1.0E6 DBL_EPSILON.
+                    ub[ic] = Math.max(ub[ic], lb[ic]) * (1.0E6 * DBL_EPSILON);
+                }
+            }
+            Frame bfrm = nw.baseFrame();
+            Region unc = nw.testUnc() ? nw.getUncFrm(FrameSet.AST__BASE) : null;
+            Box bbox = new Box(bfrm, 1, lb, ub, unc);
+            Frame cfrm = nw.regFrame();
+            Region box2 = bbox.mapRegionInto(map, cfrm);
+            Mapping sreg = box2.simplify();
+            if (sreg != box2) {
+                if (sreg instanceof NullRegion) {
+                    nw = (Region) sreg;
+                    simpler = true;
+                } else if (sreg instanceof Box || sreg instanceof Interval) {
+                    nw = redefined(nw, ptr, (Region) sreg, map, bfrm, cfrm);
+                    simpler = true;
+                }
+            }
+        }
+        if (simpler) {
+            nw.regOverlay(this, true);
+            return nw;
+        }
+        return this;
+    }
+
+    /**
+     * The Interval in the current Frame {@code cfrm} that the simplification {@code sreg} of the
+     * Box standing for Interval {@code nw} gives, as interval.c {@code Simplify} makes it: the
+     * simplified Region's limits, each current Frame axis taking the missing limits and the sense
+     * (including or excluding its range) of the base Frame axis whose value changes most along
+     * it, {@code ptr} being the Interval's limits in the base Frame {@code bfrm}.
+     */
+    private static Interval redefined(Region nw, double[][] ptr, Region sreg, Mapping map, Frame bfrm, Frame cfrm) {
+        int nc = ptr.length;
+        int snc = sreg.getRegFS().getNin();
+        double[] slbnd = new double[snc];
+        double[] subnd = new double[snc];
+        if (sreg instanceof Interval) {
+            double[][] sptr = sreg.getPoints();
+            for (int ic = 0; ic < snc; ic++) {
+                slbnd[ic] = sptr[ic][0];
+                subnd[ic] = sptr[ic][1];
+            }
+        } else {
+            sreg.regBaseBox(slbnd, subnd);
+        }
+        double[][] ptr2 = new double[snc][snc + 1];
+        for (int ic = 0; ic < snc; ic++) {
+            Arrays.fill(ptr2[ic], slbnd[ic]);
+            ptr2[ic][ic + 1] = subnd[ic];
+        }
+        double[][] ptr3 = map.transform(ptr2, snc + 1, false);
+        for (int ic = 0; ic < snc; ic++) {
+            double maxd = -Double.MAX_VALUE;
+            int bax = -1;
+            for (int jc = 0; jc < nc; jc++) {
+                double d = Math.abs(bfrm.axDistance(jc + 1, ptr3[jc][0], ptr3[jc][ic + 1]));
+                if (d != AST__BAD && d > maxd) {
+                    maxd = d;
+                    bax = jc;
+                }
+            }
+            if (maxd <= 0.0) {
+                if (slbnd[ic] == AST__BAD || subnd[ic] == AST__BAD) {
+                    slbnd[ic] = AST__BAD;
+                } else {
+                    slbnd[ic] = 0.5 * (slbnd[ic] + subnd[ic]);
+                }
+                subnd[ic] = slbnd[ic];
+            } else {
+                if (ptr[bax][0] == AST__BAD) {
+                    slbnd[ic] = AST__BAD;
+                }
+                if (ptr[bax][1] == AST__BAD) {
+                    subnd[ic] = AST__BAD;
+                }
+                if (ptr[bax][1] == ptr[bax][0]) {
+                    subnd[ic] = slbnd[ic];
+                } else if ((ptr[bax][1] > ptr[bax][0] && subnd[ic] < slbnd[ic])
+                        || (ptr[bax][1] < ptr[bax][0] && subnd[ic] > slbnd[ic])) {
+                    double tmp = subnd[ic];
+                    subnd[ic] = slbnd[ic];
+                    slbnd[ic] = tmp;
+                }
+            }
+        }
+        Region unc = nw.testUnc() ? nw.getUncFrm(FrameSet.AST__CURRENT) : null;
+        return new Interval(cfrm, slbnd, subnd, unc);
+    }
+
+    /**
+     * C's {@code MapMerge} (interval.c): {@link RegionMerge#mapMerge} with {@link
+     * RegionMerge#mergeInterval}.
+     */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        return RegionMerge.mapMerge(
+                this, list, where, series, (reg, first) -> RegionMerge.mergeInterval(this, reg, first));
     }
 }

@@ -15,6 +15,9 @@ import java.util.Objects;
  */
 public class Box extends Region {
 
+    /** C's {@code DBL_EPSILON}. */
+    private static final double DBL_EPSILON = Math.ulp(1.0);
+
     /** The half-width on each base Frame axis, kept until the Box changes. */
     private double[] extent;
 
@@ -703,5 +706,316 @@ public class Box extends Region {
             cor[i] = pts[axes[i]][1];
         }
         return new Box(frm, 0, cen, cor, u);
+    }
+    // ------------------------------------------------------------------
+    // Simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * Simplifies the Box (C's {@code Simplify}, box.c). After the Region-generic simplification:
+     *
+     * <ul>
+     *   <li>if the Mapping from the base to the current Frame is a PermMap, the Box is made again
+     *       in the current Frame: as a NullRegion if a base axis the PermMap feeds a constant has
+     *       the constant outside the Box (or on its boundary when the Box excludes it), or is fed a
+     *       bad value; as an Interval if a current axis is fed a bad value; and otherwise as a Box,
+     *       each with the Box's Negated value and its uncertainty in the current Frame. A PermMap
+     *       that does not join each base axis it uses both ways leaves the Box as it is;
+     *   <li>otherwise, unless the Mapping is a UnitMap, the Box that best fits the boundary mesh
+     *       in the current Frame replaces it if each mesh is on the other's boundary; failing that,
+     *       for two axes, the Polygon of the transformed corners (ordered so that its inside is
+     *       the Box's) replaces it if the mesh is on the Polygon's boundary; and failing that the
+     *       Box is split into a Prism of Regions of separate axes, if one of them simplifies
+     *       ({@link Prism#convertToPrism}).
+     * </ul>
+     *
+     * <p>A new Region takes this Box's Negated, Closed, MeshSize, FillFactor and Adaptive values,
+     * and has no uncertainty if this one has none set.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Mapping simplifyStep() {
+        Region nw = parentSimplify();
+        boolean simpler = nw != this;
+        Mapping map = nw.getRegFS().getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        int nin = map.getNin();
+        int nout = map.getNout();
+        if (map instanceof PermMap) {
+            PermMap pm = (PermMap) map;
+            boolean neg = nw.getNegated();
+            boolean closed = nw.getClosed();
+            Box newbox = (Box) nw;
+            newbox.cache();
+            int[] inperm = pm.storedInPerm();
+            int[] outperm = pm.storedOutPerm();
+            double[] lbnd = new double[nout];
+            double[] ubnd = new double[nout];
+            simpler = true;
+            boolean isNull = false;
+            boolean isInterval = false;
+            for (int ic = 0; ic < nout; ic++) {
+                int feed = outperm[ic];
+                if (feed < 0) {
+                    lbnd[ic] = pm.constantFor(feed);
+                    ubnd[ic] = pm.constantFor(feed);
+                } else if (feed >= nin) {
+                    lbnd[ic] = AST__BAD;
+                    ubnd[ic] = AST__BAD;
+                } else {
+                    lbnd[ic] = newbox.centre[feed] - newbox.extent[feed];
+                    ubnd[ic] = newbox.centre[feed] + newbox.extent[feed];
+                }
+                if (lbnd[ic] == AST__BAD || ubnd[ic] == AST__BAD) {
+                    isInterval = true;
+                }
+            }
+            for (int ic = 0; ic < nin; ic++) {
+                int feed = inperm[ic];
+                if (feed < 0) {
+                    double k = pm.constantFor(feed);
+                    double lb = newbox.centre[ic] - newbox.extent[ic];
+                    double ub = newbox.centre[ic] + newbox.extent[ic];
+                    if (closed == neg) {
+                        if (k <= lb || k >= ub) {
+                            isNull = true;
+                        }
+                    } else if (k < lb || k > ub) {
+                        isNull = true;
+                    }
+                } else if (feed >= nout) {
+                    isNull = true;
+                } else if (outperm[feed] != ic) {
+                    simpler = false;
+                    break;
+                }
+            }
+            if (simpler) {
+                Region unc = nw.testUnc() ? nw.getUncFrm(FrameSet.AST__CURRENT) : null;
+                Frame frm = nw.regFrame();
+                if (isNull) {
+                    nw = new NullRegion(frm, unc);
+                } else if (isInterval) {
+                    nw = new Interval(frm, lbnd, ubnd, unc);
+                } else {
+                    nw = new Box(frm, 1, lbnd, ubnd, unc);
+                }
+                if (neg) {
+                    nw.negate();
+                }
+            }
+        } else if (!isUnitMap(map)) {
+            Frame frm = nw.regFrame();
+            double[][] mesh = nw.regMesh();
+            Region unc = nw.getUncFrm(FrameSet.AST__CURRENT);
+            Box newbox = bestBox(frm, mesh, unc);
+            if (newbox != null && newbox.regPins(mesh, null, null)) {
+                double[][] boxMesh = newbox.regMesh();
+                double[][] basemesh = map.transform(boxMesh, boxMesh[0].length, false);
+                if (nw.regPins(basemesh, null, null)) {
+                    nw = newbox;
+                    simpler = true;
+                }
+            } else if (nin == 2 && nout == 2) {
+                Polygon newpoly = polygonOf((Box) nw, map, frm, unc);
+                if (newpoly.regPins(mesh, null, null)) {
+                    nw = newpoly;
+                    simpler = true;
+                }
+            }
+            if (!simpler) {
+                Region prism = Prism.convertToPrism(nw);
+                if (prism != nw) {
+                    simpler = true;
+                    nw = prism;
+                }
+            }
+        }
+        if (simpler) {
+            nw.regOverlay(this, true);
+            return nw;
+        }
+        return this;
+    }
+
+    /**
+     * The Polygon of the corners of {@code box} transformed by {@code map} into {@code frm}, as
+     * box.c {@code Simplify} makes it: the corners are taken clockwise and then, if that Polygon
+     * does not have the Box's inside as its inside, anticlockwise. In a SkyFrame the inside is the
+     * side holding the transformed centre of the Box; in any other Frame it is the bounded side.
+     *
+     * @throws AstException with status {@code AST__OBJIN} if neither order has the Box's inside as
+     *     its inside, where C goes on to use the Polygon pointer it has annulled
+     */
+    private static Polygon polygonOf(Box box, Mapping map, Frame frm, Region unc) {
+        box.cache();
+        double[] c = box.centre;
+        double[] e = box.extent;
+        boolean isSkyFrame = frm instanceof SkyFrame;
+        double[][] ps4 = null;
+        if (isSkyFrame) {
+            ps4 = map.transform(new double[][] {{c[0]}, {c[1]}}, 1, true);
+        }
+        for (int rightHanded = 0; rightHanded < 2; rightHanded++) {
+            double[][] ptr1 = new double[2][4];
+            if (rightHanded == 1) {
+                ptr1[0][0] = c[0] - e[0];
+                ptr1[1][0] = c[1] + e[1];
+                ptr1[0][1] = c[0] - e[0];
+                ptr1[1][1] = c[1] - e[1];
+                ptr1[0][2] = c[0] + e[0];
+                ptr1[1][2] = c[1] - e[1];
+                ptr1[0][3] = c[0] + e[0];
+                ptr1[1][3] = c[1] + e[1];
+            } else {
+                ptr1[0][3] = c[0] - e[0];
+                ptr1[1][3] = c[1] + e[1];
+                ptr1[0][2] = c[0] - e[0];
+                ptr1[1][2] = c[1] - e[1];
+                ptr1[0][1] = c[0] + e[0];
+                ptr1[1][1] = c[1] - e[1];
+                ptr1[0][0] = c[0] + e[0];
+                ptr1[1][0] = c[1] + e[1];
+            }
+            double[][] ptr2 = map.transform(ptr1, 4, true);
+            Polygon newpoly = new Polygon(frm, 4, ptr2[0], ptr2[1], unc);
+            boolean rightWayRound;
+            if (isSkyFrame) {
+                double[][] ps5 = newpoly.transform(ps4, 1, true);
+                rightWayRound = ps5[0][0] != AST__BAD && ps5[1][0] != AST__BAD;
+            } else {
+                rightWayRound = newpoly.getBounded();
+            }
+            if (rightWayRound) {
+                return newpoly;
+            }
+        }
+        throw Ast.err(AstException.AST__OBJIN, "astRegPins(Polygon): Invalid Object pointer given (NULL).");
+    }
+
+    /**
+     * The Box that best fits a mesh of points on the boundary of a box, in the Frame of {@code
+     * unc} (C's {@code BestBox}, box.c), with {@code unc} as its uncertainty; null if an axis has
+     * no good value. On each axis the mesh's extent is found by accumulating axis distances from
+     * the first good value; the values within the smaller of 20 times the uncertainty's width and
+     * a tenth of the extent of either end are averaged, those within 3 standard deviations of each
+     * mean (or 100 times the rounding error of the mean if they scatter less) are averaged again,
+     * and the two means are the Box's limits.
+     */
+    private static Box bestBox(Frame frm, double[][] mesh, Region unc) {
+        int nc = mesh.length;
+        int np = mesh[0].length;
+        double[] lbnd = new double[nc];
+        double[] ubnd = new double[nc];
+        double[] blbnd = new double[nc];
+        double[] bubnd = new double[nc];
+        double[] axval = new double[np];
+        unc.regionBounds(lbnd, ubnd);
+        for (int ic = 0; ic < nc; ic++) {
+            double[] p = mesh[ic];
+            int ip;
+            double org = AST__BAD;
+            for (ip = 0; ip < np; ip++) {
+                org = p[ip];
+                axval[ip] = org;
+                if (org != AST__BAD) {
+                    break;
+                }
+            }
+            if (ip >= np) {
+                return null;
+            }
+            double lb = 0.0;
+            double ub = 0.0;
+            double p0 = org;
+            double d = 0.0;
+            for (ip++; ip < np; ip++) {
+                double dinc = frm.axDistance(ic + 1, p0, p[ip]);
+                if (dinc != AST__BAD) {
+                    d += dinc;
+                    if (d < lb) {
+                        lb = d;
+                    }
+                    if (d > ub) {
+                        ub = d;
+                    }
+                }
+                axval[ip] = org + d;
+                p0 = p[ip];
+            }
+            lb += org;
+            ub += org;
+            double lim = 20 * (ubnd[ic] - lbnd[ic]);
+            double lim2 = 0.1 * (ub - lb);
+            if (lim2 < lim) {
+                lim = lim2;
+            }
+            double sumLow = 0.0;
+            double sumLow2 = 0.0;
+            int nLow = 0;
+            double sumUp = 0.0;
+            double sumUp2 = 0.0;
+            int nUp = 0;
+            for (ip = 0; ip < np; ip++) {
+                double v = axval[ip];
+                if (v != AST__BAD) {
+                    if (Math.abs(v - lb) <= lim) {
+                        sumLow += v;
+                        sumLow2 += v * v;
+                        nLow++;
+                    } else if (Math.abs(v - ub) <= lim) {
+                        sumUp += v;
+                        sumUp2 += v * v;
+                        nUp++;
+                    }
+                }
+            }
+            double meanLow;
+            double limLow;
+            if (nLow > 0) {
+                meanLow = sumLow / nLow;
+                limLow = nLow > 1 ? sumLow2 / nLow - meanLow * meanLow : 0.0;
+                double eps = 100 * meanLow * DBL_EPSILON;
+                limLow = limLow < eps * eps ? eps : 3.0 * Math.sqrt(limLow);
+            } else {
+                meanLow = lb;
+                limLow = 0.0;
+            }
+            double meanUp;
+            double limUp;
+            if (nUp > 0) {
+                meanUp = sumUp / nUp;
+                limUp = nUp > 1 ? sumUp2 / nUp - meanUp * meanUp : 0.0;
+                double eps = 100 * meanUp * DBL_EPSILON;
+                limUp = limUp < eps * eps ? eps : 3.0 * Math.sqrt(limUp);
+            } else {
+                meanUp = ub;
+                limUp = 0.0;
+            }
+            sumLow = 0.0;
+            nLow = 0;
+            sumUp = 0.0;
+            nUp = 0;
+            for (ip = 0; ip < np; ip++) {
+                double v = axval[ip];
+                if (v != AST__BAD) {
+                    if (Math.abs(v - meanLow) <= limLow) {
+                        sumLow += v;
+                        nLow++;
+                    } else if (Math.abs(v - meanUp) <= limUp) {
+                        sumUp += v;
+                        nUp++;
+                    }
+                }
+            }
+            blbnd[ic] = nLow > 0 ? sumLow / nLow : lb;
+            bubnd[ic] = nUp > 0 ? sumUp / nUp : ub;
+        }
+        return new Box(unc, 1, blbnd, bubnd, unc);
+    }
+
+    /** C's {@code MapMerge} (box.c): {@link RegionMerge#mapMerge} with {@link RegionMerge#mergeBox}. */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        return RegionMerge.mapMerge(this, list, where, series, (reg, first) -> RegionMerge.mergeBox(this, reg, first));
     }
 }

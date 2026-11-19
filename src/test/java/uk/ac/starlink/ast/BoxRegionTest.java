@@ -31,8 +31,8 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * Frame, which is {@code AST__DIMIN}. {@code with_integrity_preserves_points} makes a change
  * through the FrameSet's integrity that leaves the coordinate system alone, a new Title.
  *
- * <p>Listed in {@code deferred/rust-tests.txt}: the three {@code simplify_permmap_slice_*} tests
- * that expect a NullRegion, which needs the Box's own simplification.
+ * <p>Also here: the unit test {@code permmap_bad_output_simplifies_to_unbounded_interval} of Rust's
+ * {@code src/regions/box_region.rs}.
  */
 class BoxRegionTest {
 
@@ -343,20 +343,65 @@ class BoxRegionTest {
 
     /**
      * Map a 3-D Box onto two current Frame axes through a PermMap whose base axes 2 and 3 are each
-     * fed a constant, then simplify. Both constants are inside the Box, so the slice is a Box of the
-     * two current Frame axes.
+     * fed a constant, then simplify (the public mapRegion is the protected one followed by
+     * astSimplify, region.c). Axis 2 spans 0 to 20 and axis 3 spans 0 to 30, so 99 is outside the
+     * Box on either and 5 and 15 are inside. Each constant-fed base axis is a plane the slice has to
+     * lie in, so the Region is a NullRegion unless every constant falls inside the Box, whatever
+     * their order (box.c {@code Simplify}).
      */
-    @Test
-    void simplifyPermmapSliceBothConstantsInsideKeepsBox() {
+    private static Mapping simplifyBoxPermmapSlice(double c1, double c2) {
         Frame base = new Frame(3);
         base.setDomain("PIXEL");
         Frame curr = new Frame(2);
         curr.setDomain("SLICE");
-        PermMap pm = new PermMap(3, new int[] {1, -1, -2}, 2, new int[] {1, 2}, new double[] {5.0, 15.0});
+        PermMap pm = new PermMap(3, new int[] {1, -1, -2}, 2, new int[] {1, 2}, new double[] {c1, c2});
         Box b = fromBounds(base, new double[] {0.0, 0.0, 0.0}, new double[] {10.0, 20.0, 30.0});
-        Mapping r = b.mapRegion(pm, curr);
+        return b.mapRegion(pm, curr);
+    }
+
+    @Test
+    void simplifyPermmapSliceOutsideConstantFirstIsNull() {
+        assertSame(NullRegion.class, simplifyBoxPermmapSlice(99.0, 5.0).getClass());
+    }
+
+    @Test
+    void simplifyPermmapSliceOutsideConstantLastIsNull() {
+        assertSame(NullRegion.class, simplifyBoxPermmapSlice(5.0, 99.0).getClass());
+    }
+
+    @Test
+    void simplifyPermmapSliceBothConstantsOutsideIsNull() {
+        assertSame(NullRegion.class, simplifyBoxPermmapSlice(99.0, 99.0).getClass());
+    }
+
+    @Test
+    void simplifyPermmapSliceBothConstantsInsideKeepsBox() {
+        Mapping r = simplifyBoxPermmapSlice(5.0, 15.0);
         assertSame(Box.class, r.getClass());
         assertEquals(2, ((Box) r).getNaxes());
+    }
+
+    /**
+     * A Box whose current Frame is reached through a PermMap feeding one output AST__BAD
+     * simplifies to an Interval unbounded on that axis (box.c {@code Simplify}). Forward, output 1
+     * takes input 2 and output 2 is bad; inverse, input 1 takes the constant 3, inside the Box's
+     * first-axis bounds, so the slice meets the Box, and input 2 takes output 1.
+     */
+    @Test
+    void permmapBadOutputSimplifiesToUnboundedInterval() {
+        Box bx = fromBounds(new Frame(2), new double[] {1.0, 3.0}, new double[] {5.0, 9.0});
+        PermMap pm = new PermMap(2, new int[] {-1, 1}, 2, new int[] {2, 0}, new double[] {3.0});
+        FrameSet fs = bx.getRegFS();
+        int icurr = fs.getCurrent();
+        fs.addFrame(FrameSet.AST__CURRENT, pm, new Frame(2));
+        fs.removeFrame(icurr);
+        Mapping simple = bx.simplify();
+        assertSame(Interval.class, simple.getClass());
+        double[][] pts = ((Interval) simple).getPoints();
+        assertEquals(3.0, pts[0][0]);
+        assertEquals(9.0, pts[0][1]);
+        assertEquals(BAD, pts[1][0]);
+        assertEquals(BAD, pts[1][1]);
     }
 
     /**

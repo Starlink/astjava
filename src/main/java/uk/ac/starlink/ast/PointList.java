@@ -81,7 +81,7 @@ public class PointList extends Region {
      * A PointList of the points {@code points}, {@code [ncoord][npoint]}, in the Frame of {@code
      * frame}, as C's protected {@code astPointList} makes one from a PointSet.
      */
-    private PointList(Frame frame, double[][] points, Region unc) {
+    PointList(Frame frame, double[][] points, Region unc) {
         super(frame, points, unc);
     }
 
@@ -418,5 +418,46 @@ public class PointList extends Region {
     @Override
     int maskData(Mapping map, boolean inside, int ndim, int[] glbnd, int[] gubnd, PixelArray in, String method) {
         return RegionMask.pointListMask(this, map, inside, ndim, glbnd, gubnd, in, method);
+    }
+    // ------------------------------------------------------------------
+    // Simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * Simplifies the PointList (C's {@code Simplify}, pointlist.c): after the Region-generic
+     * simplification, a PointList whose base and current Frames are not joined by a UnitMap is
+     * made again in its current Frame, from its points transformed into it, with its uncertainty
+     * in that Frame. A new PointList takes this one's Negated, Closed, MeshSize, FillFactor and
+     * Adaptive values, and has no uncertainty if this one has none set.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Mapping simplifyStep() {
+        Region nw = parentSimplify();
+        boolean simpler = nw != this;
+        Mapping map = nw.getRegFS().getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        if (!isUnitMap(map)) {
+            Frame fr = regFrame();
+            double[][] pset1 = getPoints();
+            double[][] pset2 = map.transform(pset1, pset1[0].length, true);
+            Region unc = nw.getUncFrm(FrameSet.AST__CURRENT);
+            nw = new PointList(fr, pset2, unc);
+            simpler = true;
+        }
+        if (simpler) {
+            nw.regOverlay(this, true);
+            return nw;
+        }
+        return this;
+    }
+
+    /**
+     * C's {@code MapMerge} (pointlist.c): {@link RegionMerge#mapMerge} with {@link
+     * RegionMerge#mergePointList}.
+     */
+    @Override
+    int mapMerge(MergeList list, int where, boolean series) {
+        return RegionMerge.mapMerge(
+                this, list, where, series, (reg, first) -> RegionMerge.mergePointList(this, reg, first));
     }
 }

@@ -1007,4 +1007,99 @@ public class CmpRegion extends Region {
         return that.mapRegionInto(
                 fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT), fs.getFrame(FrameSet.AST__CURRENT));
     }
+    // ------------------------------------------------------------------
+    // Simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * Simplifies the CmpRegion (C's {@code Simplify}, cmpregion.c). After the Region-generic
+     * simplification, the components, negated as the CmpRegion's Negated value requires ({@link
+     * #regions}), are simplified. A component that is a NullRegion is dropped: an AND with an
+     * empty one is empty (a NullRegion in the other's Frame, with its uncertainty) and an OR is the
+     * other; an AND with an infinite one (a negated NullRegion) is the other and an OR is infinite.
+     * Otherwise the overlap of the two decides: an AND of Regions with nothing in common is empty;
+     * an OR of a Region and its negation is infinite; two identical Regions give the first; and
+     * when one is inside the other an AND gives the inner and an OR the outer. Failing those, a
+     * new CmpRegion is made of the simplified components if any simplified. A Region found in the
+     * base Frame this way is mapped into the current Frame.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Mapping simplifyStep() {
+        CmpRegion newc = (CmpRegion) parentSimplify();
+        boolean simpler = newc != this;
+        Region newb = null;
+        int[] op = new int[1];
+        Region[] regs = newc.regions(newc.getNegated(), op);
+        int oper = op[0];
+        Region reg1 = regs[0];
+        Region reg2 = regs[1];
+        Region sreg1 = (Region) reg1.simplify();
+        Region sreg2 = (Region) reg2.simplify();
+        simpler = simpler || sreg1 != reg1 || sreg2 != reg2;
+        if (sreg1 instanceof NullRegion || sreg2 instanceof NullRegion) {
+            Region nullreg;
+            Region othereg;
+            if (sreg1 instanceof NullRegion) {
+                nullreg = sreg1;
+                othereg = sreg2;
+            } else {
+                nullreg = sreg2;
+                othereg = sreg1;
+            }
+            if (!nullreg.getNegated()) {
+                if (oper == AST__AND) {
+                    newb = new NullRegion(othereg, othereg.getUnc(false));
+                } else if (oper == AST__OR) {
+                    newb = (Region) othereg.copy();
+                } else {
+                    throw newc.unknownOperator("astSimplify");
+                }
+            } else {
+                if (oper == AST__AND) {
+                    newb = (Region) othereg.copy();
+                } else if (oper == AST__OR) {
+                    newb = new NullRegion(othereg, othereg.getUnc(false));
+                    newb.setNegated(true);
+                } else {
+                    throw newc.unknownOperator("astSimplify");
+                }
+            }
+            simpler = true;
+        } else {
+            int overlap = sreg1.overlap(sreg2);
+            if ((overlap == OVERLAP_NONE || overlap == OVERLAP_NEGATE) && oper == AST__AND) {
+                newb = new NullRegion(sreg1, sreg1.getUnc(false));
+                simpler = true;
+            } else if (overlap == OVERLAP_NEGATE && oper == AST__OR) {
+                newb = new NullRegion(sreg1, sreg1.getUnc(false));
+                newb.setNegated(true);
+                simpler = true;
+            } else if (overlap == OVERLAP_SAME) {
+                simpler = true;
+                if (oper == AST__AND || oper == AST__OR) {
+                    newb = (Region) sreg1.copy();
+                } else {
+                    throw newc.unknownOperator("astSimplify");
+                }
+            } else if (overlap == OVERLAP_INSIDE && (oper == AST__AND || oper == AST__OR)) {
+                newb = (Region) (oper == AST__AND ? sreg1 : sreg2).copy();
+                simpler = true;
+            } else if (overlap == OVERLAP_OUTSIDE && (oper == AST__AND || oper == AST__OR)) {
+                newb = (Region) (oper == AST__AND ? sreg2 : sreg1).copy();
+                simpler = true;
+            } else if (simpler) {
+                newb = new CmpRegion((Region) sreg1.copy(), (Region) sreg2.copy(), oper);
+            }
+        }
+        if (!simpler) {
+            return this;
+        }
+        if (newb == null) {
+            return newc;
+        }
+        Frame frm = newc.regFrame();
+        Mapping map = newc.getRegFS().getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        return newb.mapRegionInto(map, frm);
+    }
 }
