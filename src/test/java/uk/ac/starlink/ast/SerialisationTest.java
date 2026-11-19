@@ -729,4 +729,18 @@ class SerialisationTest {
 
         assertEquals(text, dump(back));
     }
+
+    /** Rust {@code round_trip_box_region}: a Box written and read back keeps its area. */
+    @Test
+    void roundTripBoxRegion() {
+        Box box = new Box(new Frame(2), 0, new double[] {5.0, 5.0}, new double[] {3.0, 4.0}, null);
+        String text = ChannelText.dump(box);
+        assertTrue(text.contains("Begin Box"), "missing Begin Box");
+        assertTrue(text.contains("End Box"), "missing End Box");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {5.0, 5.0}));
+        assertTrue(region.pointInRegion(new double[] {6.0, 5.5}));
+        assertFalse(region.pointInRegion(new double[] {50.0, 50.0}));
+    }
 }

@@ -17,7 +17,8 @@ import java.util.regex.Pattern;
  *
  * <p>It understands the subset of Rust those files use for data: {@code const} items (public,
  * public within a module such as {@code pub(super)}, or not) whose values are integer, float, string, raw string and boolean literals, tuples, arrays and
- * {@code &[...]} slices, {@code Some(x)} and {@code None}, negation, the {@code f64} constants
+ * {@code &[...]} slices, {@code Some(x)} and {@code None}, negation, sums and differences of
+ * numbers ({@code 5.0 + 1.0e-12}), the {@code f64} constants
  * ({@code f64::NAN}, {@code f64::INFINITY}, {@code f64::NEG_INFINITY}, {@code f64::MAX}), AST's bad
  * value ({@code BAD_VALUE}, however qualified, or the name a {@code use ... BAD_VALUE as NAME}
  * item gives it), and names of constants defined earlier in the same
@@ -152,7 +153,42 @@ public final class RustLiteral {
         consts.put(name, value);
     }
 
+    /**
+     * An expression: a term, followed by any number of terms each added or subtracted, as in
+     * {@code 5.0 + 1.0e-12}, evaluated left to right in the type of the terms as Rust evaluates a
+     * constant expression.
+     */
     private Object expr() {
+        Object value = term();
+        while (true) {
+            int save = pos;
+            skipSpace();
+            if (pos >= src.length() || (peek() != '+' && peek() != '-')) {
+                pos = save;
+                return value;
+            }
+            char op = peek();
+            pos++;
+            Object rhs = term();
+            value = arithmetic(value, op, rhs);
+        }
+    }
+
+    private Object arithmetic(Object a, char op, Object b) {
+        if (a instanceof Double && b instanceof Double) {
+            double x = (Double) a;
+            double y = (Double) b;
+            return op == '+' ? x + y : x - y;
+        }
+        if (a instanceof Long && b instanceof Long) {
+            long x = (Long) a;
+            long y = (Long) b;
+            return op == '+' ? x + y : x - y;
+        }
+        throw error("cannot apply " + op + " to " + a + " and " + b);
+    }
+
+    private Object term() {
         skipSpace();
         if (pos >= src.length()) {
             throw error("unexpected end of input");
@@ -160,11 +196,11 @@ public final class RustLiteral {
         char c = peek();
         if (c == '&') {
             pos++;
-            return expr();
+            return term();
         }
         if (c == '-') {
             pos++;
-            return negate(expr());
+            return negate(term());
         }
         if (c == '[') {
             pos++;

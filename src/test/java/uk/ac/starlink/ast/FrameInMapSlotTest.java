@@ -18,7 +18,9 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * of its CmpFrame, and transforms through it before and after a dump and reload. {@code
  * frameInAMapSlotIsRejected} reads the probe's dump, whose Mapping slot holds a CmpFrame, and
  * asserts C's acceptance: the dump is read, and the FrameSet transforms as the probe reports C's
- * does, (1, 3) to (2, 6). The two controls, which read Regions, are deferred.
+ * does, (1, 3) to (2, 6). {@code aRegionInsideACmpFrameStillReads} is the Rust test's second
+ * control; the first, a Region inside a CmpMap, needs Region classes not yet present and is
+ * deferred.
  */
 class FrameInMapSlotTest {
 
@@ -58,5 +60,19 @@ class FrameInMapSlotTest {
 
         FrameSet back = assertInstanceOf(FrameSet.class, ChannelText.read(ChannelText.dump(fs)));
         checkTransform(back);
+    }
+
+    /**
+     * A Region is a Frame, so a CmpFrame may hold one, and C's own dump of that arrangement reads
+     * here ({@code serialisation/region_in_cmpframe.ast}).
+     */
+    @Test
+    void aRegionInsideACmpFrameStillReads() {
+        String text = Fixtures.read("serialisation/region_in_cmpframe.ast");
+        CmpFrame cf = assertInstanceOf(CmpFrame.class, ChannelText.read(text));
+        assertEquals(2, cf.getNaxes());
+        assertInstanceOf(Box.class, cf.decompose(null, null)[0]);
+        CmpFrame back = assertInstanceOf(CmpFrame.class, ChannelText.read(ChannelText.dump(cf)));
+        assertInstanceOf(Box.class, back.decompose(null, null)[0]);
     }
 }

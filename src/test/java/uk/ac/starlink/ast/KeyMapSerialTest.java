@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.Fixtures;
@@ -377,5 +379,153 @@ class KeyMapSerialTest {
                 assertEquals(first, text, "rotation " + rotate + " dumped differently");
             }
         }
+    }
+
+    // ------------------------------------------------------------------
+    // The KeyMap of simplify/cap_timemap_02.map
+    // ------------------------------------------------------------------
+
+    /** The Begin KeyMap ... End KeyMap block of a native document, read on its own. */
+    private static String extractKeyMapBlock(String text) {
+        List<String> lines = CValues.lines(text);
+        int begin = -1;
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).trim().startsWith("Begin KeyMap")) {
+                begin = i;
+                break;
+            }
+        }
+        assertTrue(begin >= 0, "fixture has no KeyMap");
+        int base = column(lines.get(begin));
+        StringBuilder sb = new StringBuilder();
+        for (int i = begin; i < lines.size(); i++) {
+            sb.append(lines.get(i)).append('\n');
+            if (lines.get(i).trim().startsWith("End KeyMap") && column(lines.get(i)) == base) {
+                return sb.toString();
+            }
+        }
+        throw new AssertionError("unterminated KeyMap");
+    }
+
+    /** An item, commented or not, with its leading white space and any {@code #} removed. */
+    private static String normalise(String line) {
+        String t = line.replaceAll("^\\s+", "");
+        if (t.startsWith("#")) {
+            return "#" + t.substring(1).replaceAll("^\\s+", "");
+        }
+        return t;
+    }
+
+    private static String trimTrailingDigits(String s) {
+        int n = s.length();
+        while (n > 0 && Character.isDigit(s.charAt(n - 1))) {
+            n--;
+        }
+        return s.substring(0, n);
+    }
+
+    /**
+     * An item with the entry number of its name replaced by {@code #}, so that {@code Key3} and
+     * {@code Key1} compare equal and {@code V3_2} compares equal to {@code V1_2}.
+     */
+    private static String renumber(String content) {
+        String body = content.startsWith("#") ? content.substring(1) : content;
+        String hash = content.startsWith("#") ? "#" : "";
+        int eq = body.indexOf(" =");
+        if (eq < 0) {
+            return content;
+        }
+        String name = body.substring(0, eq);
+        String rest = body.substring(eq);
+        int us = name.indexOf('_');
+        String renamed;
+        if (us >= 0) {
+            renamed = trimTrailingDigits(name.substring(0, us)) + "#" + name.substring(us);
+        } else {
+            String stem = trimTrailingDigits(name);
+            renamed = stem.length() == name.length() ? name : stem + "#";
+        }
+        return hash + renamed + rest;
+    }
+
+    /**
+     * A KeyMap block split into the items before the first entry and the items of each entry,
+     * keyed by the entry's key, renumbered: C writes entries in the order of its hash table, so
+     * the entries are compared without regard to order. Only items at the block's own column start
+     * an entry, so a nested KeyMap's entries stay in the entry holding it.
+     */
+    private static Map<String, List<String>> splitKeyMap(String text, List<String> header) {
+        List<String> lines = new ArrayList<>();
+        for (String l : CValues.lines(text)) {
+            if (!CValues.isBlank(l)) {
+                lines.add(l);
+            }
+        }
+        int begin = 0;
+        while (!lines.get(begin).trim().startsWith("Begin KeyMap")) {
+            begin++;
+        }
+        int base = column(lines.get(begin));
+        int own = base + 3;
+        Map<String, List<String>> entries = new TreeMap<>();
+        List<String> current = header;
+        for (int i = begin + 1; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (line.trim().startsWith("End KeyMap") && column(line) == base) {
+                break;
+            }
+            String card = normalise(line);
+            int eq = card.indexOf(" =");
+            boolean startsEntry = column(line) == own
+                    && !card.startsWith("#")
+                    && card.startsWith("Key")
+                    && eq > 3
+                    && card.substring(3, eq).chars().allMatch(Character::isDigit);
+            if (startsEntry) {
+                String value = card.substring(eq + 2);
+                int tab = value.indexOf('\t');
+                String key = (tab < 0 ? value : value.substring(0, tab)).trim().replaceAll("^\"|\"$", "");
+                current = entries.computeIfAbsent(key, k -> new ArrayList<>());
+            }
+            current.add(renumber(card));
+        }
+        return entries;
+    }
+
+    private static boolean isMapSzCard(String card) {
+        return card.replaceAll("^[#\\s]+", "").startsWith("MapSz =");
+    }
+
+    /** Rust {@code the_c_fixture_keymap_round_trips}: the KeyMap block of a C fixture, read and written. */
+    @Test
+    void theCFixtureKeyMapRoundTrips() {
+        String block = extractKeyMapBlock(Fixtures.read("simplify/cap_timemap_02.map"));
+        KeyMap km = assertInstanceOf(KeyMap.class, ChannelText.read(block));
+        assertEquals(4, km.mapSize());
+        for (String key : new String[] {"Size", "Name", "Resolution", "Error"}) {
+            assertTrue(km.mapHasKey(key), "missing " + key);
+        }
+        assertEquals(4, km.mapLength("Name"));
+        String out = ChannelText.dump(km);
+        List<String> wantHeader = new ArrayList<>();
+        List<String> gotHeader = new ArrayList<>();
+        Map<String, List<String>> want = splitKeyMap(block, wantHeader);
+        Map<String, List<String>> got = splitKeyMap(out, gotHeader);
+        wantHeader.removeIf(KeyMapSerialTest::isMapSzCard);
+        gotHeader.removeIf(KeyMapSerialTest::isMapSzCard);
+        assertEquals(wantHeader, gotHeader, "header cards differ");
+        assertEquals(want.keySet(), got.keySet(), "entry key sets differ");
+        for (Map.Entry<String, List<String>> e : want.entrySet()) {
+            assertEquals(e.getValue(), got.get(e.getKey()), "entry " + e.getKey() + " differs");
+        }
+    }
+
+    /** Rust {@code the_c_fixture_map_sz_matches}: C wrote MapSz = 16 for these four keys. */
+    @Test
+    void theCFixtureMapSzMatches() {
+        String block = extractKeyMapBlock(Fixtures.read("simplify/cap_timemap_02.map"));
+        assertEquals(16, mapSzCardOf(block));
+        KeyMap km = assertInstanceOf(KeyMap.class, ChannelText.read(block));
+        assertEquals(16, dumpedMapSz(km));
     }
 }

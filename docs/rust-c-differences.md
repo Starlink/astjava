@@ -792,6 +792,33 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: `frame_grid_default` converts with `as`, which saturates as AArch64 does, and multiplies the counts in `i32`, which panics on overflow in a debug build; its SkyFrame `frame_grid` returns an empty PointSet where C's `astSetNpoint` reports AST__NPTIN.
 - Java: as the pinned library on AArch64, Java's conversion saturating and giving 0 for a NaN (`FrameGridTest`); the SkyFrame box of zero width in longitude takes as long as C's and is not tested.
 
+## Regions
+
+### The default uncertainty of a Region that moves
+
+- C: a Region builds its default uncertainty once (region.c `GetUncFrm`) and keeps it until an uncertainty is set or cleared; `ResetCache` leaves it, so a Box moved by `astRegCentre` is still widened, where it has zero width, by the uncertainty made where it was. **C quirk.**
+- Rust: discards the default uncertainty whenever the Region changes (`RegionData::invalidate_cache`), and `test_box_region.rs` pins that.
+- Java: as C; `BoxRegionTest.defaultUncertaintyFollowsAMovedBox` takes its values from `src/test/resources/probes/region_defunc_probe.c`.
+
+### Setting an axis attribute on a Region that is not Adaptive
+
+- C: `RegSetAttrib` moves the setting to the base Frame axis the current Frame axis feeds only when `sscanf( setting, "%[^(](%d)= %n%*s %n" )` reads the whole setting, so a value holding white space, such as `Label(1)=Right ascension`, is set on the base Frame axis of the same number even when the axes are permuted. **C quirk.**
+- Rust: always moves the setting to the base Frame axis.
+- Java: as C (`Region.regSetAttrib`).
+
+### Protected Frame setters of a Region
+
+- C: region.c's `SetEpoch`, `SetObsLat` and `SetObsLon` pass the internal value to `astSetD` on the encapsulated FrameSet, which reads it as a year or as degrees. **C bug.**
+- Rust: has no string route.
+- Java: the package-private `setEpochMjd` sets `MJD <value>` on the FrameSet, which keeps the FrameSet's integrity; `setObsLatValue`, `setObsLonValue` and `setObsAlt` set the FrameSet's current Frame directly.
+  No public method reaches them.
+
+### Bad and non-finite coordinates of a Box
+
+- C: `astInitBox` rejects a coordinate equal to `AST__BAD` (`AST__BADIN`) and accepts NaN.
+- Rust: rejects `AST__BAD` and NaN.
+- Java: rejects `AST__BAD`, NaN and the infinities with C's message, by the library's rule that a non-finite coordinate is bad; the membership test treats them as bad too.
+
 ## FitsChan
 
 ### An equals sign in a keyword name is reported as an `astPutFits` error from every method

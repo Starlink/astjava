@@ -28,6 +28,8 @@ final class ObjectRegistry {
         switch (className) {
             case "Axis":
                 return Axis::new;
+            case "Box":
+                return Box::new;
             case "Channel":
                 return Channel::new;
             case "CmpFrame":
