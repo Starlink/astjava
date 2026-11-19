@@ -1062,7 +1062,7 @@ public class TimeFrame extends Frame {
         }
         double mjd = transformValue(map, value, true);
         if (df.ndp < 0) {
-            mjd = roundHalfAway(mjd);
+            mjd = CMath.roundHalfAway(mjd);
         }
         // An MJD palDjcl cannot convert leaves C's uninitialised fields; zeros are given here.
         Jd2cal.Result cal = Pal.djcl(mjd);
@@ -1090,14 +1090,6 @@ public class TimeFrame extends Frame {
             }
         }
         return sb.toString();
-    }
-
-    /** C's {@code round}: to the nearest integer, halfway cases away from zero. */
-    private static double roundHalfAway(double x) {
-        double a = Math.abs(x);
-        double t = Math.floor(a);
-        // a - t is exact, so a value just below a half is not rounded up.
-        return Math.copySign(a - t >= 0.5 ? t + 1.0 : t, x);
     }
 
     /** C's {@code astChrLen}: the length of a string without trailing white space. */

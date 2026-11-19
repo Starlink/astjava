@@ -63,7 +63,7 @@ final class KeyMapConvert {
         if (Double.isNaN(d)) {
             return 0.0;
         }
-        double r = roundHalfAway(d);
+        double r = CMath.roundHalfAway(d);
         if (r >= max) {
             return max;
         }
@@ -71,19 +71,6 @@ final class KeyMapConvert {
             return min;
         }
         return r;
-    }
-
-    /** C's {@code round}: to the nearest integer, halves away from zero. */
-    private static double roundHalfAway(double d) {
-        if (Double.isInfinite(d)) {
-            return d;
-        }
-        double t = d < 0 ? Math.ceil(d) : Math.floor(d);
-        double frac = Math.abs(d - t);
-        if (frac >= 0.5) {
-            t += d < 0 ? -1.0 : 1.0;
-        }
-        return t;
     }
 
     static int dToI32(double d) {
@@ -102,7 +89,7 @@ final class KeyMapConvert {
         if (Double.isNaN(d)) {
             return 0;
         }
-        double r = roundHalfAway(d);
+        double r = CMath.roundHalfAway(d);
         if (r >= TWO_POW_63) {
             return Long.MAX_VALUE;
         }

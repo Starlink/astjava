@@ -878,8 +878,8 @@ public class CmpFrame extends Frame {
                 ubnd2[iaxis] = ubnd[axis];
             }
         }
-        int size1 = (int) FitsMakeIntWorld.roundHalfAway(Math.pow(size, (double) nax1 / numAxes));
-        int size2 = (int) FitsMakeIntWorld.roundHalfAway((double) size / size1);
+        int size1 = (int) CMath.roundHalfAway(Math.pow(size, (double) nax1 / numAxes));
+        int size2 = (int) CMath.roundHalfAway((double) size / size1);
         double[][] ptr1 = frame1.frameGrid(size1, lbnd1, ubnd1);
         double[][] ptr2 = frame2.frameGrid(size2, lbnd2, ubnd2);
         int npoint1 = ptr1[0].length;

@@ -134,8 +134,8 @@ final class RegionMask {
             double lb = bounds[0][idim];
             double ub = bounds[1][idim];
             if (lb != AstObject.AST__BAD && ub != AstObject.AST__BAD) {
-                lbndg[idim] = Math.max(lbnd[idim], (int) FitsMakeIntWorld.roundHalfAway(lb) - 2);
-                ubndg[idim] = Math.min(ubnd[idim], (int) FitsMakeIntWorld.roundHalfAway(ub) + 2);
+                lbndg[idim] = Math.max(lbnd[idim], (int) CMath.roundHalfAway(lb) - 2);
+                ubndg[idim] = Math.min(ubnd[idim], (int) CMath.roundHalfAway(ub) + 2);
             } else {
                 lbndg[idim] = lbnd[idim];
                 ubndg[idim] = ubnd[idim];
@@ -229,7 +229,7 @@ final class RegionMask {
             int ii = 0;
             for (int j = 0; j < ndim && ii >= 0; j++) {
                 double v = ptr2[j][i];
-                double gpix = FitsMakeIntWorld.roundHalfAway(v);
+                double gpix = CMath.roundHalfAway(v);
                 if (Mapping.isBad(v) || gpix < lbnd[j] || gpix > ubnd[j]) {
                     ii = -1;
                 } else {

@@ -420,7 +420,7 @@ final class FitsMakeIntWorld {
             double[][] ptr1 = tmap.transform(ptr2, 1, false);
             for (int i = 0; i < nin; i++) {
                 if (ptr1[i][0] != AST__BAD) {
-                    ptr1[i][0] = roundHalfAway(ptr1[i][0]);
+                    ptr1[i][0] = CMath.roundHalfAway(ptr1[i][0]);
                 }
             }
             ptr2 = tmap.transform(ptr1, 1, true);
@@ -429,12 +429,5 @@ final class FitsMakeIntWorld {
             }
         }
         return result;
-    }
-
-    /** C's {@code round}: to the nearest integer, halfway cases away from zero. */
-    static double roundHalfAway(double x) {
-        double a = Math.abs(x);
-        double fl = Math.floor(a);
-        return Math.copySign(a - fl >= 0.5 ? fl + 1.0 : fl, x);
     }
 }

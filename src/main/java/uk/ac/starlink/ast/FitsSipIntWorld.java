@@ -415,8 +415,8 @@ final class FitsSipIntWorld {
             for (int icoeff = 0; icoeff < ncoeff; icoeff++) {
                 int pc = 4 * icoeff;
                 if (inaxes[0] < inaxes[1]) {
-                    int i = (int) FitsMakeIntWorld.roundHalfAway(coeffs[pc + 2]);
-                    int jm = (int) FitsMakeIntWorld.roundHalfAway(coeffs[pc + 3]);
+                    int i = (int) CMath.roundHalfAway(coeffs[pc + 2]);
+                    int jm = (int) CMath.roundHalfAway(coeffs[pc + 3]);
                     if (coeffs[pc + 1] == 1) {
                         aimax = Math.max(aimax, i);
                         ajmmax = Math.max(ajmmax, jm);
@@ -425,8 +425,8 @@ final class FitsSipIntWorld {
                         bjmmax = Math.max(bjmmax, jm);
                     }
                 } else {
-                    int i = (int) FitsMakeIntWorld.roundHalfAway(coeffs[pc + 3]);
-                    int jm = (int) FitsMakeIntWorld.roundHalfAway(coeffs[pc + 2]);
+                    int i = (int) CMath.roundHalfAway(coeffs[pc + 3]);
+                    int jm = (int) CMath.roundHalfAway(coeffs[pc + 2]);
                     if (coeffs[pc + 1] == 1) {
                         bimax = Math.max(bimax, i);
                         bjmmax = Math.max(bjmmax, jm);
@@ -457,12 +457,12 @@ final class FitsSipIntWorld {
                 int jm;
                 if (inaxes[0] < inaxes[1]) {
                     toA = coeffs[pc + 1] == 1;
-                    i = (int) FitsMakeIntWorld.roundHalfAway(coeffs[pc + 2]);
-                    jm = (int) FitsMakeIntWorld.roundHalfAway(coeffs[pc + 3]);
+                    i = (int) CMath.roundHalfAway(coeffs[pc + 2]);
+                    jm = (int) CMath.roundHalfAway(coeffs[pc + 3]);
                 } else {
                     toA = coeffs[pc + 1] != 1;
-                    i = (int) FitsMakeIntWorld.roundHalfAway(coeffs[pc + 3]);
-                    jm = (int) FitsMakeIntWorld.roundHalfAway(coeffs[pc + 2]);
+                    i = (int) CMath.roundHalfAway(coeffs[pc + 3]);
+                    jm = (int) CMath.roundHalfAway(coeffs[pc + 2]);
                 }
                 double val = coeffs[pc];
                 if ((coeffs[pc + 1] == 1 && i == 1 && jm == 0) || (coeffs[pc + 1] == 2 && i == 0 && jm == 1)) {
