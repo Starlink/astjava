@@ -3,9 +3,23 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.Fixtures;
+import uk.ac.starlink.ast.testsupport.NativeClasses;
 
 /**
  * For Rust {@code tests/test_frame_in_map_slot.rs}: a Frame where a Mapping is expected. C
@@ -18,11 +32,37 @@ import uk.ac.starlink.ast.testsupport.Fixtures;
  * of its CmpFrame, and transforms through it before and after a dump and reload. {@code
  * frameInAMapSlotIsRejected} reads the probe's dump, whose Mapping slot holds a CmpFrame, and
  * asserts C's acceptance: the dump is read, and the FrameSet transforms as the probe reports C's
- * does, (1, 3) to (2, 6). {@code aRegionInsideACmpFrameStillReads} is the Rust test's second
- * control; the first, a Region inside a CmpMap, needs Region classes not yet present and is
- * deferred.
+ * does, (1, 3) to (2, 6). {@code aRegionInsideACmpMapStillReads} and {@code
+ * aRegionInsideACmpFrameStillReads} are the Rust test's two controls.
  */
 class FrameInMapSlotTest {
+
+    /** The Region classes whose blocks {@link #regionNestedIn} looks for, as the Rust test lists them. */
+    private static final List<String> REGION_CLASSES = Arrays.asList(
+            "Box", "Circle", "Ellipse", "Interval", "NullRegion", "PointList", "Polygon", "Prism", "CmpRegion");
+
+    /**
+     * Whether a native dump nests a Region block inside a block of class {@code outer}, by walking
+     * the block structure: every CmpFrame of the simplify corpus is a Region's own Frame, the
+     * opposite nesting.
+     */
+    private static boolean regionNestedIn(String text, String outer) {
+        Deque<String> stack = new ArrayDeque<>();
+        for (String line : text.split("\n", -1)) {
+            String s = line.trim();
+            if (s.startsWith("Begin ")) {
+                String[] words = s.substring("Begin ".length()).trim().split("\\s+", -1);
+                String cls = words[0];
+                if (REGION_CLASSES.contains(cls) && stack.contains(outer)) {
+                    return true;
+                }
+                stack.push(cls);
+            } else if (s.startsWith("End ")) {
+                stack.poll();
+            }
+        }
+        return false;
+    }
 
     private static void checkTransform(FrameSet fs) {
         double[][] out = fs.tran2(2, new double[] {1.0, 2.0}, new double[] {3.0, 4.0}, true);
@@ -60,6 +100,39 @@ class FrameInMapSlotTest {
 
         FrameSet back = assertInstanceOf(FrameSet.class, ChannelText.read(ChannelText.dump(fs)));
         checkTransform(back);
+    }
+
+    /**
+     * A Region is a Mapping, so a CmpMap may hold one, and every {@code simplify/*.map} fixture
+     * nesting a Region inside a CmpMap reads. Six of the 34 such fixtures also hold a SelectorMap,
+     * which the library cannot load yet; each of those must fail for that reason alone. The 28
+     * others are a floor, not an equality, as in the Rust test: fixtures are added.
+     */
+    @Test
+    void aRegionInsideACmpMapStillReads() throws IOException {
+        int read = 0;
+        List<String> refused = new ArrayList<>();
+        try (DirectoryStream<Path> dir =
+                Files.newDirectoryStream(Fixtures.root().resolve("simplify"), "*.map")) {
+            for (Path path : dir) {
+                String text = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+                if (!regionNestedIn(text, "CmpMap")) {
+                    continue;
+                }
+                String needs = NativeClasses.needs(text);
+                if (needs == null) {
+                    assertNotNull(ChannelText.read(text), path.getFileName() + " no longer reads");
+                    read++;
+                } else {
+                    assertEquals("needs SelectorMap", needs, path.getFileName().toString());
+                    AstException e = assertThrows(AstException.class, () -> ChannelText.read(text));
+                    assertTrue(e.getMessage().contains("unknown AST class: SelectorMap"), e.getMessage());
+                    refused.add(path.getFileName().toString());
+                }
+            }
+        }
+        assertTrue(read >= 28, "only " + read + " fixtures nest a Region inside a CmpMap and read");
+        assertEquals(6, refused.size(), "fixtures refused for want of SelectorMap: " + refused);
     }
 
     /**

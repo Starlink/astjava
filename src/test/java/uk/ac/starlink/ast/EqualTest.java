@@ -25,7 +25,7 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  *
  * <p>Rust's {@code chebymap_same} and {@code chebymap_different_bounds} need ChebyMap and are listed
  * in {@code deferred/rust-tests.txt}. The SelectorMap cases of {@code oracle/equal.json} are
- * skipped: they need SelectorMap and Regions.
+ * skipped: they need SelectorMap.
  */
 class EqualTest {
 

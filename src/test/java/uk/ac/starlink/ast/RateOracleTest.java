@@ -17,8 +17,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * it records (tranmap.c Rate). A RateMap read from a dump whose recorded orientation ({@code Inv})
  * differs from its Mapping's Invert asks the rate in the recorded orientation.
  *
- * <p>The SwitchMap cases select their routes with a SelectorMap of Box Regions, classes not yet
- * ported, so {@code rates_match_the_c_library} runs the others.
+ * <p>The SwitchMap cases select their routes with a SelectorMap of Box Regions; SelectorMap is not
+ * yet ported, so {@code rates_match_the_c_library} runs the others.
  */
 class RateOracleTest {
 
@@ -29,7 +29,7 @@ class RateOracleTest {
         return new RateMap(map, 1, 1).tranN(1, at.length, at, true, 1)[0];
     }
 
-    /** Java's rate for a case, or null for a case whose classes are not yet ported. */
+    /** Java's rate for a case, or null for a case that needs SelectorMap. */
     private static Double rate(String name) {
         switch (name) {
             case "ratemap_zoommap_bad_input":
