@@ -825,6 +825,33 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: rejects `AST__BAD` and NaN.
 - Java: rejects `AST__BAD`, NaN and the infinities with C's message, by the library's rule that a non-finite coordinate is bad; the membership test treats them as bad too.
 
+### Negating a Region in place to test overlap or to mask
+
+- C: region.c `OverlapX` negates the first Region with `astNegate` and back again to compare its negation with the second, and `Mask<X>` does the same to the Region it masks with when it masks the inside, which with no Mapping is the Region given; `astNegate` sets Negated, so afterwards Negated is set (to its old value) and what the Region kept about its boundary is discarded.
+- Rust: compares and masks with a negated copy, leaving the Region alone.
+- Java: as C (`RegionOverlap.overlap`, `RegionMask.mask`); `RegionOverlapMaskProbeTest` pins the Negated flag from `src/test/resources/probes/region_overlap_mask_probe.c`.
+
+### The negated copy of an Adaptive Region after a change of coordinate system
+
+- C: region.c `GetNegation` keeps a negated copy of the Region until `ResetCache`, but a Frame attribute set on an Adaptive Region goes to `astSet` on the encapsulated FrameSet with no `ResetCache`, so the copy keeps the old coordinate system: after a SpecFrame Box changes from System FREQ to WAVE, its negation is still in FREQ.
+  A Region that is not Adaptive discards the copy (`RegSetAttrib`).
+  Only cmpregion.c uses the copy. **C quirk.**
+- Rust: makes a new negated copy each time (`negated_copy`).
+- Java: as C (`Region.getNegation`); `RegionOverlapMaskProbeTest.keptNegationMatchesC` takes its values from `src/test/resources/probes/region_overlap_mask_probe.c`.
+
+### Widening the box around a Region with no boundary mesh in `OverlapX`
+
+- C: when the first Region has no boundary mesh, region.c `OverlapX` doubles the bounds of the other Region's mesh in the first Region's base Frame and passes them to `BndBaseMesh` as bounds in its current Frame; it doubles as many as the Region has current Frame axes, in arrays with one element for each base Frame axis, so with more current than base Frame axes it writes beyond them. **C bug.**
+- Rust: doubles one bound for each base Frame axis.
+- Java: as C when the arrays are long enough, and `AST__INTER` otherwise.
+
+### The grid box of a Region unbounded above in `Mask<X>`
+
+- C: region.c `Mask<X>` turns each bound of the Region's bounding box in grid coordinates into a pixel index with `(int)round( bound ) + 2` in `int` arithmetic.
+  On an axis with no upper limit the bound is `DBL_MAX`, whose conversion to `int` is undefined (AArch64 gives `INT_MAX`, x86-64 `INT_MIN`) and whose sum then overflows, so the box is empty and every pixel is taken to be on the side of the Region its outside is: masking the inside of the Interval x >= 3 on pixels 1 to 10 sets none, and masking its outside sets all ten. **C bug.**
+- Rust: computes the index in 64-bit integers, which overflow likewise.
+- Java: as C on AArch64 (`RegionMask.mask`): the conversion saturates and the `int` sum wraps, giving the same empty box.
+
 ## FitsChan
 
 ### An equals sign in a keyword name is reported as an `astPutFits` error from every method

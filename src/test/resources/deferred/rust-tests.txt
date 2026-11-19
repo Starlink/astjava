@@ -237,3 +237,6 @@ tests/test_box_region.rs::simplify_permmap_slice_outside_constant_first_is_null 
 tests/test_box_region.rs::simplify_permmap_slice_outside_constant_last_is_null | needs simplification
 tests/test_box_region.rs::simplify_permmap_slice_both_constants_outside_is_null | needs simplification
 src/regions/box_region.rs::permmap_bad_output_simplifies_to_unbounded_interval | needs simplification
+tests/test_region_mapregion_oracle.rs::bad_limit_keeps_every_axis | Interval (Region, out of scope)
+tests/test_region_mapregion_oracle.rs::identity_chain_dumps_only_the_frame | Circle (Region, out of scope)
+tests/test_region_mapregion_oracle.rs::public_map_region_simplifies | needs simplification

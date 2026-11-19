@@ -13,10 +13,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * the same Negated and Closed values. A Region whose Unit was changed adaptively has the same
  * points and current Frame as a Box built in the new unit, but a different base Frame and Mapping,
  * so the two are not equal ({@code oracle/region_equal.json}, from {@code
- * tools/oracle_fixtures/region_equal_probe.c}).
- *
- * <p>The third column of each case, C's {@code astOverlap}, is not checked: {@link
- * Region#overlap} is not ported.
+ * tools/oracle_fixtures/region_equal_probe.c}). The third column of each case is C's {@code
+ * astOverlap} of the pair, which {@link Region#overlap} must give.
  */
 class RegionEqualOracleTest {
 
@@ -60,11 +58,12 @@ class RegionEqualOracleTest {
     }
 
     @Test
-    void equalityMatchesTheCLibrary() {
+    void equalityAndOverlapMatchTheCLibrary() {
         for (JsonNode c : DATA.get("CASES")) {
             String name = c.get(0).textValue();
             Region[] ab = pair(name);
             assertEquals(c.get(1).booleanValue(), ab[0].equalTo(ab[1]), name + ": equal");
+            assertEquals(c.get(2).intValue(), ab[0].overlap(ab[1]), name + ": overlap");
         }
     }
 }

@@ -1,5 +1,7 @@
 package uk.ac.starlink.ast;
 
+import java.util.Arrays;
+
 /**
  * An array of pixel values of one of jniast's data types, with the bad value of the call it is
  * given to: the Java form of the {@code Xtype}, {@code Xfloating}, {@code Xfloattype} and {@code
@@ -113,6 +115,9 @@ abstract class PixelArray {
 
     /** The underlying Java array. */
     abstract Object array();
+
+    /** A new array of this type and bad value, of {@code n} elements each the bad value. */
+    abstract PixelArray filled(int n);
 
     /**
      * Calls the {@code uinterp<X>} method of {@code calc} for this array's type, with this array
@@ -238,6 +243,13 @@ abstract class PixelArray {
         }
 
         @Override
+        PixelArray filled(int n) {
+            byte[] b = new byte[n];
+            Arrays.fill(b, bad);
+            return new Bytes(b, bad);
+        }
+
+        @Override
         int uinterp(
                 UinterpCalculator calc,
                 int ndimIn,
@@ -321,6 +333,13 @@ abstract class PixelArray {
         @Override
         Object array() {
             return a;
+        }
+
+        @Override
+        PixelArray filled(int n) {
+            short[] b = new short[n];
+            Arrays.fill(b, bad);
+            return new Shorts(b, bad);
         }
 
         @Override
@@ -410,6 +429,13 @@ abstract class PixelArray {
         }
 
         @Override
+        PixelArray filled(int n) {
+            int[] b = new int[n];
+            Arrays.fill(b, bad);
+            return new Ints(b, bad);
+        }
+
+        @Override
         int uinterp(
                 UinterpCalculator calc,
                 int ndimIn,
@@ -493,6 +519,13 @@ abstract class PixelArray {
         @Override
         Object array() {
             return a;
+        }
+
+        @Override
+        PixelArray filled(int n) {
+            long[] b = new long[n];
+            Arrays.fill(b, bad);
+            return new Longs(b, bad);
         }
 
         @Override
@@ -582,6 +615,13 @@ abstract class PixelArray {
         }
 
         @Override
+        PixelArray filled(int n) {
+            float[] b = new float[n];
+            Arrays.fill(b, bad);
+            return new Floats(b, bad);
+        }
+
+        @Override
         int uinterp(
                 UinterpCalculator calc,
                 int ndimIn,
@@ -665,6 +705,13 @@ abstract class PixelArray {
         @Override
         Object array() {
             return a;
+        }
+
+        @Override
+        PixelArray filled(int n) {
+            double[] b = new double[n];
+            Arrays.fill(b, bad);
+            return new Doubles(b, bad);
         }
 
         @Override

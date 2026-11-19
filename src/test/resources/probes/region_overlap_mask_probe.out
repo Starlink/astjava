@@ -1,0 +1,119 @@
+== beside
+overlap 1 1 1 1
+== inside
+overlap 3 2 1 1
+== across
+overlap 4 4 1 1
+== touching_closed
+overlap 4 4 1 1
+== touching_open
+overlap 1 1 1 1
+== same
+overlap 5 5 0 0
+== same_within_uncertainty
+overlap 5 5 1 1
+== beyond_uncertainty
+overlap 2 4 1 1
+== negated
+overlap 6 6 1 1
+== negated_within_uncertainty
+overlap 6 6 1 1
+== negated_around_inside
+overlap 1 1 1 1
+== negated_around_beside
+overlap 3 2 1 1
+== negated_around_across
+overlap 4 4 1 1
+== both_negated
+overlap 2 3 1 1
+== units_inside
+overlap 3 2 1 1
+== units_same
+overlap 5 5 1 1
+== rotated_inside
+overlap 3 2 1 1
+== rotated_across
+overlap 4 4 1 1
+== rotated_around
+overlap 2 3 1 1
+== rotated_same
+overlap 5 5 0 0
+== three_d_across
+overlap 4 4 1 1
+== domains
+overlap 0 0 1 1
+== box_inside
+mask 1 0 1 2 0 1 2 0 1 2 0 1 2 0 1 9 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 1
+== box_outside
+mask 27 9 9 9 9 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 9 9 9 9 9 9 9 9 9 9 9 0
+== negated_box_inside
+mask 27 9 9 9 9 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 9 9 9 9 9 9 9 9 9 9 9 1
+== negated_box_outside
+mask 1 0 1 2 0 1 2 0 1 2 0 1 2 0 1 9 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 1
+== zoomed_inside
+mask 1 0 1 2 0 1 2 0 1 2 0 1 2 0 1 9 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0
+== zoomed_outside
+mask 27 9 9 9 9 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 9 9 9 9 9 9 9 9 9 9 9 0
+== off_edge_inside
+mask 2 0 1 2 0 9 9 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 1
+== off_edge_outside
+mask 30 9 9 9 0 1 2 9 9 9 0 1 2 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 0
+== off_grid_inside
+mask 0 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0
+== off_grid_outside
+mask 36 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 0
+== negated_off_grid_inside
+mask 36 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 1
+== negated_off_grid_outside
+mask 0 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 1
+== grid_inside_box
+mask 36 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 1
+== half_pixel_edges
+mask 4 0 1 2 0 1 2 0 1 2 0 1 2 0 9 9 0 1 2 0 9 9 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 1
+== one_d
+mask 3 0 1 2 9 9 9 0 1 2 0 1
+== three_d
+mask 63 0 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 0
+== float_inside
+mask 1 0 1 2 0 1 2 0 1 2 0 1 2 0 1 9 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 1
+== long_outside
+mask 27 9 9 9 9 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 9 9 9 9 9 9 9 9 9 9 9 0
+== int_inside
+mask 1 0 1 2 0 1 2 0 1 2 0 1 2 0 1 9 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 1
+== short_outside
+mask 27 9 9 9 9 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 1 2 0 9 9 9 9 9 9 9 9 9 9 9 9 9 9 0
+== byte_inside
+mask 1 0 1 2 0 1 2 0 1 2 0 1 2 0 1 9 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 1
+== map_wrong_inputs
+!! AST: Error in routine maskd at line 117 in file src/test/resources/probes/region_overlap_mask_probe.c.
+!  astMaskD(Box): Bad number of mapping inputs (3).
+!  The Box given requires 2 coordinate values to specify a position.
+status 233933850
+== map_wrong_outputs
+!! AST: Error in routine maskd at line 117 in file src/test/resources/probes/region_overlap_mask_probe.c.
+!  astMaskD(Box): Bad number of mapping outputs (3).
+!  The pixel grid requires 2 coordinate values to specify a position.
+status 233933850
+== wrong_ndim
+!! AST: Error in routine maskd at line 117 in file src/test/resources/probes/region_overlap_mask_probe.c.
+!  astMaskD(Box): Bad number of input grid dimensions (1).
+!  The Box given requires 2 coordinate values to specify an input position.
+status 233933850
+== zero_ndim
+!! AST: Error in routine maskd at line 117 in file src/test/resources/probes/region_overlap_mask_probe.c.
+!  astMaskD(Box): Bad number of input grid dimensions (0).
+!  The Box given requires 1 coordinate value to specify an input position.
+status 233933850
+== lower_above_upper
+!! AST: Error in routine maskd at line 117 in file src/test/resources/probes/region_overlap_mask_probe.c.
+!  astMaskD(Box): Lower bound of input grid (4) exceeds corresponding upper bound (3).
+!  Error in input dimension 1.
+status 233933842
+== single_row
+mask 0 0 1
+== negation_adaptive
+negation 0 FREQ 1 0
+negation 1 FREQ 1 0
+== negation_not_adaptive
+negation 0 FREQ 1 0
+negation 0 WAVE 1 0

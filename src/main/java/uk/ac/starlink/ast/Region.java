@@ -2124,153 +2124,305 @@ public abstract class Region extends Frame {
     // ------------------------------------------------------------------
 
     /**
-     * Tests how this Region and another overlap (C's {@code astOverlap}). Not yet ported.
+     * Tests how this Region and another overlap (C's {@code astOverlap}). The other Region is
+     * converted into the coordinate system of this one; if that cannot be done, the overlap cannot
+     * be determined. The Closed attribute is not considered in deciding that two Regions are the
+     * same or each other's negation.
+     *
+     * <p>Unless the two are equal, this Region is negated in place and back again to compare its
+     * negation with the other, as C does, so that its Negated attribute is set afterwards.
      *
      * @param that the other Region
-     * @return one of the {@code OVERLAP_*} values
-     * @throws AstException with status {@code AST__INTER} always
+     * @return {@link #OVERLAP_UNKNOWN} if the other Region cannot be converted into the coordinate
+     *     system of this one, {@link #OVERLAP_NONE} if they do not overlap, {@link
+     *     #OVERLAP_INSIDE} if this Region is inside the other, {@link #OVERLAP_OUTSIDE} if the other
+     *     is inside this one, {@link #OVERLAP_PARTIAL} if they overlap partly, {@link
+     *     #OVERLAP_SAME} if they are the same to within their uncertainties, or {@link
+     *     #OVERLAP_NEGATE} if the other is the negation of this one to within their uncertainties
+     * @throws AstException with status {@code AST__INTER} if neither Region has a finite boundary
+     * @throws NullPointerException if {@code that} is null
      */
     public int overlap(Region that) {
-        throw notPorted("astOverlap");
+        Objects.requireNonNull(that, "that");
+        return overlapWith(that);
     }
 
     /**
-     * Masks the pixels of an array inside or outside the Region (C's {@code astMask<X>}). Not yet
-     * ported.
+     * C's {@code Overlap}, chosen by the class of this Region: how this Region and {@code that}
+     * overlap. This version, region.c's, is {@code that}'s {@link #overlapX}, chosen by the class of
+     * {@code that}.
+     */
+    int overlapWith(Region that) {
+        return that.overlapX(this);
+    }
+
+    /**
+     * C's {@code OverlapX( that, this )}, with this Region as {@code that}, chosen by the class of
+     * this Region: how {@code thisRegion} and this Region overlap, as {@code thisRegion}'s {@link
+     * #overlap} returns it. This version is region.c's ({@link RegionOverlap#overlap}).
+     */
+    int overlapX(Region thisRegion) {
+        return RegionOverlap.overlap(thisRegion, this);
+    }
+
+    /**
+     * C's {@code astBndBaseMesh}: the boundary mesh, in the base Frame, of the part of the Region
+     * inside the box from {@code lbnd} to {@code ubnd} in the current Frame, or one point with every
+     * coordinate bad if the boundary does not cross the box. This version is region.c's ({@link
+     * RegionOverlap#bndBaseMesh}).
+     */
+    double[][] bndBaseMesh(double[] lbnd, double[] ubnd) {
+        return RegionOverlap.bndBaseMesh(this, lbnd, ubnd);
+    }
+
+    /**
+     * Masks the pixels of a grid of data inside or outside the Region (C's {@code astMask<X>}),
+     * calling the method of {@code in}'s type: {@link #maskB}, {@link #maskS}, {@link #maskI},
+     * {@link #maskL}, {@link #maskF} or {@link #maskD}.
      *
-     * @param map the Mapping from the Region's Frame to pixel coordinates
-     * @param inside whether to mask the pixels inside the Region rather than outside
-     * @param ndim the number of pixel axes
-     * @param lbnd the lower pixel index bound on each axis
-     * @param ubnd the upper pixel index bound on each axis
-     * @param in the array, of a primitive numeric type
-     * @param val the value to store in each masked pixel
-     * @return the number of pixels masked
-     * @throws AstException with status {@code AST__INTER} always
+     * @param map the Mapping from the Frame the Region represents to grid coordinates, with an
+     *     input for each axis of the Region and an output for each grid dimension; null if the
+     *     Region is in grid coordinates already, as a UnitMap would make it
+     * @param inside whether to set the pixels whose centres are inside the Region, rather than
+     *     those whose centres are not inside it; which pixels are inside allows for Negated, so the
+     *     inside of a Region is the outside of its negation
+     * @param ndim the number of grid dimensions, at least one
+     * @param lbnd the coordinate of the centre of the first pixel on each grid dimension
+     * @param ubnd the coordinate of the centre of the last pixel on each grid dimension; each pixel
+     *     has unit extent, and the grid {@code ubnd[j] - lbnd[j] + 1} pixels on dimension {@code j}
+     * @param in the data, an array of {@code byte}, {@code short}, {@code int}, {@code long}, {@code
+     *     float} or {@code double} with an element for each pixel, the index of the first dimension
+     *     varying fastest; the pixels masked are set to {@code val}, and the others left alone
+     * @param val the value to set, of the {@code Number} class of {@code in}'s type
+     * @return the number of pixels set to {@code val}
+     * @throws IllegalArgumentException if {@code in} is not an array of one of those types, or
+     *     {@code val} is not of the matching class
+     * @throws AstException as for {@link #maskD}
+     * @throws NullPointerException if {@code lbnd}, {@code ubnd} or {@code in} is null, leaving
+     *     the data unchanged
      */
     public int mask(Mapping map, boolean inside, int ndim, int[] lbnd, int[] ubnd, Object in, Number val) {
-        throw notPorted("astMask");
+        // jniast casts the arguments to the type of in and reports any mismatch; the types are
+        // checked here before the call so that an exception from within it is not mistaken for one.
+        // As in jniast, null data is a NullPointerException.
+        Objects.requireNonNull(in, "in");
+        if (in instanceof byte[] && val instanceof Byte) {
+            return maskB(map, inside, ndim, lbnd, ubnd, (byte[]) in, (Byte) val);
+        } else if (in instanceof short[] && val instanceof Short) {
+            return maskS(map, inside, ndim, lbnd, ubnd, (short[]) in, (Short) val);
+        } else if (in instanceof int[] && val instanceof Integer) {
+            return maskI(map, inside, ndim, lbnd, ubnd, (int[]) in, (Integer) val);
+        } else if (in instanceof long[] && val instanceof Long) {
+            return maskL(map, inside, ndim, lbnd, ubnd, (long[]) in, (Long) val);
+        } else if (in instanceof float[] && val instanceof Float) {
+            return maskF(map, inside, ndim, lbnd, ubnd, (float[]) in, (Float) val);
+        } else if (in instanceof double[] && val instanceof Double) {
+            return maskD(map, inside, ndim, lbnd, ubnd, (double[]) in, (Double) val);
+        } else {
+            throw new IllegalArgumentException("Bad class " + in.getClass() + " for map 'in' param");
+        }
     }
 
     /**
-     * Masks a byte array (C's {@code astMaskB}). Not yet ported.
+     * Masks a grid of {@code byte} data (C's {@code astMaskB}), as {@link #mask} describes.
      *
-     * @param map the Mapping from the Region's Frame to pixel coordinates
-     * @param inside whether to mask the pixels inside the Region rather than outside
-     * @param ndim the number of pixel axes
-     * @param lbnd the lower pixel index bound on each axis
-     * @param ubnd the upper pixel index bound on each axis
-     * @param in the array
-     * @param val the value to store in each masked pixel
-     * @return the number of pixels masked
-     * @throws AstException with status {@code AST__INTER} always
+     * @param map the Mapping from the Region's Frame to grid coordinates, or null
+     * @param inside whether to set the pixels inside the Region rather than those not inside it
+     * @param ndim the number of grid dimensions
+     * @param lbnd the coordinate of the centre of the first pixel on each grid dimension
+     * @param ubnd the coordinate of the centre of the last pixel on each grid dimension
+     * @param in the data, an element for each pixel
+     * @param val the value to set
+     * @return the number of pixels set to {@code val}
+     * @throws AstException as for {@link #maskD}
+     * @throws NullPointerException if {@code lbnd}, {@code ubnd} or {@code in} is null, leaving
+     *     the data unchanged
      */
     public int maskB(Mapping map, boolean inside, int ndim, int[] lbnd, int[] ubnd, byte[] in, byte val) {
-        throw notPorted("astMaskB");
+        requireBounds(lbnd, ubnd);
+        return maskData(
+                map, inside, ndim, lbnd, ubnd, PixelArray.of(Objects.requireNonNull(in, "in"), val), "astMaskB");
     }
 
     /**
-     * Masks a short array (C's {@code astMaskS}). Not yet ported.
+     * Masks a grid of {@code short} data (C's {@code astMaskS}), as {@link #mask} describes.
      *
-     * @param map the Mapping from the Region's Frame to pixel coordinates
-     * @param inside whether to mask the pixels inside the Region rather than outside
-     * @param ndim the number of pixel axes
-     * @param lbnd the lower pixel index bound on each axis
-     * @param ubnd the upper pixel index bound on each axis
-     * @param in the array
-     * @param val the value to store in each masked pixel
-     * @return the number of pixels masked
-     * @throws AstException with status {@code AST__INTER} always
+     * @param map the Mapping from the Region's Frame to grid coordinates, or null
+     * @param inside whether to set the pixels inside the Region rather than those not inside it
+     * @param ndim the number of grid dimensions
+     * @param lbnd the coordinate of the centre of the first pixel on each grid dimension
+     * @param ubnd the coordinate of the centre of the last pixel on each grid dimension
+     * @param in the data, an element for each pixel
+     * @param val the value to set
+     * @return the number of pixels set to {@code val}
+     * @throws AstException as for {@link #maskD}
+     * @throws NullPointerException if {@code lbnd}, {@code ubnd} or {@code in} is null, leaving
+     *     the data unchanged
      */
     public int maskS(Mapping map, boolean inside, int ndim, int[] lbnd, int[] ubnd, short[] in, short val) {
-        throw notPorted("astMaskS");
+        requireBounds(lbnd, ubnd);
+        return maskData(
+                map, inside, ndim, lbnd, ubnd, PixelArray.of(Objects.requireNonNull(in, "in"), val), "astMaskS");
     }
 
     /**
-     * Masks an int array (C's {@code astMaskI}). Not yet ported.
+     * Masks a grid of {@code int} data (C's {@code astMaskI}), as {@link #mask} describes.
      *
-     * @param map the Mapping from the Region's Frame to pixel coordinates
-     * @param inside whether to mask the pixels inside the Region rather than outside
-     * @param ndim the number of pixel axes
-     * @param lbnd the lower pixel index bound on each axis
-     * @param ubnd the upper pixel index bound on each axis
-     * @param in the array
-     * @param val the value to store in each masked pixel
-     * @return the number of pixels masked
-     * @throws AstException with status {@code AST__INTER} always
+     * @param map the Mapping from the Region's Frame to grid coordinates, or null
+     * @param inside whether to set the pixels inside the Region rather than those not inside it
+     * @param ndim the number of grid dimensions
+     * @param lbnd the coordinate of the centre of the first pixel on each grid dimension
+     * @param ubnd the coordinate of the centre of the last pixel on each grid dimension
+     * @param in the data, an element for each pixel
+     * @param val the value to set
+     * @return the number of pixels set to {@code val}
+     * @throws AstException as for {@link #maskD}
+     * @throws NullPointerException if {@code lbnd}, {@code ubnd} or {@code in} is null, leaving
+     *     the data unchanged
      */
     public int maskI(Mapping map, boolean inside, int ndim, int[] lbnd, int[] ubnd, int[] in, int val) {
-        throw notPorted("astMaskI");
+        requireBounds(lbnd, ubnd);
+        return maskData(
+                map, inside, ndim, lbnd, ubnd, PixelArray.of(Objects.requireNonNull(in, "in"), val), "astMaskI");
     }
 
     /**
-     * Masks a long array (C's {@code astMaskK}). Not yet ported.
+     * Masks a grid of {@code long} data (C's {@code astMaskL}), as {@link #mask} describes.
      *
-     * @param map the Mapping from the Region's Frame to pixel coordinates
-     * @param inside whether to mask the pixels inside the Region rather than outside
-     * @param ndim the number of pixel axes
-     * @param lbnd the lower pixel index bound on each axis
-     * @param ubnd the upper pixel index bound on each axis
-     * @param in the array
-     * @param val the value to store in each masked pixel
-     * @return the number of pixels masked
-     * @throws AstException with status {@code AST__INTER} always
+     * @param map the Mapping from the Region's Frame to grid coordinates, or null
+     * @param inside whether to set the pixels inside the Region rather than those not inside it
+     * @param ndim the number of grid dimensions
+     * @param lbnd the coordinate of the centre of the first pixel on each grid dimension
+     * @param ubnd the coordinate of the centre of the last pixel on each grid dimension
+     * @param in the data, an element for each pixel
+     * @param val the value to set
+     * @return the number of pixels set to {@code val}
+     * @throws AstException as for {@link #maskD}
+     * @throws NullPointerException if {@code lbnd}, {@code ubnd} or {@code in} is null, leaving
+     *     the data unchanged
      */
     public int maskL(Mapping map, boolean inside, int ndim, int[] lbnd, int[] ubnd, long[] in, long val) {
-        throw notPorted("astMaskK");
+        requireBounds(lbnd, ubnd);
+        return maskData(
+                map, inside, ndim, lbnd, ubnd, PixelArray.of(Objects.requireNonNull(in, "in"), val), "astMaskL");
     }
 
     /**
-     * Masks a float array (C's {@code astMaskF}). Not yet ported.
+     * Masks a grid of {@code float} data (C's {@code astMaskF}), as {@link #mask} describes.
      *
-     * @param map the Mapping from the Region's Frame to pixel coordinates
-     * @param inside whether to mask the pixels inside the Region rather than outside
-     * @param ndim the number of pixel axes
-     * @param lbnd the lower pixel index bound on each axis
-     * @param ubnd the upper pixel index bound on each axis
-     * @param in the array
-     * @param val the value to store in each masked pixel
-     * @return the number of pixels masked
-     * @throws AstException with status {@code AST__INTER} always
+     * @param map the Mapping from the Region's Frame to grid coordinates, or null
+     * @param inside whether to set the pixels inside the Region rather than those not inside it
+     * @param ndim the number of grid dimensions
+     * @param lbnd the coordinate of the centre of the first pixel on each grid dimension
+     * @param ubnd the coordinate of the centre of the last pixel on each grid dimension
+     * @param in the data, an element for each pixel
+     * @param val the value to set
+     * @return the number of pixels set to {@code val}
+     * @throws AstException as for {@link #maskD}
+     * @throws NullPointerException if {@code lbnd}, {@code ubnd} or {@code in} is null, leaving
+     *     the data unchanged
      */
     public int maskF(Mapping map, boolean inside, int ndim, int[] lbnd, int[] ubnd, float[] in, float val) {
-        throw notPorted("astMaskF");
+        requireBounds(lbnd, ubnd);
+        return maskData(
+                map, inside, ndim, lbnd, ubnd, PixelArray.of(Objects.requireNonNull(in, "in"), val), "astMaskF");
     }
 
     /**
-     * Masks a double array (C's {@code astMaskD}). Not yet ported.
+     * Masks a grid of {@code double} data (C's {@code astMaskD}), as {@link #mask} describes.
      *
-     * @param map the Mapping from the Region's Frame to pixel coordinates
-     * @param inside whether to mask the pixels inside the Region rather than outside
-     * @param ndim the number of pixel axes
-     * @param lbnd the lower pixel index bound on each axis
-     * @param ubnd the upper pixel index bound on each axis
-     * @param in the array
-     * @param val the value to store in each masked pixel
-     * @return the number of pixels masked
-     * @throws AstException with status {@code AST__INTER} always
+     * <p>A pixel is inside the Region when its centre is. For a Region with no volume, such as a
+     * PointList, a pixel is inside when any part of the Region falls in it. With no Mapping and
+     * {@code inside} true, the Region is negated in place and back again while the data are masked,
+     * as C does, so that its Negated attribute is set afterwards.
+     *
+     * @param map the Mapping from the Region's Frame to grid coordinates, or null
+     * @param inside whether to set the pixels inside the Region rather than those not inside it
+     * @param ndim the number of grid dimensions
+     * @param lbnd the coordinate of the centre of the first pixel on each grid dimension
+     * @param ubnd the coordinate of the centre of the last pixel on each grid dimension
+     * @param in the data, an element for each pixel
+     * @param val the value to set
+     * @return the number of pixels set to {@code val}
+     * @throws AstException with status {@code AST__NGDIN} if {@code map} does not have an input for
+     *     each axis of the Region and an output for each grid dimension, or, with no {@code map},
+     *     {@code ndim} is not the number of axes of the Region; {@code AST__DIMIN} if a bound array
+     *     has fewer than {@code ndim} values or {@code in} fewer elements than the grid has pixels;
+     *     or {@code AST__GBDIN} if a lower bound is above its upper bound
+     * @throws NullPointerException if {@code lbnd}, {@code ubnd} or {@code in} is null, leaving
+     *     the data unchanged
      */
     public int maskD(Mapping map, boolean inside, int ndim, int[] lbnd, int[] ubnd, double[] in, double val) {
-        throw notPorted("astMaskD");
+        requireBounds(lbnd, ubnd);
+        return maskData(
+                map, inside, ndim, lbnd, ubnd, PixelArray.of(Objects.requireNonNull(in, "in"), val), "astMaskD");
+    }
+
+    /** The null checks of the bound arrays of the {@code mask<X>} methods. */
+    private static void requireBounds(int[] lbnd, int[] ubnd) {
+        Objects.requireNonNull(lbnd, "lbnd");
+        Objects.requireNonNull(ubnd, "ubnd");
+    }
+
+    /**
+     * C's {@code Mask<X>}, chosen by the class of the Region: sets to the bad value of {@code in}
+     * the pixels inside (or not inside) the Region, returning how many. This version is region.c's
+     * ({@link RegionMask#mask}).
+     *
+     * @param method C's name of the function, such as {@code astMaskD}, for error messages
+     */
+    int maskData(Mapping map, boolean inside, int ndim, int[] lbnd, int[] ubnd, PixelArray in, String method) {
+        return RegionMask.mask(this, map, inside, ndim, lbnd, ubnd, in, method);
     }
 
     /**
      * Writes a mesh of points on the boundary of the Region to standard output (C's {@code
-     * astShowMesh}). Not yet ported.
+     * astShowMesh}): the title, if given, between blank lines, then a line for each point holding
+     * its value on each axis of the Frame the Region represents, each followed by a tab, then a line
+     * {@code ENDMESH} and a blank line. The number of points is set by MeshSize.
      *
-     * @param format whether to format the values with the Region's Format attributes
-     * @param ttl a title to write first, or null
-     * @throws AstException with status {@code AST__INTER} always
+     * @param format whether to format the values with the Format of each axis, rather than as C's
+     *     {@code %g} writes them
+     * @param ttl a title to write first, or null for none
+     * @throws AstException if the Region has no finite boundary to mesh
      */
+    // C's astShowMesh writes the table to standard output with printf.
+    @SuppressWarnings("PMD.SystemPrintln")
     public void showMesh(boolean format, String ttl) {
-        throw notPorted("astShowMesh");
+        String text = meshText(format, ttl);
+        System.out.print(text);
+        System.out.flush();
     }
 
-    /** The error of a Region method that is not yet ported. */
-    private AstException notPorted(String method) {
-        return Ast.err(
-                AstException.AST__INTER,
-                method + "(" + astClass() + "): This method is not yet ported (internal AST programming error).");
+    /**
+     * The text {@link #showMesh} writes (region.c {@code ShowMesh}): the current Frame mesh (C's
+     * {@code astRegMesh}), normalised, with a bad value written as {@code <bad>}.
+     */
+    String meshText(boolean format, String ttl) {
+        double[][] mesh = regMesh();
+        int np = mesh[0].length;
+        double[][] ptr = normalPoints(mesh, np, true);
+        int numAxes = ptr.length;
+        StringBuilder text = new StringBuilder();
+        if (ttl != null) {
+            text.append('\n').append(ttl).append("\n\n");
+        }
+        for (int j = 0; j < np; j++) {
+            for (int i = 0; i < numAxes; i++) {
+                double v = ptr[i][j];
+                if (v == AST__BAD) {
+                    text.append("<bad>");
+                } else if (format) {
+                    text.append(format(i + 1, v));
+                } else {
+                    text.append(CFormat.format("%g", v));
+                }
+                text.append('\t');
+            }
+            text.append('\n');
+        }
+        text.append("ENDMESH\n\n");
+        return text.toString();
     }
 
     // ------------------------------------------------------------------
