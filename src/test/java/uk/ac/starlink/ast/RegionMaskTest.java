@@ -13,7 +13,10 @@ import org.junit.jupiter.api.Test;
 /**
  * Translation of Rust {@code tests/test_masking.rs}: {@link Region#mask} of a Circle inside and
  * outside, with a UnitMap and a ZoomMap, of {@code int} data, of a three-dimensional Prism, and its
- * errors; the counts are checked against {@code probes/region_compound_probe.c}.
+ * errors; the counts are checked against {@code probes/region_compound_probe.c}, and the status of
+ * each error that C can be given against the Box cases of {@code
+ * probes/region_overlap_mask_probe.c}, which region.c's generic {@code Mask<X>} reports for any
+ * Region.
  *
  * <p>The pixel centres are integers, and every one is either on a Circle's boundary to the last bit
  * (a distance of exactly 1 or 2, computed from integers) or at least 0.05 from it, so the counts do
@@ -85,32 +88,41 @@ class RegionMaskTest {
     @Test
     void maskMismatchedBoundsLengths() {
         Circle c = circle2(0.0, 0.0, 1.0);
-        assertThrows(
+        // C's check of the Mapping's outputs against ndim comes first: C's status, from
+        // probes/region_overlap_mask_probe.c, case map_wrong_outputs.
+        AstException e = assertThrows(
                 AstException.class,
                 () -> c.maskD(new UnitMap(2), true, 3, new int[] {1, 1}, new int[] {5, 5, 5}, new double[10], 0.0));
+        assertEquals(AstException.AST__NGDIN, e.getStatus());
     }
 
     @Test
     void maskWrongMappingNin() {
         Circle c = circle2(0.0, 0.0, 1.0);
-        assertThrows(
+        // C's status: probes/region_overlap_mask_probe.c, case map_wrong_inputs.
+        AstException e = assertThrows(
                 AstException.class,
                 () -> c.maskD(new UnitMap(3), true, 2, new int[] {1, 1}, new int[] {5, 5}, new double[25], 0.0));
+        assertEquals(AstException.AST__NGDIN, e.getStatus());
     }
 
     @Test
     void maskWrongDataLength() {
         Circle c = circle2(0.0, 0.0, 1.0);
-        assertThrows(
+        // A data array shorter than the grid, which C cannot detect, is this library's AST__DIMIN.
+        AstException e = assertThrows(
                 AstException.class,
                 () -> c.maskD(new UnitMap(2), true, 2, new int[] {1, 1}, new int[] {5, 5}, new double[10], 0.0));
+        assertEquals(AstException.AST__DIMIN, e.getStatus());
     }
 
     @Test
     void maskUbndLessThanLbnd() {
         Circle c = circle2(0.0, 0.0, 1.0);
-        assertThrows(
+        // C's status: probes/region_overlap_mask_probe.c, case lower_above_upper.
+        AstException e = assertThrows(
                 AstException.class,
                 () -> c.maskD(new UnitMap(2), true, 2, new int[] {5, 1}, new int[] {1, 5}, new double[1], 0.0));
+        assertEquals(AstException.AST__GBDIN, e.getStatus());
     }
 }

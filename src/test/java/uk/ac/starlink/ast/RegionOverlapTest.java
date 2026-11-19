@@ -11,6 +11,7 @@ import static uk.ac.starlink.ast.CompoundProbe.negatedCopy;
 import static uk.ac.starlink.ast.CompoundProbe.overlap;
 
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
  * Translation of Rust {@code tests/test_overlap.rs}: {@link Region#overlap} of Circles, Boxes and
@@ -182,6 +183,7 @@ class RegionOverlapTest {
                 "ov_negated_circle_circle",
                 overlap(negatedCopy(circle2(0.0, 0.0, 1.0)), negatedCopy(circle2(0.5, 0.0, 1.0))));
     }
+
     // ---- A Region with no mesh inside a box that needs its own mesh inside that box ----
 
     /** The Prism of the Interval x &gt;= 0 and the Box 0 &lt;= y &lt;= 1, which has an open end. */
@@ -251,6 +253,20 @@ class RegionOverlapTest {
             assertOverlapUndetermined(other, negatedComponentPrism());
             assertOverlapUndetermined(negatedComponentPrism(), other);
         }
+    }
+
+    /**
+     * region.c {@code OverlapX} ignores an error from a mesh it can do without, so an AND holding
+     * a Prism with no mesh can still be compared: with the AND first C gives 4, its code from
+     * {@code probes/region_and_open_prism_probe.c}; with the Circle first C recurses until its
+     * stack overflows, and this library gives 4 too.
+     */
+    @Test
+    void anAndHoldingAPrismWithNoMeshCanStillOverlap() {
+        CmpRegion and = new CmpRegion(openEndedPrism(), circle2(5.0, 0.5, 3.0), CmpRegion.AST__AND);
+        String want = ProbeOutput.load("region_and_open_prism_probe").get("and_of_open_prism_and_circle");
+        assertEquals(want, "overlap " + and.overlap(circle2(0.0, 0.5, 3.0)) + "\n");
+        assertEquals(Region.OVERLAP_PARTIAL, circle2(0.0, 0.5, 3.0).overlap(and));
     }
 
     @Test

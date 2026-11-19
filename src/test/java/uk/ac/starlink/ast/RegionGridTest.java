@@ -15,9 +15,10 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * whose boundary mesh is made from its components' meshes and grids (prism.c {@code RegBaseMesh}),
  * against {@code oracle/region_grid.json} (from {@code tools/oracle_fixtures/region_grid_probe.c}).
  *
- * <p>The points are normalised as {@code astGetRegionMesh} gives them. The grids of Boxes and of Regions in a plain Frame are sums of bounds and multiples of
- * steps, and which grid points a Circle keeps is decided by squares and a square root, all exact
- * or correctly rounded; they are compared exactly. On the sky the grid's points are spaced along
+ * <p>The points are normalised as {@code astGetRegionMesh} gives them. The grids of Boxes and of
+ * Regions in a plain Frame are sums of bounds and multiples of steps, and which grid points a
+ * Circle keeps is decided by squares and a square root, all exact or correctly rounded; they are
+ * compared exactly. On the sky the grid's points are spaced along
  * parallels by {@code sin}, {@code cos} and {@code acos}, which may differ in the last place from
  * C's libm; a grid value is at most a few multiples of 0.2 radians, so an error of a few units in
  * the last place is below 1e-15, and the values are compared to {@code 1e-12}. Which points a sky

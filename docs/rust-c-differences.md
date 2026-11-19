@@ -860,8 +860,11 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 ### Negating a Region in place to test overlap or to mask
 
 - C: region.c `OverlapX` negates the first Region with `astNegate` and back again to compare its negation with the second, and `Mask<X>` does the same to the Region it masks with when it masks the inside, which with no Mapping is the Region given; `astNegate` sets Negated, so afterwards Negated is set (to its old value) and what the Region kept about its boundary is discarded.
+  cmpregion.c negates a component in place in the same way to mesh an OR and to test its boundary (`RegBaseMesh`, `RegPins`), and prism.c to find whether a Prism is bounded (`GetBounded`).
+  After an error between the two negations, the second does nothing (the status is bad), so the Region or component is left negated.
 - Rust: compares and masks with a negated copy, leaving the Region alone.
 - Java: as C (`RegionOverlap.overlap`, `RegionMask.mask`); `RegionOverlapMaskProbeTest` pins the Negated flag from `src/test/resources/probes/region_overlap_mask_probe.c`.
+  After an error, Java restores Negated (in `finally`) where C leaves the Region or component negated.
 
 ### The negated copy of an Adaptive Region after a change of coordinate system
 
@@ -907,6 +910,7 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Java: holds the mask correctly; looks at as many of the PointList's points as there are points given when there are no more of them than it has, as C does, and at every PointList point when given more, as C's comment intends, without C's undefined read; the PointList's current Frame and Negated are left as they were.
   `src/test/resources/probes/region_null_interval_pointlist_probe.c` is linked with pointlist.c changed to allocate an `int` for each element of the mask (its header gives the recipe), so its overlaps of a PointList and a Box are C's without the overrun.
   A CmpRegion or Prism with a PointList component asks it about the points of another Region's boundary mesh (cmpregion.c and prism.c `RegPins`), so an overlap of such a Region reaches both defects; `src/test/resources/probes/region_compound_probe.c` is linked with the same change, and `CmpRegionTest.pointListComponentGivenMorePointsThanItHasMatchesC` compares with C's answer for two CmpRegions whose PointList component is given more points than it has (C answers 5, the Regions being the same).
+  For the PointList (1, 2), (1, 2), (3, 4) and the PointList (1, 2), (3, 4), C answers 5 in both orders, the second through the read beyond its points, and so does Java (`PointListTest.overlapsMatchC`, probe case `pointlist_duplicated_point`).
 
 ### The bounding box of a PointList (`RegBaseBox`)
 
@@ -1064,6 +1068,7 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
   `astOverlap` of such a Prism and a Circle, Ellipse, Polygon or AND CmpRegion, in either order, reaches it when the other Region is wholly inside or outside the Prism, and so does the mesh of the AND of such a Prism and a Region whose bounds cross its boundary. **C bug.**
 - Rust: not examined.
 - Java: `AST__INTER` with region.c `OverlapX`'s message that it cannot determine the overlap, from the CmpRegion that `BndBaseMesh` makes (`CmpRegion.baseMeshInsideBox`); the Regions are left as they were (`RegionOverlapTest`).
+  Where `OverlapX` asks for a mesh it can do without, it ignores the error, as C ignores any, and goes on, so an overlap that reaches the recursion there gives a code: the Circle of radius 3 about (0, 0.5) and the AND of the Prism above with the Circle of radius 3 about (5, 0.5) give 4 in either order; C gives 4 with the AND first and overflows its stack with the Circle first (`RegionOverlapTest.anAndHoldingAPrismWithNoMeshCanStillOverlap`).
 
 ### Moving a Prism (`RegCentre`)
 

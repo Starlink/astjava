@@ -11,16 +11,15 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * Translation of Rust {@code tests/test_region_bounded_oracle.rs}: whether Regions are bounded,
  * and their bounding boxes, against C where a class's own {@code GetBounded} or {@code
  * RegBaseBox} decides them: a PointList, negated in a Cartesian Frame and in a SkyFrame (region.c
- * {@code GetBounded}); a Prism, negated (prism.c {@code GetBounded}); an Interval excluding a range on each axis (interval.c {@code RegBaseBox});
- * and a sky PointList either side of RA 0, with its default uncertainty (pointlist.c {@code
- * RegBaseBox}) ({@code oracle/region_bounded.json}, from {@code
- * tools/oracle_fixtures/region_bounded_probe.c}).
+ * {@code GetBounded}); a Prism, negated (prism.c {@code GetBounded}); an Interval excluding a
+ * range on each axis (interval.c {@code RegBaseBox}); and a sky PointList either side of RA 0,
+ * with its default uncertainty (pointlist.c {@code RegBaseBox}) ({@code
+ * oracle/region_bounded.json}, from {@code tools/oracle_fixtures/region_bounded_probe.c}).
  *
  * <p>Every value is compared exactly. The sky values come from SkyAxis distances and offsets,
  * which normalise by a remainder and the addition or subtraction of a whole turn, and the
  * uncertainty's from sums and products of those with 0.5 and 0.5e-6: correctly rounded operations
  * only, with no call of an elementary function, so they are the same on every platform.
- *
  */
 class RegionBoundedOracleTest {
 
