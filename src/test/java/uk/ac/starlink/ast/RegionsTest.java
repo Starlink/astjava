@@ -1387,13 +1387,12 @@ class RegionsTest {
      * The fixture {@code simplify/<name>.map} simplified and written matches C's {@code
      * <name>.simp}, numbers to within 4 units in the last place, the comparison {@code
      * SimplifyRegressionTest} makes of the same rows of {@code cases.txt}: the fits that Circle and
-     * Ellipse simplification make pass through {@code java.lang.Math}. An Ellipse is first given the
-     * end of its primary axis on the reference's side ({@link SimplifyRegressionTest#withReferenceEnd}).
+     * Ellipse simplification make pass through {@code java.lang.Math}.
      */
     private static void assertSimplifiesAsC(String name) {
         String want = SerialisationCorpusTest.stripLeadingComments(Fixtures.read("simplify/" + name + ".simp"));
         Mapping input = (Mapping) ChannelText.read(Fixtures.read("simplify/" + name + ".map"));
-        Mapping simplified = SimplifyRegressionTest.withReferenceEnd(input.simplify(), ChannelText.read(want));
+        Mapping simplified = input.simplify();
         String got = ChannelText.dump(simplified);
         assertTrue(CValues.nativeStringsEquivalent(got, want, 4), () -> name + ": got\n" + got + "want\n" + want);
     }

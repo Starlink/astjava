@@ -58,10 +58,6 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * inverse cancelling on points where the iterative inverse does not converge), and the simplified
  * Mapping is to transform as C's simplified Mapping does.
  *
- * <p>A simplified Ellipse in a plain Frame whose reference is an Ellipse is first given the end of
- * its primary axis on the reference's side of the centre ({@link #withReferenceEnd}), since which
- * end the fit takes is decided by rounding; the comparisons are then made as for any other row.
- *
  * <p>Every row matches C or is listed with its reason in {@code deferred/simplify-cases.txt}, and the
  * list is checked both ways. Run with {@code -Dast.writeDeferred=true} to rewrite it.
  */
@@ -162,7 +158,7 @@ class SimplifyRegressionTest {
                 return "input is a " + inObj.getClass().getSimpleName() + ", not a Mapping";
             }
             List<String> inputBefore = withoutRecords(ChannelText.dump(input));
-            simplified = withReferenceEnd(input.simplify(), refObj);
+            simplified = input.simplify();
             List<String> inputAfter = withoutRecords(ChannelText.dump(input));
             String cAfter = INPUT_AFTER.get(r.name + "/input_after");
             if (cAfter != null) {
@@ -225,77 +221,6 @@ class SimplifyRegressionTest {
             problem = problem == null ? transform : problem + "; " + transform;
         }
         return problem;
-    }
-
-    /**
-     * The simplified Mapping, with the end of its primary axis on the side of the centre the
-     * reference's is on if both are Ellipses in a plain Frame. An Ellipse holds its centre, one end
-     * of its primary axis and one end of its secondary axis. The best fit that ellipse.c {@code
-     * Simplify} makes ({@link Ellipse#bestEllipse}) takes the end of the primary axis at the mesh
-     * point farthest from the centre; the mesh of an ellipse is symmetric about its centre, so the
-     * two ends are equally far to within the rounding of the mesh's {@code sin} and {@code cos},
-     * which may differ between {@code java.lang.Math} and the C library and between platforms, and
-     * which end is taken is decided by that rounding. Either end describes the same Ellipse. In a
-     * plain Frame the other end is the reflection of the end through the centre, found here to
-     * within half an ulp, so the dump comparison's 4 ulps still compare the half-lengths and the
-     * direction of the axis modulo a half turn; a fit that took a different axis, or the wrong
-     * lengths, still fails.
-     */
-    static Mapping withReferenceEnd(Mapping simplified, AstObject refObj) {
-        if (!(simplified instanceof Ellipse)
-                || !(refObj instanceof Ellipse)
-                || !"Frame".equals(((Ellipse) simplified).getRegionFrame().astClass())) {
-            return simplified;
-        }
-        double[][] got = ((Ellipse) simplified).getPoints();
-        double[][] want = ((Ellipse) refObj).getPoints();
-        double dot = 0.0;
-        for (int ic = 0; ic < got.length; ic++) {
-            dot += (got[ic][1] - got[ic][0]) * (want[ic][1] - want[ic][0]);
-        }
-        if (dot < 0.0) {
-            for (double[] axis : got) {
-                axis[1] = 2.0 * axis[0] - axis[1];
-            }
-            ((Ellipse) simplified).resetCache();
-        }
-        return simplified;
-    }
-
-    /**
-     * The other end of the primary axis of a simplified Ellipse is taken when the reference has it:
-     * row {@code cefit_circle_to_ellipse}'s fit, reflected through its centre, is given back the
-     * reference's end and then matches C's dump, and an Ellipse of other half-lengths still does
-     * not.
-     */
-    @Test
-    void anEllipseFitIsComparedWithTheReferencesEndOfItsPrimaryAxis() {
-        AstObject ref = ChannelText.read(Fixtures.read("simplify/cefit_circle_to_ellipse.simp"));
-        Mapping input = (Mapping) ChannelText.read(Fixtures.read("simplify/cefit_circle_to_ellipse.map"));
-        Ellipse fit = (Ellipse) input.simplify();
-        double[][] p = fit.getPoints();
-        for (int ic = 0; ic < 2; ic++) {
-            p[ic][1] = 2.0 * p[ic][0] - p[ic][1];
-        }
-        fit.resetCache();
-        assertFalse(CValues.nativeStringsEquivalent(
-                ChannelText.dump(fit),
-                SerialisationCorpusTest.stripLeadingComments(Fixtures.read("simplify/cefit_circle_to_ellipse.simp")),
-                4));
-        String dump = ChannelText.dump(withReferenceEnd(fit, ref));
-        assertTrue(CValues.nativeStringsEquivalent(
-                dump,
-                SerialisationCorpusTest.stripLeadingComments(Fixtures.read("simplify/cefit_circle_to_ellipse.simp")),
-                4));
-        assertTrue(equalToReference(ref, dump));
-        Ellipse other = new Ellipse(
-                new Frame(2),
-                0,
-                new double[] {20.0, 100.0},
-                new double[] {20.0, 116.0},
-                new double[] {26.0, 100.0},
-                null);
-        assertFalse(equalToReference(ref, ChannelText.dump(withReferenceEnd(other, ref))));
     }
 
     /**
