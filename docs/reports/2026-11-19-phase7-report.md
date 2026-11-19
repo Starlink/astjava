@@ -9,8 +9,8 @@ A `Region` is an abstract `Frame`, and so a `Mapping`, as in C: it encapsulates 
 Every fixture of C's corpora built only from these classes now reads, writes and simplifies as C's does: 121 rows left `simplify.txt` and 68 left `simplify-cases.txt`, and 123 left each of `full-dumps.txt`, `read-warnings.txt` and `serialisation.txt`.
 What still keeps fixtures and tests out is SelectorMap and the Stc classes (the next phase), Moc and MocChan (not in jniast), and the Mapping classes jniast lacks.
 Of the Rust port's Region tests, every test function is translated or listed in `deferred/rust-tests.txt` with its reason; 21 Region oracle files and `box_axin` were converted with `CasesToJson`, and every case of each runs.
-Ten new C probes give the values no oracle held, two of them linked against a C file corrected by one line, because the pinned library crashes on the paths they need (see "Patched C builds of two probes").
-The work found 22 defects in the C library, which were reported to the user privately and are not described here.
+Ten new C probes give the values no oracle held; three of them link a C file corrected by one line (two C files in all), because the pinned library crashes on the paths they need (see "Patched C builds of three probes").
+The work found 25 defects in the C library, which were reported to the user privately and are not described here.
 Against the branch base `05f8461` the work adds 12,858 lines of main code and 22,223 lines of tests, and removes 4 and 753; `mvn verify` passes with 4,534 tests on JDK 21 (3,848 at the end of phase 6), and the tests pass on the JDK 27 runtime.
 
 ## What was ported
@@ -34,7 +34,7 @@ Each task was done by one implementer subagent, reviewed by a second, and verifi
 The reviews found no Critical problem and eight Important ones, each fixed in one fix round: a departure not recorded (an Adaptive Region's attribute value holding `%`, Task 2); a mask grid whose pixel count overflowed a `long` (Task 3); a PointList left changed when `regPins` threw, a NullRegion from `mapRegion` that could not give its bounds, and probe rows taken from a crashing C build (Task 4); a tolerance derived too tightly for a sky dump (Task 5); `overlap` raising `AST__INTER` for CmpRegions holding a PointList, where C answers (Task 7); and a test helper that never took effect (Task 8).
 A ninth, a Task 4 minor about Interval's `OneToOne` that the controller re-graded, was withdrawn when C was read again.
 Tasks 1, 6 and 8b were approved at the first review.
-The tasks were committed between 22:27 on 18 November and 05:25 on 19 November.
+The tasks were committed between 23:11 on 18 November (`e354c7c`) and 05:31 on 19 November (`c1f94e5`), after the plan at 22:27.
 
 New main classes: `PointSet`, `Region`, `Box`, `NullRegion`, `Interval`, `PointList`, `Circle`, `Ellipse`, `Polygon`, `Prism`, `CmpRegion`, `RegionOverlap`, `RegionMask`, `RegionMerge`.
 New test classes, with their tests: `FrameLineTest` (6), `NormBoxTest` (7), `FrameGridTest` (4), `PointSetTest` (7), `BoxRegionTest` (38), `BoxAxInTest` (1), `RegionBoxOracleTest` (3), `RegionAttrTestOracleTest` (2), `RegionAttribOracleTest` (1), `RegionAttributeValueTest` (1), `RegionObjectOracleTest` (1), `RegionEqualOracleTest` (1), `RegionErrorsOracleTest` (13), `RegionFrameSetTest` (9), `RegionOverlapOracleTest` (1), `RegionMaskOracleTest` (1), `RegionMapRegionOracleTest` (4), `RegionShowMeshOracleTest` (2), `RegionMaskArgumentsTest` (10), `RegionOverlapMaskProbeTest` (6), `NullRegionTest` (29), `IntervalTest` (47), `PointListTest` (42), `RegionIntervalOracleTest` (2), `RegionIntervalRemapOracleTest` (2), `RegionNullTranOracleTest` (1), `RegionBoundedOracleTest` (4), `CircleTest` (46), `EllipseTest` (35), `RegionBestFitTest` (7), `RegionEllipseOracleTest` (3), `RegionFrameOracleTest` (5), `RegionSkyTest` (6), `PolygonTest` (43), `RegionPolygonOracleTest` (2), `RegionMaskingTest` (3), `CmpRegionTest` (47), `PrismTest` (38), `RegionOverlapTest` (22), `RegionMaskTest` (8), `RegionGridTest` (2), `RegionCmpRegionOracleTest` (4), `RegionCmpListOracleTest` (2), `RegionCompoundAttrOracleTest` (2), `RegionsTest` (110), `RegionsCTest` (16), `JniastRegionTest` (14).
@@ -66,7 +66,7 @@ The [rulings](2026-11-19-phase7-rulings.md) give each with its reason and cost; 
 
 | Gate | Before | After |
 | --- | --- | --- |
-| `rust-tests.txt` entries | 240 | 317: 23 removed as translated, 16 re-reasoned to name only what is still absent, 100 added (below) |
+| `rust-tests.txt` entries | 240 | 318: 23 removed as translated, 16 re-reasoned to name only what is still absent, 101 added (below) |
 | `simplify.txt` entries | 191 | 70 |
 | `simplify-cases.txt` entries | 125 | 57 |
 | `full-dumps.txt`, `read-warnings.txt`, `serialisation.txt` entries | 197, 199, 198 | 74, 76, 75 |
@@ -79,9 +79,9 @@ The [rulings](2026-11-19-phase7-rulings.md) give each with its reason and cost; 
 | Tests | 3,848 | 4,534 |
 
 The shared oracles were enabled class by class, each test asserting the number of cases it ran, and Task 7 removed the last filters.
-After the 100 additions, the Region entries of `rust-tests.txt` name only what is still absent: Moc (36) and MocChan (19), not in jniast; SelectorMap (25), the Stc classes and AstroCoords (6) and `astRemoveRegions` (4), the next phase; the functions jniast lacks, `astGetRegionDisc` (7), `astCirclePars` (4), `astConvex` (3), `astOutline` (2 and `test_huge.rs`), `astDownsize`, `astEllipsePars` and `astGetRegionMesh` (1 each); Rust-only API (4); and one "no C value", a Rust test whose points lie on an Ellipse's boundary to within rounding.
+After the 101 additions, the Region entries of `rust-tests.txt` name only what is still absent: Moc (36) and MocChan (19), not in jniast; SelectorMap (25), the Stc classes and AstroCoords (6) and `astRemoveRegions` (4), the next phase; the functions jniast lacks, `astGetRegionDisc` (7), `astCirclePars` (4), `astConvex` (3), `astOutline` (2 and `test_huge.rs`), `astDownsize` and `astEllipsePars` (1 each), and `astGetRegionMesh` (1, `test_interval.rs::mesh_of_an_unbounded_interval_names_the_class`, which could be translated through the package-private mesh methods, as Task 5 did for a Circle); Rust-only API (5); and one "no C value", a Rust test whose points lie on an Ellipse's boundary to within rounding.
 No other deferred list names any of this phase's classes.
-Every test function of the Rust port's `regions` test program (48 files, `src/regions/box_region.rs` and `src/regions/moc.rs`), of `test_selectormap.rs`, `test_remove_regions_oracle.rs`, `test_frame_in_map_slot.rs` and the Region checks of `traits_compile.rs` is translated or listed.
+Every test function of the Rust port's `regions` test program (48 files, `src/regions/box_region.rs` and `src/regions/moc.rs`), of `test_selectormap.rs`, `test_remove_regions_oracle.rs`, `test_frame_in_map_slot.rs` and of `traits_compile.rs`'s three checks naming the Region trait is translated or listed.
 Rewriting the lists with `-Dast.writeDeferred=true` changes nothing.
 `mvn verify` passes on JDK 21 (4,534 tests, Error Prone, Checkstyle and PMD clean), and the tests pass on the JDK 27 runtime; no Java 8 runtime is installed on this machine.
 
@@ -94,7 +94,7 @@ Values that pass through `sin`, `cos`, `atan2`, `asin` or `acos` are compared wi
 | --- | --- | --- |
 | `FrameLineTest` | 1e-12 for sky lines, 1e-6 for the sky `dist` | 2 ulp per libm call, at most 100× from normalising cross products of modulus at least 0.01, 20× from `acos`, 60× from `atan2` near the pole; `acos` at distance 0 for `dist` |
 | `EllipseTest`, `RegionFrameOracleTest`, `RegionEllipseOracleTest` | 1e-12 (1e-14 for plain-Frame Ellipse dumps) | At most three to six libm calls, amplification below 10, values at most 10 |
-| `CircleTest` sky bounds | 1e-11 | `atan2` amplification at most 100 at 0.01 rad from a pole |
+| `RegionSkyTest` sky Circle bounds | 1e-11 | `atan2` amplification at most 100 at 0.01 rad from a pole |
 | `RegionBestFitTest` | 1e-9 | The quadratic fit divides ulp errors by radius differences of about 1e-4 |
 | `RegionPolygonOracleTest`, `CmpRegionTest`, `PrismTest`, `RegionGridTest` sky values | 1e-12 | The `offset2` chain, about 4e-14 |
 | `CmpRegionTest`, `PrismTest` Circle meshes | 1e-13 | `c + r cos` and `c + r sin`, at most 2.9e-15 |
@@ -116,9 +116,9 @@ Each is an entry of [`docs/rust-c-differences.md`](../rust-c-differences.md), "R
 Java also departs where C's own call is mistaken: an Adaptive Region's attribute value holding `%` is kept as given, where region.c passes it to `astSet` as a format; the protected `setEpoch` and observatory setters of a Region set what jniast means.
 A few departures appear only in the rulings so far (see Gaps and risks).
 
-## Patched C builds of two probes
+## Patched C builds of three probes
 
-Two probes link the pinned library with one C file corrected by one line, because the unpatched library crashes on the paths they need and so gives no values:
+Three probes link the pinned library with one of two C files, each corrected by one line, because the unpatched library crashes on the paths they need and so gives no values:
 
 - `region_null_interval_pointlist_probe.c` and `region_compound_probe.c` link a `pointlist.c` whose `RegPins` allocates its mask with the right size; without it, the overlap of a PointList with another Region, and of a CmpRegion or Prism holding a PointList, crashes in most runs.
 - `region_circle_ellipse_probe.c` links an `ellipse.c` whose `RegCentre` indexes its points the right way round; without it, every moved Ellipse crashes the library, and an Ellipse given as the uncertainty of another Region is moved.
@@ -128,7 +128,8 @@ Task 4's first probe rows had come from the runs of the unpatched build that com
 
 ## Defects found in the C library
 
-The tasks found 22 defects in the pinned C library (`3d3f255f`): memory errors, undefined behaviour and wrong results, in region.c, the Region class files, pointset.c, frame.c, skyframe.c and cmpframe.c.
+The tasks found 25 defects in the pinned C library (`3d3f255f`): memory errors, undefined behaviour and wrong results, in region.c, the Region class files, pointset.c, frame.c, skyframe.c and cmpframe.c.
+24 of them are still present at the tip of the upstream pull request the C library is being hardened in, and one is already fixed there.
 They were reported to the user privately, for upstream, and are not described in this repository beyond the behaviour `docs/rust-c-differences.md` records for each departure.
 Java follows C in every case that has a defined result, and gives an error or C's evident intent where C's result is undefined.
 
@@ -140,11 +141,11 @@ Java follows C in every case that has a defined result, and gives an error or C'
   The tests ran on JDK 21 and the JDK 27 runtime on AArch64 macOS only; no Java 8 runtime is installed here, and CI's x86-64 Linux runtimes are the first to exercise the derived tolerances there (`RegionsTest`'s 1e-12 bounds among them).
 - **`rust-tests.txt` has no automated checker.**
   Task 9 swept the Region files by matching each Rust test name, in camel case, against the Java test methods and checked each mismatch by hand.
-  The same match over every Rust test file finds about 350 tests outside the Region files neither matched by name nor listed; many are translated under other names, but some whole files of classes jniast lacks (ChebyMap, NormMap, XphMap, SplineMap, FitsTable) and the Rust port's own meta-tests are listed nowhere.
-- **Departures recorded only in rulings**, not yet in `docs/rust-c-differences.md`: the loader's `AST__REGIN` for an uncertainty or Frame of the wrong class, `regGrid`'s `AST__MBBNF`, `mapRegionInto`'s `AST__INTER`, `Region.cast` giving null for another class, Negated restored in `finally` after an error inside `Mask<X>` and `OverlapX`, Circle's and Ellipse's `RegBaseMesh` updating only the lower bound at the first mesh point, Polygon's rejection of non-finite vertices, the asymmetry of a PointList overlapping a Box (codes 1 and 4), and C's result for an Interval axis of code 6; three Task 8 entries lack a Rust bullet, and the negated closed CmpRegion entry lacks its "C quirk" label.
-- **Untested or weakly tested paths:** a Box given an uncertainty of the wrong dimensionality or one that is unbounded (`region_errors` uses a Circle); a Polygon of one vertex or coincident vertices, which ordinary input reaches and which raises `AST__INTER` saying "internal" where C's mesh gives `AST__BADIN`; the multi-axis code-6 `AST__INTER`; `RegionMaskTest`'s error tests, which assert only `AstException`, as Rust's do.
-- **Tolerance and comment precision:** `FrameGridTest`'s Javadoc says every truncated count is at least 0.01 from an integer, though several are exact; `FrameLineTest`'s derivation quotes too small an `atan2` error and amplification (its bound still holds); `RegionBoxOracleTest`'s exact comparison and `RegionBestFitTest`'s sheared-ellipse pin rest on margins not stated in the code; `Box.java`'s `(int) Math.pow` of a perfect power depends on `pow` being exact, as C's does; `RegionsTest`'s bounds comment omits the conditioning of `asin` and `atan2` near the pole, and its Javadoc overstates the probe's sky-membership coverage.
-- **Messages and Javadoc:** `Box.polygonOf`'s `AST__OBJIN` message is neither C's nor descriptive; `Polygon`'s `Polywidth` messages name `astPolygon(Polygon)`; `Prism.regPins`'s Javadoc says the components are made Closed, where C keeps an explicit `Closed = 0` open; two test classes have Javadoc lines over 120 columns.
+  The same match over every Rust test file finds about 350 tests outside the Region files neither matched by name nor listed (among them `src/serial/object_text.rs::every_class_name_matches_the_class_its_dump_names`, a Rust-only check over every fixture); many are translated under other names, but some whole files of classes jniast lacks (ChebyMap, NormMap, XphMap, SplineMap, FitsTable) and the Rust port's own meta-tests are listed nowhere.
+- **Departures recorded only in rulings**, not yet in `docs/rust-c-differences.md`: the loader's `AST__REGIN` for an uncertainty or Frame of the wrong class, the loader's guard on `getNaxes`, `regGrid`'s `AST__MBBNF`, `mapRegionInto`'s `AST__INTER`, `Region.cast` giving null for another class, Negated restored in `finally` after an error inside `Mask<X>` and `OverlapX`, Circle's and Ellipse's `RegBaseMesh` updating only the lower bound at the first mesh point, Polygon's rejection of non-finite vertices, the asymmetry of a PointList overlapping a Box (codes 1 and 4), C's result for an Interval axis of code 6 (6, the Regions disjoint), and C's answer `pldup 5 5` for a PointList with duplicated points; three Task 8 entries lack a Rust bullet.
+- **Untested or weakly tested paths:** a Box given an uncertainty of the wrong dimensionality or one that is unbounded (`region_errors` uses a Circle); a Polygon of one vertex or coincident vertices, which ordinary input reaches and which raises `AST__INTER` saying "internal" where C's mesh gives `AST__BADIN`; the multi-axis code-6 `AST__INTER`, and the `AST__INTER` of a NullRegion's bounds with more base than current Frame axes, which no test pins; `RegionMaskTest`'s error tests, which assert only `AstException`, as Rust's do; `RegionBestFitTest.checkEllipseFit`, which does not assert the fitted centre; `RegionErrorsOracleTest`, whose checks are separate test methods, so its count of checks run is not raised as the other shared oracles' are; and the LineIncludes quirk of a sky Polygon, which could be pinned deterministically at the level of the line primitives (a point about 5e-11 rad behind a line's start).
+- **Tolerance and comment precision:** `FrameGridTest`'s Javadoc says every truncated count is at least 0.01 from an integer, though several are exact; `FrameLineTest`'s derivation quotes too small an `atan2` error and amplification (its bound still holds); `RegionBoxOracleTest`'s exact comparison and `RegionBestFitTest`'s sheared-ellipse pin rest on margins not stated in the code; `Box.java`'s `(int) Math.pow` of a perfect power depends on `pow` being exact, as C's does; `RegionsTest`'s bounds comment omits the conditioning of `asin` and `atan2` near the pole, its Javadoc overstates the probe's sky-membership coverage, and the Javadoc of its `fitsChanSkyCircle*` tests should say that C's literals come from a different header but depend only on the ICRS SkyFrame.
+- **Messages and Javadoc:** `Box.polygonOf`'s `AST__OBJIN` message is neither C's nor descriptive; `Polygon`'s `Polywidth` messages name `astPolygon(Polygon)`; `Prism.regPins`'s Javadoc says the components are made Closed, where C keeps an explicit `Closed = 0` open; two test classes have Javadoc lines over 120 columns; `RegionBestFitTest` calls `assertThrows` by its fully qualified name inline.
 - **Duplication:** six private copies of `roundHalfAway` (including `CmpFrame` and `RegionMask` through `FitsMakeIntWorld`), and Circle's and Ellipse's `fitted` methods.
 - **Test harness:** `ProbeOutput` prefers a stale `target/test-classes/probes/<name>.out` over a source `.json` when both are in `target`; clean builds are unaffected.
 - **Test-first order** was not kept for `BoxRegionTest` and the other Task 2 tests, or for `RegionsCTest`, `RegionsTest` and `JniastRegionTest`, whose failing runs were shown against the code before the task instead.
@@ -167,4 +168,4 @@ The next phase, on a branch stacked on this one, is the rest of the spec's "Late
 
 ## Rulings
 
-Every decision made while executing the plan where it was wrong, unclear or silent, every departure from Rust, C or jniast and every C quirk kept is in [`2026-11-19-phase7-rulings.md`](2026-11-19-phase7-rulings.md), with its reason and its cost if wrong: 131 rulings, 120 by the implementers and 11 by the controller, and one correction by the controller.
+Every decision made while executing the plan where it was wrong, unclear or silent, every departure from Rust, C or jniast and every C quirk kept is in [`2026-11-19-phase7-rulings.md`](2026-11-19-phase7-rulings.md), with its reason and its cost if wrong: 130 rulings, 119 by the implementers and 11 by the controller, and one correction by the controller.

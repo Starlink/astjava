@@ -4,7 +4,7 @@ These are the decisions made while executing the phase 7 plan ([`2026-11-18-pure
 They are copied from the execution ledger (the controller's rulings) and from each task's report (the implementer's rulings), grouped by task; within a task the implementer's come first, in the order of the report, fix rounds included, then the controller's, in the order they were made.
 Each ruling gives what was decided, why, and what it costs if wrong.
 A later ruling can reverse an earlier one; a ruling that a later one replaced carries a bracketed note saying so.
-There are 131 rulings, 120 by the implementers and 11 by the controller, and one correction by the controller.
+There are 130 rulings, 119 by the implementers and 11 by the controller, and one correction by the controller.
 Task 8b is the second implementer the controller gave the rest of `test_regions.rs` while Task 8 was reviewed.
 The phase report is [`2026-11-19-phase7-report.md`](2026-11-19-phase7-report.md).
 
@@ -100,7 +100,7 @@ The phase report is [`2026-11-19-phase7-report.md`](2026-11-19-phase7-report.md)
 ### Controller
 
 - Ruling: port nullregion.c's own Simplify now (re-definition in the current Frame with the mapped uncertainty), since the Shared Design requires the interim Simplify to give a correct result and an exception is not one; class-changing branches still wait for Task 8 — cost if wrong: Task 8 revisits NullRegion's Simplify.
-- Ruling: re-grade the review's fourth minor to Important — Interval's `OneToOne` returns null for a split with more than one output where C sets `result[tt[0]]` and carries on, so for C-defined inputs Java falls back to region.c's overlap where C compares axis by axis — cost if wrong: one small fix. [withdrawn in fix round 1: C's `OneToOne` frees its result when a split has more than one output and returns NULL, as Java does; probe cases pin it, and the implementer's ruling above was reworded]
+- Ruling: re-grade the review's fourth minor to Important — Interval's `OneToOne` returns null for a split with more than one output where C sets `result[tt[0]]` and carries on, so for C-defined inputs Java falls back to region.c's overlap where C compares axis by axis; a result difference on defined input is a fidelity defect, not polish — cost if wrong: one small fix. [withdrawn in fix round 1: C's `OneToOne` frees its result when a split has more than one output and returns NULL, as Java does; probe cases pin it, and the implementer's ruling above was reworded]
 
 ## Task 5: Circle and Ellipse
 
@@ -165,7 +165,6 @@ The phase report is [`2026-11-19-phase7-report.md`](2026-11-19-phase7-report.md)
 - Ruling: CmpRegion `MatchRegion` inverts the component and back around `convert`, as C does, though inverting a Region changes only its Invert attribute — follow C — cost if wrong: none.
 - Ruling: in-place negation of components (CmpRegion mesh/pins for OR, Prism Bounded) is restored in `finally`, as the earlier tasks restore Negated after an error (C does not) — cost if wrong: none for defined input.
 - Ruling: the probe's output is committed as JSON (`output` string), as `region_frameset_probe.json` is, because it holds C's message typo "bacause" and item names the spelling check rejects; the Java strings carry `codespell:ignore bacause` — cost if wrong: none.
-- Ruling: superseded — the earlier "Ruling: a PointList component asked ... raises AST__INTER" no longer applies; Java now gives C's intended (and observed) result.
 
 ### Controller
 
@@ -207,10 +206,12 @@ The phase report is [`2026-11-19-phase7-report.md`](2026-11-19-phase7-report.md)
 
 ## Task 9: Sweep and report
 
+### Implementer
+
 - Ruling: `test_frame_in_map_slot.rs::a_region_inside_a_cmpmap_still_reads` is translated (`FrameInMapSlotTest.aRegionInsideACmpMapStillReads`) with the six of its 34 fixtures that also hold a SelectorMap asserted to fail with C's load error naming SelectorMap, and a floor of 28 read where Rust's is 33 — every class but SelectorMap is now present, and a fixture that cannot load is checked for that one reason rather than skipped — cost if wrong: the test fails when SelectorMap arrives, and the next phase raises the floor.
 - Ruling: `ObjectIdOracleTest` runs the `cmpregion`, `cmpregion_part_ids`, `prism` and `prism_part_ids` cases, an in-test skip of this phase's classes in a test the plan's Gates section did not name; all four match C — cost if wrong: none.
 - Ruling: the Moc and MocChan tests are listed with the plan's reason `Moc (not in jniast)` or `MocChan (not in jniast)`, and the two existing `MocChan (out of scope)` entries of `test_channel_dump_oracle.rs` take the same reason; `SelectorMap (Region, out of scope)` becomes `SelectorMap (out of scope)`, since only SelectorMap is missing — cost if wrong: none.
 - Ruling: `test_selectormap.rs` (13 tests) and `test_remove_regions_oracle.rs` are listed now although phase 1 left whole out-of-scope files unlisted — they are Region-related, and the sweep covers every Region-related file — cost if wrong: none; the next phase removes them.
-- Ruling: `test_region_stc_oracle.rs::error_ellipse_licence_is_still_needed` is listed as Rust-only API (it checks that the Rust port's licence for its own Ellipse points is still needed off macOS), and `traits_compile.rs`'s two Region trait checks as Rust-only API (Region trait); `traits_compile.rs::dyn_types_are_send`, which names no Region, is left to a sweep of the whole list — cost if wrong: one entry to add.
+- Ruling: `test_region_stc_oracle.rs::error_ellipse_licence_is_still_needed` is listed as Rust-only API (it checks that the Rust port's licence for its own Ellipse points is still needed off macOS), and `traits_compile.rs`'s two Region trait checks as Rust-only API (Region trait); `traits_compile.rs::dyn_types_are_send`, which asserts that `Box<dyn Region>` is `Send`, as Rust-only API (Send trait bound), as `skyframe_is_send` is listed — cost if wrong: none.
 - Ruling: `NativeStream.java` and `ObjectRegistry.java` are unchanged: `parentOf` already names every Region class and Moc and Stc with their parents, `ObjectRegistry` has a loader for each of this phase's classes and PointSet, and neither comment describes a plan or a missing class — cost if wrong: none.
 - Ruling: the minor findings the ledger deferred are not fixed in this task; the report lists them, grouped, under Gaps and risks — the brief asks for the sweep and the report, and the minors touch tests and documentation across the phase — cost if wrong: a later pass fixes them.
