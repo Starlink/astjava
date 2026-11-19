@@ -869,8 +869,8 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: pointlist.c `RegPins` allocates one byte, not one `int`, for each element of the mask it returns, so for more than a few points it writes beyond the allocation; `astOverlap` of a PointList and a Box, which asks for the mask of the Box's 200 mesh points, corrupts the heap and usually crashes.
   Its second test, that each of the PointList's points is near one of the points given, looks at as many of the PointList's points as there are points given: fewer than it has are not all looked at, and more are read beyond its points. **C bug.**
 - Rust: holds the mask correctly and looks at every point of the PointList.
-- Java: holds the mask correctly; looks at as many of the PointList's points as there are points given, as C does, and raises `AST__INTER` where C would read beyond them.
-  The probe's overlaps of a PointList and a Box come from the runs that completed, all of which agreed.
+- Java: holds the mask correctly; looks at as many of the PointList's points as there are points given, as C does, and raises `AST__INTER` where C would read beyond them, leaving the PointList's current Frame and Negated as they were.
+  `src/test/resources/probes/region_null_interval_pointlist_probe.c` is linked with pointlist.c changed to allocate an `int` for each element of the mask (its header gives the recipe), so its overlaps of a PointList and a Box are C's without the overrun.
 
 ### The bounding box of a PointList (`RegBaseBox`)
 

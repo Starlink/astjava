@@ -211,6 +211,42 @@ class NullRegionTest {
     }
 
     @Test
+    void mappedToFewerAxesMatchesC() {
+        // The public mapRegion simplifies the result (nullregion.c Simplify): the Mapping cannot
+        // be split, so the NullRegion keeps both axes in its base Frame until it is made again
+        // in the 1-D current Frame.
+        double c = Math.cos(0.3);
+        double s = Math.sin(0.3);
+        Mapping m = new CmpMap(
+                new MatrixMap(2, 2, new double[][] {{c, -s}, {s, c}}),
+                new PermMap(2, new int[] {1, -1}, 1, new int[] {1}, new double[] {0.0}),
+                true);
+        Region r = null2().mapRegion(m, new Frame(1));
+        check(
+                "null_mapped_fewer_axes",
+                "class " + r.astClass() + " naxes " + r.getNaxes() + " base "
+                        + r.regionFrameSet().getNin() + "\n" + bounds(r));
+    }
+
+    @Test
+    void simplifyMakesTheNullRegionInItsCurrentFrame() {
+        NullRegion nr = negated2();
+        nr.setMeshSize(50);
+        Region mapped = nr.mapRegionInto(new ZoomMap(2, 2.0), new Frame(2));
+        Region simple = assertInstanceOf(NullRegion.class, mapped.simplify());
+        assertTrue(isUnitMap(simple));
+        assertTrue(simple.getNegated());
+        assertEquals(50, simple.getMeshSize());
+        assertFalse(simple.testUnc());
+    }
+
+    private static boolean isUnitMap(Region r) {
+        return Region.isUnitMap(r.regionFrameSet()
+                .getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)
+                .simplify());
+    }
+
+    @Test
     void badInputMatchesC() {
         double[] pts = {BAD, 1.0, 1.0e30, 2.0};
         check("null_bad_input", tranValues(null2(), pts) + tranValues(negated2(), pts));

@@ -469,6 +469,24 @@ class PointListTest {
     }
 
     @Test
+    void anErrorFromRegPinsLeavesThePointListAsItWas() {
+        // q's mesh is its three points, all on p's two, so p's RegPins reaches its second test
+        // with more points than p has, which C reads beyond and this library refuses.
+        PointList p = pl12();
+        p.negate();
+        PointList q = pointList(2, null, new double[] {1, 2}, new double[] {3, 4}, new double[] {3, 4});
+        q.negate();
+        int icurr = p.getRegFS().getCurrent();
+        double[][] pts = rows(new double[] {1, 2}, new double[] {0, 0});
+        double[][] before = p.transform(pts, 2, true);
+        AstException e = assertThrows(AstException.class, () -> p.overlap(q));
+        assertEquals(AstException.AST__INTER, e.getStatus());
+        assertTrue(p.getNegated());
+        assertEquals(icurr, p.getRegFS().getCurrent());
+        assertArrayEquals(before, p.transform(pts, 2, true));
+    }
+
+    @Test
     void dumpMatchesC() {
         check("pointlist_dump", ChannelText.dump(pl12()));
         PointList back = assertInstanceOf(PointList.class, ChannelText.read(ChannelText.dump(pl12())));

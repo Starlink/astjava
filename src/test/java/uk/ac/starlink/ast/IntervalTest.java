@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.ac.starlink.ast.RegionProbeText.bounded;
@@ -518,6 +519,18 @@ class IntervalTest {
         Mapping rot = new MatrixMap(2, 2, new double[][] {{c, -s}, {s, c}});
         Region rotated = interval2(0, BAD, BAD, BAD).mapRegionInto(rot, new Frame(2));
         check("interval_rotated", error(() -> overlap(interval2(0, BAD, BAD, BAD), rotated)));
+    }
+
+    @Test
+    void aSplitWithTwoOutputsIsNotOneToOne() {
+        // interval.c OneToOne gives up when the first input feeds two outputs, so the overlap is
+        // region.c's, which cannot compare two unbounded Intervals.
+        Mapping pm = new PermMap(2, new int[] {1, 2}, 2, new int[] {1, 1}, null);
+        MapSplit split = pm.mapSplit(new int[] {0});
+        check("interval_split_two_outputs", "split " + (split == null ? -1 : split.map.getNout()) + "\n");
+        assertNull(Interval.oneToOne(pm));
+        Region mapped = interval2(0, BAD, BAD, BAD).mapRegionInto(pm, new Frame(2));
+        check("interval_split_two_outputs_overlap", error(() -> overlap(interval2(0, BAD, BAD, BAD), mapped)));
     }
 
     @Test

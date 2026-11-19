@@ -1,30 +1,30 @@
 == null_unc_dims
-!! AST: Error in routine box at line 84 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!! AST: Error in routine box at line 92 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
 !  astSetUnc(NullRegion): Bad 3 dimensional uncertainty Frame ( 3-d coordinate system) supplied.
 !  Cannot convert it to the Frame of the new NullRegion.
 status 233933522
 == interval_unc_dims
-!! AST: Error in routine interval at line 97 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!! AST: Error in routine interval at line 105 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
 !  astSetUnc(Interval): Bad 3 dimensional uncertainty Frame ( 3-d coordinate system) supplied.
 !  Cannot convert it to the Frame of the new Interval.
 status 233933522
 == pointlist_unc_dims
-!! AST: Error in routine pointlist2 at line 130 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!! AST: Error in routine pointlist2 at line 138 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
 !  astSetUnc(PointList): Bad 3 dimensional uncertainty Frame ( 3-d coordinate system) supplied.
 !  Cannot convert it to the Frame of the new PointList.
 status 233933522
 == null_unc_shape
-!! AST: Error in routine interval at line 97 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!! AST: Error in routine interval at line 105 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
 !  astSetUnc(NullRegion): Bad uncertainty shape (Interval) supplied.
 !  The uncertainty Region must be an instance of a centro-symetric subclass of Region (e.g. Box, Circle, Ellipse, etc).
 status 233933522
 == interval_unc_shape
-!! AST: Error in routine interval at line 97 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!! AST: Error in routine interval at line 105 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
 !  astSetUnc(Interval): Bad uncertainty shape (PointList) supplied.
 !  The uncertainty Region must be an instance of a centro-symetric subclass of Region (e.g. Box, Circle, Ellipse, etc).
 status 233933522
 == pointlist_unc_shape
-!! AST: Error in routine pointlist2 at line 130 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!! AST: Error in routine pointlist2 at line 138 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
 !  astSetUnc(PointList): Bad uncertainty shape (NullRegion) supplied.
 !  The uncertainty Region must be an instance of a centro-symetric subclass of Region (e.g. Box, Circle, Ellipse, etc).
 status 233933522
@@ -51,7 +51,7 @@ bounded 1
 bounds -1.7976931348623157e+308 2 5 6
 points 3 1 -1.7976931348623157e+308 5 2 3 6
 == pointlist_no_points
-!! AST: Error in routine constructors at line 316 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!! AST: Error in routine constructors at line 324 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
 !  astInitPointSet(PointSet): Number of points (0) is not valid.
 status 233933586
 == null_plain
@@ -68,13 +68,16 @@ bounds 1 1 -1 -1
 tran 1 0 1
 bounded 0
 bounds 1 1 -1 -1
+== null_mapped_fewer_axes
+class NullRegion naxes 1 base 1
+bounds 1 -1
 == null_bad_input
 values -1.7976931348623157e+308 -1.7976931348623157e+308 -1.7976931348623157e+308 -1.7976931348623157e+308
 pir 0 0
 values -1.7976931348623157e+308 1 1e+30 2
 pir 1 1
 == null_mesh
-!! AST: Error in routine null2 at line 117 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!! AST: Error in routine null2 at line 125 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
 !  astRegMesh(NullRegion): The NullRegion class does not implement the astRegMesh method inherited from the Region class (internal AST programming error).
 status 233933410
 == null_inside
@@ -194,7 +197,7 @@ bounds 2 inf inf nan
 unc Box 0
 bounds 0 0 0 0
 == interval_unbounded_mesh
-!! AST: Error in routine interval at line 97 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!! AST: Error in routine interval at line 105 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
 !  astRegBaseMesh(Interval): The Interval given is unbounded and therefore no boundary mesh can be produced (internal AST programming error).
 status 233933410
 == interval_above_inside
@@ -234,7 +237,14 @@ overlap 3 2
 == interval_zoomed
 overlap 5 5
 == interval_rotated
-!! AST: Error in routine overlap at line 219 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!! AST: Error in routine overlap at line 227 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astOverlap(Region): Neither of the two supplied Regions (classes Interval and Interval) has a finite boundary.
+!  The current implementation of astOverlap cannot determine the overlap between two Regions unless at least one of them has a finite boundary.
+status 233933410
+== interval_split_two_outputs
+split 2
+== interval_split_two_outputs_overlap
+!! AST: Error in routine overlap at line 227 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
 !  astOverlap(Region): Neither of the two supplied Regions (classes Interval and Interval) has a finite boundary.
 !  The current implementation of astOverlap cannot determine the overlap between two Regions unless at least one of them has a finite boundary.
 status 233933410
@@ -305,12 +315,12 @@ closed 0 0
 == pointlist_listsize
 listsize 2 0
 == pointlist_set_listsize
-!! AST: Error in routine pointlists at line 554 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!! AST: Error in routine pointlists at line 589 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
 !  astSet: The setting "listsize=3" is invalid for a PointList.
 !  This is a read-only attribute.
 status 233933578
 == pointlist_clear_listsize
-!! AST: Error in routine pointlists at line 557 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!! AST: Error in routine pointlists at line 592 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
 !  astClear: Invalid attempt to clear the "listsize" value for a PointList.
 !  This is a read-only attribute.
 status 233933578
@@ -327,6 +337,12 @@ overlap 5 5
 == pointlist_subset
 overlap 5 2
 == pointlist_null
+overlap 1 1
+== pointlist_in_box
+overlap 2 3
+== pointlist_across_box
+overlap 1 4
+== pointlist_beside_box
 overlap 1 1
 == pointlist_dump
  Begin PointList 	# Collection of points
@@ -362,9 +378,3 @@ overlap 1 1
        End PointSet
  IsA Region 	# An area within a coordinate system
  End PointList
-== pointlist_in_box
-overlap 2 3
-== pointlist_across_box
-overlap 1 4
-== pointlist_beside_box
-overlap 1 1

@@ -185,6 +185,29 @@ public class NullRegion extends Region {
     }
 
     // ------------------------------------------------------------------
+    // Simplification
+    // ------------------------------------------------------------------
+
+    /**
+     * Simplifies the NullRegion (C's {@code Simplify}, nullregion.c): after the Region-generic
+     * simplification, a NullRegion whose base and current Frames are not joined by a UnitMap is
+     * made again in its current Frame, with its uncertainty, if one is set, mapped into that
+     * Frame; a new NullRegion is given this one's Negated, Closed, MeshSize, FillFactor and
+     * Adaptive, and no uncertainty if this one has none.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Mapping simplifyStep() {
+        Region nw = parentSimplify();
+        Mapping map = nw.getRegFS().getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        Region result = isUnitMap(map) ? nw : new NullRegion(nw.regFrame(), nw.getUnc(false));
+        if (result != this) {
+            result.regOverlay(this, true);
+        }
+        return result;
+    }
+
+    // ------------------------------------------------------------------
     // Overlap
     // ------------------------------------------------------------------
 

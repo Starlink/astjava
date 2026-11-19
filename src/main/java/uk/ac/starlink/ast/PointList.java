@@ -303,7 +303,8 @@ public class PointList extends Region {
      * current Frame; and, if so, whether each of this PointList's points is in a PointList made of
      * the points given, with {@code pointUnc} as its Frame and uncertainty. That second test looks
      * at as many of this PointList's points as there are points given, as C does. The Negated
-     * attribute is set to its value afterwards.
+     * attribute is set to its value afterwards, and the current Frame restored, even when an
+     * error is raised.
      *
      * @throws AstException with status {@code AST__INTER} if the second test is reached with more
      *     points given than the PointList has, where C reads beyond its points, or with no {@code
@@ -313,9 +314,19 @@ public class PointList extends Region {
     boolean regPins(double[][] pset, Region pointUnc, boolean[] mask) {
         FrameSet fs = getRegFS();
         int icurr = fs.getCurrent();
-        fs.setCurrent(FrameSet.AST__BASE);
         boolean negOld = getNegated();
+        fs.setCurrent(FrameSet.AST__BASE);
         setNegatedValue(false);
+        try {
+            return pins(pset, pointUnc, mask);
+        } finally {
+            fs.setCurrent(icurr);
+            setNegatedValue(negOld);
+        }
+    }
+
+    /** The two tests of {@link #regPins}, with the base Frame current and Negated cleared. */
+    private boolean pins(double[][] pset, Region pointUnc, boolean[] mask) {
         int np = pset[0].length;
         int nc = pset.length;
         double[][] pset2 = transform(pset, np, true);
@@ -366,8 +377,6 @@ public class PointList extends Region {
                 }
             }
         }
-        fs.setCurrent(icurr);
-        setNegatedValue(negOld);
         return result;
     }
 

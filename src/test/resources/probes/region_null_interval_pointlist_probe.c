@@ -21,7 +21,13 @@
  * is 9.
  *
  * Overlap: each "overlap" line gives astOverlap( a, b ), then
- * astOverlap( b, a ).
+ * astOverlap( b, a ). The "split" line gives the number of outputs
+ * astMapSplit finds fed by the first input of the PermMap one Interval is
+ * mapped through, which interval.c OneToOne requires to be one.
+ *
+ * A NullRegion mapped by the public astMapRegion, which simplifies it,
+ * through a rotation then a PermMap to one axis: its class, axes, base
+ * Frame axes and bounds.
  *
  * Attributes: PointList's Closed, which is the opposite of Negated, and
  * its read-only ListSize.
@@ -31,23 +37,25 @@
  * Each case starts with a line "== <name>". A "status" line gives the
  * status of a failed call. Values are written with %.17g.
  *
- * Built against the C library at 3d3f255f with its static libraries:
+ * Built against the C library at 3d3f255f with its static libraries, and
+ * with pointlist.c recompiled with one change, so that RegPins allocates an
+ * int, not a byte, for each element of its mask (line 1998,
+ * "*mask = astMalloc( np );" becoming "*mask = astMalloc( np*sizeof(int) );"):
+ * without it, astOverlap of a PointList and a Box writes beyond the mask,
+ * corrupting the heap. The changed pointlist.o is linked ahead of libast.a:
+ *   sed 's/\*mask = astMalloc( np );/\*mask = astMalloc( np*sizeof(int) );/'
+ *      <ast>/src/pointlist.c > pointlist.c
+ *   cc -c -std=gnu99 -ffp-contract=off -DHAVE_CONFIG_H -DTHREAD_SAFE -DYAML
+ *      '-DYAML_BACKEND="libyaml"' -I<build> -I<build>/src -I<ast> -I<ast>/src
+ *      -I<ast>/wcslib pointlist.c
  *   cc -std=c11 -ffp-contract=off -I<build> -o region_null_interval_pointlist_probe
- *      region_null_interval_pointlist_probe.c <build>/libast.a <build>/libast_pal.a
- *      <build>/libast_err.a <build>/libast_grf3d.a <build>/libast_grf_2.0.a
- *      <build>/libast_grf_3.2.a <build>/libast_grf_5.6.a
- *      <build>/libast_cminpack.a -lyaml -lm
- * and run as
- *   ( ./region_null_interval_pointlist_probe;
- *     for c in in across beside; do
- *        until ./region_null_interval_pointlist_probe $c > one.out 2>&1; do :; done
- *        cat one.out
- *     done ) > region_null_interval_pointlist_probe.out 2>&1
- * with trailing white space then removed from every line. The second form
- * runs one of the PointList and Box overlaps (see pointlist_box_overlaps)
- * in a fresh process, again until a run completes: the write beyond the
- * mask corrupts the heap, so that most runs of these modes crash (in 30
- * runs of each, 5 or 6 completed, every one giving the overlaps recorded). */
+ *      region_null_interval_pointlist_probe.c pointlist.o <build>/libast.a
+ *      <build>/libast_pal.a <build>/libast_err.a <build>/libast_grf3d.a
+ *      <build>/libast_grf_2.0.a <build>/libast_grf_3.2.a
+ *      <build>/libast_grf_5.6.a <build>/libast_cminpack.a -lyaml -lm
+ * and run as ./region_null_interval_pointlist_probe >
+ * region_null_interval_pointlist_probe.out 2>&1, with trailing white space
+ * then removed from every line. */
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -320,6 +328,10 @@ static void constructors( void ) {
 static void nullregions( void ) {
    double test[ 6 ] = { 0.0, 0.0, BAD, 1.0, 1.0e30, 2.0 };
    int g3l[ 2 ] = { 1, 1 }, g3u[ 2 ] = { 3, 3 };
+   int inp[ 2 ] = { 1, -1 }, outp[ 1 ] = { 1 };
+   double con[ 1 ] = { 0.0 }, rot[ 4 ];
+   AstMapping *m;
+   AstFrameSet *fs;
    AstRegion *r;
 
    title( "null_plain" );
@@ -341,6 +353,21 @@ static void nullregions( void ) {
    if( r ) {
       tran( r, 2, 3, test );
       bounded( r );
+      bounds( r );
+   }
+
+   title( "null_mapped_fewer_axes" );
+   rot[ 0 ] = cos( 0.3 );
+   rot[ 1 ] = -sin( 0.3 );
+   rot[ 2 ] = sin( 0.3 );
+   rot[ 3 ] = cos( 0.3 );
+   m = (AstMapping *) astCmpMap( astMatrixMap( 2, 2, 0, rot, " " ),
+                                 astPermMap( 2, inp, 1, outp, con, " " ), 1, " " );
+   r = astMapRegion( null2( 0 ), m, astFrame( 1, " " ) );
+   if( !failed() ) {
+      fs = astGetRegionFrameSet( r );
+      printf( "class %s naxes %d base %d\n", astGetC( r, "Class" ), astGetI( r, "Naxes" ),
+              astGetI( fs, "Nin" ) );
       bounds( r );
    }
 
@@ -379,8 +406,9 @@ static void intervals( void ) {
    double lb7[ 1 ] = { BAD }, ub7[ 1 ] = { 7.0 };
    double pin[ 4 ] = { 1.0, 3.0, 4.0, 7.0 };
    double s, c, rot[ 4 ];
+   int inperm[ 2 ] = { 1, 2 }, outperm[ 2 ] = { 1, 1 }, splitin[ 1 ] = { 1 }, splitout[ 2 ];
    AstRegion *r, *a;
-   AstMapping *m;
+   AstMapping *m, *split;
 
    title( "interval_slice_unc" );
    r = interval2( 1.0, 5.0, 2.0, 5.0 );
@@ -486,6 +514,13 @@ static void intervals( void ) {
             interval2( 0, BAD, BAD, BAD ),
             mapped( interval2( 0, BAD, BAD, BAD ), m, astFrame( 2, " " ) ) );
 
+   title( "interval_split_two_outputs" );
+   m = (AstMapping *) astPermMap( 2, inperm, 2, outperm, NULL, " " );
+   astMapSplit( m, 1, splitin, splitout, &split );
+   printf( "split %d\n", split ? astGetI( split, "Nout" ) : -1 );
+   overlap( "interval_split_two_outputs_overlap", interval2( 0, BAD, BAD, BAD ),
+            mapped( interval2( 0, BAD, BAD, BAD ), m, astFrame( 2, " " ) ) );
+
    show( "interval_dump", (AstObject *) interval2( 1.0, BAD, BAD, 2.0 ) );
 }
 
@@ -568,36 +603,20 @@ static void pointlists( void ) {
    overlap( "pointlist_same", pointlist2( 2, xy, NULL ), pointlist2( 2, xy, NULL ) );
    overlap( "pointlist_subset", pointlist2( 2, xy, NULL ), pointlist2( 1, sub, NULL ) );
    overlap( "pointlist_null", pointlist2( 2, xy, NULL ), null2( 0 ) );
+   overlap( "pointlist_in_box", pointlist2( 2, xy, NULL ), box2( 0, 0, 5, 5 ) );
+   overlap( "pointlist_across_box", pointlist2( 2, xy, NULL ), box2( 0, 0, 2, 3 ) );
+   overlap( "pointlist_beside_box", pointlist2( 2, xy, NULL ), box2( 10, 10, 11, 11 ) );
 
    show( "pointlist_dump", (AstObject *) pointlist2( 2, xy, NULL ) );
 }
 
-/* Overlaps that mesh a Box and ask a PointList which mesh points are on its
-   boundary: pointlist.c RegPins allocates one byte, not one int, for each
-   point of its mask, so these run in a process of their own, the
-   "box" mode, in which nothing else has used the heap. */
-static void pointlist_box_overlaps( const char *which ) {
-   double xy[ 4 ] = { 1.0, 2.0, 3.0, 4.0 };
-   if( !strcmp( which, "in" ) ) {
-      overlap( "pointlist_in_box", pointlist2( 2, xy, NULL ), box2( 0, 0, 5, 5 ) );
-   } else if( !strcmp( which, "across" ) ) {
-      overlap( "pointlist_across_box", pointlist2( 2, xy, NULL ), box2( 0, 0, 2, 3 ) );
-   } else if( !strcmp( which, "beside" ) ) {
-      overlap( "pointlist_beside_box", pointlist2( 2, xy, NULL ), box2( 10, 10, 11, 11 ) );
-   }
-}
-
-int main( int argc, char **argv ) {
+int main( void ) {
    setvbuf( stdout, NULL, _IONBF, 0 );
    astBegin;
-   if( argc > 1 ) {
-      pointlist_box_overlaps( argv[ 1 ] );
-   } else {
-      constructors();
-      nullregions();
-      intervals();
-      pointlists();
-   }
+   constructors();
+   nullregions();
+   intervals();
+   pointlists();
    astEnd;
    return 0;
 }
