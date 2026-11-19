@@ -965,6 +965,13 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: discards them.
 - Java: as C (`Circle.regCentre`).
 
+### The bounds a Circle or an Ellipse finds from its boundary mesh
+
+- C: circle.c and ellipse.c `RegBaseMesh` find the bounds of a two-dimensional Circle or Ellipse from the axis distances of its mesh points from the centre, updating the upper bound on an axis only when a point is not below the lower bound found so far (`else if`), so the first mesh point updates only the lower bounds.
+  The first point of a Circle's mesh is at angle 0, the end of its radius along the second axis, so its upper bound on that axis is that of the next highest point, short by `r (1 - cos(2 pi / MeshSize))`; an Ellipse's first point is the end of its first axis. **C quirk.**
+- Rust: as C (`regions/circle.rs`, `regions/ellipse.rs`).
+- Java: as C (`Circle.regBaseMesh`, `Ellipse.regBaseMesh`).
+
 ### The smaller Circle of a Circle's boundary test (`RegPins`)
 
 - C: circle.c `RegPins` makes a Circle smaller than the one tested by half the border width, with no lower limit on its radius; a negative radius places the point on the circumference the other way, giving a Circle of the radius's magnitude.

@@ -3,6 +3,7 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static uk.ac.starlink.ast.RegionProbeText.checkClose;
 import static uk.ac.starlink.ast.RegionProbeText.points;
 
@@ -55,9 +56,9 @@ class RegionBestFitTest {
     }
 
     /**
-     * Checks an Ellipse fit: the class and the boundary test exactly, and the half-lengths of the
-     * axes and, if {@code direction}, the direction of the primary axis modulo a half turn, within
-     * {@link #TOL}, each found in the Frame of {@code r}.
+     * Checks an Ellipse fit: the class and the boundary test exactly, and the centre, the
+     * half-lengths of the axes and, if {@code direction}, the direction of the primary axis modulo
+     * a half turn, within {@link #TOL}, each found in the Frame of {@code r}.
      */
     private static void checkEllipseFit(String name, Region r, boolean direction) {
         String[] want = CircleTest.PROBE.get(name).split("\n", -1);
@@ -65,8 +66,12 @@ class RegionBestFitTest {
         assertEquals(want[0], got[0], name);
         assertEquals(want[2], got[2], name + ": pins");
         Frame f = r.getRegionFrame();
-        double[] w = shape(f, numbers(want[1]));
-        double[] g = shape(f, numbers(got[1]));
+        double[] wv = numbers(want[1]);
+        double[] gv = numbers(got[1]);
+        assertEquals(wv[1], gv[1], TOL, name + ": centre on axis 1");
+        assertEquals(wv[4], gv[4], TOL, name + ": centre on axis 2");
+        double[] w = shape(f, wv);
+        double[] g = shape(f, gv);
         assertEquals(w[0], g[0], TOL, name + ": primary half-length");
         assertEquals(w[1], g[1], TOL, name + ": secondary half-length");
         if (direction) {
@@ -138,6 +143,60 @@ class RegionBestFitTest {
         checkNear("fit_ellipse_of_sheared_ellipse", sheared, false);
     }
 
+    /**
+     * The guard of the boundary test of {@code fit_ellipse_of_sheared_ellipse}, which is compared
+     * exactly though the fit may differ from C's by about {@code 1e-11} (see the class
+     * description): the mesh of the sheared Ellipse is not an ellipse, so several of its points lie
+     * near the edges of the band about the fitted Ellipse that {@code regPins} tests, and scaling
+     * the fitted Ellipse by {@code 1 - 1e-8} or turning it by {@code 1e-8} radians changes which
+     * are in it. Scaling or turning it by {@code 1e-9} changes none.
+     */
+    @Test
+    void shearedEllipseFitPinsAreClearOfTheBand() {
+        Region sheared = ellipse(new Frame(2), 1.0, 2.0, 2.0, 1.0, 0.3)
+                .mapRegionInto(new MatrixMap(2, 2, new double[][] {{1.0, 0.3}, {0.0, 1.0}}), new Frame(2));
+        double[][] mesh = sheared.regMesh();
+        double[][] pts = sheared.getRegionPoints();
+        Region fit = Ellipse.bestEllipse(
+                mesh, new double[] {pts[0][0], pts[1][0]}, sheared.getUncFrm(FrameSet.AST__CURRENT));
+        String want = pins(fit, mesh);
+        for (double eps : new double[] {-1e-9, 1e-9}) {
+            assertEquals(want, pins(moved(fit, 1.0 + eps, 0.0), mesh), "scaled by 1 + " + eps);
+            assertEquals(want, pins(moved(fit, 1.0, eps), mesh), "turned by " + eps);
+        }
+    }
+
+    /** Which points of {@code mesh} {@code r} takes to be on its boundary. */
+    private static String pins(Region r, double[][] mesh) {
+        boolean[] mask = new boolean[mesh[0].length];
+        r.regPins(mesh, null, mask);
+        StringBuilder sb = new StringBuilder();
+        for (boolean m : mask) {
+            sb.append(m ? '1' : '0');
+        }
+        return sb.toString();
+    }
+
+    /**
+     * An Ellipse in a plain Frame made from the points of {@code e}, the ends of its axes moved
+     * about its centre, scaled by {@code scale} and turned by {@code turn} radians, with the
+     * uncertainty of {@code e}.
+     */
+    private static Ellipse moved(Region e, double scale, double turn) {
+        double[][] p = e.getRegionPoints();
+        double cx = p[0][0];
+        double cy = p[1][0];
+        double c = Math.cos(turn);
+        double s = Math.sin(turn);
+        double[][] q = new double[2][];
+        for (int k = 1; k < 3; k++) {
+            double dx = (p[0][k] - cx) * scale;
+            double dy = (p[1][k] - cy) * scale;
+            q[k - 1] = new double[] {cx + c * dx - s * dy, cy + s * dx + c * dy};
+        }
+        return new Ellipse(e.getRegionFrame(), 0, new double[] {cx, cy}, q[0], q[1], e.getUnc(false));
+    }
+
     @Test
     void fitsOnTheSkyMatchC() {
         Circle cs = new Circle(icrs(), new double[] {1.0, 1.3}, 0.1, null);
@@ -161,8 +220,7 @@ class RegionBestFitTest {
         // C reads beyond its arrays when every mesh point is bad or at the centre.
         double[][] mesh = {{1.0, 1.0}, {2.0, 2.0}};
         Region u = circle().getUncFrm(FrameSet.AST__CURRENT);
-        AstException e = org.junit.jupiter.api.Assertions.assertThrows(
-                AstException.class, () -> Ellipse.bestEllipse(mesh, new double[] {1.0, 2.0}, u));
+        AstException e = assertThrows(AstException.class, () -> Ellipse.bestEllipse(mesh, new double[] {1.0, 2.0}, u));
         assertEquals(AstException.AST__INTER, e.getStatus());
     }
 
