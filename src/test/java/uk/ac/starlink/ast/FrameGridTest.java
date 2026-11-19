@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
  * {@code 1 / nsame}, and several of these are exact integers. Where an axis has a unit of its own,
  * {@code gmean} is {@code pow(width, 1.0)}, which is the width exactly by the specification of
  * {@code Math.pow}, and the quotient is exact. Two cases rely on {@code pow} of a perfect power:
- * {@code grid_frame}'s second row gives 5 ticks only if {@code pow(16, 0.5)} is exactly 4, which
+ * {@code grid_frame}'s second row gives 5 ticks only if {@code pow(16, 0.5)} is at most 4, which
  * fdlibm, the JIT intrinsics and C's library give, though the specification allows an error of 1
  * ulp; and {@code grid_frame3} gives 3 and 6 ticks if {@code pow(8,
  * 1.0 / 3)} is at most 2, its correctly rounded value, which the specification's 1 ulp ensures.
