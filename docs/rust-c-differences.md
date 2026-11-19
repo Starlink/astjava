@@ -999,6 +999,51 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - Rust: discards it.
 - Java: as C (`Prism.regCentre`).
 
+### The MeshSize of two Regions merged in parallel
+
+- C: `MergeBox`, `MergeInterval`, `MergeNullRegion` and `MergePointList` pass `fac_this*fac_reg*astGetMeshSize( result )`, a `double`, to `astSetMeshSize`, whose argument is an `int`, so the scaled MeshSize is truncated.
+- Rust: rounds it (`merge_util.rs` `apply_merge_scaling_to`).
+- Java: as C (`RegionMerge`).
+
+### An Ellipse with a Box uncertainty mapped through a full MatrixMap and back
+
+- C: `testregions.c` `checkEllipse` Errors 15 to 17: each mapped Ellipse has no FrameSet and the round trip overlaps the original as the same Region.
+- Rust: excludes the check (`REGIONS_C_GAP_EXCLUDED` in `test_regions_c.rs`): its mapped Ellipse keeps the rotation in its uncertainty's FrameSet, and mapping back fails.
+- Java: as C (`RegionsCTest.checkEllipse`).
+
+### The order in which a Box's simplification tries the corners of a Polygon
+
+- C: box.c `Simplify` makes the Polygon of a 2-D Box's transformed corners in clockwise order first (`right_handed` 0), then anticlockwise, keeping the first whose inside is the Box's.
+- Rust: tries `right_handed` 1, the anticlockwise order, first.
+- Java: as C (`Box.polygonOf`); the order matters only if both orders qualify.
+
+### A Box whose transformed corners make no Polygon with the Box's inside
+
+- C: box.c `Simplify` annuls each Polygon that does not qualify and then passes the annulled (null) pointer to `astRegPins`, which reports `AST__OBJIN`. **C bug.**
+- Rust: leaves the Box as it is.
+- Java: `AST__OBJIN`, as C, with a message of its own (`Box.polygonOf`).
+
+### A Circle fitted in its current Frame
+
+- C: circle.c `Simplify` does not count a best-fitting Circle as a simplification: it is returned only if the Region-generic simplification changed the Circle, while a best-fitting Ellipse always is. **C quirk.**
+- Rust: as C.
+- Java: as C (`Circle.simplifyStep`).
+
+### The limits an Interval's simplification makes unequal
+
+- C: interval.c `Simplify` replaces an upper limit equal to its lower limit by the larger of the two times `1.0E6*DBL_EPSILON`, not by a value just above it. **C quirk.**
+- Java: as C (`Interval.simplifyStep`).
+
+### The mean limit of a best-fitting Box on the negative side of an axis
+
+- C: box.c `BestBox` sets the clipping limit of a mean to `100*mean*DBL_EPSILON` when the values scatter less than that, which is negative for a negative mean, so no value is kept and the limit falls back to the extreme value. **C quirk.**
+- Java: as C (`Box.bestBox`).
+
+### An uncertainty set on a Prism that does not simplify
+
+- C: prism.c `Simplify` sets the Prism's own uncertainty on the Region it returns, which is the Prism itself when nothing simplifies, so the Prism given is changed. **C quirk.**
+- Java: as C (`Prism.simplifyStep`).
+
 ## FitsChan
 
 ### An equals sign in a keyword name is reported as an `astPutFits` error from every method
