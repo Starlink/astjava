@@ -239,3 +239,8 @@ tests/test_region_outline_oracle.rs::outline_matches_the_c_library | astOutline 
 tests/test_region_outline_oracle.rs::outline_reports_no_selected_pixel_as_c_does | astOutline (not in jniast)
 tests/test_regions_c.rs::check_remove_regions | astRemoveRegions (out-of-scope method)
 tests/test_regions_c.rs::region_gaps_still_differ | Rust-only API (checks that Rust's gap from C in checkEllipse Errors 15 to 17 remains; RegionsCTest.checkEllipse gives C's result)
+tests/test_regions.rs::sky_circle_disc | astGetRegionDisc (not in jniast)
+tests/test_regions.rs::sky_polygon_disc | astGetRegionDisc (not in jniast)
+tests/test_regions.rs::remove_regions_from_frameset | astRemoveRegions (out-of-scope method)
+tests/test_regions.rs::remove_regions_unit_passthrough | astRemoveRegions (out-of-scope method)
+tests/test_regions.rs::convex_hull_basic | astConvex (not in jniast)

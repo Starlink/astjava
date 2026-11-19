@@ -1,0 +1,79 @@
+== square_without_circles
+tran 1 0 0 0
+== square_without_circles_negated
+tran 1 1 1 1
+== interval_partial
+overlap 4 4
+== box_partial
+overlap 4 4
+== box_none
+overlap 1 1
+== box_inside
+overlap 2 3
+== interval_inside
+overlap 2 3
+== interval_none
+overlap 1 1
+== interval_same
+overlap 5 5
+== box_same
+overlap 5 5
+== prism_same
+overlap 5 5
+== prism_second_inside
+overlap 3 2
+== prism_partial
+overlap 4 4
+== prism_none
+overlap 1 1
+== circle_and_box_same
+overlap 5 5
+== prism_circle_and_box_bounds
+bounds -3 -3 100 3 3 200
+== sky_circle_same
+overlap 5 5
+== sky_circle_inside
+overlap 2 3
+== sky_circle_partial
+overlap 4 4
+== sky_circle_none
+overlap 1 1
+== sky_circle_bounds_equator
+bounds 0.90000000000000002 -0.09999999999999995 1.0999999999999999 0.099950491019048487
+== sky_circle_bounds_near_pole
+bounds 0 1.4707963267948971 6.2831853071795862 1.5707963267948966
+== sky_circle_open_boundary
+tran 1 1 1
+tran 1 0 1
+== sky_box_membership
+tran 1 1 1 0 0
+== sky_box_bounds
+bounds 0.89999999999999991 0.40000000000000002 1.1000000000000001 0.59999999999999998
+== sky_box_same
+overlap 5 5
+== sky_box_partial
+overlap 4 4
+== sky_box_none
+overlap 1 1
+== sky_ellipse_membership
+tran 1 1 1 0 0
+== sky_ellipse_rotated_membership
+tran 1 1
+== sky_ellipse_pole_bounds
+bounds 0 0.87079632679489671 6.2831853071795862 1.5707963267948966
+== sky_polygon_ra0_bounds
+bounds 6.2331853071795864 -0.10000000000000001 6.3331853071795861 0.10000000000000001
+== sky_polygon_membership
+tran 1 1 0 0
+== sky_polygon_triangle_membership
+tran 1 0
+== sky_polygon_bounds
+bounds 1 0.5 1.1000000000000001 0.59999999999999998
+== sky_circle_and_box_membership
+tran 1 1 0
+== sky_two_circles_membership
+tran 1 1 0
+== galactic_circle_same
+overlap 5 5
+== galactic_circle_inside
+overlap 2 3
