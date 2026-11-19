@@ -72,6 +72,7 @@ class JniastApiTest {
             "RateMap",
             "Region",
             "ResampleFlags",
+            "SelectorMap",
             "ShiftMap",
             "SkyAxis",
             "SkyFrame",

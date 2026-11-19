@@ -45,8 +45,8 @@ import java.util.Objects;
  * a value of {@link #AST__BAD} on every axis.
  *
  * <p>In practice, appropriate selector Mappings should be chosen to associate a different route
- * Mapping with each region of coordinate space. Note that the SelectorMap class of Mapping is
- * particularly appropriate for this purpose.
+ * Mapping with each region of coordinate space. Note that the {@link SelectorMap} class of Mapping
+ * is particularly appropriate for this purpose.
  *
  * <p>If a compound Mapping contains a SwitchMap in series with its own inverse, the combination of
  * the two adjacent SwitchMaps will be replaced by a UnitMap when the compound Mapping is

@@ -86,6 +86,8 @@ final class ObjectRegistry {
                 return Prism::new;
             case "RateMap":
                 return RateMap::new;
+            case "SelectorMap":
+                return SelectorMap::new;
             case "ShiftMap":
                 return ShiftMap::new;
             case "SkyAxis":

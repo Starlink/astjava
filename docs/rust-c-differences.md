@@ -547,6 +547,39 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: has its own messages, with the same statuses.
 - Java: as C, the public constructor giving the public function's message.
 
+### SelectorMap's transformation changes its own Regions
+
+- **C quirk**: `Transform` (`selectormap.c`) tests the points against each of its own Regions by negating it and reversing its Closed attribute with `astNegate` and `astSetClosed`, and puts both back the same way, so each Region is left with Negated and Closed set to the values they had.
+  A dump made after a transformation writes `Closed = 1` for each Region whose Closed was unset (probe `src/test/resources/probes/selectormap_probe.c`, cases `focus_dump_before` and `focus_dump_after`); `astEqual`, which compares the values, is unchanged (case `focus_equal_after`).
+- Rust: transforms a negated copy of each Region, so the SelectorMap is unchanged.
+- Java: as C, putting the attributes back even when a transformation fails, where C leaves them changed.
+
+### SelectorMap's simplification of its Regions
+
+- C: `MapMerge` (`selectormap.c`) simplifies each Region and rebuilds the SelectorMap when `astSimplify` returns a different pointer for any of them, whatever its class.
+- Rust: `reduced_children` (`mappings/selectormap.rs`) takes a Region as changed when its simplification is not `equal` to it or differs in Invert, and keeps the result only for nine listed Region classes.
+- Java: as C, comparing the objects `simplify` returns (probe cases `simplify_unchanged` and `simplify_changed`).
+
+### Two equal 1-D SelectorMaps in series simplify to a UnitMap
+
+- **C bug**: `MapMerge` (`selectormap.c`) inverts the neighbouring SelectorMap, compares it with `Equal`, and replaces the pair with a UnitMap if they are equal; `Equal` compares the numbers of inputs, the Regions and the bad value but not the Invert attributes, so for 1-D SelectorMaps, whose inverse has as many inputs as outputs, it cannot tell a SelectorMap from its inverse.
+  Two equal 1-D SelectorMaps both applied forward are replaced with a UnitMap, which changes the transformation: the pair gives 1 for every good point, whatever Region holds it, and the UnitMap gives the point (probe case `series_1d_both_forward`).
+- Rust: `try_merge` requires the two Invert flags to differ, so the pair is kept.
+- Java: as C.
+
+### Loading a SelectorMap
+
+- **C bug**: `astLoadSelectorMap` annuls the first Region's FrameSet pointer after reading the Regions, so a description without `Reg1` fails with AST__OBJIN from `astAnnul` of a null pointer (probe case `load_no_regions`).
+  The Regions' Frames are not compared, and a later Region written without its Frame is given the first Region's FrameSet with `astSetRegFS`, which makes a FrameSet of copies of all its Frames, joining a copy of its base Frame, as the Region's base Frame, to a copy of its current Frame, as the Region's current Frame, with a UnitMap; a first Region whose FrameSet holds another Mapping therefore leaves the later Region as it was written (probe case `load_first_region_mapped`, whose first Region's FrameSet holds a MathMap).
+- Rust: gives a later Region two copies of the first Region's current Frame, joined by a UnitMap, so only the base Frame differs from C's; it rebuilds the SelectorMap through its builder, so Regions in different Frames are AST__LDERR, and it refuses a description without Regions with AST__LDERR.
+- Java: as C, except that a description without Regions is AST__LDERR, and a component that is not a Region is AST__LDERR.
+
+### The messages of SelectorMap's constructor
+
+- C: no Regions is AST__BDPAR "astSelectorMap(SelectorMap): Bad number of Regions (0) specified.", and the first Region whose Frame is not equal to the first Region's is AST__BADNI "astInitSelectorMap(SelectorMap): Region number 2 does not refer to the same coordinate Frame as the first Region." (probe cases `error_no_regions`, `error_naxes`, `error_skyframe`).
+- Rust: the same statuses, with its own messages.
+- Java: as C; a null array or Region is a NullPointerException naming it, as for jniast's other arguments.
+
 ### The directions of a loaded IntraMap
 
 - C: `astLoadIntraMap` leaves TranForward and TranInverse to the Mapping part of the dump (`Fwd` and `Inv`); the registered function's AST__NOFWD and AST__NOINV flags decide them only when an IntraMap is made (`astInitIntraMap`).

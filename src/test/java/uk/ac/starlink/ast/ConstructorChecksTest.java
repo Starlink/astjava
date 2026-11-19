@@ -56,6 +56,21 @@ class ConstructorChecksTest {
         assertEquals(AstException.AST__INTRD, e.getStatus());
     }
 
+    /**
+     * selectormap.c astInitSelectorMap: every Region must refer to a Frame equal to the first
+     * Region's, or it is AST__BADNI.
+     */
+    @Test
+    void aSelectormapNeedsRegionsInOneFrame() {
+        Region plain1 = new Circle(new Frame(2), new double[] {0.0, 0.0}, 1.0, null);
+        Region plain2 = new Circle(new Frame(2), new double[] {0.0, 0.0}, 1.0, null);
+        Region sky = new Circle(new SkyFrame(), new double[] {0.0, 0.0}, 0.1, null);
+        new SelectorMap(new Region[] {plain1, plain2}, AstObject.AST__BAD);
+        AstException e =
+                assertThrows(AstException.class, () -> new SelectorMap(new Region[] {plain1, sky}, AstObject.AST__BAD));
+        assertEquals(AstException.AST__BADNI, e.getStatus());
+    }
+
     /** wcsmap.c SetPV: an axis out of range, or one that is not celestial, is AST__AXIIN. */
     @Test
     void aWcsmapPvNeedsACelestialAxis() {

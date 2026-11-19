@@ -24,8 +24,9 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * <p>Each case writes the lines the probe writes and compares them with C's exactly: the dump of
  * the Mapping ({@code in}), the dump of the result ({@code out}), whether the result is the Mapping
  * itself ({@code same}), and for a CmpFrame or a FrameSet whether each component of the result is
- * the original's own. The probe's cases whose names start with {@code selectormap} need SelectorMap
- * and are not made here.
+ * the original's own. A SelectorMap removes no Regions (selectormap.c installs no {@code
+ * RemoveRegions}), so it is itself, and a SwitchMap with one as its selector removes the Regions of
+ * its routes only.
  */
 class RemoveRegionsTest {
 
@@ -257,10 +258,22 @@ class RemoveRegionsTest {
         check("cmpframe_no_regions", cmpFrameCase(new CmpFrame(frame(2, null), frame(1, null))));
     }
 
+    private static SelectorMap selectorOfTwoBoxes() {
+        return new SelectorMap(new Region[] {box2(0.0, 1.0), box2(2.0, 3.0)}, AstObject.AST__BAD);
+    }
+
+    @Test
+    void aSelectorMapKeepsItsRegions() {
+        check("selectormap_alone", selectorOfTwoBoxes());
+    }
+
+    @Test
+    void aSwitchMapKeepsTheRegionsOfItsSelectorMap() {
+        check("selectormap_switchmap", switch2(selectorOfTwoBoxes(), box2(0.0, 1.0), new ZoomMap(2, 3.0)));
+    }
+
     @Test
     void probeCasesAreAllCovered() {
-        List<String> names = new ArrayList<>(PROBE.keySet());
-        names.removeIf(n -> n.startsWith("selectormap"));
-        assertEquals(17, names.size(), names.toString());
+        assertEquals(19, PROBE.size(), PROBE.keySet().toString());
     }
 }
