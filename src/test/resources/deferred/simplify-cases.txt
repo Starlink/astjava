@@ -28,7 +28,7 @@ cap_permmap_01 | needs NormMap
 cap_pointlist_01 | needs Prism
 cap_pointlist_02 | needs Prism
 cap_slamap_02 | needs Polygon, Prism
-cap_slamap_07 | needs Circle, CmpRegion
+cap_slamap_07 | needs CmpRegion
 cap_timemap_02 | needs StcResourceProfile
 cap_unitnormmap_01 | needs UnitNormMap
 cap_xphmap_01 | needs XphMap
@@ -81,20 +81,13 @@ cap_cheby_consolidate | needs ChebyMap
 cap_box_permmap_const | needs simplification
 cap_box_permmap_null | needs simplification
 cap_box_permmap_null_first | needs simplification
-neg_circle_cmpframe_sky_second | needs Circle
 cap_poly_unc_frame | needs Polygon
 cap_poly_bent_edges | needs Polygon
 cap_poly_bend_allowed | needs Polygon
 neg_unitnormmap_nonunit_scale | needs UnitNormMap
-cefit_circle_conformal | needs Circle
-cefit_circle_nonconformal_keep | needs Circle
-cefit_circle_to_ellipse | needs Ellipse
-cefit_ellipse_to_circle | needs Circle
-defunc_nullregion_2d | needs Circle
 defunc_prism_box_interval | needs Prism
 merge_box_fillfactor_product | needs simplification
 merge_box_meshsize_scaled | needs simplification
 merge_interval_meshsize_scaled | needs simplification
-regbasepick_circle_permaxes | needs Circle
 regbasepick_cmpregion_subset | needs CmpRegion
 simpstab_permmap_slice_unc | needs simplification
