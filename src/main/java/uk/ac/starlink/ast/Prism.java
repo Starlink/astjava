@@ -689,9 +689,10 @@ public class Prism extends Region {
 
     /**
      * Whether every point of {@code pset}, in the base Frame, is on the boundary of the Prism
-     * (prism.c {@code RegPins}): on the boundary of one component and on or inside the other, the
-     * components made Closed for the while. Each component tests its own part of the points with
-     * its own uncertainty; {@code pointUnc} is not used, as in C.
+     * (prism.c {@code RegPins}): on the boundary of one component and on or inside the other. For
+     * the while each component's Closed is set to its own value, which keeps one set false open,
+     * and to true where it is not set. Each component tests its own part of the points with its
+     * own uncertainty; {@code pointUnc} is not used, as in C.
      */
     @Override
     boolean regPins(double[][] pset, Region pointUnc, boolean[] mask) {
@@ -716,7 +717,7 @@ public class Prism extends Region {
         }
     }
 
-    /** The tests of {@link #regPins}, with the components Closed. */
+    /** The tests of {@link #regPins}, with the components' Closed set as it sets them. */
     private boolean pins(double[][] pset, boolean[] mask) {
         int np = pset[0].length;
         int nax1 = region1.getNaxes();
