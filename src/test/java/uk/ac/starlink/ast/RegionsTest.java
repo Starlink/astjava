@@ -1525,8 +1525,12 @@ class RegionsTest {
 
     /**
      * A Circle clips a point outside it, and the Mapping of the ICRS to Galactic FrameSet, with its
-     * Regions removed, passes that point. The FrameSet {@code convert} gives holds no Region; {@code
-     * RegionsCTest.checkRemoveRegions} and {@code RemoveRegionsTest} remove Regions a FrameSet holds.
+     * Regions removed, passes that point. This translates Rust's {@code remove_regions_from_frameset},
+     * whose FrameSet from {@code convert} holds no Region, so nothing is removed. The C-valued cases
+     * that remove a Region a FrameSet holds are {@code RegionsCTest.checkRemoveRegions} (a Circle as
+     * the current Frame) and the {@code RemoveRegionsTest} cases {@code frameset_region_frame} (a Box
+     * as a Frame), {@code frameset_region_in_cmpmap} (a Circle in a CmpMap) and {@code
+     * frameset_region_map} (a Box as a Mapping).
      */
     @Test
     void removeRegionsFromFrameSet() {
