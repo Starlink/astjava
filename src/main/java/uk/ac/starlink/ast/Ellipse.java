@@ -680,7 +680,7 @@ public class Ellipse extends Region {
      * The secondary half-length a mesh point gives {@link #bestEllipse}, from its components
      * {@code px} along and {@code py} across the primary axis of half-length {@code mx}: {@code
      * |mx py^2| / sqrt(mx^2 - px^2)}, or {@link #AST__BAD} if either component is bad or {@code
-     * |px|} is not less than {@code mx}. The fit's secondary half-length is the mean of these,
+     * mx^2 - px^2} is not positive. The fit's secondary half-length is the mean of these,
      * weighted by {@code |py|}. A separate method for the reason {@link #bestPrimaryAxis} gives.
      */
     static double secondaryEstimate(double mx, double px, double py) {
