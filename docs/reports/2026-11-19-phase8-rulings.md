@@ -83,7 +83,7 @@ The phase report is [`2026-11-19-phase8-report.md`](2026-11-19-phase8-report.md)
 
 #### Fix round 2
 
-- Ruling: the refit duplicates `bestEllipse`'s arithmetic in the test rather than exposing its intermediates from main code — the bit-for-bit check ties the copy to the real fit — cost if wrong: if `bestEllipse` changes, the test fails until the copy follows.
+- Ruling: the refit duplicates `bestEllipse`'s arithmetic in the test rather than exposing its intermediates from main code — the bit-for-bit check ties the copy to the real fit — cost if wrong: if `bestEllipse` changes, the test fails until the copy follows. [superseded after the final review: the test calls `Ellipse`'s package-private `bestPrimaryAxis` and `secondaryEstimate`, which `bestEllipse` is built from]
 
 ## Task 4: The other Stc classes, and casting within the Stc hierarchy
 

@@ -101,7 +101,7 @@ Each is an entry of [`docs/rust-c-differences.md`](../rust-c-differences.md), un
 ## Defects found in the C library
 
 The tasks and the sweep found 6 defects in the pinned C library (`3d3f255f`).
-At `15cc80e8`, the tip of the upstream pull request (PR #104) the C library is being hardened in, 2 are still present.
+At `1d0714fb`, the tip of the upstream pull request (PR #104) the C library is being hardened in, 1 is still present.
 They were reported to the user privately, for upstream, and are not described in this repository beyond the behaviour `docs/rust-c-differences.md` records for each departure.
 Java follows C in every case that has a defined result, and gives an error or C's documented result where C's result is undefined.
 
@@ -116,15 +116,14 @@ Java follows C in every case that has a defined result, and gives an error or C'
   Four texts said or implied that C's `astConvert` between CmpFrames of Stcs casts one Stc into the class of the other with `astCastCopy`: the header of `stc_probe.c` (lines 31-34, the reason its last case uses Stcs of one class), the Javadoc of `StcProbeTest.aCmpFrameOfStcsInOtherDomainsDoesNotConvert` ("into the class of the target's component"), the Cast entry of `docs/rust-c-differences.md`, and Task 4's ruling on that entry; Task 4's report also said an lldb breakpoint showed `astCastCopy` reached from region.c `Cast`.
   It is not: the `astCastCopy` calls `astConvert` makes come from cmpframe.c `Cast`, a CmpFrame into a CmpFrame, and region.c `Cast` is given the target's picked axes, a Frame (cmpframe.c `PartMatch`, region.c `SubFrame`), or a whole CmpFrame (`ComponentMatch`), and casts the Region's current Frame.
   The four texts are corrected; since only the protected `astCast` gives region.c `Cast` a Region to cast into, `Region.cast` between Stcs is pinned by Java-only tests, and C's crash before a Region description is read is the only effect of the CmpFrame path that the probe pins.
-- **Minor findings left from the reviews:**
-  - `RemoveRegionsTest` does not reach a SwitchMap's inverse selector or the RateMap and SwitchMap cases of a FrameSet component turned into a UnitMap (only the TranMap case), and `probeCasesAreAllCovered` checks the number of cases, not their names; `RegionsTest.removeRegionsFromFrameSet`, a faithful translation, removes no Region (its Javadoc says so).
-  - `SelectorMap.cancelWithNeighbour` duplicates `SwitchMap`'s; the SelectorMap class Javadoc says the dump shows Negated after a transformation, where only Closed shows, and does not say that two equal 1-D SelectorMaps applied forward merge to a UnitMap.
-  - No C value covers the simplification of a negated Stc or of one whose AstroCoords Regions are remapped; `RegionStcOracleTest`'s repeat of `Ellipse.bestEllipse` must follow any change to it (its bit-for-bit check fails until it does).
+- **Minor findings from the reviews** were fixed before the branch was finished: `RemoveRegionsTest` now has C values for a SwitchMap's inverse selector and for the RateMap and SwitchMap cases of a FrameSet component turned into a UnitMap, and checks the probe's case names; `SelectorMap` shares `SwitchMap`'s neighbour cancellation and its Javadoc describes its dump and its 1-D merge; `StcProbeTest` has C values for simplifying a negated Stc and one whose AstroCoords Regions are remapped; `RegionStcOracleTest` refits the Error Ellipse with `Ellipse`'s own package-private steps.
+- **The pin will change some results.**
+  PR #104 (`55cd143d`) makes C's `Cast` in region.c, cmpframe.c and frameset.c refuse a class the object does not belong to, so a FluxFrame and a SpecFluxFrame no longer convert into each other and a CmpFrame no longer casts into a SpecFluxFrame.
+  When the pin moves past it, `SpecFluxFrameTest`, the CmpFrame cast tests and the CmpFrame/SpecFluxFrame and Region cast entries of `docs/rust-c-differences.md` need their C values updated.
 
 ## Future work
 
 - **A checker for `rust-tests.txt`**, so that a Rust test file neither translated nor listed fails a test.
-- **The minor findings above.**
 - **XmlChan**, for jniast's `StcTest.testReads` and `testChandra` and the `teststc` fixtures of the Rust port, which are STC-X documents.
 
 ## What the next phase takes
