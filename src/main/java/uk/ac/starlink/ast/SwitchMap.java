@@ -682,7 +682,7 @@ public class SwitchMap extends Mapping {
         try {
             int result = -1;
             if (series) {
-                result = cancelWithNeighbour(list, where);
+                result = cancelWithNeighbour(this, list, where, SwitchMap.class);
             }
             if (result == -1) {
                 if (list.invert(where)) {
@@ -724,36 +724,5 @@ public class SwitchMap extends Mapping {
                 routemap[i].restoreInvert(rinvOld[i]);
             }
         }
-    }
-
-    /**
-     * The neighbour half of {@link #mapMerge}: replaces this SwitchMap, at {@code where}, and the
-     * SwitchMap after it in the list, or failing that the one before it, with a UnitMap, if the
-     * neighbour, inverted for the duration, is equal to this one.
-     *
-     * @return {@code where} if the pair was replaced, or -1
-     */
-    private int cancelWithNeighbour(MergeList list, int where) {
-        int ilo;
-        if (where < list.size() - 1 && list.map(where + 1) instanceof SwitchMap) {
-            ilo = where;
-        } else if (where > 0 && list.map(where - 1) instanceof SwitchMap) {
-            ilo = where - 1;
-        } else {
-            return -1;
-        }
-        Mapping swneb = list.map(ilo == where ? where + 1 : where - 1);
-        swneb.invert();
-        boolean equal;
-        try {
-            equal = astEqual(swneb);
-        } finally {
-            swneb.invert();
-        }
-        if (!equal) {
-            return -1;
-        }
-        list.replacePairWith(ilo, new UnitMap(list.map(ilo).getNin()), false);
-        return where;
     }
 }

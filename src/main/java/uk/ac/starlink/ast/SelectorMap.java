@@ -324,39 +324,8 @@ public class SelectorMap extends Mapping {
             result = where;
         }
         if (result == -1 && series) {
-            result = cancelWithNeighbour(list, where);
+            result = cancelWithNeighbour(this, list, where, SelectorMap.class);
         }
         return result;
-    }
-
-    /**
-     * The neighbour half of {@link #mapMerge}: replaces this SelectorMap, at {@code where}, and the
-     * SelectorMap after it in the list, or failing that the one before it, with a UnitMap, if the
-     * neighbour, inverted for the duration, is equal to this one.
-     *
-     * @return {@code where} if the pair was replaced, or -1
-     */
-    private int cancelWithNeighbour(MergeList list, int where) {
-        int ilo;
-        if (where < list.size() - 1 && list.map(where + 1) instanceof SelectorMap) {
-            ilo = where;
-        } else if (where > 0 && list.map(where - 1) instanceof SelectorMap) {
-            ilo = where - 1;
-        } else {
-            return -1;
-        }
-        Mapping slneb = list.map(ilo == where ? where + 1 : where - 1);
-        slneb.invert();
-        boolean equal;
-        try {
-            equal = astEqual(slneb);
-        } finally {
-            slneb.invert();
-        }
-        if (!equal) {
-            return -1;
-        }
-        list.replacePairWith(ilo, new UnitMap(list.map(ilo).getNin()), false);
-        return where;
     }
 }

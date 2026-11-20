@@ -589,6 +589,41 @@ public abstract class Mapping extends AstObject {
     }
 
     /**
+     * The neighbour step of selectormap.c and switchmap.c {@code MapMerge}, the same code in both:
+     * if the Mapping after {@code where} in the list is a {@code kind}, or failing that the one
+     * before it, that neighbour is inverted for the duration and compared with {@code map} ({@link
+     * #astEqual}, each with its own Invert attribute), and if they are equal the pair is replaced
+     * by a UnitMap of the lower one's number of inputs.
+     *
+     * @param map the Mapping at {@code where}, a {@code kind}
+     * @param kind the class whose neighbour cancels {@code map}
+     * @return {@code where} if the pair was replaced, or -1
+     */
+    static int cancelWithNeighbour(Mapping map, MergeList list, int where, Class<? extends Mapping> kind) {
+        int ilo;
+        if (where < list.size() - 1 && kind.isInstance(list.map(where + 1))) {
+            ilo = where;
+        } else if (where > 0 && kind.isInstance(list.map(where - 1))) {
+            ilo = where - 1;
+        } else {
+            return -1;
+        }
+        Mapping neb = list.map(ilo == where ? where + 1 : where - 1);
+        neb.invert();
+        boolean equal;
+        try {
+            equal = map.astEqual(neb);
+        } finally {
+            neb.invert();
+        }
+        if (!equal) {
+            return -1;
+        }
+        list.replacePairWith(ilo, new UnitMap(list.map(ilo).getNin()), false);
+        return where;
+    }
+
+    /**
      * Simplifies a Mapping, eliminating redundant computational steps or merging separate steps
      * that can be performed more efficiently in a single operation, as C's {@code astSimplify}
      * does. The result transforms coordinates as this Mapping does.
