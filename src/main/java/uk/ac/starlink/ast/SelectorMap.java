@@ -25,7 +25,9 @@ import java.util.Objects;
  *
  * <p>If a compound Mapping contains a SelectorMap in series with its own inverse, the combination
  * of the two adjacent SelectorMaps will be replaced by a UnitMap when the compound Mapping is
- * simplified using {@link #simplify}.
+ * simplified using {@link #simplify}. As C's does, simplification does not compare the Invert
+ * attributes, so two equal SelectorMaps of one input applied in series, both forward, are also
+ * replaced by a UnitMap, though their transformation is not a unit one: a bug in C, kept.
  *
  * <p>In practice, SelectorMaps are often used in conjunction with {@link SwitchMap}s.
  *
