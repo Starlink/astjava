@@ -589,6 +589,41 @@ public abstract class Mapping extends AstObject {
     }
 
     /**
+     * The neighbour step of selectormap.c and switchmap.c {@code MapMerge}, the same code in both:
+     * if the Mapping after {@code where} in the list is a {@code kind}, or failing that the one
+     * before it, that neighbour is inverted for the duration and compared with {@code map} ({@link
+     * #astEqual}, each with its own Invert attribute), and if they are equal the pair is replaced
+     * by a UnitMap of the lower one's number of inputs.
+     *
+     * @param map the Mapping at {@code where}, a {@code kind}
+     * @param kind the class whose neighbour cancels {@code map}
+     * @return {@code where} if the pair was replaced, or -1
+     */
+    static int cancelWithNeighbour(Mapping map, MergeList list, int where, Class<? extends Mapping> kind) {
+        int ilo;
+        if (where < list.size() - 1 && kind.isInstance(list.map(where + 1))) {
+            ilo = where;
+        } else if (where > 0 && kind.isInstance(list.map(where - 1))) {
+            ilo = where - 1;
+        } else {
+            return -1;
+        }
+        Mapping neb = list.map(ilo == where ? where + 1 : where - 1);
+        neb.invert();
+        boolean equal;
+        try {
+            equal = map.astEqual(neb);
+        } finally {
+            neb.invert();
+        }
+        if (!equal) {
+            return -1;
+        }
+        list.replacePairWith(ilo, new UnitMap(list.map(ilo).getNin()), false);
+        return where;
+    }
+
+    /**
      * Simplifies a Mapping, eliminating redundant computational steps or merging separate steps
      * that can be performed more efficiently in a single operation, as C's {@code astSimplify}
      * does. The result transforms coordinates as this Mapping does.
@@ -1234,6 +1269,49 @@ public abstract class Mapping extends AstObject {
         inverts.add(invert);
         maps.add(this);
         return false;
+    }
+
+    /**
+     * Removes the Regions from the Mapping (C's {@code astRemoveRegions}): the Mapping that results
+     * when every Region it holds is replaced by an equivalent Mapping that does not mask points.
+     * This base version, mapping.c's {@code RemoveRegions}, returns the Mapping itself, as C's
+     * {@code astClone} does. A Region returns a copy of its current Frame, and a class that holds
+     * other Mappings or Frames removes their Regions: it returns itself when none of them changed,
+     * and otherwise a new Mapping, which may share with this one the components that did not
+     * change. A result that is the Mapping itself, or shares components with it, should be copied
+     * before it is changed.
+     *
+     * @return this Mapping, or a new Mapping holding no Regions
+     */
+    Mapping removeRegions() {
+        return this;
+    }
+
+    /**
+     * What a container that holds Mappings puts in place of a component's {@code removeRegions}
+     * result: a UnitMap with as many coordinates as {@code map} has inputs if {@code map} is a
+     * Frame (C's {@code astIsAFrame}, true of a FrameSet and a Region too), which is what a Region
+     * gives, and otherwise {@code map}.
+     */
+    static Mapping frameToUnitMap(Mapping map) {
+        if (map instanceof Frame) {
+            return new UnitMap(map.getNin());
+        }
+        return map;
+    }
+
+    /**
+     * A component of a container made by {@code removeRegions} from a copy of the container: the
+     * {@code removeRegions} result {@code now} of the original's component {@code old}. When it is
+     * {@code old} itself, the copy and the original hold the same Object, as C's {@code astClone}
+     * of the new pointer gives them, so it is marked shared.
+     */
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    static <T extends AstObject> T keptComponent(T now, T old) {
+        if (now == old) {
+            now.markShared();
+        }
+        return now;
     }
 
     // ------------------------------------------------------------------

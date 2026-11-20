@@ -583,6 +583,16 @@ public class Frame extends Mapping {
         return new MapSplit(in.clone(), pickAxes(in.length, axes1, null));
     }
 
+    /**
+     * mapping.c {@code RemoveRegions}, which frame.c inherits: the Frame itself. The result of a
+     * Frame is a Frame for every class (a Region gives its current Frame, a CmpFrame and a FrameSet
+     * themselves or copies of themselves), which a CmpFrame relies on for its components.
+     */
+    @Override
+    Frame removeRegions() {
+        return this;
+    }
+
     // ------------------------------------------------------------------
     // Axes
     // ------------------------------------------------------------------

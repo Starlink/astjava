@@ -28,15 +28,15 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * bounds of its own; and otherwise those the Rust test records, which the probe finds C gives for
  * each overlap and for several of the membership tests on the sky. The one the probe finds C does
  * not give is replaced by C's ({@link #cmpRegionNegatedReversal}). The other membership tests on
- * the sky, which the probe does not make, test points well clear of every boundary.
+ * the sky, which the probe does not make, test points well clear of every boundary. The dumps of
+ * Regions with Negated, Closed, MeshSize and FillFactor set are C's, from {@code
+ * probes/region_dump_probe.c}.
  *
  * <p>{@code general_circle_bounds_and_disc} and {@code fitschan_sky_circle_bounds} are translated
  * without their checks of the bounding disc ({@code astGetRegionDisc}, not in jniast), as {@link
  * #generalCircleBounds} and {@link #fitsChanSkyCircleBounds}. Listed in {@code
  * deferred/rust-tests.txt}: {@code sky_circle_disc} and {@code sky_polygon_disc} ({@code
- * astGetRegionDisc}), {@code remove_regions_from_frameset} and {@code
- * remove_regions_unit_passthrough} ({@code astRemoveRegions}, not in this phase), and {@code
- * convex_hull_basic} ({@code astConvex}, not in jniast).
+ * astGetRegionDisc}), and {@code convex_hull_basic} ({@code astConvex}, not in jniast).
  */
 class RegionsTest {
 
@@ -44,6 +44,9 @@ class RegionsTest {
 
     /** C's results for the checks {@code testregions.c} does not make, from {@code probes/regions_cross_probe.c}. */
     private static final Map<String, String> PROBE = ProbeOutput.load("regions_cross_probe");
+
+    /** C's dumps of Regions with attributes set, from {@code probes/region_dump_probe.c}. */
+    private static final Map<String, String> DUMP_PROBE = ProbeOutput.load("region_dump_probe");
 
     /**
      * The tolerance on bounds compared with C's. The bounds of a Region on a SkyFrame come from
@@ -1517,6 +1520,51 @@ class RegionsTest {
     }
 
     // ------------------------------------------------------------------
+    // Removing Regions (testregions.c checkRemoveRegions)
+    // ------------------------------------------------------------------
+
+    /**
+     * A Circle clips a point outside it, and the Mapping of the ICRS to Galactic FrameSet, with its
+     * Regions removed, passes that point. This translates Rust's {@code remove_regions_from_frameset},
+     * whose FrameSet from {@code convert} holds no Region, so nothing is removed. The C-valued cases
+     * that remove a Region a FrameSet holds are {@code RegionsCTest.checkRemoveRegions} (a Circle as
+     * the current Frame) and the {@code RemoveRegionsTest} cases {@code frameset_region_frame} (a Box
+     * as a Frame), {@code frameset_region_in_cmpmap} (a Circle in a CmpMap) and {@code
+     * frameset_region_map} (a Box as a Mapping).
+     */
+    @Test
+    void removeRegionsFromFrameSet() {
+        SkyFrame sf1 = sky("ICRS");
+        Circle circle = circleRadius(sf1, new double[] {0.0, 0.0}, 0.001);
+        assertNotEquals(BAD, tranRows(circle, true, new double[] {0.0, 0.0})[0][0], "centre should be inside");
+        assertEquals(BAD, tranRows(circle, true, new double[] {0.01, 0.01})[0][0], "distant point should be clipped");
+
+        FrameSet fs = sf1.convert(sky("GALACTIC"), "");
+        Mapping map = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        assertNotEquals(
+                BAD, tranRows(map, true, new double[] {0.0, 0.0})[0][0], "origin should transform through FrameSet");
+
+        Mapping clean = map.removeRegions();
+        assertNotEquals(
+                BAD,
+                tranRows(clean, true, new double[] {0.01, 0.01})[0][0],
+                "remove_regions should eliminate clipping");
+    }
+
+    /** Removing Regions from a Mapping that holds none gives an equivalent Mapping. */
+    @Test
+    void removeRegionsUnitPassthrough() {
+        FrameSet fs = new FrameSet(new Frame(2));
+        Mapping map = fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        Mapping clean = map.removeRegions();
+        assertEquals(2, clean.getNin());
+        assertEquals(2, clean.getNout());
+        double[] out = tranRows(clean, true, new double[] {3.0, 4.0})[0];
+        assertEquals(3.0, out[0], 1e-10);
+        assertEquals(4.0, out[1], 1e-10);
+    }
+
+    // ------------------------------------------------------------------
     // A Region as the target of findFrame
     // ------------------------------------------------------------------
 
@@ -1528,5 +1576,55 @@ class RegionsTest {
         assertNotNull(found, "a 2-dimensional system");
         assertFalse(found.getFrame(FrameSet.AST__BASE) instanceof Circle);
         assertFalse(found.getFrame(FrameSet.AST__CURRENT) instanceof Circle);
+    }
+
+    // ------------------------------------------------------------------
+    // Attribute values in a dump
+    // ------------------------------------------------------------------
+
+    /** The dump of {@code obj}, as the probe's {@code astShow} writes it. */
+    private static String show(AstObject obj) {
+        StringBuilder sb = new StringBuilder();
+        for (String l : ChannelText.dump(obj).split("\n", -1)) {
+            if (!l.isEmpty()) {
+                sb.append(ProbeOutput.trimLines(l)).append('\n');
+            }
+        }
+        return sb.toString();
+    }
+
+    /** A Box with Closed, MeshSize and FillFactor set writes the values set, as C's does. */
+    @Test
+    void boxDumpsTheValuesSet() {
+        Box box = new Box(new Frame(2), 1, new double[] {0.0, 0.0}, new double[] {1.0, 2.0}, null);
+        box.set("Closed=0,MeshSize=50,FillFactor=0.5");
+        assertEquals(DUMP_PROBE.get("box"), show(box));
+    }
+
+    /**
+     * A CmpRegion with Closed and MeshSize set writes them, and so do its components, which its
+     * setters give them, as C's does.
+     */
+    @Test
+    void cmpRegionDumpsTheValuesSet() {
+        Box a = new Box(new Frame(2), 1, new double[] {0.0, 0.0}, new double[] {2.0, 2.0}, null);
+        Box b = new Box(new Frame(2), 1, new double[] {1.0, 1.0}, new double[] {3.0, 3.0}, null);
+        CmpRegion cmp = new CmpRegion(a, b, CmpRegion.AST__AND);
+        cmp.set("Closed=0,MeshSize=20");
+        assertEquals(DUMP_PROBE.get("cmpregion"), show(cmp));
+    }
+
+    /**
+     * A PointList's Closed attribute is always the opposite of Negated, but its dump writes the
+     * Closed value set on it, as C's region.c {@code Dump} reads it through its own {@code
+     * TestClosed} and {@code GetClosed}.
+     */
+    @Test
+    void pointListDumpsTheClosedValueSet() {
+        PointList pl = new PointList(new Frame(2), 2, new double[][] {{0.0, 1.0}, {0.0, 2.0}}, null);
+        pl.set("Closed=0");
+        assertEquals(DUMP_PROBE.get("pointlist"), "Closed " + pl.getI("Closed") + "\n" + show(pl));
+        pl.set("Negated=1,Closed=1");
+        assertEquals(DUMP_PROBE.get("pointlist_negated"), "Closed " + pl.getI("Closed") + "\n" + show(pl));
     }
 }

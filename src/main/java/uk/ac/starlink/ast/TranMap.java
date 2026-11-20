@@ -190,6 +190,33 @@ public class TranMap extends Mapping {
     }
 
     /**
+     * tranmap.c {@code RemoveRegions}: removes the Regions from both components. When neither
+     * changed it is the TranMap itself. Otherwise each component result that is a Frame becomes a
+     * UnitMap, whether or not that component changed, so a FrameSet component, a Frame in C, becomes
+     * one too; two UnitMaps become one UnitMap with as many coordinates as the first, the TranMap's
+     * own number; and otherwise it is a copy of the TranMap holding the new components. A component
+     * that did not change is the original's own, shared, as C's copy holds a clone of it.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Mapping removeRegions() {
+        Mapping new1 = map1.removeRegions();
+        Mapping new2 = map2.removeRegions();
+        if (new1 == map1 && new2 == map2) {
+            return this;
+        }
+        new1 = frameToUnitMap(new1);
+        new2 = frameToUnitMap(new2);
+        if (new1 instanceof UnitMap && new2 instanceof UnitMap) {
+            return new UnitMap(new1.getNin());
+        }
+        TranMap result = (TranMap) copy();
+        result.map1 = keptComponent(new1, map1);
+        result.map2 = keptComponent(new2, map2);
+        return result;
+    }
+
+    /**
      * The components, as C's {@code Decompose} (tranmap.c) gives them: an inverted TranMap gives
      * them in reverse order with their recorded Invert values reversed. C's {@code Decompose} does
      * not set the series flag, which its documentation gives as zero for a TranMap; it is false

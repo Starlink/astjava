@@ -547,6 +547,39 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: has its own messages, with the same statuses.
 - Java: as C, the public constructor giving the public function's message.
 
+### SelectorMap's transformation changes its own Regions
+
+- **C quirk**: `Transform` (`selectormap.c`) tests the points against each of its own Regions by negating it and reversing its Closed attribute with `astNegate` and `astSetClosed`, and puts both back the same way, so each Region is left with Negated and Closed set to the values they had.
+  A dump made after a transformation writes `Closed = 1` for each Region whose Closed was unset (probe `src/test/resources/probes/selectormap_probe.c`, cases `focus_dump_before` and `focus_dump_after`); `astEqual`, which compares the values, is unchanged (case `focus_equal_after`).
+- Rust: transforms a negated copy of each Region, so the SelectorMap is unchanged.
+- Java: as C, putting the attributes back even when a transformation fails, where C leaves them changed.
+
+### SelectorMap's simplification of its Regions
+
+- C: `MapMerge` (`selectormap.c`) simplifies each Region and rebuilds the SelectorMap when `astSimplify` returns a different pointer for any of them, whatever its class.
+- Rust: `reduced_children` (`mappings/selectormap.rs`) takes a Region as changed when its simplification is not `equal` to it or differs in Invert, and keeps the result only for nine listed Region classes.
+- Java: as C, comparing the objects `simplify` returns (probe cases `simplify_unchanged` and `simplify_changed`).
+
+### Two equal 1-D SelectorMaps in series simplify to a UnitMap
+
+- **C bug**: `MapMerge` (`selectormap.c`) inverts the neighbouring SelectorMap, compares it with `Equal`, and replaces the pair with a UnitMap if they are equal; `Equal` compares the numbers of inputs, the Regions and the bad value but not the Invert attributes, so for 1-D SelectorMaps, whose inverse has as many inputs as outputs, it cannot tell a SelectorMap from its inverse.
+  Two equal 1-D SelectorMaps both applied forward are replaced with a UnitMap, which changes the transformation: the pair gives 1 for every good point, whatever Region holds it, and the UnitMap gives the point (probe case `series_1d_both_forward`).
+- Rust: `try_merge` requires the two Invert flags to differ, so the pair is kept.
+- Java: as C.
+
+### Loading a SelectorMap
+
+- **C bug**: `astLoadSelectorMap` annuls the first Region's FrameSet pointer after reading the Regions, so a description without `Reg1` fails with AST__OBJIN from `astAnnul` of a null pointer (probe case `load_no_regions`).
+  The Regions' Frames are not compared, and a later Region written without its Frame is given the first Region's FrameSet with `astSetRegFS`, which makes a FrameSet of copies of all its Frames, joining a copy of its base Frame, as the Region's base Frame, to a copy of its current Frame, as the Region's current Frame, with a UnitMap; a first Region whose FrameSet holds another Mapping therefore leaves the later Region as it was written (probe case `load_first_region_mapped`, whose first Region's FrameSet holds a MathMap).
+- Rust: gives a later Region two copies of the first Region's current Frame, joined by a UnitMap, so only the base Frame differs from C's; it rebuilds the SelectorMap through its builder, so Regions in different Frames are AST__LDERR, and it refuses a description without Regions with AST__LDERR.
+- Java: as C, except that a description without Regions is AST__LDERR, and a component that is not a Region is AST__LDERR.
+
+### The messages of SelectorMap's constructor
+
+- C: no Regions is AST__BDPAR "astSelectorMap(SelectorMap): Bad number of Regions (0) specified.", and the first Region whose Frame is not equal to the first Region's is AST__BADNI "astInitSelectorMap(SelectorMap): Region number 2 does not refer to the same coordinate Frame as the first Region." (probe cases `error_no_regions`, `error_naxes`, `error_skyframe`).
+- Rust: the same statuses, with its own messages.
+- Java: as C; a null array or Region is a NullPointerException naming it, as for jniast's other arguments.
+
 ### The directions of a loaded IntraMap
 
 - C: `astLoadIntraMap` leaves TranForward and TranInverse to the Mapping part of the dump (`Fwd` and `Inv`); the registered function's AST__NOFWD and AST__NOINV flags decide them only when an IntraMap is made (`astInitIntraMap`).
@@ -849,10 +882,42 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 
 ### Casting a Region into the class of another Region (`Cast`)
 
-- C: region.c `Cast` copies a Region as an instance of the class of any Region given to it, with `astCastCopy`, which changes the class of the copy without checking that the Region is of that class or of a subclass of it: a Box cast into the class of a Circle is a Circle holding a Box's values. **C bug.**
+- C: as written, region.c `Cast` copies a Region as an instance of the class of any Region given to it, with `astCastCopy`, which changes the class of the copy without checking that the Region is of that class or of a subclass of it: a Box cast into the class of a Circle is a Circle holding a Box's values, and between the Stc classes, which are siblings, the copy of a smaller StcSearchLocation, StcCatalogEntryLocation or StcResourceProfile cast into an StcObsDataLocation reads past its end, where the observatory position would be. **C bug.**
+  Before choosing, `Cast` compares the class of its own vtab (`class_vtab`) with that of the Object given (`astClassCompare`), and that vtab is initialised only when an Object of the class Region itself is made, which only `astRead` of a `Begin Region` description (loader.c `LOAD(Region)`, `astLoadRegion` with a null vtab) does; until then the comparison follows a null class identifier and the program crashes, whatever the Object given. **C bug.**
+  `astFindFrame` matches with `matchsub` 0, and region.c's `ConvertX` aligns the current Frames of Regions, so neither reaches `Cast` with a Region.
+  A CmpFrame holding a Region reaches `Cast`, but never with a Region to cast into: cmpframe.c `PartMatch` matches the template's Region against the target's picked axes, a Frame (`astSubFrame`, which region.c `SubFrame` takes from the Region's current Frame), and `ComponentMatch` against the whole target CmpFrame, a cousin, so `Cast` takes its other branch and casts the Region's current Frame; the `astCastCopy` calls `astConvert` makes come from cmpframe.c `Cast`, a CmpFrame into a CmpFrame, and only the protected `astCast` reaches the `astCastCopy` of region.c `Cast`.
+  So `astConvert` between two CmpFrames, each of an Stc (or a Circle) and a Frame, whose Regions are in different Domains, crashes in `astClassCompare` under `Cast` (`frame.c` `astMatch`, from cmpframe.c `PartMatch`) unless a Region description has been read; after one, it gives no conversion and no error.
+  Probe `src/test/resources/probes/stc_probe.c`, case `stc_classes`, holds `astFindFrame` and `astConvert` between Stcs of the same and of different classes, and `astFindFrame` between those CmpFrames, none of which reaches `Cast`; its last case, `cast_after_region_read`, reads a Region description and then converts the CmpFrames of two StcSearchLocations, reaching `Cast`: no conversion.
 - Rust: not examined.
-- Java: a copy when the Region is of the class of the Region given, and null for any other class (`Region.cast`).
-  C's cast into the class of a parent is defined, and is not followed; no Region class of this library is a parent of another (the Stc classes, which are, are not yet ported).
+- Java: a copy when the Region is an instance of the class of the Region given, and null for any other class (`Region.cast`), so an Stc is not cast into the class of another Stc; the CmpFrames above do not convert, as in C after a Region description has been read (`StcProbeTest`).
+  Null is the result C documents: region.c `Cast`'s prologue documents a NULL pointer without error for a class it cannot cast into (its code calls `astCastCopy` for any Region class that is not a cousin), as object.c's generic `Cast` returns for a class not on the line of descent, and frame.c `astMatch_` treats it as no cast, not as a failure; and the copy `astCastCopy` would make of a sibling Stc matches no better, since its Match forwards to its current Frame.
+  C's cast into the class of a parent is defined, and is not followed: the copy keeps its own class; jniast's Stc is abstract, so no concrete Region class of this library is a parent of another, and the copy is always of the class of the Region given.
+
+### An Stc's transformation sets Negated on its encapsulated Region
+
+- **C quirk**: `Transform` and `GetBounded` (stc.c) set the encapsulated Region's Negated attribute to the value it already has with `astSetNegated`, around the call and again after it, so it is left set; an Stc reads Negated from its encapsulated Region (stc.c `TestNegated`), so `astTest( stc, "Negated" )` is true once the Stc has transformed points or been asked whether it is bounded, and so is that of a copy (probe `src/test/resources/probes/stc_probe.c`, cases `used_plain` and `used_bounded`).
+  The dump, which writes `Negate` only when it is 1, and `astEqual`, which compares the values, are unchanged.
+- Rust: transforms with the encapsulated Region as it is, so Negated stays unset.
+- Java: as C (`Stc.regBaseMask`, `Stc.isBoundedInner`), putting the value back even when a transformation fails, as C does.
+
+### An Stc dump without its Region or an AstroCoords element
+
+- C: stc.c `astLoadStc` stores a null pointer for a missing `Region` or `Coord<n>` item and reports no error; with no `Region`, the load then dereferences it (`astRegDummyFS`) and crashes unless the Stc was itself written without its Frame, and with a missing `Coord<n>`, the load succeeds and `astGetStcCoord` crashes copying the null KeyMap (probed: SIGSEGV in each). **C bug.**
+- Rust: `AST__LDERR` for either.
+- Java: `AST__LDERR` for either (`Stc(NativeNode)`; `StcProbeTest`).
+
+### An Stc of the abstract class Stc
+
+- C: a dump that begins `Begin Stc` is read by `astLoadStc` as an Stc of the class Stc itself, which transforms points, dumps and compares like any other (`src/test/resources/probes/stc_probe.c`, case `begin_stc`).
+- Rust: no loader for the class name Stc, so the read fails.
+- Java: jniast's `Stc` is abstract, so no Object can be of that class alone; the read fails with `AST__LDERR` (`ObjectRegistry.load`).
+
+### The axis ends of an AstroCoords Error Ellipse fitted to a Circle
+
+- C: an AstroCoords Region in another SkyFrame is mapped into the Stc's Frame and simplified (stc.c `MakeAstroCoordsKeyMap`), so a small Circle becomes the Ellipse that best fits its mapped mesh (ellipse.c `astBestEllipse`); on a near-circle the direction of the fitted axes, and so the ends of the axes the Ellipse is defined by, follow from the last bits of the mesh.
+- Rust: compares the Ellipse's values exactly on the platform its C values were taken on and leaves them out elsewhere (`ERROR_ELLIPSE_LICENSED` in `tests/test_region_stc_oracle.rs`).
+- Java: `java.lang.Math` puts the axis ends about `2e-5` from C's on this platform; `RegionStcOracleTest` leaves out their values from the `sky` and `sky_coord` dumps on every platform and compares the centre within `1e-12`.
+  It compares the two half-lengths instead, within bounds worked out from `bestEllipse`'s arithmetic: the primary within `1.5e-13`, from the parabola's vertex lying at most a quarter of the rounding spread of the mesh distances above the largest; the secondary within about `1.1e-12`, the sum of three parts: C's rounding at C's direction, propagated to first order (C's axis, oracle data, lies far from every mesh point); the difference between the two directions in the systematic offset the sphere's curvature gives it (`R^3 / 18`, about `5.6e-14` above the primary on both platforms); and this platform's rounding at its own direction, bounded after the fact from the fit's own per-point values, which the test recomputes and checks against the dumped Ellipse bit for bit, so that nothing is assumed about how close this platform's axis lies to a mesh point.
 
 ### A value holding `%` set on an Adaptive Region
 
@@ -1132,6 +1197,21 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: prism.c `Simplify` sets the Prism's own uncertainty on the Region it returns, which is the Prism itself when nothing simplifies, so the Prism given is changed. **C quirk.**
 - Rust: sets the uncertainty on a new Region, and returns a copy of the Prism when nothing simplifies, so the Prism given is not changed (`regions/prism.rs`).
 - Java: as C (`Prism.simplifyStep`).
+
+### What removing the Regions from a Mapping gives (`RemoveRegions`)
+
+- C: region.c `RemoveRegions` returns a copy of the Region's current Frame, for every Region class.
+  A container turns a component result that is a Frame (`astIsAFrame`) into a UnitMap: cmpmap.c and tranmap.c every such component, so also a plain Frame component that did not change when the other one did; ratemap.c, switchmap.c and frameset.c only a component that changed, so a plain Frame route of a SwitchMap or a Frame used as a Mapping of a FrameSet stays a Frame.
+  A CmpFrame or FrameSet that changed is a copy holding clones of its unchanged components, so they are shared with the original, and an axis Label set on one is seen in the other.
+- Rust: a Region's `mapping_without_regions` returns a UnitMap, and its Frames are not Mappings, so a plain Frame component cannot arise; the copies own their components.
+- Java: as C (`removeRegions`); `RemoveRegionsTest` pins each case from `src/test/resources/probes/remove_regions_extra_probe.c`.
+
+### A FrameSet component loses its Mapping when the Regions are removed
+
+- C: `astIsAFrame` is true of a FrameSet, so tranmap.c `RemoveRegions` turns a FrameSet component of a TranMap into a UnitMap whenever either component changed, and ratemap.c and switchmap.c turn a FrameSet component that held a Region into a UnitMap, dropping the FrameSet's Mapping: a TranMap of a FrameSet holding a ZoomMap and a Box becomes a UnitMap. **C quirk.**
+  A CmpMap is not affected, since `astInitCmpMap` holds a FrameSet's Mapping in its place.
+- Rust: keeps a FrameSet component, with its own Regions removed.
+- Java: as C (`Mapping.frameToUnitMap`); `RemoveRegionsTest.aTranMapTurnsAFrameSetIntoAUnitMap`, `aSwitchMapTurnsAChangedFrameSetRouteIntoAUnitMap` and `aRateMapTurnsAChangedFrameSetIntoAUnitMap` pin it.
 
 ## FitsChan
 

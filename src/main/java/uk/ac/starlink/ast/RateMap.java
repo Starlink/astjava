@@ -168,6 +168,27 @@ public class RateMap extends Mapping {
         return invert;
     }
 
+    /**
+     * ratemap.c {@code RemoveRegions}: removes the Regions from the encapsulated Mapping. When it
+     * did not change it is the RateMap itself; otherwise it is a copy of the RateMap holding the new
+     * Mapping, which, if it is a Frame, is replaced by a UnitMap with as many coordinates as the
+     * RateMap has inputs.
+     */
+    @Override
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // C compares the pointers.
+    Mapping removeRegions() {
+        Mapping newmap = map.removeRegions();
+        if (newmap == map) {
+            return this;
+        }
+        if (newmap instanceof Frame) {
+            newmap = new UnitMap(getNin());
+        }
+        RateMap result = (RateMap) copy();
+        result.map = newmap;
+        return result;
+    }
+
     /** The zero-based index of the encapsulated Mapping's input that is varied. */
     int getIin() {
         return iin;

@@ -7,7 +7,6 @@ normmap_inverse_cancel | needs NormMap
 normmap_duplicate_elim | needs NormMap
 unitnormmap_inverse_cancel | needs UnitNormMap
 unitnormmap_diff_centre_to_shift | needs UnitNormMap
-selectormap_inverse_cancel | needs SelectorMap
 neg_spline_same_direction | needs SplineMap
 neg_normmap_parallel | needs NormMap
 neg_normmap_different_frames | needs NormMap
@@ -18,10 +17,8 @@ neg_spline_different_coeffs | needs SplineMap
 normmap_inverse_cancel_upper | needs NormMap
 unitnormmap_inv_fwd_cancel | needs UnitNormMap
 cap_normmap_cmpframe | needs NormMap
-selectormap_region_simplify | needs SelectorMap
 cap_matrixmap_04 | needs ChebyMap
 cap_permmap_01 | needs NormMap
-cap_timemap_02 | needs StcResourceProfile
 cap_unitnormmap_01 | needs UnitNormMap
 cap_xphmap_01 | needs XphMap
 cap_xphmap_02 | needs XphMap
@@ -32,12 +29,6 @@ xph_inverse_cancel | needs XphMap
 neg_xph_parallel | needs XphMap
 neg_xph_nonxph_neighbour | needs XphMap
 neg_xph_not_opposite | needs XphMap
-selectormap_region_simplify_real | needs SelectorMap
-neg_selectormap_series_upper | needs SelectorMap
-neg_selectormap_series_lower | needs SelectorMap
-neg_selectormap_not_equal | needs SelectorMap
-neg_selectormap_parallel | needs SelectorMap
-selectormap_inverse_cancel_tail | needs SelectorMap
 unitnormmap_shift_fwd_merge | needs UnitNormMap
 unitnormmap_winmap_fwd_merge | needs UnitNormMap
 unitnormmap_inv_shift_merge | needs UnitNormMap

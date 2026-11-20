@@ -24,8 +24,7 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * Objects of classes without their own {@code Equal}.
  *
  * <p>Rust's {@code chebymap_same} and {@code chebymap_different_bounds} need ChebyMap and are listed
- * in {@code deferred/rust-tests.txt}. The SelectorMap cases of {@code oracle/equal.json} are
- * skipped: they need SelectorMap.
+ * in {@code deferred/rust-tests.txt}.
  */
 class EqualTest {
 
@@ -703,7 +702,15 @@ class EqualTest {
         return w;
     }
 
-    /** The two Mappings an oracle case compares, or null for a case that needs SelectorMap. */
+    private static Circle circle(double x, double y) {
+        return new Circle(new Frame(2), new double[] {x, y}, 1.0, null);
+    }
+
+    private static SelectorMap selectormap(Region... regions) {
+        return new SelectorMap(regions, BAD);
+    }
+
+    /** The two Mappings an oracle case compares. */
     private static Mapping[] pair(String name) {
         switch (name) {
             case "winmap_self_inverse_vs_inverted_copy": {
@@ -713,9 +720,15 @@ class EqualTest {
             case "winmap_inverse_of_its_inverse":
                 return new Mapping[] {winCorners(0.0, 1.0, 1.0, 3.0), inv(winCorners(0.0, 2.0, -0.5, 0.5))};
             case "selectormap_one_region_vs_two":
-            case "selectormap_vs_inverted_copy":
-            case "selectormap_1d_vs_inverted_copy":
-                return null;
+                return new Mapping[] {selectormap(circle(0.0, 0.0)), selectormap(circle(0.0, 0.0), circle(5.0, 5.0))};
+            case "selectormap_vs_inverted_copy": {
+                SelectorMap a = selectormap(circle(0.0, 0.0));
+                return new Mapping[] {a, inv((SelectorMap) a.copy())};
+            }
+            case "selectormap_1d_vs_inverted_copy": {
+                SelectorMap a = selectormap(new Box(new Frame(1), 1, new double[] {0.0}, new double[] {1.0}, null));
+                return new Mapping[] {a, inv((SelectorMap) a.copy())};
+            }
             case "tranmap_vs_reread_without_component_invert": {
                 TranMap tm = new TranMap(inv(zoom(1, 2.0)), zoom(1, 0.5));
                 String dump = ChannelText.dump(tm);
@@ -754,16 +767,13 @@ class EqualTest {
         for (JsonNode c : ProbeData.load("equal").get("CASES")) {
             String name = c.get(0).asText();
             Mapping[] p = pair(name);
-            if (p == null) {
-                continue;
-            }
             boolean got = p[0].astEqual(p[1]);
             if (got != c.get(1).asBoolean()) {
                 failures.add(name + ": " + got + ", C " + c.get(1).asBoolean());
             }
             run++;
         }
-        assertEquals(7, run, "the in-scope cases the C probe recorded");
+        assertEquals(10, run, "the cases the C probe recorded");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

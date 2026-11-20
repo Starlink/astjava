@@ -23,10 +23,8 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * components, a SwitchMap inside a CmpMap, a TranMap and a SwitchMap, and a dump without {@code
  * ISInv}, each read back; equality; simplification of a SwitchMap alone, inverted, with route and
  * selector Mappings that simplify, beside its own inverse and other Mappings; and the
- * constructor's errors.
- *
- * <p>The Rust tests whose forward selector is a SelectorMap of Box Regions are listed in {@code
- * deferred/rust-tests.txt}: SelectorMap is not yet ported.
+ * constructor's errors. The Rust tests of a SwitchMap of 1-D routes run with a forward selector
+ * that is a SelectorMap of Box Regions, as does testswitchmap.c section 3.
  */
 class SwitchMapTest {
 
@@ -167,6 +165,100 @@ class SwitchMapTest {
 
     private static String invertState(Mapping m) {
         return "Invert shared after " + (m.getInvert() ? 1 : 0) + " test " + (m.testInvert() ? 1 : 0) + "\n";
+    }
+
+    // ------------------------------------------------------------------
+    // test_switchmap.rs: a SelectorMap as the forward selector
+    // ------------------------------------------------------------------
+
+    /**
+     * Two routes, [0,10] to [0,100] and [20,30] to [200,300], and a SelectorMap over the 1-D
+     * intervals as the forward selector. Each route's scale (10) and shift (0) and its outputs for
+     * the test points are exact in IEEE arithmetic, so the outputs are compared exactly.
+     */
+    private static SwitchMap make1dSwitchmap() {
+        Region reg1 = new Box(new Frame(1), 1, new double[] {0.0}, new double[] {10.0}, null);
+        Region reg2 = new Box(new Frame(1), 1, new double[] {20.0}, new double[] {30.0}, null);
+        SelectorMap sel = new SelectorMap(new Region[] {reg1, reg2}, BAD);
+        return new SwitchMap(sel, null, new Mapping[] {win(0.0, 10.0, 0.0, 100.0), win(20.0, 30.0, 200.0, 300.0)});
+    }
+
+    /** The number of route Mappings of {@code sw}, from its dump. */
+    private static int nroute(SwitchMap sw) {
+        String text = ChannelText.dump(sw);
+        int n = 0;
+        while (text.contains(" RMap" + (n + 1) + " = ")) {
+            n++;
+        }
+        return n;
+    }
+
+    @Test
+    void switchmapBasicConstruction() {
+        SwitchMap sw = make1dSwitchmap();
+        assertEquals(1, sw.getNin());
+        assertEquals(1, sw.getNout());
+        assertEquals(2, nroute(sw));
+        assertTrue(sw.getTranForward());
+        assertFalse(sw.getTranInverse());
+    }
+
+    @Test
+    void switchmapForwardRoute1() {
+        assertEquals(50.0, make1dSwitchmap().tran1(1, new double[] {5.0}, true)[0]);
+    }
+
+    @Test
+    void switchmapForwardRoute2() {
+        assertEquals(250.0, make1dSwitchmap().tran1(1, new double[] {25.0}, true)[0]);
+    }
+
+    @Test
+    void switchmapForwardNoRoute() {
+        assertEquals(BAD, make1dSwitchmap().tran1(1, new double[] {15.0}, true)[0]);
+    }
+
+    @Test
+    void switchmapForwardBadInput() {
+        assertEquals(BAD, make1dSwitchmap().tran1(1, new double[] {BAD}, true)[0]);
+    }
+
+    @Test
+    void switchmapForwardMultiplePoints() {
+        double[] out = make1dSwitchmap().tran1(4, new double[] {5.0, 25.0, 15.0, BAD}, true);
+        assertEquals(50.0, out[0]);
+        assertEquals(250.0, out[1]);
+        assertEquals(BAD, out[2]);
+        assertEquals(BAD, out[3]);
+    }
+
+    @Test
+    void switchmapEqual() {
+        assertTrue(make1dSwitchmap().astEqual(make1dSwitchmap()));
+    }
+
+    /**
+     * A SelectorMap removes no Regions (selectormap.c installs no {@code RemoveRegions}), and the
+     * WinMap routes hold none, so the SwitchMap comes back itself, as C's clone.
+     */
+    @Test
+    void switchmapRemoveRegions() {
+        SwitchMap sw = make1dSwitchmap();
+        Mapping cleaned = sw.removeRegions();
+        assertSame(sw, cleaned);
+        assertEquals(1, cleaned.getNin());
+        assertEquals(1, cleaned.getNout());
+    }
+
+    @Test
+    void switchmapSerializationRoundtrip() {
+        SwitchMap sw = make1dSwitchmap();
+        SwitchMap loaded = assertInstanceOf(SwitchMap.class, ChannelText.read(ChannelText.dump(sw)));
+        assertEquals(2, nroute(loaded));
+        assertEquals(1, loaded.getNin());
+        assertEquals(1, loaded.getNout());
+        double[] in = {5.0, 25.0, 15.0};
+        assertArrayEquals(sw.tran1(3, in, true), loaded.tran1(3, in, true));
     }
 
     // ------------------------------------------------------------------
@@ -436,6 +528,73 @@ class SwitchMapTest {
         swm.invert();
         assertClose(swm.rate(new double[] {1700.0}, 1, 1), 0.1, 1.0e-6, 130);
         assertClose(swm.rate(new double[] {1900.0}, 1, 1), 1.0 / 11.0, 1.0e-6, 131);
+    }
+
+    /** The FrameSet a TAN header with reference pixel {@code crpix1} reads as. */
+    private static FrameSet tanFrameSet(double crpix1) {
+        FitsChan fc = new FitsChan();
+        for (String card : new String[] {
+            "CRPIX1  = " + (int) crpix1,
+            "CRPIX2  = 45",
+            "CRVAL1  = 45",
+            "CRVAL2  = 89.9",
+            "CDELT1  = -0.01",
+            "CDELT2  = 0.01",
+            "CTYPE1  = 'RA---TAN'",
+            "CTYPE2  = 'DEC--TAN'"
+        }) {
+            fc.putFits(card, false);
+        }
+        fc.clear("Card");
+        return assertInstanceOf(FrameSet.class, fc.read());
+    }
+
+    /**
+     * testswitchmap.c section 3: two images of one part of the sky side by side in one grid, a
+     * SelectorMap of two Boxes as the forward selector and a PermMap that always picks the first
+     * route as the inverse selector. Inverting the shared selector afterwards changes nothing.
+     */
+    @Test
+    void section3TwoImages() {
+        Mapping rm0 = tanFrameSet(45.0).getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        FrameSet fs1 = tanFrameSet(135.0);
+        Mapping rm1 = fs1.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT);
+        Frame grid = fs1.getFrame(FrameSet.AST__BASE);
+        Region box1 = new Box(grid, 1, new double[] {10.0, 10.0}, new double[] {80.0, 80.0}, null);
+        Region box2 = new Box(grid, 1, new double[] {100.0, 10.0}, new double[] {170.0, 80.0}, null);
+        SelectorMap selmap = new SelectorMap(new Region[] {box1, box2}, BAD);
+        PermMap isPerm = new PermMap(1, new int[] {-1}, 2, new int[] {0, 0}, new double[] {1.0});
+        SwitchMap swm = new SwitchMap(selmap, isPerm, new Mapping[] {rm0, rm1});
+        swm.invert();
+        selmap.invert();
+
+        double[][] input = {{5.0, 5.0}, {50.0, 50.0}, {90.0, 50.0}, {140.0, 50.0}};
+        double[][] out = tranRows(swm, input, false);
+        double[][] rmout = tranRows(rm0, input, true);
+        assertArrayEquals(new double[] {BAD, BAD}, out[0], "Errors 132-133");
+        assertArrayEquals(rmout[1], out[1], "Errors 134-135");
+        assertArrayEquals(new double[] {BAD, BAD}, out[2], "Errors 136-137");
+        for (int k = 0; k < 2; k++) {
+            assertTrue(Math.abs(out[3][k] - rmout[1][k]) <= 1.0e-6 * Math.abs(rmout[1][k]), "Error " + (138 + k));
+        }
+
+        double[][] back = tranRows(swm, out, true);
+        assertArrayEquals(new double[] {BAD, BAD}, back[0], "Errors 140-141");
+        assertClose(back[1][0], 50.0, 1.0e-6, 142);
+        assertClose(back[1][1], 50.0, 1.0e-6, 143);
+        assertArrayEquals(new double[] {BAD, BAD}, back[2], "Errors 144-145");
+        assertClose(back[3][0], 50.0, 1.0e-6, 146);
+        assertClose(back[3][1], 50.0, 1.0e-6, 147);
+
+        swm.invert();
+        assertSimplificationAndDump(swm, new int[] {148, 149, 150}, "ast_equal 3");
+
+        int[][] axes = {{1, 1}, {2, 2}, {1, 2}, {2, 1}};
+        for (int k = 0; k < axes.length; k++) {
+            double r1 = swm.rate(new double[] {140.0, 50.0}, axes[k][0], axes[k][1]);
+            double r2 = rm0.rate(new double[] {50.0, 50.0}, axes[k][0], axes[k][1]);
+            assertTrue(Math.abs(r1 - r2) <= Math.abs(1.0e-6 * r2), "Error " + (151 + k) + ": " + r1 + " vs " + r2);
+        }
     }
 
     /** The SwitchMaps of testswitchmap.c, at full precision, against the probe. */

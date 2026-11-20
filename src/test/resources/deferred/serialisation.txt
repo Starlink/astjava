@@ -8,8 +8,6 @@ simplify/cap_normmap_cmpframe.map | needs NormMap
 simplify/cap_normmap_cmpframe.simp | needs NormMap
 simplify/cap_permmap_01.map | needs NormMap
 simplify/cap_permmap_01.simp | needs NormMap
-simplify/cap_timemap_02.map | needs StcResourceProfile
-simplify/cap_timemap_02.simp | needs StcResourceProfile
 simplify/cap_unitnormmap_01.map | needs UnitNormMap
 simplify/cap_unitnormmap_01.simp | needs UnitNormMap
 simplify/cap_xphmap_01.map | needs XphMap
@@ -25,10 +23,6 @@ simplify/neg_normmap_inv_diff_frame.map | needs NormMap
 simplify/neg_normmap_nonnorm_neighbour.map | needs NormMap
 simplify/neg_normmap_parallel.map | needs NormMap
 simplify/neg_normmap_parallel_sky.map | needs NormMap
-simplify/neg_selectormap_not_equal.map | needs SelectorMap
-simplify/neg_selectormap_parallel.map | needs SelectorMap
-simplify/neg_selectormap_series_lower.map | needs SelectorMap
-simplify/neg_selectormap_series_upper.map | needs SelectorMap
 simplify/neg_spline_different_coeffs.map | needs SplineMap
 simplify/neg_spline_nonspline_neighbour.map | needs SplineMap
 simplify/neg_spline_parallel.map | needs SplineMap
@@ -49,12 +43,6 @@ simplify/normmap_duplicate_elim.map | needs NormMap
 simplify/normmap_duplicate_elim.simp | needs NormMap
 simplify/normmap_inverse_cancel.map | needs NormMap
 simplify/normmap_inverse_cancel_upper.map | needs NormMap
-simplify/selectormap_inverse_cancel.map | needs SelectorMap
-simplify/selectormap_inverse_cancel_tail.map | needs SelectorMap
-simplify/selectormap_region_simplify.map | needs SelectorMap
-simplify/selectormap_region_simplify.simp | needs SelectorMap
-simplify/selectormap_region_simplify_real.map | needs SelectorMap
-simplify/selectormap_region_simplify_real.simp | needs SelectorMap
 simplify/spline_inverse_cancel.map | needs SplineMap
 simplify/unitnormmap_diff_centre_to_shift.map | needs UnitNormMap
 simplify/unitnormmap_fwd_winmap_refused.map | needs UnitNormMap

@@ -26,12 +26,13 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * frame}, {@code skyframe}, {@code frameset}, {@code frameset_frame_id}, {@code
  * frameset_part_ids}, {@code cmpframe}, {@code fitschan}, {@code cmpmap_unsimplifiable}, {@code
  * tranmap}, {@code ratemap}, {@code circle}, {@code cmpregion}, {@code cmpregion_part_ids},
- * {@code prism} and {@code prism_part_ids}.
+ * {@code prism}, {@code prism_part_ids}, {@code selectormap} and {@code selectormap_part_ids}.
  * {@code simplify} returns the ZoomMap itself, as C's {@code astSimplify} returns a Mapping it cannot simplify, recording it as
  * simplified, and a CmpMap shares its components, as C's does, so the Rust test's exclusions for
  * copies do not arise for them. A case whose dump differs from C's is listed in {@link #EXCLUDED},
- * and {@code excluded_cases_still_differ} fails when it matches. The remaining cases need
- * SelectorMap and NormMap, which are not yet ported.
+ * and {@code excluded_cases_still_differ} fails when it matches. A SelectorMap copies its Regions,
+ * as C's does, so their IDs are not in its dump, and {@code selectormap_part_ids}, which the Rust
+ * test excludes, matches C. The remaining cases need NormMap, which is not in jniast.
  */
 class ObjectIdOracleTest {
 
@@ -60,7 +61,9 @@ class ObjectIdOracleTest {
             "cmpregion",
             "cmpregion_part_ids",
             "prism",
-            "prism_part_ids");
+            "prism_part_ids",
+            "selectormap",
+            "selectormap_part_ids");
 
     /** The cases whose dump differs from C's, with the reason. */
     private static final String[][] EXCLUDED = {};
@@ -114,6 +117,13 @@ class ObjectIdOracleTest {
         return c;
     }
 
+    /** A SelectorMap of {@code region} with bad value -1 and ID "s". */
+    private static SelectorMap selectormap(Circle region) {
+        SelectorMap m = new SelectorMap(new Region[] {region}, -1.0);
+        m.setID("s");
+        return m;
+    }
+
     /** The AND of two Circles, with ID "cr". */
     private static CmpRegion cmpregion(Circle r1, Circle r2) {
         CmpRegion r = new CmpRegion(r1, r2, CmpRegion.AST__AND);
@@ -153,6 +163,10 @@ class ObjectIdOracleTest {
                 return cmpregion(circle(null, null), circle(null, null));
             case "cmpregion_part_ids":
                 return cmpregion(circle("f1", "r1"), circle("f2", "r2"));
+            case "selectormap":
+                return selectormap(circle(null, null));
+            case "selectormap_part_ids":
+                return selectormap(circle("sframe", "sreg"));
             case "prism":
                 return prism(null, null, null, null);
             case "prism_part_ids":

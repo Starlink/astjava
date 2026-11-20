@@ -253,7 +253,10 @@ public abstract class Region extends Frame {
 
     /**
      * Writes the Region class's part of a description, as C's {@code Dump} (region.c) does, after
-     * the Frame part, which describes the current Frame: Negate, Fill, MeshSz, Closed and Adapt;
+     * the Frame part, which describes the current Frame: Negate, Fill, MeshSz, Closed and Adapt,
+     * each the value held by the Region class itself where it is set, and otherwise the value the
+     * class's accessor gives, so that a class reading these attributes from elsewhere (an Stc
+     * reads its encapsulated Region's) still writes its own settings;
      * the current Frame ({@code Frm}) if the Mapping from the base Frame is a UnitMap, unless
      * RegionFS is zero, and otherwise the FrameSet ({@code FrmSet}); RegFS; the defining points or
      * the number of axes; and the uncertainty, if one is set.
@@ -262,18 +265,18 @@ public abstract class Region extends Frame {
     void dump(NativeNode node) {
         super.dump(node);
         node.writeIsA("Frame", "Coordinate system description");
-        boolean set;
-        int ival = getNegated() ? 1 : 0;
+        boolean set = negated != UNSET;
+        int ival = set ? negated : (getNegated() ? 1 : 0);
         node.writeInt("Negate", ival != 0, false, ival, ival != 0 ? "Region negated" : "Region not negated");
-        set = testFillFactor();
-        node.writeDouble("Fill", set, false, getFillFactor(), "Region fill factor");
-        set = testMeshSize();
-        node.writeInt("MeshSz", set, false, getMeshSize(), "No. of points used to represent boundary");
-        set = testClosed();
-        ival = getClosed() ? 1 : 0;
+        set = fillFactor != AST__BAD;
+        node.writeDouble("Fill", set, false, set ? fillFactor : getFillFactor(), "Region fill factor");
+        set = meshSize != UNSET;
+        node.writeInt("MeshSz", set, false, set ? meshSize : getMeshSize(), "No. of points used to represent boundary");
+        set = closed != UNSET;
+        ival = set ? closed : (getClosed() ? 1 : 0);
         node.writeInt("Closed", set, false, ival, ival != 0 ? "Boundary is inside" : "Boundary is outside");
-        set = testAdaptive();
-        ival = getAdaptive() ? 1 : 0;
+        set = adaptive != UNSET;
+        ival = set ? adaptive : (getAdaptive() ? 1 : 0);
         node.writeInt(
                 "Adapt",
                 ival != 0 || set,
@@ -934,6 +937,16 @@ public abstract class Region extends Frame {
      */
     public Frame getRegionFrame() {
         return (Frame) frameset.getFrame(FrameSet.AST__CURRENT).copy();
+    }
+
+    /**
+     * region.c {@code RemoveRegions}: a copy of the Frame the Region represents ({@link
+     * #getRegionFrame}), for a Region of every class. A container holding Mappings replaces it with a
+     * UnitMap.
+     */
+    @Override
+    Frame removeRegions() {
+        return getRegionFrame();
     }
 
     /** A copy of the encapsulated FrameSet (C's {@code astGetRegionFrameSet}). */
@@ -2117,13 +2130,17 @@ public abstract class Region extends Frame {
 
     /**
      * This Region cast into the class of another Frame (C's {@code Cast}, region.c): a copy if
-     * {@code obj} is a Region of this class, null for a Region of another class, and otherwise the
-     * current Frame cast into the class of {@code obj}.
+     * {@code obj} is a Region and this Region's class is the class of {@code obj} or a subclass of
+     * it, null for a Region of any other class, and otherwise the current Frame cast into the class
+     * of {@code obj}. The copy keeps this Region's own class; since jniast's Stc is abstract, no
+     * concrete Region class of this library is a subclass of another, so the copy is always of the
+     * class of {@code obj}. C's {@code Cast} differs for a Region {@code obj}; see {@code
+     * docs/rust-c-differences.md}.
      */
     @Override
     Frame cast(Frame obj) {
         if (obj instanceof Region) {
-            return obj.getClass() == getClass() ? (Frame) copy() : null;
+            return obj.getClass().isInstance(this) ? (Frame) copy() : null;
         }
         return frameset.getFrame(FrameSet.AST__CURRENT).cast(obj);
     }

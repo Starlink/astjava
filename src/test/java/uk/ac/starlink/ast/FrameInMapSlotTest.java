@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -13,7 +13,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
@@ -104,17 +103,13 @@ class FrameInMapSlotTest {
 
     /**
      * A Region is a Mapping, so a CmpMap may hold one: every {@code simplify/*.map} fixture nesting
-     * a Region inside a CmpMap reads, unless it also holds a SelectorMap, which the library cannot
-     * load yet, and then it must fail for that reason alone. The corpus has 34 such fixtures, 6 of
-     * them with a SelectorMap. At least 28 must read: like the Rust test's count of 33, written when
-     * the corpus had 33, this is a floor, so that a fixture added to the corpus does not fail the
-     * test. The 6 refused are counted exactly, so that a fixture with a SelectorMap added to the
-     * corpus is noticed before SelectorMap is ported.
+     * a Region inside a CmpMap reads, 6 of them holding SelectorMaps. The corpus has 34 such
+     * fixtures; at least 34 must read: like the Rust test's count of 33, written when the corpus
+     * had 33, this is a floor, so that a fixture added to the corpus does not fail the test.
      */
     @Test
     void aRegionInsideACmpMapStillReads() throws IOException {
         int read = 0;
-        List<String> refused = new ArrayList<>();
         try (DirectoryStream<Path> dir =
                 Files.newDirectoryStream(Fixtures.root().resolve("simplify"), "*.map")) {
             for (Path path : dir) {
@@ -122,20 +117,12 @@ class FrameInMapSlotTest {
                 if (!regionNestedIn(text, "CmpMap")) {
                     continue;
                 }
-                String needs = NativeClasses.needs(text);
-                if (needs == null) {
-                    assertNotNull(ChannelText.read(text), path.getFileName() + " no longer reads");
-                    read++;
-                } else {
-                    assertEquals("needs SelectorMap", needs, path.getFileName().toString());
-                    AstException e = assertThrows(AstException.class, () -> ChannelText.read(text));
-                    assertTrue(e.getMessage().contains("unknown AST class: SelectorMap"), e.getMessage());
-                    refused.add(path.getFileName().toString());
-                }
+                assertNull(NativeClasses.needs(text), path.getFileName().toString());
+                assertNotNull(ChannelText.read(text), path.getFileName() + " no longer reads");
+                read++;
             }
         }
-        assertTrue(read >= 28, "only " + read + " fixtures nest a Region inside a CmpMap and read");
-        assertEquals(6, refused.size(), "fixtures refused for want of SelectorMap: " + refused);
+        assertTrue(read >= 34, "only " + read + " fixtures nest a Region inside a CmpMap and read");
     }
 
     /**

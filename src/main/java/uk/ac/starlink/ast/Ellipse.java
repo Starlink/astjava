@@ -544,10 +544,48 @@ public class Ellipse extends Region {
      *     the centre, where C reads beyond its arrays
      */
     static Ellipse bestEllipse(double[][] mesh, double[] cen, Region unc) {
+        Frame frm = unc.regFrame();
+        double[] axis = bestPrimaryAxis(mesh, cen, frm);
+        if (axis == null) {
+            return null;
+        }
+        double at = axis[0];
+        double mx = axis[1];
+        int np = mesh[0].length;
+        double[] pa = new double[2];
+        frm.offset2(cen, at, mx, pa);
+        double[][] ps2 = frm.resolvePoints(cen, pa, mesh, np);
+        double smn = 0.0;
+        double sw = 0.0;
+        for (int ip = 0; ip < np; ip++) {
+            double t = secondaryEstimate(mx, ps2[0][ip], ps2[1][ip]);
+            if (t != AST__BAD) {
+                smn += t;
+                sw += Math.abs(ps2[1][ip]);
+            }
+        }
+        if (sw > 0) {
+            double mn = smn / sw;
+            double[] pb = new double[2];
+            frm.offset2(cen, at + PIBY2, mn, pb);
+            return new Ellipse(frm, 0, cen, pa, pb, unc);
+        }
+        return null;
+    }
+
+    /**
+     * The primary axis of {@link #bestEllipse}'s fit: its direction at the centre, as {@link
+     * Frame#offset2} takes it, and its half-length. A separate method so that {@code
+     * RegionStcOracleTest} can bound the rounding of the fit from the half-length it used.
+     *
+     * @return {@code {direction, half-length}}, or null if the quadratic cannot be found
+     * @throws AstException with status {@code AST__INTER} if every point of the mesh is bad or at
+     *     the centre
+     */
+    static double[] bestPrimaryAxis(double[][] mesh, double[] cen, Frame frm) {
         int np = mesh[0].length;
         double[] dist = new double[np];
         double[] ang = new double[np];
-        Frame frm = unc.regFrame();
         double[] p = new double[2];
         int ip;
         for (ip = 0; ip < np; ip++) {
@@ -632,38 +670,28 @@ public class Ellipse extends Region {
         double c1 = (qd * qc - qa * qf) / den;
         double c2 = (qa * qe - qd * qb) / den;
         double c0 = r1 - c1 * t1 - c2 * t1 * t1;
-        double mx;
-        double at;
         if (c2 < 0.0) {
-            mx = (4 * c0 * c2 - c1 * c1) / (4 * c2);
-            at = a0 - c1 / (2 * c2);
-        } else {
-            mx = r2;
-            at = a0 - t2;
+            return new double[] {a0 - c1 / (2 * c2), (4 * c0 * c2 - c1 * c1) / (4 * c2)};
         }
-        double[] pa = new double[2];
-        frm.offset2(cen, at, mx, pa);
-        double[][] ps2 = frm.resolvePoints(cen, pa, mesh, np);
-        double smn = 0.0;
-        double sw = 0.0;
-        for (ip = 0; ip < np; ip++) {
-            double px = ps2[0][ip];
-            double py = ps2[1][ip];
-            if (px != AST__BAD && py != AST__BAD) {
-                double dd = mx * mx - px * px;
-                if (dd > 0.0) {
-                    smn += Math.abs(mx * py * py) / Math.sqrt(dd);
-                    sw += Math.abs(py);
-                }
-            }
+        return new double[] {a0 - t2, r2};
+    }
+
+    /**
+     * The secondary half-length a mesh point gives {@link #bestEllipse}, from its components
+     * {@code px} along and {@code py} across the primary axis of half-length {@code mx}: {@code
+     * |mx py^2| / sqrt(mx^2 - px^2)}, or {@link #AST__BAD} if either component is bad or {@code
+     * mx^2 - px^2} is not positive. The fit's secondary half-length is the mean of these,
+     * weighted by {@code |py|}. A separate method for the reason {@link #bestPrimaryAxis} gives.
+     */
+    static double secondaryEstimate(double mx, double px, double py) {
+        if (px == AST__BAD || py == AST__BAD) {
+            return AST__BAD;
         }
-        if (sw > 0) {
-            double mn = smn / sw;
-            double[] pb = new double[2];
-            frm.offset2(cen, at + PIBY2, mn, pb);
-            return new Ellipse(frm, 0, cen, pa, pb, unc);
+        double dd = mx * mx - px * px;
+        if (dd > 0.0) {
+            return Math.abs(mx * py * py) / Math.sqrt(dd);
         }
-        return null;
+        return AST__BAD;
     }
 
     // ------------------------------------------------------------------
