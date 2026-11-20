@@ -173,7 +173,8 @@ class SwitchMapTest {
 
     /**
      * Two routes, [0,10] to [0,100] and [20,30] to [200,300], and a SelectorMap over the 1-D
-     * intervals as the forward selector.
+     * intervals as the forward selector. Each route's scale (10) and shift (0) and its outputs for
+     * the test points are exact in IEEE arithmetic, so the outputs are compared exactly.
      */
     private static SwitchMap make1dSwitchmap() {
         Region reg1 = new Box(new Frame(1), 1, new double[] {0.0}, new double[] {10.0}, null);
@@ -204,12 +205,12 @@ class SwitchMapTest {
 
     @Test
     void switchmapForwardRoute1() {
-        assertEquals(50.0, make1dSwitchmap().tran1(1, new double[] {5.0}, true)[0], 1e-10);
+        assertEquals(50.0, make1dSwitchmap().tran1(1, new double[] {5.0}, true)[0]);
     }
 
     @Test
     void switchmapForwardRoute2() {
-        assertEquals(250.0, make1dSwitchmap().tran1(1, new double[] {25.0}, true)[0], 1e-10);
+        assertEquals(250.0, make1dSwitchmap().tran1(1, new double[] {25.0}, true)[0]);
     }
 
     @Test
@@ -225,8 +226,8 @@ class SwitchMapTest {
     @Test
     void switchmapForwardMultiplePoints() {
         double[] out = make1dSwitchmap().tran1(4, new double[] {5.0, 25.0, 15.0, BAD}, true);
-        assertEquals(50.0, out[0], 1e-10);
-        assertEquals(250.0, out[1], 1e-10);
+        assertEquals(50.0, out[0]);
+        assertEquals(250.0, out[1]);
         assertEquals(BAD, out[2]);
         assertEquals(BAD, out[3]);
     }
