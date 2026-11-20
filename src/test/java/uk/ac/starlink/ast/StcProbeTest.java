@@ -24,9 +24,9 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * bad AstroCoords; Frame attributes, Negated, Closed, MeshSize and FillFactor set on and cleared
  * from an Stc, and the read-only RegionClass; testregions.c's {@code checkStcNegated}; stc.c's
  * {@code Simplify} of a negated Stc and of an Stc mapped into another Frame, whose AstroCoords
- * Regions it maps there too; and dumps
- * edited by hand: {@code Begin Stc}, which C reads as an Stc of the abstract class and Java refuses,
- * and {@code Ncoord} below zero, which both read as no AstroCoords elements; testregions.c's {@code
+ * Regions it maps there too; and dumps edited by hand: {@code Begin Stc}, which C reads as an Stc
+ * of the abstract class and Java refuses, and {@code Ncoord} below zero, which both read as no
+ * AstroCoords elements; testregions.c's {@code
  * checkStcObsDump}, an StcObsDataLocation's observatory position, set as C's protected {@code
  * astStcSetObs} sets it (holding the PointList given), dumped, copied, compared and removed, and
  * one of another class read from a dump; and Stcs of different classes compared, and aligned with
