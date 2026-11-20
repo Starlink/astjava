@@ -24,7 +24,8 @@ package uk.ac.starlink.ast;
  *
  * <p>An StcObsDataLocation made by its constructor holds no observatory position; one read from a
  * description holds the one written there, if any. The observatory position takes no part in
- * {@link #equals}, as C's StcObsDataLocation compares as an Stc.
+ * AST's own comparison (C's {@code astEqual}, which compares an StcObsDataLocation as an Stc); it
+ * does in {@link #equals}, which compares the descriptions, as jniast's does.
  *
  * <p>Ported from C {@code stcobsdatalocation.c}.
  */
