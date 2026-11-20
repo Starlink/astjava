@@ -1,5 +1,6 @@
 package uk.ac.starlink.ast;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import uk.ac.starlink.ast.internal.pal.Pal;
 import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
@@ -76,23 +78,43 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * whose distance the test measures again within {@code EPS_D}. So the two platforms' primary
  * half-lengths agree within {@code 2 DMX + 2 EPS_D = 1.5e-13}.
  *
- * <p>Secondary half-length {@code mn}: the mean of {@code T_i / w_i} weighted by {@code w_i = |py_i|},
- * with {@code T_i = mx py_i^2 / sqrt(mx^2 - px_i^2)}. In exact arithmetic it is {@code R} plus a
- * systematic term from the sphere: by the spherical Pythagoras theorem {@code px^2 + py^2 = d^2 +
- * px^2 py^2 / 3} to leading order, so {@code T_i / w_i = mx (1 + px_i^2 / 6)} and {@code mn - mx = mx
- * sum(px_i^2 |py_i|) / (6 sum |py_i|)}, about {@code R^3 / 18 = 5.6e-14}, the offset seen between
- * each platform's two half-lengths. That term depends on the direction only through how the mesh
- * samples the circle; {@link #curvature} gives it for each platform's direction and the bound takes
- * their difference ({@code 1.3e-17} here). Rounding moves each platform's {@code mn} from the exact
- * value at its own direction by, to first order, {@code DMX} through the factor {@code mx}, {@code 3
- * N mx ETA / sum|py|} through {@code py^2} and the weights, and {@code mx R (DMX + ETA) sum(1/|py|) /
- * sum|py|} through {@code mx^2 - px^2}, which is about {@code py^2} and moves by up to {@code 2 R (DMX
- * + ETA)}. That last term is large for a mesh point close to the axis; {@link #roundingBound} computes
- * it for each platform's direction, requires the relative change of {@code mx^2 - px^2} to be at
- * most 0.1 at every point, where the first-order term is within a factor 1.2 of the true change of
- * {@code 1/sqrt}, and takes 1.2 times it. The dumped axis end is measured again within {@code EPS_D}
- * on each side. The two platforms' secondary half-lengths agree within the sum, about {@code 4e-12}
- * here, a part in {@code 2.5e7} of the radius; they differ by {@code 6.4e-15} on this machine.
+ * <p>Secondary half-length {@code mn}: {@code smn / sw}, where {@code sw = sum w_i}, {@code smn = sum
+ * T_i}, {@code w_i = |py_i|} and {@code T_i = mx py_i^2 / sqrt(mx^2 - px_i^2)}, over the points with
+ * {@code mx^2 - px_i^2 > 0}. In exact arithmetic {@code mx = R}, and for a point on the circle the
+ * spherical right triangle {@code cos R = cos px cos py} gives {@code R^2 - px^2 = py^2 (1 - px^2 / 3
+ * + O(R^4))}, so {@code T*_i = R |py*_i| (1 + px*_i^2 / 6)} to a relative {@code O(R^4)}, and the
+ * exact value at a direction {@code theta} is {@code mn*(theta) = R + R F(theta) / 6} with {@code F =
+ * sum(px^2 |py|) / sum|py|}, about {@code R^2 / 3}: the offset of about {@code R^3 / 18 = 5.6e-14}
+ * seen between each platform's two half-lengths. The two platforms' values are compared through
+ * {@code mn_C - mn_J = (mn_C - mn*(theta_C)) + (mn*(theta_C) - mn*(theta_J)) + (mn*(theta_J) -
+ * mn_J)}, each part bounded as follows.
+ *
+ * <ul>
+ *   <li>C's own rounding, at C's direction, which is oracle data: to first order, {@code DMX}
+ *       through the factor {@code mx}, {@code 3 N mx ETA / sw} through {@code py^2} and the weights,
+ *       and {@code mx R (DMX + ETA) sum(1/|py|) / sw} through {@code mx^2 - px^2}, which is about
+ *       {@code py^2} and moves by up to {@code 2 R (DMX + ETA)}; the last is 1.2 times its first-order
+ *       value wherever that relative change is at most 0.1, as it is at every point by a factor of
+ *       {@code 1.3e4} at C's direction ({@link #firstOrderBound}, which checks it).
+ *   <li>The directions: {@code R |F(theta_C) - F(theta_J)| / 6}, from the mesh resolved at each
+ *       ({@link #curvature}; {@code 1.3e-17} here; {@code ETA} moves each {@code F} by under {@code
+ *       1e-16}, which {@code R / 6} makes {@code 2e-21}).
+ *   <li>This platform's own rounding, at its own direction, which may lie as near a mesh point as the
+ *       last bits of the mesh put it, so the first-order bound does not serve: it is bounded after
+ *       the fact instead ({@link #platformBound}). The test repeats this platform's fit ({@link
+ *       #refit}, the arithmetic of {@code bestEllipse}) and requires it to give the dumped axis ends
+ *       bit for bit, so that its {@code T_i}, {@code w_i} and resolved components are the fit's own;
+ *       then, since {@code |px*_i - px_i|} and {@code |py*_i - py_i|} are at most {@code ETA},
+ *       {@code |smn - sum T*_i| <= sum |T_i - R |py_i| (1 + px_i^2 / 6)| + N R ETA (1 + R^2)} (a point
+ *       the fit left out has {@code T_i = 0}) and {@code |sw - sum w*_i| <= N ETA + sum of |py_i| over
+ *       those points}, whence {@code |mn_J - mn*(theta_J)| <= (|smn - sum T*| + R (1 + R^2) |sw - sum
+ *       w*|) / sw}, with {@code R^5} added for the {@code O(R^4)} term. No term divides by a small
+ *       {@code |py|}, and nothing about the platform's direction is assumed.
+ * </ul>
+ *
+ * <p>Each dumped secondary axis end is measured again within {@code EPS_D}. The two platforms'
+ * secondary half-lengths agree within the sum, about {@code 1.1e-12} on this machine, a part in
+ * {@code 1e8} of the radius; they differ by {@code 6.4e-15}.
  */
 class RegionStcOracleTest {
 
@@ -234,21 +256,143 @@ class RegionStcOracleTest {
         return out;
     }
 
-    /** The boundary mesh of the Error Circle in ICRS, from which the Ellipse is fitted. */
-    private static double[][] errorMesh() {
+    /**
+     * The Error Circle mapped into ICRS, as the Stc maps it before simplifying it, which fits the
+     * Ellipse.
+     */
+    private static Region mappedErrorCircle() {
         Circle err = circle(sky("Galactic"), new double[] {2.0, -0.3}, ERROR_RADIUS);
         FrameSet fs = err.convert(sky(null), "");
         return err.mapRegionInto(
-                        fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT), fs.getFrame(FrameSet.AST__CURRENT))
-                .regMesh();
+                fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT), fs.getFrame(FrameSet.AST__CURRENT));
+    }
+
+    /** This platform's fit of an Ellipse to the Error Circle, with the values it computed on the way. */
+    private static final class Fit {
+        /** The Frame of the fit, the uncertainty's. */
+        Frame frm;
+        /** The centre. */
+        double[] cen;
+        /** The mesh, {@code [2][n]}. */
+        double[][] mesh;
+        /** The ends of the primary and secondary axes. */
+        double[] pa;
+
+        double[] pb;
+        /** The primary half-length. */
+        double mx;
+        /** The components of the mesh points along and across the primary axis. */
+        double[][] ps2;
+        /** Each point's {@code T_i}, and {@code w_i}; zero for a point the fit leaves out. */
+        double[] t;
+
+        double[] w;
     }
 
     /**
-     * The components of the mesh points along and across the primary axis of an Ellipse with
-     * defining points {@code p}, as {@code bestEllipse} resolves them.
+     * This platform's Ellipse fit of the Error Circle, as {@code Circle.simplifyStep} makes it: the
+     * arithmetic of {@link Ellipse#bestEllipse}, step for step, on the mesh, centre and Frame that
+     * {@code Circle.fittedCircleOrEllipse} gives it, keeping the values the bound needs.
      */
-    private static double[][] resolved(SkyFrame icrs, double[][] mesh, double[][] p) {
-        return icrs.resolvePoints(p[0], p[1], mesh, mesh[0].length);
+    private static Fit refit() {
+        Region reg = mappedErrorCircle();
+        Region nw = reg.parentSimplify();
+        Fit f = new Fit();
+        f.mesh = nw.regMesh();
+        double[][] c = reg.regTransform(null, true);
+        f.cen = new double[] {c[0][0], c[1][0]};
+        f.frm = nw.getUncFrm(FrameSet.AST__CURRENT).regFrame();
+        int np = f.mesh[0].length;
+        double[] dist = new double[np];
+        double[] ang = new double[np];
+        double[] p = new double[2];
+        int ip;
+        for (ip = 0; ip < np; ip++) {
+            p[0] = f.mesh[0][ip];
+            p[1] = f.mesh[1][ip];
+            dist[ip] = f.frm.distance(f.cen, p);
+            if (dist[ip] != AstObject.AST__BAD && dist[ip] != 0.0) {
+                break;
+            }
+            ang[ip] = AstObject.AST__BAD;
+            dist[ip] = AstObject.AST__BAD;
+        }
+        double[] aa = new double[2];
+        f.frm.offset2(f.cen, 0.0, dist[ip], aa);
+        ang[ip] = f.frm.angle(aa, f.cen, p);
+        int maxat = ip;
+        double r2 = dist[maxat];
+        for (ip++; ip < np; ip++) {
+            p[0] = f.mesh[0][ip];
+            p[1] = f.mesh[1][ip];
+            dist[ip] = f.frm.distance(f.cen, p);
+            ang[ip] = f.frm.angle(aa, f.cen, p);
+            if (dist[ip] != AstObject.AST__BAD && dist[ip] > r2) {
+                r2 = dist[ip];
+                maxat = ip;
+            }
+        }
+        double a0 = ang[maxat];
+        int i3 = neighbour(dist, maxat, 1);
+        int i1 = neighbour(dist, maxat, -1);
+        double r3 = dist[i3];
+        double t3 = Pal.drange(ang[i3] - a0);
+        double r1 = dist[i1];
+        double t1 = Pal.drange(ang[i1] - a0);
+        double t2 = 0.0;
+        double qa = r2 - r1;
+        double qb = t2 - t1;
+        double qc = t2 * t2 - t1 * t1;
+        double qd = r3 - r2;
+        double qe = t3 - t2;
+        double qf = t3 * t3 - t2 * t2;
+        double den = qc * qe - qb * qf;
+        double c1 = (qd * qc - qa * qf) / den;
+        double c2 = (qa * qe - qd * qb) / den;
+        double c0 = r1 - c1 * t1 - c2 * t1 * t1;
+        double at;
+        if (c2 < 0.0) {
+            f.mx = (4 * c0 * c2 - c1 * c1) / (4 * c2);
+            at = a0 - c1 / (2 * c2);
+        } else {
+            f.mx = r2;
+            at = a0 - t2;
+        }
+        f.pa = new double[2];
+        f.frm.offset2(f.cen, at, f.mx, f.pa);
+        f.ps2 = f.frm.resolvePoints(f.cen, f.pa, f.mesh, np);
+        f.t = new double[np];
+        f.w = new double[np];
+        double smn = 0.0;
+        double sw = 0.0;
+        for (ip = 0; ip < np; ip++) {
+            double px = f.ps2[0][ip];
+            double py = f.ps2[1][ip];
+            if (px != AstObject.AST__BAD && py != AstObject.AST__BAD) {
+                double dd = f.mx * f.mx - px * px;
+                if (dd > 0.0) {
+                    f.t[ip] = Math.abs(f.mx * py * py) / Math.sqrt(dd);
+                    f.w[ip] = Math.abs(py);
+                    smn += f.t[ip];
+                    sw += f.w[ip];
+                }
+            }
+        }
+        f.pb = new double[2];
+        f.frm.offset2(f.cen, at + Math.PI / 2, smn / sw, f.pb);
+        return f;
+    }
+
+    /** The first point after (step 1) or before (step -1) {@code maxat}, cyclically, with a good distance. */
+    private static int neighbour(double[] dist, int maxat, int step) {
+        int n = dist.length;
+        for (int k = 1; k < n; k++) {
+            int i = Math.floorMod(maxat + step * k, n);
+            if (dist[i] != AstObject.AST__BAD) {
+                return i;
+            }
+        }
+        throw new AssertionError("no neighbour of mesh point " + maxat);
     }
 
     /** {@code sum(px^2 |py|) / sum|py|}, the sampling of the systematic term (see the class description). */
@@ -264,10 +408,10 @@ class RegionStcOracleTest {
     }
 
     /**
-     * The first-order bound on how far rounding moves one platform's secondary half-length from
-     * its exact value at its own direction (see the class description).
+     * The first-order bound on how far rounding moves C's secondary half-length from its exact
+     * value at C's direction, whose components are {@code r} (see the class description).
      */
-    private static double roundingBound(String name, double[][] r, double mx) {
+    private static double firstOrderBound(double[][] r, double mx) {
         int n = r[0].length;
         double sumAbs = 0.0;
         double sumInv = 0.0;
@@ -279,10 +423,31 @@ class RegionStcOracleTest {
             minAbs = Math.min(minAbs, py);
         }
         double change = 2.0 * ERROR_RADIUS * (DMX + ETA);
-        assertTrue(
-                change / (minAbs * minAbs) <= 0.1,
-                name + ": a mesh point is too close to the axis for the first-order bound (|py| = " + minAbs + ")");
+        assertTrue(change / (minAbs * minAbs) <= 0.1, "C's axis is too close to a mesh point (|py| = " + minAbs + ")");
         return DMX + mx * (3.0 * n * ETA + 1.2 * ERROR_RADIUS * (DMX + ETA) * sumInv) / sumAbs;
+    }
+
+    /**
+     * The bound, after the fact, on how far rounding moves this platform's secondary half-length
+     * from its exact value at its own direction (see the class description).
+     */
+    private static double platformBound(Fit f) {
+        double r = ERROR_RADIUS;
+        int n = f.t.length;
+        double sw = 0.0;
+        double dt = 0.0;
+        double dw = n * ETA;
+        for (int i = 0; i < n; i++) {
+            double px = f.ps2[0][i];
+            double py = Math.abs(f.ps2[1][i]);
+            sw += f.w[i];
+            dt += Math.abs(f.t[i] - r * py * (1.0 + px * px / 6.0));
+            if (f.w[i] == 0.0) {
+                dw += py;
+            }
+        }
+        dt += n * r * ETA * (1.0 + r * r);
+        return (dt + r * (1.0 + r * r) * dw) / sw + Math.pow(r, 5);
     }
 
     /** Compares the half-lengths of the Ellipses in two dumps (see the class description). */
@@ -291,19 +456,21 @@ class RegionStcOracleTest {
         List<double[][]> w = ellipsePoints(want);
         assertFalse(w.isEmpty(), name + ": C's dump holds an Ellipse");
         assertEquals(w.size(), g.size(), name + ": Ellipses");
+        Fit fit = refit();
         SkyFrame icrs = new SkyFrame();
-        double[][] mesh = errorMesh();
         for (int i = 0; i < w.size(); i++) {
             double[][] pw = w.get(i);
             double[][] pg = g.get(i);
+            assertArrayEquals(fit.cen, pg[0], name + ": the refit centre is the dumped one");
+            assertArrayEquals(fit.pa, pg[1], name + ": the refit primary axis end is the dumped one");
+            assertArrayEquals(fit.pb, pg[2], name + ": the refit secondary axis end is the dumped one");
             double mx = icrs.distance(pw[0], pw[1]);
             assertEquals(
                     mx, icrs.distance(pg[0], pg[1]), 2.0 * DMX + 2.0 * EPS_D, name + ": Ellipse " + i + " primary");
-            double[][] rw = resolved(icrs, mesh, pw);
-            double[][] rg = resolved(icrs, mesh, pg);
-            double tol = roundingBound(name + " (C)", rw, mx)
-                    + roundingBound(name, rg, mx)
-                    + mx * Math.abs(curvature(rw) - curvature(rg)) / 6.0
+            double[][] rw = icrs.resolvePoints(pw[0], pw[1], fit.mesh, fit.mesh[0].length);
+            double tol = firstOrderBound(rw, mx)
+                    + ERROR_RADIUS * Math.abs(curvature(rw) - curvature(fit.ps2)) / 6.0
+                    + platformBound(fit)
                     + 2.0 * EPS_D;
             assertEquals(
                     icrs.distance(pw[0], pw[2]),
