@@ -24,8 +24,14 @@
  *     same Domain and in different Domains (neither reaches region.c's Cast:
  *     astFindFrame matches with matchsub 0, and region.c's ConvertX uses the
  *     current Frames), and astFindFrame between CmpFrames holding Stcs in
- *     different Domains (astConvert between them crashes in region.c's Cast,
- *     whose own vtab is not initialised, so it is not called).
+ *     different Domains;
+ *   - last, since it changes the state of the process: a description of the
+ *     class Region read, which initialises region.c's own vtab, and then
+ *     astConvert between those CmpFrames, which reaches region.c's Cast
+ *     (before such a read, Cast crashes comparing the class of its
+ *     uninitialised vtab). The Stcs are of one class: astConvert tries each
+ *     CmpFrame as the template, and a smaller Stc cast into the class of an
+ *     StcObsDataLocation would be copied past its end.
  *
  * Each case starts with a line "== <name>"; error reports, which the error
  * module writes to standard error, are merged in order (stdout unbuffered).
@@ -546,11 +552,27 @@ int main( void ) {
       find_and_convert( "search A, obsdata B", searcha, obsb );
       find_and_convert( "obsdata B, search A", obsb, searcha );
       find_and_convert( "search A, entry B", searcha, entryb );
-      /* astConvert between these CmpFrames crashes (region.c Cast), so
-         only astFindFrame is called. */
+      /* astConvert between these CmpFrames reaches region.c's Cast, which
+         crashes until a Region-class description has been read; it is
+         called in the last case. */
       printf( "-- CmpFrames of search B and search A\n" );
       show_fs( "findframe", astFindFrame( astCmpFrame( searchb, astFrame( 1, "Domain=C" ), " " ),
                                           astCmpFrame( searcha, astFrame( 1, "Domain=C" ), " " ), "" ) );
+   }
+
+   /* Last: region.c's own vtab initialised by reading a Region, then the
+      CmpFrames of two StcSearchLocations in Domains A and B converted. */
+   head( "cast_after_region_read" );
+   text[ 0 ] = " Begin Region";
+   text[ 1 ] = " End Region";
+   text[ 2 ] = NULL;
+   obj = read_text();
+   {
+      AstObject *searcha = (AstObject *) astStcSearchLocation( circle_in( "A", 1.0 ), 0, NULL, " " );
+      AstObject *searchb = (AstObject *) astStcSearchLocation( circle_in( "B", 1.0 ), 0, NULL, " " );
+      printf( "-- CmpFrames of search B and search A\n" );
+      show_fs( "convert", astConvert( astCmpFrame( searchb, astFrame( 1, "Domain=C" ), " " ),
+                                      astCmpFrame( searcha, astFrame( 1, "Domain=C" ), " " ), "" ) );
    }
 
    astEnd;

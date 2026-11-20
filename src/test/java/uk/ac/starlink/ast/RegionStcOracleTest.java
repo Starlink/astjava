@@ -133,6 +133,9 @@ class RegionStcOracleTest {
     /** The tolerance on the numbers of a dump in a SkyFrame (see the class description). */
     private static final double SKY_TOL = 1.0e-12;
 
+    /** The number of cases in {@code CASES} and in {@code FULL_DUMPS}. */
+    private static final int NCASES = 10;
+
     /** The radius of the Error Circle, {@code R} in the class description. */
     private static final double ERROR_RADIUS = 1.0e-4;
 
@@ -574,7 +577,7 @@ class RegionStcOracleTest {
             assertDump(name, ChannelText.dump(stc), c.get(1).textValue());
             assertEquals(c.get(4).booleanValue(), stc.getBounded(), name + ": bounded");
         }
-        assertEquals(10, run, "cases run");
+        assertEquals(NCASES, run, "cases run");
     }
 
     @Test
@@ -587,7 +590,7 @@ class RegionStcOracleTest {
             assertPoints(name, stc, testCase(name));
             assertDump(name, fullDump(stc), c.get(1).textValue());
         }
-        assertEquals(10, run, "cases run");
+        assertEquals(NCASES, run, "cases run");
     }
 
     @Test
@@ -599,7 +602,7 @@ class RegionStcOracleTest {
             Region region = (Region) ChannelText.read(c.get(1).textValue());
             assertEquals(c.get(2).textValue(), ChannelText.dump(region), name);
         }
-        assertEquals(10, run, "cases run");
+        assertEquals(NCASES, run, "cases run");
     }
 
     @Test

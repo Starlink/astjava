@@ -34,9 +34,10 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * of its own class and null for any other. No call of {@code astFindFrame} or {@code astConvert}
  * between two Stcs reaches region.c's {@code Cast} in C: {@code astFindFrame} matches with {@code
  * matchsub} 0, and region.c's {@code ConvertX} aligns the Regions' current Frames. A CmpFrame whose
- * component Region fails to match does reach it, and C then crashes (region.c {@code Cast} compares
- * the class of its own uninitialised vtab), so that case is tested here alone ({@link
- * #aCmpFrameOfStcsInOtherDomainsDoesNotConvert}).
+ * component Region fails to match does reach it ({@link #aCmpFrameOfStcsInOtherDomainsDoesNotConvert}):
+ * C then crashes unless a description of the class Region has been read earlier in the process
+ * (region.c {@code Cast} compares the class of its own vtab, which only that read initialises), so
+ * the probe reads one first, in its last case, and C then finds no conversion, as Java does.
  *
  * <p>An Stc dump without its {@code Region}, or with fewer {@code Coord<n>} items than {@code
  * Ncoord}, is refused here with {@code AST__LDERR}: C's {@code astLoadStc} stores a null for the
@@ -555,17 +556,20 @@ class StcProbeTest {
     }
 
     /**
-     * Two CmpFrames, each of an Stc and a Frame, whose Stcs are in different Domains, do not convert,
-     * as {@code findFrame} finds no match between them ({@link #stcsOfDifferentClasses}). C crashes
-     * here: the CmpFrame's match casts the template's Stc into the class of the target's component
-     * (frame.c {@code astMatch}), and region.c's {@code Cast} compares the target's class with that
-     * of its own vtab, which is initialised only when an Object of the class Region itself is made.
+     * Two CmpFrames, each of an Stc and a Frame, whose Stcs are in different Domains, do not convert.
+     * The CmpFrame's match casts the template's Stc into the class of the target's component (frame.c
+     * {@code astMatch}); C's region.c {@code Cast} crashes there unless a description of the class
+     * Region has been read earlier in the process, which initialises the vtab whose class it
+     * compares, so the probe's last case reads one first.
      */
     @Test
     void aCmpFrameOfStcsInOtherDomainsDoesNotConvert() {
         CmpFrame ca = cmpFrameC(new StcSearchLocation(circleIn("A", 1.0), (KeyMap[]) null));
         CmpFrame cb = cmpFrameC(new StcSearchLocation(circleIn("B", 1.0), (KeyMap[]) null));
-        assertNull(cb.convert(ca, ""));
+        String c = probe("cast_after_region_read");
+        assertEquals(
+                "-- CmpFrames of search B and search A\n" + showFs("convert", cb.convert(ca, "")),
+                c.substring(c.indexOf("-- CmpFrames")));
     }
 
     // ------------------------------------------------------------------
