@@ -2130,10 +2130,12 @@ public abstract class Region extends Frame {
 
     /**
      * This Region cast into the class of another Frame (C's {@code Cast}, region.c): a copy if
-     * {@code obj} is a Region and this Region is an instance of its class, null for a Region of any
-     * other class, and otherwise the current Frame cast into the class of {@code obj}. The copy
-     * keeps this Region's own class; since jniast's Stc is abstract, no concrete Region class of this
-     * library is a subclass of another, so the copy is always of the class of {@code obj}. C's {@code Cast} differs for a Region {@code obj}; see {@code docs/rust-c-differences.md}.
+     * {@code obj} is a Region and this Region's class is the class of {@code obj} or a subclass of
+     * it, null for a Region of any other class, and otherwise the current Frame cast into the class
+     * of {@code obj}. The copy keeps this Region's own class; since jniast's Stc is abstract, no
+     * concrete Region class of this library is a subclass of another, so the copy is always of the
+     * class of {@code obj}. C's {@code Cast} differs for a Region {@code obj}; see {@code
+     * docs/rust-c-differences.md}.
      */
     @Override
     Frame cast(Frame obj) {
