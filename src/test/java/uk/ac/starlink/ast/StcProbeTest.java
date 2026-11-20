@@ -557,10 +557,11 @@ class StcProbeTest {
 
     /**
      * Two CmpFrames, each of an Stc and a Frame, whose Stcs are in different Domains, do not convert.
-     * The CmpFrame's match casts the template's Stc into the class of the target's component (frame.c
-     * {@code astMatch}); C's region.c {@code Cast} crashes there unless a description of the class
-     * Region has been read earlier in the process, which initialises the vtab whose class it
-     * compares, so the probe's last case reads one first.
+     * The CmpFrame's match casts the template's Stc into the class of the target's picked axes, a
+     * Frame (frame.c {@code astMatch}, cmpframe.c {@code PartMatch}, region.c {@code SubFrame}), so
+     * C's region.c {@code Cast} casts the Region's current Frame; it crashes there unless a
+     * description of the class Region has been read earlier in the process, which initialises the
+     * vtab whose class it compares, so the probe's last case reads one first.
      */
     @Test
     void aCmpFrameOfStcsInOtherDomainsDoesNotConvert() {

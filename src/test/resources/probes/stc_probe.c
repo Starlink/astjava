@@ -29,9 +29,9 @@
  *     class Region read, which initialises region.c's own vtab, and then
  *     astConvert between those CmpFrames, which reaches region.c's Cast
  *     (before such a read, Cast crashes comparing the class of its
- *     uninitialised vtab). The Stcs are of one class: astConvert tries each
- *     CmpFrame as the template, and a smaller Stc cast into the class of an
- *     StcObsDataLocation would be copied past its end.
+ *     uninitialised vtab). Cast is given the target's picked axes, a Frame
+ *     (cmpframe.c PartMatch, region.c SubFrame), and casts the Region's
+ *     current Frame, so it never copies one Stc as the class of another.
  *
  * Each case starts with a line "== <name>"; error reports, which the error
  * module writes to standard error, are merged in order (stdout unbuffered).
