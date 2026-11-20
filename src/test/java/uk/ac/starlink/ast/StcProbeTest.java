@@ -22,7 +22,9 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * GetBounded}); AstroCoords elements without keys, with one Region, and with Regions in another
  * Frame, as {@code astGetStcCoord} gives them, its index errors, and the constructor's errors for
  * bad AstroCoords; Frame attributes, Negated, Closed, MeshSize and FillFactor set on and cleared
- * from an Stc, and the read-only RegionClass; testregions.c's {@code checkStcNegated}; and dumps
+ * from an Stc, and the read-only RegionClass; testregions.c's {@code checkStcNegated}; stc.c's
+ * {@code Simplify} of a negated Stc and of an Stc mapped into another Frame, whose AstroCoords
+ * Regions it maps there too; and dumps
  * edited by hand: {@code Begin Stc}, which C reads as an Stc of the abstract class and Java refuses,
  * and {@code Ncoord} below zero, which both read as no AstroCoords elements; testregions.c's {@code
  * checkStcObsDump}, an StcObsDataLocation's observatory position, set as C's protected {@code
@@ -397,6 +399,47 @@ class StcProbeTest {
         stc.negate();
         got += tran2(stc, 0.0, 0.0, 5.0, 0.0) + "Bounded " + stc.getI("Bounded") + "\n";
         assertEquals(probe("check_stc_negated"), got);
+    }
+
+    // ------------------------------------------------------------------
+    // stc.c Simplify
+    // ------------------------------------------------------------------
+
+    /** C's {@code astSame}: 1 if {@code a} and {@code b} are the same Object, otherwise 0. */
+    @SuppressWarnings({"ReferenceEquality", "PMD.CompareObjectsWithEquals"}) // astSame compares the Objects.
+    private static int same(AstObject a, AstObject b) {
+        return a == b ? 1 : 0;
+    }
+
+    /** Simplifying a negated Stc moves the negation onto a copy of its encapsulated Region. */
+    @Test
+    void simplifyingANegatedStc() {
+        StcResourceProfile stc = plain();
+        String got = "plain same " + same(stc.simplify(), stc) + "\n";
+        stc.negate();
+        Region simp = (Region) stc.simplify();
+        got += "same " + same(simp, stc) + "\n" + showAttrs("given", stc) + showAttrs("stc", simp)
+                + showAttrs("region", ((Stc) simp).getStcRegion()) + show(simp) + tran2(simp, 0.0, 0.0, 5.0, 0.0);
+        assertEquals(probe("simplify_negated"), got);
+    }
+
+    /**
+     * Mapping an Stc into another Frame simplifies it, which maps its encapsulated Region and the
+     * Regions of its AstroCoords elements into the new Frame, leaving the given Stc as it was.
+     */
+    @Test
+    void simplifyingRemapsTheAstroCoordsRegions() {
+        KeyMap km = new KeyMap();
+        km.mapPut1C(Stc.AST__STCNAME, new String[] {"X", "Y"}, null);
+        km.mapPut0A(Stc.AST__STCVALUE, circle2(0.5, 0.0, 0.25), null);
+        km.mapPut0A(Stc.AST__STCERROR, circle2(0.0, 0.0, 0.01), null);
+        StcResourceProfile stc = withCoords(circle2(0.0, 0.0, 1.0), km);
+        Frame zoom = new Frame(2);
+        zoom.setDomain("ZOOM");
+        Region mapped = stc.mapRegion(new ZoomMap(2, 2.0), zoom);
+        String got = "class " + mapped.getC("Class") + "\n" + show(mapped) + showCoord((Stc) mapped, 1) + "-- region\n"
+                + show(((Stc) mapped).getStcRegion()) + "-- given\n" + showCoord(stc, 1);
+        assertEquals(probe("simplify_remapped_coords"), got);
     }
 
     // ------------------------------------------------------------------

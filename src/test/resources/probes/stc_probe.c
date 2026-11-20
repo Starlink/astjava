@@ -12,6 +12,8 @@
  *     cleared from an Stc, Adaptive and not, as the dump, astGetStcRegion
  *     and astGetStcCoord then show them, and the read-only RegionClass;
  *   - testregions.c's checkStcNegated;
+ *   - stc.c's Simplify of a negated Stc, and of one mapped by astMapRegion
+ *     with AstroCoords Regions, which it maps into the current Frame;
  *   - dumps edited by hand and read: "Begin Stc", the abstract class, which
  *     C reads, and Ncoord below zero;
  *   - testregions.c's checkStcObsDump, and an StcObsDataLocation given an
@@ -436,6 +438,41 @@ int main( void ) {
    astNegate( stc );
    tran2( (AstObject *) stc, 0.0, 0.0, 5.0, 0.0 );
    printf( "Bounded %d\n", astGetI( stc, "Bounded" ) );
+   failed();
+
+   /* stc.c Simplify: the negation moved onto the encapsulated Region, and
+      the encapsulated and AstroCoords Regions mapped into the current
+      Frame (astMapRegion, which simplifies its result). */
+   head( "simplify_negated" );
+   stc = plain();
+   printf( "plain same %d\n", astSame( astSimplify( stc ), stc ) );
+   astNegate( stc );
+   obj = (AstObject *) astSimplify( stc );
+   printf( "same %d\n", astSame( obj, stc ) );
+   show_attrs( "given", (AstObject *) stc );
+   show_attrs( "stc", obj );
+   show_attrs( "region", (AstObject *) astGetStcRegion( obj ) );
+   astShow( obj );
+   tran2( obj, 0.0, 0.0, 5.0, 0.0 );
+   failed();
+
+   head( "simplify_remapped_coords" );
+   km = astKeyMap( " " );
+   {
+      const char *names[] = { "X", "Y" };
+      astMapPut1C( km, AST__STCNAME, 2, names, NULL );
+   }
+   astMapPut0A( km, AST__STCVALUE, circle2( 0.5, 0.0, 0.25 ), NULL );
+   astMapPut0A( km, AST__STCERROR, circle2( 0.0, 0.0, 0.01 ), NULL );
+   stc = astStcResourceProfile( circle2( 0.0, 0.0, 1.0 ), 1, &km, " " );
+   obj = (AstObject *) astMapRegion( stc, astZoomMap( 2, 2.0, " " ), astFrame( 2, "Domain=ZOOM" ) );
+   printf( "class %s\n", astGetC( obj, "Class" ) );
+   astShow( obj );
+   show_coord( (AstStc *) obj, 1 );
+   printf( "-- region\n" );
+   astShow( astGetStcRegion( obj ) );
+   printf( "-- given\n" );
+   show_coord( (AstStc *) stc, 1 );
    failed();
 
    /* Dumps edited by hand and read. */
