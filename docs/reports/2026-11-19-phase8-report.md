@@ -5,7 +5,7 @@
 Phase 8 ported jniast's SelectorMap and STC classes, and C's `astRemoveRegions`, on 19 November 2026, following the plan [`2026-11-19-pure-java-ast-phase8-stc.md`](../superpowers/plans/2026-11-19-pure-java-ast-phase8-stc.md); with phase 7's Region classes it completes the spec's "Later phases" item 6, Regions and STC.
 `SelectorMap`, `AstroCoords`, `Stc` and its four subclasses `StcResourceProfile`, `StcSearchLocation`, `StcCatalogEntryLocation` and `StcObsDataLocation` now construct, transform, compare, simplify, dump and load as C's do.
 Their public members are exactly jniast's, and `JniastApiTest` passes with all seven classes in scope; everything else new (`removeRegions`, the Stc constructors taking KeyMaps, `StcObsDataLocation.setObs`, the AstroCoords key constants) is package-private.
-Every Mapping and Frame class removes its Regions as C's `astRemoveRegions` does (package-private `removeRegions`, which Plot will call), and `Region.cast` casts within the Stc hierarchy as C's truncating cast does for a subclass.
+Every Mapping and Frame class removes its Regions as C's `astRemoveRegions` does (package-private `removeRegions`, which Plot will call), and `Region.cast` copies a Region into the class of a Region it is an instance of (`isInstance`, which would accept a subclass), which changes no result while jniast's Stc is abstract, since no concrete Region class is then a subclass of another.
 `Region.dump` now writes a Region's own Negated, Closed, MeshSize, FillFactor and Adaptive values where they are set, as region.c's `Dump` does, which changed one existing dump (a PointList with Closed set).
 Every fixture of C's corpora that holds a SelectorMap or an StcResourceProfile now reads, writes and simplifies as C's does, and no deferred list names a class of this phase; of the Rust port's tests for these classes and for `remove_regions`, all are translated except `error_ellipse_licence_is_still_needed`, which checks the Rust port's own licence.
 Four new C probes and two converted oracle files give the expected values.
@@ -92,7 +92,7 @@ The fitted Ellipse's axis ends are not compared: on the near-circle the fitted d
 
 Each is an entry of [`docs/rust-c-differences.md`](../rust-c-differences.md), under "Mappings" (SelectorMap) and "Regions" (`RemoveRegions`, the Stc classes and `Cast`).
 
-- **C's quirks are kept** where C's result is defined: SelectorMap's Transform negates and re-closes its own Regions and leaves the attributes set, so a dump after use writes `Closed = 1`; an Stc's Transform and GetBounded leave Negated set on its encapsulated Region, so `test("Negated")` is true after use; two equal 1-D SelectorMaps applied forward in series simplify to a UnitMap, which changes the transformation (a C bug, kept, as the project follows C where its result is defined); a FrameSet component of a TranMap, or a changed one of a RateMap or SwitchMap, becomes a UnitMap when the Regions are removed, losing its Mapping.
+- **C's quirks are kept** where C's result is defined: SelectorMap's Transform negates and re-closes its own Regions and leaves the attributes set, so a dump after use writes `Closed = 1`; an Stc's Transform and GetBounded leave Negated set on its encapsulated Region, so `test("Negated")` is true after use; two equal 1-D SelectorMaps applied forward in series simplify to a UnitMap, as in C, since the project follows C where its result is defined; a FrameSet component of a TranMap, or a changed one of a RateMap or SwitchMap, becomes a UnitMap when the Regions are removed, losing its Mapping.
 - **Where C's result is undefined or C fails for a reason unrelated to the input, Java gives an error or C's documented result.**
   An Stc dump without its Region or with a missing AstroCoords element, and a SelectorMap dump without Regions, give `AST__LDERR`; a `Begin Stc` gives `AST__LDERR`, since jniast's Stc is abstract; casting a Region into the class of a Region that is not its own class or a parent gives null, the result region.c `Cast` documents.
 - **Non-finite coordinates are bad**: SelectorMap's Transform treats a NaN or infinite input as bad, by the library's rule, where C tests `AST__BAD` only.
@@ -100,8 +100,8 @@ Each is an entry of [`docs/rust-c-differences.md`](../rust-c-differences.md), un
 
 ## Defects found in the C library
 
-The tasks and the sweep found 6 defects in the pinned C library (`3d3f255f`), in selectormap.c, stc.c, region.c and object.c: null dereferences, an out-of-bounds read and a wrong result.
-All 6 reproduce at `3d3f255f`; at `15cc80e8`, the tip of the upstream pull request the C library is being hardened in, 2 are still present and 4 no longer reproduce.
+The tasks and the sweep found 6 defects in the pinned C library (`3d3f255f`).
+At `15cc80e8`, the tip of the upstream pull request (PR #104) the C library is being hardened in, 2 are still present.
 They were reported to the user privately, for upstream, and are not described in this repository beyond the behaviour `docs/rust-c-differences.md` records for each departure.
 Java follows C in every case that has a defined result, and gives an error or C's documented result where C's result is undefined.
 
@@ -112,9 +112,10 @@ Java follows C in every case that has a defined result, and gives an error or C'
 - **`rust-tests.txt` has no automated checker.**
   The sweep matched each Rust test naming this phase's classes against the Java test methods by name and checked each mismatch by hand.
   Three tests in those files are neither translated nor listed: `test_guide.rs::guide_mentions_no_unported_class`, `test_mapmerge_audit.rs::no_checklist_is_orphaned` and the class-name check of `src/serial/object_text.rs`, which test the Rust port's own documents and files; phase 7 found about 350 such unlisted tests outside the Region files.
-- **The reason a probe comment gives is wrong.**
-  The header of `stc_probe.c` says its last case uses two Stcs of one class because `astConvert` between CmpFrames of an StcSearchLocation and an StcObsDataLocation would copy the smaller Stc past its end.
-  Tracing C shows that `astConvert` there hands region.c `Cast` the target's picked axes, a Frame, so no Stc is copied as another class; the case and its result are right, and only the stated reason is not.
+- **No C value pins `Region.cast` between two Regions.**
+  Four texts said or implied that C's `astConvert` between CmpFrames of Stcs casts one Stc into the class of the other with `astCastCopy`: the header of `stc_probe.c` (lines 31-34, the reason its last case uses Stcs of one class), the Javadoc of `StcProbeTest.aCmpFrameOfStcsInOtherDomainsDoesNotConvert` ("into the class of the target's component"), the Cast entry of `docs/rust-c-differences.md`, and Task 4's ruling on that entry; Task 4's report also said an lldb breakpoint showed `astCastCopy` reached from region.c `Cast`.
+  It is not: the `astCastCopy` calls `astConvert` makes come from cmpframe.c `Cast`, a CmpFrame into a CmpFrame, and region.c `Cast` is given the target's picked axes, a Frame (cmpframe.c `PartMatch`, region.c `SubFrame`), or a whole CmpFrame (`ComponentMatch`), and casts the Region's current Frame.
+  The four texts are corrected; since only the protected `astCast` gives region.c `Cast` a Region to cast into, `Region.cast` between Stcs is pinned by Java-only tests, and C's crash before a Region description is read is the only effect of the CmpFrame path that the probe pins.
 - **Minor findings left from the reviews:**
   - `RemoveRegionsTest` does not reach a SwitchMap's inverse selector or the RateMap and SwitchMap cases of a FrameSet component turned into a UnitMap (only the TranMap case), and `probeCasesAreAllCovered` checks the number of cases, not their names; `RegionsTest.removeRegionsFromFrameSet`, a faithful translation, removes no Region (its Javadoc says so).
   - `SelectorMap.cancelWithNeighbour` duplicates `SwitchMap`'s; the SelectorMap class Javadoc says the dump shows Negated after a transformation, where only Closed shows, and does not say that two equal 1-D SelectorMaps applied forward merge to a UnitMap.
@@ -123,7 +124,7 @@ Java follows C in every case that has a defined result, and gives an error or C'
 ## Future work
 
 - **A checker for `rust-tests.txt`**, so that a Rust test file neither translated nor listed fails a test.
-- **The minor findings above**, and a correction of the `stc_probe.c` comment.
+- **The minor findings above.**
 - **XmlChan**, for jniast's `StcTest.testReads` and `testChandra` and the `teststc` fixtures of the Rust port, which are STC-X documents.
 
 ## What the next phase takes
