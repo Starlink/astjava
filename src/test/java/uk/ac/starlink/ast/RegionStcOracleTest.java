@@ -3,6 +3,7 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -15,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import uk.ac.starlink.ast.internal.pal.Pal;
 import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
@@ -112,8 +112,9 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  *   <li>This platform's own rounding, at its own direction, which may lie as near a mesh point as the
  *       last bits of the mesh put it, so the first-order bound does not serve: it is bounded after
  *       the fact instead ({@link #platformBound}). The test repeats this platform's fit ({@link
- *       #refit}, the arithmetic of {@code bestEllipse}) and requires it to give the dumped axis ends
- *       bit for bit, so that its {@code T_i}, {@code w_i} and resolved components are the fit's own;
+ *       #refit}, calling the Circle's fit and the parts of {@code bestEllipse} that give the
+ *       primary half-length and each {@code T_i}) and requires it to give the dumped axis ends bit
+ *       for bit, so that its {@code T_i}, {@code w_i} and resolved components are the fit's own;
  *       then, since {@code |px*_i - px_i|} and {@code |py*_i - py_i|} are at most {@code ETA},
  *       {@code |smn - sum T*_i| <= sum |T_i - R |py_i| (1 + px_i^2 / 6)| + N R ETA (1 + R^2)} (a point
  *       the fit left out has {@code T_i = 0}) and {@code |sw - sum w*_i| <= N ETA + sum of |py_i| over
@@ -318,9 +319,10 @@ class RegionStcOracleTest {
     }
 
     /**
-     * This platform's Ellipse fit of the Error Circle, as {@code Circle.simplifyStep} makes it: the
-     * arithmetic of {@link Ellipse#bestEllipse}, step for step, on the mesh, centre and Frame that
-     * {@code Circle.fittedCircleOrEllipse} gives it, keeping the values the bound needs.
+     * This platform's Ellipse fit of the Error Circle, as {@code Circle.simplifyStep} makes it
+     * ({@link Circle#fittedCircleOrEllipse}), with the mesh, centre and Frame it fits in, the
+     * primary half-length ({@link Ellipse#bestPrimaryAxis}), and the resolved components, {@code
+     * T_i} ({@link Ellipse#secondaryEstimate}) and {@code w_i} the fit used, which the bound needs.
      */
     private static Fit refit() {
         Region reg = mappedErrorCircle();
@@ -330,97 +332,23 @@ class RegionStcOracleTest {
         double[][] c = reg.regTransform(null, true);
         f.cen = new double[] {c[0][0], c[1][0]};
         f.frm = nw.getUncFrm(FrameSet.AST__CURRENT).regFrame();
+        Ellipse fit = assertInstanceOf(Ellipse.class, Circle.fittedCircleOrEllipse(reg, nw), "the fit");
+        double[][] pts = fit.getRegionPoints();
+        f.pa = new double[] {pts[0][1], pts[1][1]};
+        f.pb = new double[] {pts[0][2], pts[1][2]};
+        f.mx = Ellipse.bestPrimaryAxis(f.mesh, f.cen, f.frm)[1];
         int np = f.mesh[0].length;
-        double[] dist = new double[np];
-        double[] ang = new double[np];
-        double[] p = new double[2];
-        int ip;
-        for (ip = 0; ip < np; ip++) {
-            p[0] = f.mesh[0][ip];
-            p[1] = f.mesh[1][ip];
-            dist[ip] = f.frm.distance(f.cen, p);
-            if (dist[ip] != AstObject.AST__BAD && dist[ip] != 0.0) {
-                break;
-            }
-            ang[ip] = AstObject.AST__BAD;
-            dist[ip] = AstObject.AST__BAD;
-        }
-        double[] aa = new double[2];
-        f.frm.offset2(f.cen, 0.0, dist[ip], aa);
-        ang[ip] = f.frm.angle(aa, f.cen, p);
-        int maxat = ip;
-        double r2 = dist[maxat];
-        for (ip++; ip < np; ip++) {
-            p[0] = f.mesh[0][ip];
-            p[1] = f.mesh[1][ip];
-            dist[ip] = f.frm.distance(f.cen, p);
-            ang[ip] = f.frm.angle(aa, f.cen, p);
-            if (dist[ip] != AstObject.AST__BAD && dist[ip] > r2) {
-                r2 = dist[ip];
-                maxat = ip;
-            }
-        }
-        double a0 = ang[maxat];
-        int i3 = neighbour(dist, maxat, 1);
-        int i1 = neighbour(dist, maxat, -1);
-        double r3 = dist[i3];
-        double t3 = Pal.drange(ang[i3] - a0);
-        double r1 = dist[i1];
-        double t1 = Pal.drange(ang[i1] - a0);
-        double t2 = 0.0;
-        double qa = r2 - r1;
-        double qb = t2 - t1;
-        double qc = t2 * t2 - t1 * t1;
-        double qd = r3 - r2;
-        double qe = t3 - t2;
-        double qf = t3 * t3 - t2 * t2;
-        double den = qc * qe - qb * qf;
-        double c1 = (qd * qc - qa * qf) / den;
-        double c2 = (qa * qe - qd * qb) / den;
-        double c0 = r1 - c1 * t1 - c2 * t1 * t1;
-        double at;
-        if (c2 < 0.0) {
-            f.mx = (4 * c0 * c2 - c1 * c1) / (4 * c2);
-            at = a0 - c1 / (2 * c2);
-        } else {
-            f.mx = r2;
-            at = a0 - t2;
-        }
-        f.pa = new double[2];
-        f.frm.offset2(f.cen, at, f.mx, f.pa);
         f.ps2 = f.frm.resolvePoints(f.cen, f.pa, f.mesh, np);
         f.t = new double[np];
         f.w = new double[np];
-        double smn = 0.0;
-        double sw = 0.0;
-        for (ip = 0; ip < np; ip++) {
-            double px = f.ps2[0][ip];
-            double py = f.ps2[1][ip];
-            if (px != AstObject.AST__BAD && py != AstObject.AST__BAD) {
-                double dd = f.mx * f.mx - px * px;
-                if (dd > 0.0) {
-                    f.t[ip] = Math.abs(f.mx * py * py) / Math.sqrt(dd);
-                    f.w[ip] = Math.abs(py);
-                    smn += f.t[ip];
-                    sw += f.w[ip];
-                }
+        for (int ip = 0; ip < np; ip++) {
+            double t = Ellipse.secondaryEstimate(f.mx, f.ps2[0][ip], f.ps2[1][ip]);
+            if (t != AstObject.AST__BAD) {
+                f.t[ip] = t;
+                f.w[ip] = Math.abs(f.ps2[1][ip]);
             }
         }
-        f.pb = new double[2];
-        f.frm.offset2(f.cen, at + Math.PI / 2, smn / sw, f.pb);
         return f;
-    }
-
-    /** The first point after (step 1) or before (step -1) {@code maxat}, cyclically, with a good distance. */
-    private static int neighbour(double[] dist, int maxat, int step) {
-        int n = dist.length;
-        for (int k = 1; k < n; k++) {
-            int i = Math.floorMod(maxat + step * k, n);
-            if (dist[i] != AstObject.AST__BAD) {
-                return i;
-            }
-        }
-        throw new AssertionError("no neighbour of mesh point " + maxat);
     }
 
     /** {@code sum(px^2 |py|) / sum|py|}, the sampling of the systematic term (see the class description). */
