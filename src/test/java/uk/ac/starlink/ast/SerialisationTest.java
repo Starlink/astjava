@@ -20,11 +20,7 @@ import org.junit.jupiter.api.Test;
  * library documents, and the values set before writing. The Rust test's bounds on transformed and
  * read-back values are kept.
  *
- * <p>Deferred: the Region round trips ({@code round_trip_circle}, {@code round_trip_box_region},
- * {@code round_trip_polygon}, {@code round_trip_interval}, {@code round_trip_null_region}, {@code
- * round_trip_ellipse}, {@code round_trip_pointlist}, {@code round_trip_cmpregion}, {@code
- * round_trip_prism}, {@code round_trip_negated_circle}) need Region classes, which are out of scope;
- * the {@code any_object_*} tests, {@code round_trip_skyframe_into_frame} and {@code
+ * <p>Not translated: the {@code any_object_*} tests, {@code round_trip_skyframe_into_frame} and {@code
  * a_keymap_is_neither_a_mapping_nor_a_frame_nor_a_region} test Rust's {@code AnyObject}, in which a
  * Frame is not a Mapping where in AST every Frame is one; {@code any_object_debug} tests Rust's
  * {@code Debug} formatting.
@@ -728,5 +724,142 @@ class SerialisationTest {
         assertEquals(3.0, zm.rate(new double[] {0.0, 0.0}, 1, 1));
 
         assertEquals(text, dump(back));
+    }
+
+    /** Rust {@code round_trip_box_region}: a Box written and read back keeps its area. */
+    @Test
+    void roundTripBoxRegion() {
+        Box box = new Box(new Frame(2), 0, new double[] {5.0, 5.0}, new double[] {3.0, 4.0}, null);
+        String text = ChannelText.dump(box);
+        assertTrue(text.contains("Begin Box"), "missing Begin Box");
+        assertTrue(text.contains("End Box"), "missing End Box");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {5.0, 5.0}));
+        assertTrue(region.pointInRegion(new double[] {6.0, 5.5}));
+        assertFalse(region.pointInRegion(new double[] {50.0, 50.0}));
+    }
+
+    /** Rust {@code round_trip_interval}: an Interval written and read back keeps its area. */
+    @Test
+    void roundTripInterval() {
+        Interval iv = new Interval(new Frame(2), new double[] {1.0, 2.0}, new double[] {10.0, 20.0}, null);
+        String text = ChannelText.dump(iv);
+        assertTrue(text.contains("Begin Interval"), "missing Begin Interval");
+        assertTrue(text.contains("End Interval"), "missing End Interval");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {5.0, 10.0}));
+        assertFalse(region.pointInRegion(new double[] {0.0, 0.0}));
+    }
+
+    /** Rust {@code round_trip_null_region}: a NullRegion written and read back holds no point. */
+    @Test
+    void roundTripNullRegion() {
+        String text = ChannelText.dump(new NullRegion(new Frame(2), null));
+        assertTrue(text.contains("Begin NullRegion"), "missing Begin NullRegion");
+        assertTrue(text.contains("End NullRegion"), "missing End NullRegion");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertFalse(region.pointInRegion(new double[] {0.0, 0.0}));
+    }
+
+    /** Rust {@code round_trip_pointlist}: a PointList written and read back holds its points. */
+    @Test
+    void roundTripPointList() {
+        PointList pl = new PointList(new Frame(2), 3, new double[][] {{1.0, 3.0, 5.0}, {2.0, 4.0, 6.0}}, null);
+        String text = ChannelText.dump(pl);
+        assertTrue(text.contains("Begin PointList"), "missing Begin PointList");
+        assertTrue(text.contains("End PointList"), "missing End PointList");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {1.0, 2.0}));
+        assertTrue(region.pointInRegion(new double[] {3.0, 4.0}));
+        assertFalse(region.pointInRegion(new double[] {0.0, 0.0}));
+    }
+
+    /** Rust {@code round_trip_circle}: a Circle written and read back holds its centre. */
+    @Test
+    void roundTripCircle() {
+        String text = ChannelText.dump(new Circle(new Frame(2), new double[] {10.0, 20.0}, 5.0, null));
+        assertTrue(text.contains("Begin Circle"), "missing Begin Circle");
+        assertTrue(text.contains("End Circle"), "missing End Circle");
+        assertTrue(text.contains("Points"), "missing Points");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {10.0, 20.0}));
+        assertFalse(region.pointInRegion(new double[] {100.0, 100.0}));
+    }
+
+    /** Rust {@code round_trip_polygon}: a Polygon written and read back holds its inside. */
+    @Test
+    void roundTripPolygon() {
+        Polygon p = new Polygon(new Frame(2), 3, new double[] {0.0, 10.0, 0.0}, new double[] {0.0, 0.0, 10.0}, null);
+        String text = ChannelText.dump(p);
+        assertTrue(text.contains("Begin Polygon"), "missing Begin Polygon");
+        assertTrue(text.contains("End Polygon"), "missing End Polygon");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {2.0, 2.0}));
+        assertFalse(region.pointInRegion(new double[] {8.0, 8.0}));
+    }
+
+    /** Rust {@code round_trip_cmpregion}: a CmpRegion written and read back holds its intersection. */
+    @Test
+    void roundTripCmpRegion() {
+        Circle c1 = new Circle(new Frame(2), new double[] {0.0, 0.0}, 5.0, null);
+        Circle c2 = new Circle(new Frame(2), new double[] {3.0, 0.0}, 5.0, null);
+        String text = ChannelText.dump(new CmpRegion(c1, c2, CmpRegion.AST__AND));
+        assertTrue(text.contains("Begin CmpRegion"), "missing Begin CmpRegion");
+        assertTrue(text.contains("End CmpRegion"), "missing End CmpRegion");
+        assertTrue(text.contains("RegionA"), "missing RegionA");
+        assertTrue(text.contains("RegionB"), "missing RegionB");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {1.5, 0.0}));
+        assertFalse(region.pointInRegion(new double[] {-4.0, 0.0}));
+    }
+
+    /** Rust {@code round_trip_prism}: a Prism written and read back holds its cylinder. */
+    @Test
+    void roundTripPrism() {
+        Circle circle = new Circle(new Frame(2), new double[] {0.0, 0.0}, 5.0, null);
+        Interval interval = new Interval(new Frame(1), new double[] {0.0}, new double[] {10.0}, null);
+        String text = ChannelText.dump(new Prism(circle, interval));
+        assertTrue(text.contains("Begin Prism"), "missing Begin Prism");
+        assertTrue(text.contains("End Prism"), "missing End Prism");
+        assertTrue(text.contains("RegionA"), "missing RegionA");
+        assertTrue(text.contains("RegionB"), "missing RegionB");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(3, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {0.0, 0.0, 5.0}));
+        assertFalse(region.pointInRegion(new double[] {0.0, 0.0, 15.0}));
+        assertFalse(region.pointInRegion(new double[] {10.0, 10.0, 5.0}));
+    }
+
+    /** Rust {@code round_trip_ellipse}: an Ellipse written and read back holds its centre. */
+    @Test
+    void roundTripEllipse() {
+        Ellipse e = new Ellipse(
+                new Frame(2), 1, new double[] {5.0, 5.0}, new double[] {3.0, 2.0}, new double[] {Math.PI / 2}, null);
+        String text = ChannelText.dump(e);
+        assertTrue(text.contains("Begin Ellipse"), "missing Begin Ellipse");
+        assertTrue(text.contains("End Ellipse"), "missing End Ellipse");
+        Region region = (Region) ChannelText.read(text);
+        assertEquals(2, region.getNaxes());
+        assertTrue(region.pointInRegion(new double[] {5.0, 5.0}));
+        assertFalse(region.pointInRegion(new double[] {50.0, 50.0}));
+    }
+
+    /** Rust {@code round_trip_negated_circle}: a negated Circle read back is still negated. */
+    @Test
+    void roundTripNegatedCircle() {
+        Circle c = new Circle(new Frame(2), new double[] {0.0, 0.0}, 5.0, null);
+        c.negate();
+        String text = ChannelText.dump(c);
+        assertTrue(text.contains("Negate"), "missing Negate attribute");
+        Region region = (Region) ChannelText.read(text);
+        assertFalse(region.pointInRegion(new double[] {0.0, 0.0}));
+        assertTrue(region.pointInRegion(new double[] {100.0, 100.0}));
     }
 }

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * non-finite input as bad, and write only the points they are given into outputs longer than the
  * input.
  *
- * <p>The UnitNormMap and NullRegion tests need classes outside the first phase and are deferred.
+ * <p>The UnitNormMap tests need a class that is out of scope and are deferred.
  * Rust's NaN-path entry point is {@link Mapping#transformIntoNan}.
  */
 class BulkKernelsTest {

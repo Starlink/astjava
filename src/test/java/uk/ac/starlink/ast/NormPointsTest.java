@@ -19,9 +19,9 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * hands each component its own axes, and a FrameSet hands the points to its current Frame. The expected values come from C ({@code
  * oracle/norm_points.json}, from {@code tools/oracle_fixtures/norm_points_probe.c}).
  *
- * <p>The plain Frame, SkyFrame, CmpFrame and FrameSet parts run here; {@code
- * a_circle_mesh_is_normalised_as_c_does} and the Circle part of the rejection test need a Circle,
- * outside the first phase.
+ * <p>{@code a_circle_mesh_is_normalised_as_c_does} normalises the boundary mesh of a Circle in
+ * its Frame, as C's {@code astGetRegionMesh} (not in jniast) does, through the package-private
+ * {@code regMesh} and {@code normalPoints}.
  */
 class NormPointsTest {
 
@@ -104,6 +104,29 @@ class NormPointsTest {
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 
+    @Test
+    void aCircleMeshIsNormalisedAsCDoes() {
+        Circle circle = new Circle(new SkyFrame(), new double[] {0.0, 0.0}, 5.0 * D2R, null);
+        double[][] mesh = circle.regMesh();
+        int np = mesh[0].length;
+        double[][] got = circle.normalPoints(mesh, np, true);
+        JsonNode want = CONSTS.get("CIRCLE_MESH");
+        assertEquals(want.size(), np, "number of points");
+        List<String> failures = new ArrayList<>();
+        for (int i = 0; i < np; i++) {
+            double[] wantRow = {
+                ProbeData.toDouble(want.get(i).get(0)),
+                ProbeData.toDouble(want.get(i).get(1))
+            };
+            double[] gotRow = {got[0][i], got[1][i]};
+            if (!CValues.cValuesEq(gotRow, wantRow)) {
+                failures.add(
+                        "point " + i + ": got " + Arrays.toString(gotRow) + ", C gives " + Arrays.toString(wantRow));
+            }
+        }
+        assertTrue(failures.isEmpty(), String.join("\n", failures));
+    }
+
     /**
      * A coordinate count other than the Frame's axis count is {@code AST__DIMIN} (frame.c:7994),
      * whichever class normalises the points.
@@ -112,10 +135,14 @@ class NormPointsTest {
     void normPointsRejectsAWrongCoordinateCount() {
         SkyFrame sky = new SkyFrame();
         Frame[] frames = {
-            new Frame(2), sky, new CmpFrame((SkyFrame) sky.copy(), new Frame(1)), new FrameSet((SkyFrame) sky.copy())
+            new Frame(2),
+            sky,
+            new CmpFrame((SkyFrame) sky.copy(), new Frame(1)),
+            new FrameSet((SkyFrame) sky.copy()),
+            new Circle((SkyFrame) sky.copy(), new double[] {0.0, 0.0}, 0.1, null)
         };
         // The class names C's message gives.
-        String[] classes = {"Frame", "SkyFrame", "CmpFrame", "FrameSet"};
+        String[] classes = {"Frame", "SkyFrame", "CmpFrame", "FrameSet", "Circle"};
         for (int i = 0; i < frames.length; i++) {
             Frame frame = frames[i];
             String cls = classes[i];

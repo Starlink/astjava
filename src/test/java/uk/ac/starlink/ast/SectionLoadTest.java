@@ -5,12 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
-import uk.ac.starlink.ast.testsupport.NativeClasses;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
 /**
@@ -24,25 +20,9 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * companion placing it where its class reads it, and with each attribute as C's {@code astGetC},
  * {@code astGetI} or {@code astGetD} gives it and whether {@code astTest} finds it set. Each
  * attribute is read here through the same generic calls. As in the Rust test, whether Invert and
- * Zoom are set is not compared.
- *
- * <p>The cases of {@link #OUT_OF_SCOPE} hold a class that is out of scope and are not run.
+ * Zoom are set is not compared. Every case is run, and their number is asserted.
  */
 class SectionLoadTest {
-
-    /** Cases holding a class that is out of scope, with that class. */
-    private static final Map<String, String> OUT_OF_SCOPE = outOfScope();
-
-    private static Map<String, String> outOfScope() {
-        Map<String, String> m = new LinkedHashMap<>();
-        m.put("circle_negate_in_class", "Circle");
-        m.put("circle_negate_placed", "Circle");
-        m.put("circle_ident_in_region", "Circle");
-        m.put("polygon_simpvt_in_region", "Polygon");
-        m.put("polygon_simpvt_placed", "Polygon");
-        m.put("polygon_no_order", "Polygon");
-        return Collections.unmodifiableMap(m);
-    }
 
     /** An attribute's value as the probe reads it, in the probe's form for {@code variant}. */
     private static Object value(AstObject obj, String name, String variant) {
@@ -85,13 +65,6 @@ class SectionLoadTest {
                 lines.add(l.asText());
             }
             String text = String.join("\n", lines);
-            String cls = OUT_OF_SCOPE.get(name);
-            if (cls != null) {
-                assertTrue(
-                        NativeClasses.missing(text).contains(cls),
-                        name + " is left out for want of " + cls + ", which is now loaded; run it");
-                continue;
-            }
             run++;
             AstObject obj;
             try {
@@ -112,7 +85,7 @@ class SectionLoadTest {
                 }
             }
         }
-        assertEquals(26, run, "cases run");
+        assertEquals(32, run, "cases run");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 }

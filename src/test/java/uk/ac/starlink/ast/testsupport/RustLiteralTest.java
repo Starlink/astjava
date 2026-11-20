@@ -32,6 +32,13 @@ class RustLiteralTest {
     }
 
     @Test
+    void sumsAndDifferencesAreEvaluatedLeftToRight() {
+        assertEquals(
+                Arrays.asList(5.0, 5.0 + 1.0e-12, 5.0 - 1.0e-6 + 2.0, 3L),
+                one("pub const Y: [f64; 4] = [5.0, 5.0 + 1.0e-12, 5.0 - 1.0e-6 + 2.0, 1 + 2];", "Y"));
+    }
+
+    @Test
     void concatOfStringLiterals() {
         assertEquals("a\tb\nc\n", one("pub const C: &str = concat!(\n    \"a\\tb\\n\",\n    \"c\\n\",\n);", "C"));
         assertThrows(IllegalArgumentException.class, () -> RustLiteral.parse("const C: &str = concat!(\"a\", 1);"));

@@ -1,0 +1,386 @@
+== null_unc_dims
+!! AST: Error in routine box at line 94 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astSetUnc(NullRegion): Bad 3 dimensional uncertainty Frame ( 3-d coordinate system) supplied.
+!  Cannot convert it to the Frame of the new NullRegion.
+status 233933522
+== interval_unc_dims
+!! AST: Error in routine interval at line 107 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astSetUnc(Interval): Bad 3 dimensional uncertainty Frame ( 3-d coordinate system) supplied.
+!  Cannot convert it to the Frame of the new Interval.
+status 233933522
+== pointlist_unc_dims
+!! AST: Error in routine pointlist2 at line 140 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astSetUnc(PointList): Bad 3 dimensional uncertainty Frame ( 3-d coordinate system) supplied.
+!  Cannot convert it to the Frame of the new PointList.
+status 233933522
+== null_unc_shape
+!! AST: Error in routine interval at line 107 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astSetUnc(NullRegion): Bad uncertainty shape (Interval) supplied.
+!  The uncertainty Region must be an instance of a centro-symetric subclass of Region (e.g. Box, Circle, Ellipse, etc).
+status 233933522
+== interval_unc_shape
+!! AST: Error in routine interval at line 107 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astSetUnc(Interval): Bad uncertainty shape (PointList) supplied.
+!  The uncertainty Region must be an instance of a centro-symetric subclass of Region (e.g. Box, Circle, Ellipse, etc).
+status 233933522
+== pointlist_unc_shape
+!! AST: Error in routine pointlist2 at line 140 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astSetUnc(PointList): Bad uncertainty shape (NullRegion) supplied.
+!  The uncertainty Region must be an instance of a centro-symetric subclass of Region (e.g. Box, Circle, Ellipse, etc).
+status 233933522
+== null_unc_negated
+unc Box 0
+bounds -0.10000000000000001 -0.10000000000000001 0.10000000000000001 0.10000000000000001
+== interval_unc_negated
+unc Box 0
+bounds -0.10000000000000001 -0.10000000000000001 0.10000000000000001 0.10000000000000001
+== pointlist_unc_negated
+unc Box 0
+bounds 0.89999999999999991 1.8999999999999999 1.1000000000000001 2.1000000000000001
+== interval_unc_bounded_interval
+unc Interval 0
+bounds -0.10000000000000001 -0.10000000000000001 0.10000000000000001 0.10000000000000001
+== interval_no_limits
+tran 1 1 0 0 1
+bounded 0
+bounds -1.7976931348623157e+308 -1.7976931348623157e+308 1.7976931348623157e+308 1.7976931348623157e+308
+points 2 -1.7976931348623157e+308 -1.7976931348623157e+308 -1.7976931348623157e+308 -1.7976931348623157e+308
+== pointlist_bad_point
+tran 0 0 0 0 0 0
+bounded 1
+bounds -1.7976931348623157e+308 2 5 6
+points 3 1 -1.7976931348623157e+308 5 2 3 6
+== pointlist_no_points
+!! AST: Error in routine constructors at line 326 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astInitPointSet(PointSet): Number of points (0) is not valid.
+status 233933586
+== null_plain
+tran 0 0 0
+bounded 1
+bounds 1 1 -1 -1
+points 0
+unc none
+== null_negated
+tran 1 0 1
+bounded 0
+bounds 1 1 -1 -1
+== null_mapped
+tran 1 0 1
+bounded 0
+bounds 1 1 -1 -1
+== null_mapped_fewer_axes
+class NullRegion naxes 1 base 1
+bounds 1 -1
+== null_bad_input
+values -1.7976931348623157e+308 -1.7976931348623157e+308 -1.7976931348623157e+308 -1.7976931348623157e+308
+pir 0 0
+values -1.7976931348623157e+308 1 1e+30 2
+pir 1 1
+== null_mesh
+!! AST: Error in routine null2 at line 127 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astRegMesh(NullRegion): The NullRegion class does not implement the astRegMesh method inherited from the Region class (internal AST programming error).
+status 233933410
+== null_inside
+mask 0 0 1 2 0 1 2 0 1 2
+== null_outside
+mask 9 9 9 9 9 9 9 9 9 9
+== negated_null_inside
+mask 9 9 9 9 9 9 9 9 9 9
+== negated_null_outside
+mask 0 0 1 2 0 1 2 0 1 2
+== null_null
+overlap 5 5
+== null_negated_null
+overlap 6 6
+== negated_null_negated_null
+overlap 5 5
+== negated_null_box
+overlap 3 2
+== null_interval
+overlap 1 1
+== negated_null_interval
+overlap 3 2
+== null_other_axes
+overlap 0 0
+== null_dump
+ Begin NullRegion 	# Boundless region
+#   Title = "2-d coordinate system" 	# Title of coordinate system
+#   Naxes = 2 	# Number of coordinate axes
+#   Epoch = 2000 	# Julian epoch of observation
+#   Lbl1 = "Axis 1" 	# Label for axis 1
+#   Lbl2 = "Axis 2" 	# Label for axis 2
+#   System = "Cartesian" 	# Coordinate system type
+ IsA Frame 	# Coordinate system description
+    Adapt = 1 	# Region adapts to coord sys changes
+    Frm = 	# Coordinate system
+       Begin Frame 	# Coordinate system description
+#         Title = "2-d coordinate system" 	# Title of coordinate system
+          Naxes = 2 	# Number of coordinate axes
+#         Lbl1 = "Axis 1" 	# Label for axis 1
+#         Lbl2 = "Axis 2" 	# Label for axis 2
+          Ax1 = 	# Axis number 1
+             Begin Axis 	# Coordinate axis
+             End Axis
+          Ax2 = 	# Axis number 2
+             Begin Axis 	# Coordinate axis
+             End Axis
+       End Frame
+    RegAxes = 2 	# Number of axes spanned by the Region
+ IsA Region 	# An area within a coordinate system
+ End NullRegion
+== negated_null_dump
+ Begin NullRegion 	# Boundless region
+#   Title = "2-d coordinate system" 	# Title of coordinate system
+#   Naxes = 2 	# Number of coordinate axes
+#   Epoch = 2000 	# Julian epoch of observation
+#   Lbl1 = "Axis 1" 	# Label for axis 1
+#   Lbl2 = "Axis 2" 	# Label for axis 2
+#   System = "Cartesian" 	# Coordinate system type
+ IsA Frame 	# Coordinate system description
+    Negate = 1 	# Region negated
+    Adapt = 1 	# Region adapts to coord sys changes
+    Frm = 	# Coordinate system
+       Begin Frame 	# Coordinate system description
+#         Title = "2-d coordinate system" 	# Title of coordinate system
+          Naxes = 2 	# Number of coordinate axes
+#         Lbl1 = "Axis 1" 	# Label for axis 1
+#         Lbl2 = "Axis 2" 	# Label for axis 2
+          Ax1 = 	# Axis number 1
+             Begin Axis 	# Coordinate axis
+             End Axis
+          Ax2 = 	# Axis number 2
+             Begin Axis 	# Coordinate axis
+             End Axis
+       End Frame
+    RegAxes = 2 	# Number of axes spanned by the Region
+ IsA Region 	# An area within a coordinate system
+ End NullRegion
+== interval_slice_unc
+tran 1 1 0 0
+bounded 1
+unc Box 0
+bounds 1.4999994999999999 4.9999975000000001 1.5000005000000001 5.0000024999999999
+== interval_slice_unbounded
+tran 1 1 0 0
+bounded 0
+bounds 1 5 1.7976931348623157e+308 5
+unc Box 0
+bounds 0 4.9999975000000001 0 5.0000024999999999
+points 2 1 -1.7976931348623157e+308 5 5
+== interval_excluded
+tran 1 1 0 0 1 1 0
+bounded 0
+bounds 8 2
+== interval_excluded_open
+tran 1 0 0 0 0 1 0
+== interval_excluded_negated
+tran 0 1 1 1 1 0 0
+bounded 0
+== interval_half_negated
+tran 1 1 0 0 0
+bounded 0
+bounds 1 -1.7976931348623157e+308 1.7976931348623157e+308 1.7976931348623157e+308
+== interval_negated_bounded
+bounded 1
+bounds 0 0 1 1
+== interval_mapped
+tran 0 1 1 0
+bounded 1
+bounds 2 6
+points 2 2 6
+unc Box 0
+bounds 3.9999979999999997 4.0000020000000003
+== interval_unbounded_mapped
+tran 0 0 1 0 0
+bounded 0
+bounds 2 inf inf nan
+unc Box 0
+bounds 0 0 0 0
+== interval_unbounded_mesh
+!! AST: Error in routine interval at line 107 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astRegBaseMesh(Interval): The Interval given is unbounded and therefore no boundary mesh can be produced (internal AST programming error).
+status 233933410
+== interval_above_inside
+mask 0 0 1 2 0 1 2 0 1 2 0
+== interval_above_outside
+mask 10 9 9 9 9 9 9 9 9 9 9
+== interval_below_inside
+mask 6 9 9 9 9 9 9 0 1 2 0
+== interval_below_outside
+mask 3 0 1 2 0 1 2 0 9 9 9
+== interval_above_bounds
+bounds 3 1.7976931348623157e+308
+== interval_same_half
+overlap 5 5
+== interval_nested_half
+overlap 3 2
+== interval_disjoint_half
+overlap 1 1
+== interval_crossed_half
+overlap 4 4
+== interval_negated_half
+overlap 6 6
+== interval_excluded_inside
+overlap 3 2
+== interval_excluded_across
+overlap 4 4
+== interval_excluded_same
+overlap 5 5
+== interval_excluded_negation
+overlap 6 6
+== interval_bounded_same
+overlap 5 5
+== interval_bounded_inside
+overlap 3 2
+== interval_box_inside
+overlap 3 2
+== interval_zoomed
+overlap 5 5
+== interval_rotated
+!! AST: Error in routine overlap at line 229 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astOverlap(Region): Neither of the two supplied Regions (classes Interval and Interval) has a finite boundary.
+!  The current implementation of astOverlap cannot determine the overlap between two Regions unless at least one of them has a finite boundary.
+status 233933410
+== interval_split_two_outputs
+split 2
+== interval_split_two_outputs_overlap
+!! AST: Error in routine overlap at line 229 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astOverlap(Region): Neither of the two supplied Regions (classes Interval and Interval) has a finite boundary.
+!  The current implementation of astOverlap cannot determine the overlap between two Regions unless at least one of them has a finite boundary.
+status 233933410
+== interval_negation_on_first_of_two_axes
+overlap 6 6
+== interval_negation_on_second_of_two_axes
+overlap 6 6
+== interval_dump
+ Begin Interval 	# Axis intervals
+#   Title = "2-d coordinate system" 	# Title of coordinate system
+#   Naxes = 2 	# Number of coordinate axes
+#   Epoch = 2000 	# Julian epoch of observation
+#   Lbl1 = "Axis 1" 	# Label for axis 1
+#   Lbl2 = "Axis 2" 	# Label for axis 2
+#   System = "Cartesian" 	# Coordinate system type
+ IsA Frame 	# Coordinate system description
+    Adapt = 1 	# Region adapts to coord sys changes
+    Frm = 	# Coordinate system
+       Begin Frame 	# Coordinate system description
+#         Title = "2-d coordinate system" 	# Title of coordinate system
+          Naxes = 2 	# Number of coordinate axes
+#         Lbl1 = "Axis 1" 	# Label for axis 1
+#         Lbl2 = "Axis 2" 	# Label for axis 2
+          Ax1 = 	# Axis number 1
+             Begin Axis 	# Coordinate axis
+             End Axis
+          Ax2 = 	# Axis number 2
+             Begin Axis 	# Coordinate axis
+             End Axis
+       End Frame
+    Points = 	# Points defining the shape
+       Begin PointSet 	# Container for a set of points
+          Npoint = 2 	# Number of points
+          Ncoord = 2 	# Number of coordinates per point
+          X1 = 1 	# Coordinate values...
+          X4 = 2
+       End PointSet
+ IsA Region 	# An area within a coordinate system
+ End Interval
+== pointlist_default_unc
+tran 1 1 0 1 0 0 0 1
+bounded 1
+bounds 1 2 3 4
+unc Box 0
+bounds 1.9999989999999999 2.9999989999999999 2.0000010000000001 3.0000010000000001
+points 2 1 3 2 4
+listsize 2
+== pointlist_bad_input
+values -1.7976931348623157e+308 2 1 -1.7976931348623157e+308 -1.7976931348623157e+308 -1.7976931348623157e+308
+pir 1 1 0
+values -1.7976931348623157e+308 -1.7976931348623157e+308 -1.7976931348623157e+308 -1.7976931348623157e+308 7 -1.7976931348623157e+308
+pir 0 0 1
+== pointlist_explicit_unc
+tran 1 0 0 0 0
+unc Box 0
+bounds 0.5 1.5 1.5 2.5
+== pointlist_negated
+tran 0 1 1 1 1
+bounded 0
+unc Box 0
+bounds 0.5 1.5 1.5 2.5
+== pointlist_mapped
+tran 1 1 0 0
+bounds 2 4 6 8
+points 2 2 6 4 8
+unc Box 0
+bounds 3.9999979999999997 5.9999979999999997 4.0000020000000003 6.0000020000000003
+== pointlist_closed
+closed 1 1
+closed 0 1
+closed 0 0
+== pointlist_listsize
+listsize 2 0
+== pointlist_set_listsize
+!! AST: Error in routine pointlists at line 600 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astSet: The setting "listsize=3" is invalid for a PointList.
+!  This is a read-only attribute.
+status 233933578
+== pointlist_clear_listsize
+!! AST: Error in routine pointlists at line 603 in file src/test/resources/probes/region_null_interval_pointlist_probe.c.
+!  astClear: Invalid attempt to clear the "listsize" value for a PointList.
+!  This is a read-only attribute.
+status 233933578
+== pointlist_duplicates_inside
+mask 2 0 1 2 0 1 2 9 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0
+== pointlist_duplicates_outside
+mask 23 9 9 9 9 9 9 0 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9
+== pointlist_negated_inside
+mask 23 9 9 9 9 9 2 9 9 9 9 9 9 9 9 9 9 9 2 9 9 9 9 9 9 9
+== pointlist_zoomed_inside
+mask 2 9 1 2 0 1 2 9 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0
+== pointlist_same
+overlap 5 5
+== pointlist_subset
+overlap 5 2
+== pointlist_null
+overlap 1 1
+== pointlist_in_box
+overlap 2 3
+== pointlist_across_box
+overlap 1 4
+== pointlist_beside_box
+overlap 1 1
+== pointlist_duplicated_point
+overlap 5 5
+== pointlist_dump
+ Begin PointList 	# Collection of points
+#   Title = "2-d coordinate system" 	# Title of coordinate system
+#   Naxes = 2 	# Number of coordinate axes
+#   Epoch = 2000 	# Julian epoch of observation
+#   Lbl1 = "Axis 1" 	# Label for axis 1
+#   Lbl2 = "Axis 2" 	# Label for axis 2
+#   System = "Cartesian" 	# Coordinate system type
+ IsA Frame 	# Coordinate system description
+    Adapt = 1 	# Region adapts to coord sys changes
+    Frm = 	# Coordinate system
+       Begin Frame 	# Coordinate system description
+#         Title = "2-d coordinate system" 	# Title of coordinate system
+          Naxes = 2 	# Number of coordinate axes
+#         Lbl1 = "Axis 1" 	# Label for axis 1
+#         Lbl2 = "Axis 2" 	# Label for axis 2
+          Ax1 = 	# Axis number 1
+             Begin Axis 	# Coordinate axis
+             End Axis
+          Ax2 = 	# Axis number 2
+             Begin Axis 	# Coordinate axis
+             End Axis
+       End Frame
+    Points = 	# Points defining the shape
+       Begin PointSet 	# Container for a set of points
+          Npoint = 2 	# Number of points
+          Ncoord = 2 	# Number of coordinates per point
+          X1 = 1 	# Coordinate values...
+          X2 = 2
+          X3 = 3
+          X4 = 4
+       End PointSet
+ IsA Region 	# An area within a coordinate system
+ End PointList

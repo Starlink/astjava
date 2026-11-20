@@ -2309,6 +2309,37 @@ public class FrameSet extends Frame {
         return currentFrame().resolvePoints(point1, point2, in, npoint);
     }
 
+    /** The line the current Frame describes; it belongs to the current Frame (C's {@code LineDef}). */
+    @Override
+    LineDef lineDef(double[] start, double[] end) {
+        return currentFrame().lineDef(start, end);
+    }
+
+    @Override
+    boolean lineCrossing(LineDef l1, LineDef l2, double[] cross, double[] dist) {
+        return currentFrame().lineCrossing(l1, l2, cross, dist);
+    }
+
+    @Override
+    boolean lineContains(LineDef l, int def, double[] point) {
+        return currentFrame().lineContains(l, def, point);
+    }
+
+    @Override
+    void lineOffset(LineDef line, double par, double prp, double[] point) {
+        currentFrame().lineOffset(line, par, prp, point);
+    }
+
+    @Override
+    void normBox(double[] lbnd, double[] ubnd, Mapping reg) {
+        currentFrame().normBox(lbnd, ubnd, reg);
+    }
+
+    @Override
+    double[][] frameGrid(int size, double[] lbnd, double[] ubnd) {
+        return currentFrame().frameGrid(size, lbnd, ubnd);
+    }
+
     @Override
     int systemCode(String name) {
         return currentFrame().systemCode(name);

@@ -25,8 +25,8 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * selector Mappings that simplify, beside its own inverse and other Mappings; and the
  * constructor's errors.
  *
- * <p>The Rust tests whose forward selector is a SelectorMap of Box Regions, classes not yet ported,
- * are listed in {@code deferred/rust-tests.txt}.
+ * <p>The Rust tests whose forward selector is a SelectorMap of Box Regions are listed in {@code
+ * deferred/rust-tests.txt}: SelectorMap is not yet ported.
  */
 class SwitchMapTest {
 

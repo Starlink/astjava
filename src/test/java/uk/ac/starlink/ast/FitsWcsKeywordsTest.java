@@ -3,13 +3,16 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.Fixtures;
+import uk.ac.starlink.ast.testsupport.ProbeOutput;
 
 /**
  * Translation of the unit tests of Rust {@code fitschan/wcs_keywords.rs}: the extraction of the
@@ -385,5 +388,70 @@ class FitsWcsKeywordsTest {
     void aLaterStringCardGivesItsValue() {
         FrameSet fs = readWithDuplicates("RADESYS = 'FK4'", "CRVAL1  =              180.000");
         assertEquals("FK4", fs.getC("System"));
+    }
+
+    /**
+     * The one-axis header {@code probes/fitschan_wcsaxes_round_probe.c} reads, whose WCSAXES card
+     * has the value {@code wcsaxes}.
+     */
+    private static FitsChan wcsaxesHeader(String wcsaxes) {
+        FitsChan fc = new FitsChan();
+        fc.putFits("NAXIS   =                    1", false);
+        fc.putFits("NAXIS1  =                   10", false);
+        fc.putFits(String.format("WCSAXES = %20s", wcsaxes), false);
+        fc.putFits("CTYPE1  = 'X       '", false);
+        fc.putFits("CRPIX1  =                  1.0", false);
+        fc.putFits("CRVAL1  =                  0.0", false);
+        fc.putFits("CDELT1  =                  1.0", false);
+        fc.clear("Card");
+        return fc;
+    }
+
+    /**
+     * Reads the header of {@link #wcsaxesHeader} with {@link FitsChan#read}: the class, Nin and Nout
+     * of the Object read, or "error" for an {@link AstException}.
+     */
+    private static String readWcsaxes(String wcsaxes) {
+        FitsChan fc = wcsaxesHeader(wcsaxes);
+        AstObject obj;
+        try {
+            obj = fc.read();
+        } catch (AstException e) {
+            return "error";
+        }
+        Mapping m = (Mapping) obj;
+        return "read " + obj.astClass() + " " + m.getNin() + " " + m.getNout();
+    }
+
+    /** "read ..." as the probe gives it, or "error" for its "status" line. */
+    private static String probeResult(Map<String, String> probe, String name) {
+        String text = probe.get(name);
+        for (String line : text.split("\n", -1)) {
+            if (line.startsWith("read ")) {
+                return line;
+            } else if (line.startsWith("status ")) {
+                return "error";
+            }
+        }
+        throw new AssertionError("no result in probe case " + name);
+    }
+
+    /**
+     * C rounds WCSAXES with {@code round} (fitschan.c:38276-38281), so 0.49999999999999994, the
+     * largest double below a half, is 0, where {@code floor(x + 0.5)} would make it 1. C then
+     * fails for it as for 0 (with {@code AST__MTRMT}, where Java fails with {@code AST__BDFTS}
+     * before building a Mapping), and reads a FrameSet for 0.5 as for 1.
+     */
+    @Test
+    void wcsaxesIsRoundedAsCRoundsIt() {
+        Map<String, String> probe = ProbeOutput.load("fitschan_wcsaxes_round_probe");
+        for (String v : new String[] {"0", "0.49999999999999994", "0.5", "1"}) {
+            assertEquals(probeResult(probe, v), readWcsaxes(v), "WCSAXES = " + v);
+        }
+        for (String v : new String[] {"0", "0.49999999999999994"}) {
+            AstException e =
+                    assertThrows(AstException.class, () -> wcsaxesHeader(v).read());
+            assertEquals(AstException.AST__BDFTS, e.getStatus(), "WCSAXES = " + v);
+        }
     }
 }

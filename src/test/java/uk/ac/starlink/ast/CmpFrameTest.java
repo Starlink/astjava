@@ -15,9 +15,14 @@ import org.junit.jupiter.api.Test;
  * those of its second, and the per-axis methods, the geometry and the formatting and reading of
  * values go to the component that holds each axis.
  *
- * <p>{@code cmpframe_snapshot} becomes a test of {@link AstObject#copy}. The four {@code
- * norm_box_*} tests need {@code astNormBox}, which only Regions call, and {@code
- * norm_box_bounds_do_not_depend_on_component_order} needs a Circle; they are deferred.
+ * <p>{@code cmpframe_snapshot} becomes a test of {@link AstObject#copy}. The Rust {@code
+ * norm_box_*} tests give {@code norm_box} a predicate saying whether a point is inside the box;
+ * C's {@code astNormBox} takes a Mapping that leaves a point inside unchanged and makes one outside
+ * bad, so here the predicate that rejects a point with a bad axis is a MathMap whose outputs are
+ * bad when any input is, and the one that accepts every point is a PermMap of constants. {@code
+ * norm_box_bounds_do_not_depend_on_component_order}, ported from testcmpframe.c's {@code
+ * check_normbox_component_order}, bounds a Circle on CmpFrames of a SkyFrame and a 1-D Frame in
+ * either order.
  */
 class CmpFrameTest {
 
@@ -222,6 +227,126 @@ class CmpFrameTest {
                     new double[] {ra[i], px[i], dec[i]},
                     new double[] {passed[0][i], passed[1][i], passed[2][i]},
                     "Errors 7-9, point " + i);
+        }
+    }
+
+    // ---- NormBox delegation (cmpframe.c NormBox) ----
+
+    /** A Mapping that keeps a point with no bad coordinate and makes any other point bad. */
+    private static Mapping badIfAnyBad(int naxes) {
+        StringBuilder sum = new StringBuilder();
+        for (int i = 0; i < naxes; i++) {
+            sum.append(i > 0 ? "+" : "").append('i').append(i);
+        }
+        String[] fwd = new String[naxes];
+        String[] inv = new String[naxes];
+        for (int i = 0; i < naxes; i++) {
+            fwd[i] = "o" + i + " = i" + i + " + 0*(" + sum + ")";
+            inv[i] = "i" + i + " = o" + i;
+        }
+        return new MathMap(naxes, naxes, fwd, inv);
+    }
+
+    /** A Mapping that keeps every point, giving a constant good position for each. */
+    private static Mapping keepsAll(int naxes) {
+        int[] outperm = new int[naxes];
+        for (int i = 0; i < naxes; i++) {
+            outperm[i] = -(i + 1);
+        }
+        return new PermMap(naxes, null, naxes, outperm, new double[naxes]);
+    }
+
+    private static TimeFrame mjd() {
+        TimeFrame t = new TimeFrame();
+        t.setSystem("MJD");
+        return t;
+    }
+
+    /**
+     * The point C hands each component carries AST__BAD on the other component's axes, so a
+     * Mapping that makes such a point bad, as an un-negated Region does, never finds a pole inside
+     * the box, and the bounds come back as given (C {@code astNormBox} on a CmpFrame(SkyFrame,
+     * TimeFrame) with a Box spanning the north pole).
+     */
+    @Test
+    void normBoxProbeCarriesBadOnTheOtherComponentsAxes() {
+        CmpFrame cmp = new CmpFrame(new SkyFrame(), mjd());
+        double[] lbnd = {-0.3, 1.3, 0.0};
+        double[] ubnd = {0.3, Math.PI / 2, 1.0};
+        cmp.normBox(lbnd, ubnd, badIfAnyBad(3));
+        assertArrayEquals(new double[] {-0.3, 1.3, 0.0}, lbnd);
+        assertArrayEquals(new double[] {0.3, Math.PI / 2, 1.0}, ubnd);
+    }
+
+    /**
+     * A Mapping that keeps the bad-carrying point, as a negated Region does, reaches the
+     * SkyFrame's widening at both poles: the sky axes become 0 to 2pi and -pi/2 to pi/2, and the
+     * time axis is untouched.
+     */
+    @Test
+    void normBoxReachesTheSkyComponent() {
+        CmpFrame cmp = new CmpFrame(new SkyFrame(), mjd());
+        double[] lbnd = {-0.3, 1.3, 0.0};
+        double[] ubnd = {0.3, Math.PI / 2, 1.0};
+        cmp.normBox(lbnd, ubnd, keepsAll(3));
+        assertArrayEquals(new double[] {0.0, -Math.PI / 2, 0.0}, lbnd);
+        assertEquals(2.0 * Math.PI, ubnd[0]);
+        assertEquals(Math.PI / 2, ubnd[1]);
+        assertEquals(1.0, ubnd[2]);
+    }
+
+    /**
+     * The second component's point has that component's own number of axes, so a CmpFrame whose
+     * components differ in size reaches both; with the time axis bad the SkyFrame's pole test
+     * fails and the bounds come back as given.
+     */
+    @Test
+    void normBoxDelegatesToASecondComponentOfADifferentSize() {
+        CmpFrame cmp = new CmpFrame(mjd(), new SkyFrame());
+        double[] lbnd = {0.0, -0.3, 1.3};
+        double[] ubnd = {1.0, 0.3, Math.PI / 2};
+        cmp.normBox(lbnd, ubnd, badIfAnyBad(3));
+        assertArrayEquals(new double[] {0.0, -0.3, 1.3}, lbnd);
+        assertArrayEquals(new double[] {1.0, 0.3, Math.PI / 2}, ubnd);
+    }
+
+    /** A Mapping that keeps the bad-carrying point reaches the second component's poles too. */
+    @Test
+    void normBoxReachesASkySecondComponent() {
+        CmpFrame cmp = new CmpFrame(mjd(), new SkyFrame());
+        double[] lbnd = {0.0, -0.3, 1.3};
+        double[] ubnd = {1.0, 0.3, Math.PI / 2};
+        cmp.normBox(lbnd, ubnd, keepsAll(3));
+        assertArrayEquals(new double[] {0.0, 0.0, -Math.PI / 2}, lbnd);
+        assertEquals(1.0, ubnd[0]);
+        assertEquals(2.0 * Math.PI, ubnd[1]);
+        assertEquals(Math.PI / 2, ubnd[2]);
+    }
+
+    @Test
+    void normBoxBoundsDoNotDependOnComponentOrder() {
+        double radius = 0.5;
+        Frame fplane1 = new Frame(1);
+        fplane1.setDomain("FPLANE");
+        Frame fplane2 = new Frame(1);
+        fplane2.setDomain("FPLANE");
+        SkyFrame sky1 = new SkyFrame();
+        sky1.setSystem("ICRS");
+        SkyFrame sky2 = new SkyFrame();
+        sky2.setSystem("ICRS");
+        Circle c1 = new Circle(new CmpFrame(sky1, fplane1), new double[] {0.0, 1.2707963267948965, 50.0}, radius, null);
+        Circle c2 = new Circle(new CmpFrame(fplane2, sky2), new double[] {50.0, 0.0, 1.2707963267948965}, radius, null);
+        double[][] b1 = c1.getRegionBounds();
+        double[][] b2 = c2.getRegionBounds();
+        for (int axis = 0; axis < 3; axis++) {
+            assertTrue(
+                    b1[0][axis] != BAD && b1[1][axis] != BAD, "axis " + (axis + 1) + " of the sky-first bounds is bad");
+        }
+        assertEquals(b2[0][0], b1[0][2], 1.0e-10);
+        assertEquals(b2[1][0], b1[1][2], 1.0e-10);
+        for (int axis = 0; axis < 2; axis++) {
+            assertEquals(b2[0][axis + 1], b1[0][axis], 1.0e-10, "sky axis " + (axis + 1));
+            assertEquals(b2[1][axis + 1], b1[1][axis], 1.0e-10, "sky axis " + (axis + 1));
         }
     }
 }

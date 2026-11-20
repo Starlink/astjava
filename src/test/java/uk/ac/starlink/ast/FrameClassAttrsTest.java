@@ -16,9 +16,8 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * tools/oracle_fixtures/frame_class_attrs_probe.c}). The probe builds one object of each class,
  * applies each setting on its own with {@code astSet}, and reads every attribute back with {@code
  * astGetC}, {@code astGetI} or {@code astGetD} and its {@code astTest} result; for a FrameSet it
- * also reads the current Frame ("inner"). {@link #make} and {@link #mismatch} do the same.
- *
- * <p>The probe's Circle cases are skipped (Region, out of scope).
+ * also reads the current Frame ("inner"), and for a Circle its Frame. {@link #make} and {@link
+ * #mismatch} do the same.
  */
 class FrameClassAttrsTest {
 
@@ -32,7 +31,8 @@ class FrameClassAttrsTest {
             "FluxFrame",
             "SpecFluxFrame",
             "CmpFrame",
-            "FrameSet");
+            "FrameSet",
+            "Circle");
 
     /** The object the probe builds for {@code cls}. */
     private static Frame make(String cls) {
@@ -55,6 +55,8 @@ class FrameClassAttrsTest {
                 return new CmpFrame(new SkyFrame(), new SpecFrame());
             case "FrameSet":
                 return new FrameSet(new SkyFrame());
+            case "Circle":
+                return new Circle(new SkyFrame(), new double[] {0.0, 0.0}, 0.01, null);
             default:
                 throw new IllegalArgumentException("unexpected class " + cls);
         }
@@ -63,7 +65,7 @@ class FrameClassAttrsTest {
     /**
      * The Frame whose attributes show the effect of a setting on {@code f}: a FrameSet's current
      * Frame, or a CmpFrame's first component (for the probe's CmpFrame its SkyFrame, the primary
-     * Frame of axis 1; for a SpecFluxFrame its SpecFrame).
+     * Frame of axis 1; for a SpecFluxFrame its SpecFrame), or a copy of a Region's Frame.
      */
     private static Frame inner(String cls, Frame f) {
         if ("FrameSet".equals(cls)) {
@@ -71,6 +73,9 @@ class FrameClassAttrsTest {
         }
         if ("CmpFrame".equals(cls) || "SpecFluxFrame".equals(cls)) {
             return ((CmpFrame) f).decompose()[0];
+        }
+        if ("Circle".equals(cls)) {
+            return ((Region) f).getRegionFrame();
         }
         return null;
     }
@@ -153,7 +158,7 @@ class FrameClassAttrsTest {
                 failures.add(what + ": " + e.getMessage());
             }
         }
-        assertEquals(6 * 256 + 3 * 512, run, "the in-scope cases the C probe recorded");
+        assertEquals(6 * 256 + 4 * 512, run, "the cases the C probe recorded");
         assertTrue(
                 failures.isEmpty(), failures.size() + " of " + run + " cases differ:\n" + String.join("\n", failures));
     }

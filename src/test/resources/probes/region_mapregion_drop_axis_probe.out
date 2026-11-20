@@ -1,0 +1,20 @@
+== box_keep_first
+mapped Box
+bounds 1.5 3.5
+mask 4 1 0 0 1 1 1
+mask 2 0 1 1 0 0 0
+== box_keep_second
+mapped Box
+bounds 2.5 4.5
+mask 4 1 1 0 0 1 1
+mask 2 0 0 1 1 0 0
+== pointlist_keep_first
+mapped PointList
+bounds 2 4
+mask 3 1 0 0 0 1 1
+mask 3 0 1 1 1 0 0
+== pointlist_keep_second
+mapped PointList
+bounds 1 5
+mask 3 0 1 0 1 0 1
+mask 3 1 0 1 0 1 0

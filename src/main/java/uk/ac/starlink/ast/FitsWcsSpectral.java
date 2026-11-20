@@ -470,7 +470,7 @@ final class FitsWcsSpectral {
         Double pv = pvItem(store, i, 0);
         gmap.setGrismGValue(pv != null ? pv : 0.0);
         pv = pvItem(store, i, 1);
-        gmap.setGrismMValue(pv != null ? (int) FitsMakeIntWorld.roundHalfAway(pv) : 0);
+        gmap.setGrismMValue(pv != null ? (int) CMath.roundHalfAway(pv) : 0);
         pv = pvItem(store, i, 2);
         gmap.setGrismAlphaValue(pv != null ? pv * AST__DD2R : 0.0);
         pv = pvItem(store, i, 3);

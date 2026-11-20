@@ -64,6 +64,13 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Java: as C.
   An integer beyond the range of an `int` (or of a `long`, for `ReadInt64`) is AST__BADIN too, where the result of C's `sscanf` is undefined (the pinned library on macOS keeps the low 32 bits).
 
+### PointSet accuracies and empty PointSets
+
+- **C bug**: `astLoadPointSet` (pointset.c), when the first accuracy item it reads (`AccN`) is for an axis after the first, sets the accuracies of the axes before it to bad only up to the one before last (`i < coord - 1`), leaving that one uninitialised; `Dump` writes it and `Equal` uses it.
+  A PointSet read with `Empty` set holds no values, and `astGetPoints` gives it values it allocates without initialising, which `Equal` compares.
+- Rust: `read_pointset_node` (`serial/mod.rs`) reads neither the accuracies nor `Empty`, so an empty PointSet reads its `X` items, all bad when there are none, and `write_pointset_node` writes no accuracies.
+- Java: an axis without an accuracy item has none; an empty PointSet is read and written as C writes it, and asking for its values, as `Equal` does, raises AST__INTER (`PointSetTest`).
+
 ## Mappings
 
 ### An explicit `Nout = 0` in a Mapping dump
@@ -766,6 +773,365 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
   **C quirk**: `Cast` compares the classes through CmpFrame's own `class_vtab`, which is initialised only when a plain CmpFrame is first made, so in a process that has made SpecFluxFrames but no CmpFrame a SpecFluxFrame match that fails dereferences null in `astClassCompare` (probed: SIGSEGV converting a SpecFluxFrame whose SpecFrame has Domain `FOO` to a default one).
 - Rust: SpecFluxFrame has no `cast`, and `CmpFrame::cast` in `frames/cmpframe.rs` copies a CmpFrame only into a CmpFrame, so neither becomes the other and these conversions find nothing.
 - Java: as C once a CmpFrame has been made: a FluxFrame or SpecFrame that does not match a SpecFluxFrame directly converts through `MakeSFMapping` (or gives C's error, such as AST__ATSER from `GetSpecFrame`).
+
+### `astNormBox` on a CmpFrame whose axes are permuted
+
+- **C quirk**: `NormBox` (cmpframe.c) applies the caller's Mapping to a position in the CmpFrame's external axis order, through a PermMap made with a null `inperm`, and then inverts that PermMap to bring the outputs back; but the inverse of a PermMap made with a null `inperm` copies each coordinate to the same position, so the outputs stay in the external order and each component tests the outputs on the axes that come first.
+  On a CmpFrame(SkyFrame, TimeFrame) whose axes are permuted to (time, latitude, longitude), a Mapping that keeps the north pole and ignores the time axis gives the SkyFrame (bad, pi/2) for its pole, so the box is not widened (probe `src/test/resources/probes/frame_line_probe.c`, case `normbox_cmpframe_permuted`).
+  A Region gives either all bad outputs or its inputs unchanged, so only a negated Region (whose outputs for the component's probe position carry the bad values on the other component's axes) is affected.
+- Rust: `norm_box` (`frames/cmpframe.rs`) takes a predicate, not a Mapping, and asks it whether the position is inside, so it has no outputs to put back in order, and a predicate that accepts the position widens the box.
+- Java: as C (`NormBoxTest.aPermutedCmpFrameAsksEachComponent`).
+
+### `astFrameGrid` counts beyond the range of `int`
+
+- **C quirk**: `FrameGrid` (frame.c) assigns each axis's tick count, `ntick0*(ubnd-lbnd)/gmean`, to an `int` without a range check, and multiplies the counts in `int`; an axis of zero width makes the geometric mean zero, so the count of another axis of the same unit is infinite and its own is a NaN, and the conversions are undefined.
+  The pinned library on AArch64 saturates the infinite count and converts the NaN to 0 (then 2), so the product wraps to -2 and `astPointSet` reports AST__NPTIN, "Number of points (-2) is not valid" (probe case `grid_frame`); on x86-64 the conversion gives `INT_MIN`, raised to 2, and C makes a grid of four points.
+  `FrameGrid` (skyframe.c) likewise converts `0.5 + (hilat-lolat)/lat_size` to the number of parallels, which is infinite for a box of zero width in longitude: on AArch64 C walks 2^31 parallels (about 30 seconds) before finding no point, on x86-64 two.
+  The same box has no grid point on either, so `astSetNpoint` reports AST__NPTIN, the error probe case `grid_sky` shows for a grid of size 1; the probe leaves the box of zero width in longitude out for its run time.
+  Apart from the quirk, `FrameGrid` (frame.c) reports bad bounds only when both bounds of an axis are bad, which looks deliberate: `AST__BAD` (-DBL_MAX) is also a usable lower bound for an axis with no lower limit.
+- Rust: `frame_grid_default` converts with `as`, which saturates as AArch64 does, and multiplies the counts in `i32`, which panics on overflow in a debug build; its SkyFrame `frame_grid` returns an empty PointSet where C's `astSetNpoint` reports AST__NPTIN.
+- Java: as the pinned library on AArch64, Java's conversion saturating and giving 0 for a NaN (`FrameGridTest`); the SkyFrame box of zero width in longitude takes as long as C's and is not tested.
+
+## Regions
+
+### The default uncertainty of a Region that moves
+
+- C: a Region builds its default uncertainty once (region.c `GetUncFrm`) and keeps it until an uncertainty is set or cleared; `ResetCache` leaves it, so a Box moved by `astRegCentre` is still widened, where it has zero width, by the uncertainty made where it was. **C quirk.**
+- Rust: discards the default uncertainty whenever the Region changes (`RegionData::invalidate_cache`), and `test_box_region.rs` pins that.
+- Java: as C; `BoxRegionTest.defaultUncertaintyFollowsAMovedBox` takes its values from `src/test/resources/probes/region_defunc_probe.c`.
+
+### Setting an axis attribute on a Region that is not Adaptive
+
+- C: `RegSetAttrib` moves the setting to the base Frame axis the current Frame axis feeds only when `sscanf( setting, "%[^(](%d)= %n%*s %n" )` reads the whole setting, so a value holding white space, such as `Label(1)=Right ascension`, is set on the base Frame axis of the same number even when the axes are permuted. **C quirk.**
+- Rust: always moves the setting to the base Frame axis.
+- Java: as C (`Region.regSetAttrib`).
+
+### Protected Frame setters of a Region
+
+- C: region.c's `SetEpoch`, `SetObsLat` and `SetObsLon` pass the internal value to `astSetD` on the encapsulated FrameSet, which reads it as a year or as degrees. **C bug.**
+- Rust: has no string route.
+- Java: the package-private `setEpochMjd` sets `MJD <value>` on the FrameSet, which keeps the FrameSet's integrity; `setObsLatValue`, `setObsLonValue` and `setObsAlt` set the FrameSet's current Frame directly.
+  No public method reaches them.
+
+### A Region read from a dump with an uncertainty or Frame of another class
+
+- C: region.c `astLoadRegion` reads the `Unc`, `Frm` and `FrmSet` items with `astReadObject` and uses them as a Region, a Frame and a FrameSet without checking their classes, so a corrupt dump holding an Object of another class there is used as one of those. **C bug.**
+- Rust: reads each with the reader of its class (`serial/mod.rs`).
+- Java: `AST__REGIN`, naming the class found and the class needed, in the words of the loader's other errors (`Region` loader).
+
+### A value in the Frame part of a Region's dump that needs the current Frame
+
+- C: region.c `astLoadRegion` loads the Frame part of the description, which describes the current Frame, before it reads the FrameSet, so a value in that part whose loading asks for the number of axes (region.c `GetNaxes`, which asks the FrameSet) reads the FrameSet before it exists. **C bug.**
+- Rust: not examined.
+- Java: `AST__BADIN`, saying that the current Frame has not yet been read (`Region.getNaxes`); a dump that C writes holds no such value.
+
+### The grid over an unbounded Region (`RegGrid`)
+
+- C: region.c `RegBaseGrid` returns no PointSet, and reports no error, for an unbounded Region, and `RegGrid` then passes the null pointer on to `astClone` or `astTransform`. **C bug.**
+  `astGetRegionMesh` tests Bounded first and reports `AST__MBBNF`, so only the library's own callers reach it.
+- Rust: not examined.
+- Java: `AST__MBBNF`, in the words of `astGetRegionMesh`'s error (`Region.regGrid`).
+
+### Picking axes of a Region in `MapRegion`
+
+- C: region.c `MapRegion`, given a Mapping with fewer outputs than inputs, picks the Region's axes that the outputs need with `astPickAxes` and uses the result as a Region; `astPickAxes` gives a Frame rather than a Region when the Region cannot be split along those axes, and C then calls Region methods on that Frame. **C bug.**
+- Rust: keeps the whole Region and the whole Mapping when the axes picked are not a Region (`reg_map_region`).
+- Java: `AST__INTER` when the axes picked are not a Region (`Region.mapRegionInto`).
+
+### Releasing the split Mapping twice in `MapRegion`
+
+- C: region.c `MapRegion`, given a Mapping with fewer outputs than inputs whose inverse leaves the axes it drops bad, such as `PermMap(2, {1,0}, 1, {1})` or `PermMap(2, {0,1}, 1, {2})`, releases the Mapping `astMapSplit` gives in the branch that uses it unchanged (`region.c:5691`, at 3d3f255f) and again in the cleanup common to both branches (`region.c:5719`). **C bug.**
+  The second `astAnnul` of the null pointer fails with `AST__OBJIN`, so `astMapRegion`, and so `astMask<X>` of a Box, fails, and the final `astInvert` is skipped, leaving the caller's Mapping inverted.
+  PointList's `Mask<X>` then reads the points of the Region `astMapRegion` failed to make with no check of the status (`pointlist.c:902`) and crashes, as it does after any failure there.
+  With the second release guarded (`if( tmap )`), C maps the Box or PointList to the Region of the axis kept and masks pixels 1 to 6 with it; a Circle then meets the entry above, `astPickAxes` giving a Frame that C uses as a Region.
+- Rust: `reg_map_region` has no second release, so it takes the branch as C intends; for a Circle it keeps the whole Region (entry above).
+- Java: what C gives with the second release guarded (`Region.mapRegionInto`), and `AST__INTER` for a Circle (entry above); `RegionMapRegionDropAxisTest` pins the mapped Regions and the masks from `src/test/resources/probes/region_mapregion_drop_axis_probe.c`, which is built with that guard.
+
+### Casting a Region into the class of another Region (`Cast`)
+
+- C: region.c `Cast` copies a Region as an instance of the class of any Region given to it, with `astCastCopy`, which changes the class of the copy without checking that the Region is of that class or of a subclass of it: a Box cast into the class of a Circle is a Circle holding a Box's values. **C bug.**
+- Rust: not examined.
+- Java: a copy when the Region is of the class of the Region given, and null for any other class (`Region.cast`).
+  C's cast into the class of a parent is defined, and is not followed; no Region class of this library is a parent of another (the Stc classes, which are, are not yet ported).
+
+### A value holding `%` set on an Adaptive Region
+
+- C: region.c `SetAttrib` passes a setting of a Frame attribute on an Adaptive Region to `astSet( this->frameset, setting, status )`, so the caller's value is used as a `printf` format (object.c `VSet` hands it to `vsprintf` with no arguments): `Format(1)=%10.3f` stores `     0.000` and `Title=50%s done` stores `50 done`, while a Region that is not Adaptive keeps the value. **C bug.**
+- Rust: has no string route.
+- Java: keeps the value as given, Adaptive or not (`RegionAttributeValueTest`).
+
+### Bad and non-finite coordinates of a Box
+
+- C: `astInitBox` rejects a coordinate equal to `AST__BAD` (`AST__BADIN`) and accepts NaN.
+- Rust: rejects `AST__BAD` and NaN.
+- Java: rejects `AST__BAD`, NaN and the infinities with C's message, by the library's rule that a non-finite coordinate is bad; the membership test treats them as bad too.
+
+### Negating a Region in place to test overlap or to mask
+
+- C: region.c `OverlapX` negates the first Region with `astNegate` and back again to compare its negation with the second, and `Mask<X>` does the same to the Region it masks with when it masks the inside, which with no Mapping is the Region given; `astNegate` sets Negated, so afterwards Negated is set (to its old value) and what the Region kept about its boundary is discarded.
+  cmpregion.c negates a component in place in the same way to mesh an OR and to test its boundary (`RegBaseMesh`, `RegPins`), and prism.c to find whether a Prism is bounded (`GetBounded`).
+  After an error between the two negations, the second does nothing (the status is bad), so the Region or component is left negated.
+- Rust: compares and masks with a negated copy, leaving the Region alone.
+- Java: as C (`RegionOverlap.overlap`, `RegionMask.mask`); `RegionOverlapMaskProbeTest` pins the Negated flag from `src/test/resources/probes/region_overlap_mask_probe.c`.
+  After an error, Java restores Negated (in `finally`) where C leaves the Region or component negated.
+
+### The negated copy of an Adaptive Region after a change of coordinate system
+
+- C: region.c `GetNegation` keeps a negated copy of the Region until `ResetCache`, but a Frame attribute set on an Adaptive Region goes to `astSet` on the encapsulated FrameSet with no `ResetCache`, so the copy keeps the old coordinate system: after a SpecFrame Box changes from System FREQ to WAVE, its negation is still in FREQ.
+  A Region that is not Adaptive discards the copy (`RegSetAttrib`).
+  Only cmpregion.c uses the copy. **C quirk.**
+- Rust: makes a new negated copy each time (`negated_copy`).
+- Java: as C (`Region.getNegation`); `RegionOverlapMaskProbeTest.keptNegationMatchesC` takes its values from `src/test/resources/probes/region_overlap_mask_probe.c`.
+
+### Widening the box around a Region with no boundary mesh in `OverlapX`
+
+- C: when the first Region has no boundary mesh, region.c `OverlapX` doubles the bounds of the other Region's mesh in the first Region's base Frame and passes them to `BndBaseMesh` as bounds in its current Frame; it doubles as many as the Region has current Frame axes, in arrays with one element for each base Frame axis, so with more current than base Frame axes it writes beyond them. **C bug.**
+- Rust: doubles one bound for each base Frame axis.
+- Java: as C when the arrays are long enough, and `AST__INTER` otherwise.
+
+### A grid box beyond the `int` range in `Mask<X>`
+
+- C: region.c `Mask<X>` turns each bound of the Region's bounding box in grid coordinates into a pixel index with `(int)round( bound ) + 2` in `int` arithmetic.
+  For a bound beyond the `int` range the conversion is undefined (AArch64 saturates, giving `INT_MAX` or `INT_MIN`; x86-64 gives `INT_MIN` for either), and the sum can then overflow, so any Region whose bounds in grid coordinates pass the `int` range can get an empty box, and every pixel is then taken to be on the side of the Region its outside is.
+  An Interval with no upper limit, whose bound is `DBL_MAX`, is one: masking the inside of the Interval x >= 3 on pixels 1 to 10 sets none, and masking its outside sets all ten.
+  A bounded Region taken there by the Mapping is another: the Box from (-1, -1) to (1, 1) through a ZoomMap of 1e12, masked outside on a 4 by 4 grid, sets all 16 pixels though every pixel is inside it. **C bug.**
+  pointlist.c has a `Mask<X>` of its own, which finds the pixel of each point and makes no grid box, so a PointList is not affected.
+- Rust: computes the index in 64-bit integers, which overflow likewise.
+- Java: as C (`RegionMask.mask`): the conversion saturates and the `int` sum wraps, giving the same empty box, and the same pixels on both platforms for these cases; `IntervalTest.masksMatchC` pins the Interval from `src/test/resources/probes/region_null_interval_pointlist_probe.c`, and `RegionOverlapMaskProbeTest.gridBoundsBeyondTheIntRangeMatchC` the Box from `src/test/resources/probes/region_overlap_mask_probe.c`.
+
+### Non-finite limits of an Interval and coordinates of a PointList
+
+- C: `astInitInterval` takes `AST__BAD` as a missing limit and any other value as a limit, NaN and the infinities included; `astInitPointList` keeps every value as given.
+- Rust: takes a value that is not finite as bad (`is_bad`), a missing limit of an Interval.
+- Java: a value that is not finite is bad, by the library's rule, so a NaN or infinite limit is a missing one and a NaN or infinite coordinate of a PointList is `AST__BAD`, which C's code then handles as it handles `AST__BAD`.
+
+### A point with a bad value tested against a PointList
+
+- C: pointlist.c `Transform` passes the points through the PointList's uncertainty, negated and centred on each of its points in turn, and then looks at the first axis alone of the result: a point whose first value is bad is kept as given by a PointList that is not negated (so that `astPointInRegion`, which looks at the first good value, finds (bad, 2) inside the PointList (1, 2), (3, 4)), and one whose first value is good and outside every uncertainty is kept, bad values and all, by a negated PointList. **C quirk.**
+- Rust: a point with a bad value is outside, and `test_pointlist.rs` (`point_with_bad_value_not_inside`) pins that.
+- Java: as C (`PointList.regBaseMask`); `PointListTest.pointWithBadValueIsAsCLeavesIt` takes its values from `src/test/resources/probes/region_null_interval_pointlist_probe.c`.
+
+### Whether a set of points is the boundary of a PointList (`RegPins`)
+
+- C: pointlist.c `RegPins` allocates one byte, not one `int`, for each element of the mask it returns, so for more than a few points it writes beyond the allocation; `astOverlap` of a PointList and a Box, which asks for the mask of the Box's 200 mesh points, corrupts the heap and usually crashes.
+  Its second test, which its comment says checks that each of the PointList's points is near one of the points given, looks at as many of the PointList's points as there are points given: fewer than it has are not all looked at, and with more it reads beyond its points (within PointSet's allocation for all but the last axis, beyond it for the last). **C bug.**
+- Rust: holds the mask correctly and looks at every point of the PointList.
+- Java: holds the mask correctly; looks at as many of the PointList's points as there are points given when there are no more of them than it has, as C does, and at every PointList point when given more, as C's comment intends, without C's undefined read; the PointList's current Frame and Negated are left as they were.
+  `src/test/resources/probes/region_null_interval_pointlist_probe.c` is linked with pointlist.c changed to allocate an `int` for each element of the mask (its header gives the recipe), so its overlaps of a PointList and a Box are C's without the overrun.
+  A CmpRegion or Prism with a PointList component asks it about the points of another Region's boundary mesh (cmpregion.c and prism.c `RegPins`), so an overlap of such a Region reaches both defects; `src/test/resources/probes/region_compound_probe.c` is linked with the same change, and `CmpRegionTest.pointListComponentGivenMorePointsThanItHasMatchesC` compares with C's answer for two CmpRegions whose PointList component is given more points than it has (C answers 5, the Regions being the same).
+  For the PointList (1, 2), (1, 2), (3, 4) and the PointList (1, 2), (3, 4), C answers 5 in both orders, the second through the read beyond its points, and so does Java (`PointListTest.overlapsMatchC`, probe case `pointlist_duplicated_point`).
+
+### The bounding box of a PointList (`RegBaseBox`)
+
+- C: pointlist.c `RegBaseBox` allocates its kept bounds, and copies them out, with one element for each axis of the current Frame, but finds one for each base Frame axis, so with more base than current Frame axes it writes beyond them. **C bug.**
+- Rust: one element for each base Frame axis.
+- Java: one element for each base Frame axis, the arrays every caller gives.
+
+### The overlap of a PointList and a Box that holds some of its points
+
+- C: region.c `OverlapX` meshes the boundary of one Region and transforms the mesh through the other; when no mesh point is inside, it decides between "apart" and "one inside the other" by whether more than half the points of the first Region's own mesh are inside the second.
+  For the PointList (1, 2), (3, 4) and the Box (0, 0) to (2, 3), which holds only the first point, `astOverlap` gives 4 (partial overlap) with the Box first, from the mesh of the PointList, its two points, one inside the Box and one outside.
+  With the PointList first it gives 1 (apart): the mesh of the Box is all outside the PointList, and of the PointList's own mesh one point of two is inside the Box, which is not more than half. **C quirk.**
+- Rust: as C (`regions/overlap.rs`).
+- Java: as C (`PointListTest.overlapsMatchC`, probe case `pointlist_across_box`).
+
+### The bounds of a NullRegion with more base than current Frame axes
+
+- C: nullregion.c `GetRegionBounds` writes a bound for each base Frame axis into arrays the caller makes with one element for each current Frame axis, so with more base Frame axes it writes beyond them. **C bug.**
+- Rust: returns one bound for each base Frame axis.
+- Java: as C when there are no more base than current Frame axes, and `AST__INTER` otherwise (`NullRegionTest.boundsWithMoreBaseThanCurrentFrameAxesAreAnError`).
+
+### Moving an Interval leaves the bounds it keeps
+
+- C: interval.c `RegCentre` moves the equivalent Box and takes the new limits from it, but does not mark the limits the Interval keeps as stale, so `RegBaseBox`, and the bounds of an Interval uncertainty, which `astSetUnc` moves to the Region's first point, stay where they were: the uncertainty of the Box (0, 0) to (10, 10) set to the Interval (-0.1, -0.1) to (0.1, 0.1) still has those bounds. **C quirk.**
+- Rust: marks them stale.
+- Java: as C (`Interval.regCentre`); `IntervalTest.anIntervalUncertaintyKeepsTheBoundsItHadBeforeItWasMoved` takes its values from `src/test/resources/probes/region_null_interval_pointlist_probe.c`.
+
+### The overlap of two Intervals with an axis each other's negation
+
+- C: interval.c `Overlap` combines the codes of the axes through a 5 by 5 table, which an axis whose limits are each other's negation (code 6) indexes beyond its end when the Intervals have more than one axis. **C bug.**
+  For one axis C gives 6 (probe case `interval_excluded_negation`); for two Intervals whose limits are each other's negation on one axis and equal on the other, which are apart (1), the pinned build gives 6 in both orders, with that axis first or second (probe cases `interval_negation_on_first_of_two_axes` and `interval_negation_on_second_of_two_axes` of `src/test/resources/probes/region_null_interval_pointlist_probe.c`).
+- Rust: indexes the same table, which panics where C reads beyond it.
+- Java: as C for one axis (`IntervalTest.overlapsMatchC`), and `AST__INTER` for more (`IntervalTest.limitsEachOthersNegationOnOneOfTwoAxesAreAnError`).
+
+### The bounds of a mapped Interval with no limit on an axis
+
+- C: region.c `GetRegionBounds` maps the corners of the base Frame box, the largest double on an axis with no limit, through the Mapping; a ZoomMap of 2 makes them infinite, and the bounds come out infinite or NaN.
+- Rust: not examined.
+- Java: the Mapping makes an infinite value bad, so every corner is bad and so is every bound (`IntervalTest.mappedUnboundedIntervalMatchesC`).
+
+### Moving an Ellipse (`RegCentre`)
+
+- C: ellipse.c `RegCentre` moves the three defining points with `rptr[ ip ][ 0 ]` and `rptr[ ip ][ 1 ]` for `ip` from 0 to 2, taking the axis and point indices of its PointSet the wrong way round, so it reads and writes through the pointer beyond the two axis pointers: an Ellipse given as the uncertainty of a Region, which `astSetUnc` moves to the Region's first point, crashes. **C bug.**
+- Rust: moves each defining point by the offset from the old centre to the new.
+- Java: as Rust, which is what C's comment describes (`Ellipse.regCentre`); `src/test/resources/probes/region_circle_ellipse_probe.c` is linked with ellipse.c changed to index the points correctly (its header gives the recipe), and `EllipseTest.anEllipseUncertaintyIsMovedToTheRegionMatchesC` takes its values from it.
+
+### An Ellipse whose points do not determine an ellipse
+
+- C: `astInitEllipse` accepts such points; ellipse.c `Cache` reports `AST__BADIN` when the Ellipse is first used, but marks its values up to date all the same, so a second use reads values never set. **C bug.**
+- Rust: reports the error on every use.
+- Java: as Rust: each use reports C's error (`Ellipse.cache`).
+
+### Moving a Circle (`RegCentre`)
+
+- C: circle.c `RegCentre` moves the centre and the point on the circumference, keeping the radius, but does not reset what the Circle and the Region keep, so the bounds and boundary mesh of a Circle of more than two dimensions, which C keeps, stay where they were until something else resets them. **C quirk.**
+- Rust: discards them.
+- Java: as C (`Circle.regCentre`).
+
+### The bounds a Circle or an Ellipse finds from its boundary mesh
+
+- C: circle.c and ellipse.c `RegBaseMesh` find the bounds of a two-dimensional Circle or Ellipse from the axis distances of its mesh points from the centre, updating the upper bound on an axis only when a point is not below the lower bound found so far (`else if`), so the first mesh point updates only the lower bounds.
+  The first point of a Circle's mesh is at angle 0, the end of its radius along the second axis, so its upper bound on that axis is that of the next highest point, short by `r (1 - cos(2 pi / MeshSize))`; an Ellipse's first point is the end of its first axis. **C quirk.**
+- Rust: as C (`regions/circle.rs`, `regions/ellipse.rs`).
+- Java: as C (`Circle.regBaseMesh`, `Ellipse.regBaseMesh`).
+
+### The smaller Circle of a Circle's boundary test (`RegPins`)
+
+- C: circle.c `RegPins` makes a Circle smaller than the one tested by half the border width, with no lower limit on its radius; a negative radius places the point on the circumference the other way, giving a Circle of the radius's magnitude.
+- Rust: limits the radius to zero, and does not re-centre the uncertainties on the Circle before bounding them.
+- Java: as C (`Circle.regPins`).
+
+### The best fitting Ellipse through a mesh with no point away from its centre
+
+- C: `astBestEllipse` looks for the first mesh point that is good and away from the centre, and when there is none reads beyond its arrays. **C bug.**
+- Rust: returns no Ellipse.
+- Java: `AST__INTER` (`Ellipse.bestEllipse`), an error rather than a result C does not define.
+
+### Bad and non-finite coordinates of a Circle or an Ellipse
+
+- C: `astInitCircle` and `astInitEllipse` reject a coordinate equal to `AST__BAD` (`AST__BADIN`) and accept NaN.
+- Rust: rejects `AST__BAD` and NaN.
+- Java: rejects `AST__BAD`, NaN and the infinities with C's message, by the library's rule that a non-finite coordinate is bad, as for a Box.
+
+### Bad and non-finite vertices of a Polygon
+
+- C: `astInitPolygon` rejects a vertex with a value equal to `AST__BAD` (`AST__BADIN`) and accepts NaN and the infinities.
+- Rust: as C.
+- Java: rejects `AST__BAD`, NaN and the infinities with C's message, by the library's rule that a non-finite coordinate is bad, as for a Box, a Circle and an Ellipse (`PolygonTest.nonFiniteVertexIsBad`).
+
+### A Polygon whose edges have no length
+
+- C: polygon.c `Cache` finds a point inside the Polygon from the edges of positive length; when none has any (a Polygon of one vertex, or of vertices that coincide) the point is never set, and `Transform` draws its lines from an uninitialised value. **C bug.**
+  `astPolygon` accepts such a Polygon, and its Bounded, bounds and defining points are defined; its boundary mesh is `AST__BADIN` ("undefined length").
+- Rust: the point is bad, and membership reports `AST__INTER`.
+- Java: the constructor, Bounded, bounds and points as C (`PolygonTest.fewerThanThreeVerticesMatchC`); membership, and so masking and overlap, report `AST__BADIN`, the vertices being all the same point so that the Polygon has no inside (`Polygon.inside`, `PolygonTest.polygonWhoseVerticesAreOnePointHasNoInside`), an error rather than a result C does not define.
+
+### A Polygon with a bad vertex read from a dump
+
+- C: `astInitPolygon` rejects a bad vertex, but `astLoadPolygon` does not check, and `Cache` then reads the length of the edge `astLineDef` could not describe, through a null pointer. **C bug.**
+- Rust: reports `AST__INTER` when the edges are described.
+- Java: as Rust (`Polygon.cache`).
+
+### The line across an edge that never reaches its length (`Polywidth`)
+
+- C: polygon.c `Polywidth` halves the length of the line it draws across an edge until the line's end is that distance from its start; if no length does, the loop does not end.
+- Rust: as C.
+- Java: `AST__INTER` once the length reaches zero (`Polygon.polywidth`); no Frame of this library reaches it.
+
+### Points with a bad value in a Polygon's boundary test (`RegPins`)
+
+- C: polygon.c `RegPins` marks each point found within the margin of an edge by setting it bad, then reports a point on the boundary if it is bad, so a point given with a bad value counts as on the boundary. **C quirk.**
+- Rust: counts such a point as off the boundary.
+- Java: as C (`Polygon.regPins`); `PolygonTest.boundaryTestsMatchC` takes its values from `src/test/resources/probes/region_polygon_probe.c`.
+
+### A line from a sky Polygon's point inside that passes through a vertex
+
+- C: polygon.c `Transform` counts the edges crossed by the line from the Polygon's point inside to the point tested; an edge includes its start and not its end, so a line through a vertex should cross one of the two edges there.
+  On the sky, skyframe.c `LineIncludes` takes a point up to `1e-10` radians behind the start of a line to be on it (its test of the cosine of the distance from the line's quarter point), so a crossing found within that distance before a vertex, as rounding may place one at the vertex, is on both the edge ending there and the edge starting there, and is counted twice. **C bug.**
+  The line across the edge between two vertices at the same latitude, from which `Cache` takes the point inside, is a meridian; for a triangle round the north pole with its vertices at one latitude, the line from the point inside to the south pole passes through a vertex, and C finds the south pole inside the triangle, so `astGetRegionBounds` gives -pi/2 as its lower latitude.
+- Rust: as C.
+- Java: as C, by the same arithmetic, which rounding decides; `RegionSkyTest` keeps its sky Polygons clear of such lines (`pointsAndPixelsAreClearOfTheBoundaries`).
+  `FrameLineTest` pins the quirk itself in the line functions, where rounding does not decide it: a point 5e-11 radians behind the start of a line is on it, and one 2e-10 radians behind is not (probe `src/test/resources/probes/frame_line_probe.c`).
+
+### A CmpRegion that ANDs two unbounded Regions, one inside the other
+
+- C: cmpregion.c `GetBounded` takes an AND of two unbounded Regions to be bounded unless `astOverlap` finds them apart (1), partly overlapping (4) or each other's negation (6); when one is inside the other (2, 3) or they are the same (5) the AND is the inner Region, which is unbounded, yet it is reported bounded, and its bounds then fail with `AST__INTER` ("No mesh can be produced ... neither of its component Regions has a mesh"), since `RegBaseBox` meshes a bounded CmpRegion.
+  Conversely an AND of Regions apart is empty but reported unbounded. **C quirk.**
+  A negated OR of two nested bounded Regions is such an AND, and is reported bounded too.
+- Rust: as C (`CmpRegion::get_bounded`).
+- Java: as C (`CmpRegion.isBoundedInner`); `CmpRegionTest.nestedUnboundedRegionsMatchC` and `orOfCirclesMatchesC` take their values from `src/test/resources/probes/region_compound_probe.c`.
+
+### A point on the boundary of a negated closed CmpRegion
+
+- C: cmpregion.c `Transform` applies a negated CmpRegion as the other operator of its components' negations (`GetRegions`), and a closed Region holds its boundary whether or not it is negated, so a point on the boundary of a closed CmpRegion is inside both the CmpRegion and its negation.
+  The AND of the square [0, 1] x [0, 1] with the negation of the OR of the unit Circles about (-1, 0) and (1, 0), negated, keeps (0, 0.5), on the square's edge. **C quirk.**
+- Rust: `test_regions.rs` `cmpregion_negated_reversal` expects that point to be made bad; the Rust library was not examined beyond its test.
+- Java: as C; `RegionsTest.cmpRegionNegatedReversal` takes the value from `src/test/resources/probes/regions_cross_probe.c`.
+
+### The overlap of a Prism and a negated Region
+
+- C: prism.c `Overlap` picks from the other Region the axes of each component of the Prism; region.c `PickAxes` gives the Regions it picks the Negated value of the Region they come from (`astRegOverlay`), so each pair of components is compared with that negation already applied, and `Overlap` then adjusts the combined code for the other Region's negation again.
+  A Prism inside a Box and the Box's negation give 2 and 3 (one inside the other) rather than 1, and a Prism and its own negation give 5 one way round and 6 the other. **C bug.**
+- Rust: not examined.
+- Java: as C (`Prism.prismOverlap`); `PrismTest.overlapsMatchC` takes its codes from `src/test/resources/probes/region_compound_probe.c`.
+
+### The boundary mesh of a Prism with other than its base Frame's number of axes
+
+- C: prism.c `RegBaseMesh` makes a PointSet with one coordinate for each axis of the Prism's current Frame and fills it from its components' meshes and grids, one coordinate for each base Frame axis, so a Prism mapped into a Frame of more or fewer axes is written or read beyond the arrays. **C bug.**
+- Rust: not examined.
+- Java: `AST__INTER` (`Prism.regBaseMesh`), an error rather than a result C does not define.
+
+### Meshing a Region with no mesh inside a box (`BndBaseMesh`)
+
+- C: region.c `BndBaseMesh` meshes the part of a Region's boundary inside a box as the boundary mesh of the CmpRegion ANDing the Region and the box; when the Region has no mesh of its own (a Prism with an open end, such as the Interval x >= 0 extruded along the Box 0 <= y <= 1, or with a negated component), cmpregion.c `RegBaseMesh` meshes it inside the bounds of the box with `astBndMesh`, which calls `BndBaseMesh` with the same box again, so C recurses until the stack overflows (segfault).
+  `astOverlap` of such a Prism and a Circle, Ellipse, Polygon or AND CmpRegion, in either order, reaches it when the other Region is wholly inside or outside the Prism, and so does the mesh of the AND of such a Prism and a Region whose bounds cross its boundary. **C bug.**
+- Rust: not examined.
+- Java: `AST__INTER` with region.c `OverlapX`'s message that it cannot determine the overlap, from the CmpRegion that `BndBaseMesh` makes (`CmpRegion.baseMeshInsideBox`); the Regions are left as they were (`RegionOverlapTest`).
+  Where `OverlapX` asks for a mesh it can do without, it ignores the error, as C ignores any, and goes on, so an overlap that reaches the recursion there gives a code: the Circle of radius 3 about (0, 0.5) and the AND of the Prism above with the Circle of radius 3 about (5, 0.5) give 4 in either order; C gives 4 with the AND first and overflows its stack with the Circle first (`RegionOverlapTest.anAndHoldingAPrismWithNoMeshCanStillOverlap`).
+
+### Moving a Prism (`RegCentre`)
+
+- C: prism.c `RegCentre` moves its components but does not reset what the Prism keeps, so its boundary mesh stays where it was until something else resets it. **C quirk.**
+- Rust: discards it.
+- Java: as C (`Prism.regCentre`).
+
+### The MeshSize of two Regions merged in parallel
+
+- C: `MergeBox`, `MergeInterval`, `MergeNullRegion` and `MergePointList` pass `fac_this*fac_reg*astGetMeshSize( result )`, a `double`, to `astSetMeshSize`, whose argument is an `int`, so the scaled MeshSize is truncated.
+- Rust: rounds it (`merge_util.rs` `apply_merge_scaling_to`).
+- Java: as C (`RegionMerge`).
+
+### An Ellipse with a Box uncertainty mapped through a full MatrixMap and back
+
+- C: `testregions.c` `checkEllipse` Errors 15 to 17: each mapped Ellipse has no FrameSet and the round trip overlaps the original as the same Region.
+- Rust: excludes the check (`REGIONS_C_GAP_EXCLUDED` in `test_regions_c.rs`): its mapped Ellipse keeps the rotation in its uncertainty's FrameSet, and mapping back fails.
+- Java: as C (`RegionsCTest.checkEllipse`).
+
+### The order in which a Box's simplification tries the corners of a Polygon
+
+- C: box.c `Simplify` makes the Polygon of a 2-D Box's transformed corners in clockwise order first (`right_handed` 0), then anticlockwise, keeping the first whose inside is the Box's.
+- Rust: tries `right_handed` 1, the anticlockwise order, first.
+- Java: as C (`Box.polygonOf`); the order matters only if both orders qualify.
+
+### A Box whose transformed corners make no Polygon with the Box's inside
+
+- C: box.c `Simplify` annuls each Polygon that does not qualify and then passes the annulled (null) pointer to `astRegPins`, which reports `AST__OBJIN`. **C bug.**
+- Rust: leaves the Box as it is.
+- Java: `AST__OBJIN`, as C, with a message of its own (`Box.polygonOf`).
+
+### A Circle fitted in its current Frame
+
+- C: circle.c `Simplify` does not count a best-fitting Circle as a simplification: it is returned only if the Region-generic simplification changed the Circle, while a best-fitting Ellipse always is. **C quirk.**
+- Rust: as C.
+- Java: as C (`Circle.simplifyStep`).
+
+### The limits an Interval's simplification makes unequal
+
+- C: interval.c `Simplify` replaces an upper limit equal to its lower limit by the larger of the two times `1.0E6*DBL_EPSILON`, not by a value just above it. **C quirk.**
+- Rust: as C (`regions/interval.rs`).
+- Java: as C (`Interval.simplifyStep`).
+
+### The mean limit of a best-fitting Box on the negative side of an axis
+
+- C: box.c `BestBox` sets the clipping limit of a mean to `100*mean*DBL_EPSILON` when the values scatter less than that, which is negative for a negative mean, so no value is kept and the limit falls back to the extreme value. **C quirk.**
+- Rust: as C (`regions/box_region.rs`).
+- Java: as C (`Box.bestBox`).
+
+### An uncertainty set on a Prism that does not simplify
+
+- C: prism.c `Simplify` sets the Prism's own uncertainty on the Region it returns, which is the Prism itself when nothing simplifies, so the Prism given is changed. **C quirk.**
+- Rust: sets the uncertainty on a new Region, and returns a copy of the Prism when nothing simplifies, so the Prism given is not changed (`regions/prism.rs`).
+- Java: as C (`Prism.simplifyStep`).
 
 ## FitsChan
 

@@ -13,8 +13,6 @@ import org.junit.jupiter.api.function.Executable;
  * Translation of Rust {@code tests/test_transform_validation.rs}: every Mapping's transformation
  * makes the checks C's base-class {@code Transform} (mapping.c) makes before any class transforms
  * a point.
- *
- * <p>The Region part of {@code a_region_and_a_frameset_check_too} needs a class not yet ported.
  */
 class TransformValidationTest {
 
@@ -46,6 +44,8 @@ class TransformValidationTest {
 
     @Test
     void aRegionAndAFramesetCheckToo() {
+        Circle circle = new Circle(new Frame(2), new double[] {0.0, 0.0}, 5.0, null);
+        assertEquals(AstException.AST__NCPIN, code(() -> circle.transform(fromRows(new double[] {1.0}), 1, true)));
         FrameSet frameset = new FrameSet(new Frame(2));
         assertEquals(AstException.AST__NCPIN, code(() -> frameset.transform(fromRows(new double[] {1.0}), 1, true)));
     }

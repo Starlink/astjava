@@ -18,8 +18,7 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * oracle/match_axes.json}, from {@code tools/oracle_fixtures/match_axes_probe.c}, which calls
  * {@code astMatchAxes( frm1, frm2, axes )} for every pair of a list of Frames).
  *
- * <p>The probe's Frames are numbered as its {@code make} function builds them. The cases whose
- * Frames this version can build run here: all but those using the Circle (10), a Region.
+ * <p>The probe's Frames are numbered as its {@code make} function builds them; every case runs.
  *
  * <p>{@code frm1.matchAxes(frm2)} is called, as the probe calls {@code astMatchAxes}, so that a
  * FrameSet {@code frm1} gives its current Frame as C's FrameSet {@code MatchAxes} does.
@@ -63,6 +62,8 @@ class MatchAxesTest {
                 FrameSet fs3 = new FrameSet(new Frame(3));
                 fs3.addFrame(FrameSet.AST__BASE, new UnitMap(3), new CmpFrame(new SpecFrame(), new SkyFrame()));
                 return fs3;
+            case 10:
+                return new Circle(new SkyFrame(), new double[] {0.0, 0.0}, 0.1, null);
             case 11:
                 return new CmpFrame(new CmpFrame(new SpecFrame(), new SkyFrame()), new Frame(1));
             case 12:
@@ -96,7 +97,7 @@ class MatchAxesTest {
                         + Arrays.toString(expected));
             }
         }
-        assertEquals(144, ran, "the cases with Frames this version builds");
+        assertEquals(169, ran, "the cases run");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

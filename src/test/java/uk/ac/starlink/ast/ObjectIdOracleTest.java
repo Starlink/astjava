@@ -25,12 +25,13 @@ import uk.ac.starlink.ast.testsupport.ProbeData;
  * zoommap_simplified}, {@code cmpmap}, {@code cmpmap_copy}, {@code cmpmap_simplified}, {@code
  * frame}, {@code skyframe}, {@code frameset}, {@code frameset_frame_id}, {@code
  * frameset_part_ids}, {@code cmpframe}, {@code fitschan}, {@code cmpmap_unsimplifiable}, {@code
- * tranmap} and {@code ratemap}.
+ * tranmap}, {@code ratemap}, {@code circle}, {@code cmpregion}, {@code cmpregion_part_ids},
+ * {@code prism} and {@code prism_part_ids}.
  * {@code simplify} returns the ZoomMap itself, as C's {@code astSimplify} returns a Mapping it cannot simplify, recording it as
  * simplified, and a CmpMap shares its components, as C's does, so the Rust test's exclusions for
  * copies do not arise for them. A case whose dump differs from C's is listed in {@link #EXCLUDED},
- * and {@code excluded_cases_still_differ} fails when it matches. The remaining cases need classes
- * not yet ported.
+ * and {@code excluded_cases_still_differ} fails when it matches. The remaining cases need
+ * SelectorMap and NormMap, which are not yet ported.
  */
 class ObjectIdOracleTest {
 
@@ -54,7 +55,12 @@ class ObjectIdOracleTest {
             "cmpframe",
             "fitschan",
             "tranmap",
-            "ratemap");
+            "ratemap",
+            "circle",
+            "cmpregion",
+            "cmpregion_part_ids",
+            "prism",
+            "prism_part_ids");
 
     /** The cases whose dump differs from C's, with the reason. */
     private static final String[][] EXCLUDED = {};
@@ -99,6 +105,36 @@ class ObjectIdOracleTest {
         return fs;
     }
 
+    /** A Circle of radius 1 at the origin of a 2-D Frame, with IDs {@code fid} and {@code id}, if not null. */
+    private static Circle circle(String fid, String id) {
+        Circle c = new Circle(frame(2, fid), new double[] {0.0, 0.0}, 1.0, null);
+        if (id != null) {
+            c.setID(id);
+        }
+        return c;
+    }
+
+    /** The AND of two Circles, with ID "cr". */
+    private static CmpRegion cmpregion(Circle r1, Circle r2) {
+        CmpRegion r = new CmpRegion(r1, r2, CmpRegion.AST__AND);
+        r.setID("cr");
+        return r;
+    }
+
+    /**
+     * A Prism with ID "p" of a Circle (Frame ID {@code pf}, ID {@code pc}) and the Interval [0, 1]
+     * (Frame ID {@code ivf}, ID {@code iv}); null for no ID.
+     */
+    private static Prism prism(String ivf, String iv, String pf, String pc) {
+        Interval interval = new Interval(frame(1, ivf), new double[] {0.0}, new double[] {1.0}, null);
+        if (iv != null) {
+            interval.setID(iv);
+        }
+        Prism p = new Prism(circle(pf, pc), interval);
+        p.setID("p");
+        return p;
+    }
+
     /** The Object each case of the probe makes. */
     private static AstObject object(String name) {
         switch (name) {
@@ -108,6 +144,19 @@ class ObjectIdOracleTest {
                 return z;
             case "zoommap_blank":
                 return zoom(2.0, "");
+            case "circle": {
+                Circle c = new Circle(frame(2, "cframe"), new double[] {0.0, 0.0}, 1.0, null);
+                c.setID("cid");
+                return c;
+            }
+            case "cmpregion":
+                return cmpregion(circle(null, null), circle(null, null));
+            case "cmpregion_part_ids":
+                return cmpregion(circle("f1", "r1"), circle("f2", "r2"));
+            case "prism":
+                return prism(null, null, null, null);
+            case "prism_part_ids":
+                return prism("ivf", "iv", "pf", "pc");
             case "keymap":
                 KeyMap km = new KeyMap();
                 km.setID("km");

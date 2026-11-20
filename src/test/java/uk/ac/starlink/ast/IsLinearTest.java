@@ -9,9 +9,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Translation of Rust {@code tests/test_is_linear.rs}: the read-only IsLinear attribute is what
  * C's {@code GetIsLinear} overrides report, with C's answers from {@code astGetI(map,
- * "IsLinear")}.
- *
- * <p>The test's Circle case needs a class outside the first phase.
+ * "IsLinear")}. A Circle is a Frame, which frame.c's {@code GetIsLinear} reports as linear.
  */
 class IsLinearTest {
 
@@ -37,6 +35,8 @@ class IsLinearTest {
         want.put("cmpmap_with_permmap", false);
         cases.put("sphmap", new SphMap());
         want.put("sphmap", false);
+        cases.put("circle", new Circle(new Frame(2), new double[] {0.0, 0.0}, 1.0, null));
+        want.put("circle", true);
         cases.put("polymap_linear", new PolyMap(1, 1, 1, new double[] {1.0, 1.0, 1.0}, 0, null));
         want.put("polymap_linear", false);
         FrameSet fs = new FrameSet(new Frame(2));

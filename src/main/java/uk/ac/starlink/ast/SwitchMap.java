@@ -397,7 +397,7 @@ public class SwitchMap extends Mapping {
      * above the number of routes.
      */
     private static int routeIndex(double sel) {
-        return (int) FitsMakeIntWorld.roundHalfAway(sel) - 1;
+        return (int) CMath.roundHalfAway(sel) - 1;
     }
 
     // ------------------------------------------------------------------

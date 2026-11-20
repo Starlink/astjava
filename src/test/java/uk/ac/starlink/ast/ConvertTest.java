@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
  * tests ({@code convert_basic_cmp_permmap}, {@code convert_sky_cmp_permmap} and {@code
  * find_frame_cmp_needs_widened_axes}), whose CmpFrames hold a SpecFrame, run here; they leave out
  * their {@code astEqual} checks that the base and current Frames of each result are the Frames
- * converted, as this library has no {@code astEqual}. The tests whose Frames include a Circle are
- * deferred.
+ * converted, as this library has no {@code astEqual}. {@code convert_between_regions_does_not_clip}
+ * converts between two Circles.
  *
  * <p>{@code aFramesetTriesItsBaseFrameFirst} has no Rust counterpart: it checks the order in which
  * frameset.c {@code ConvertX} tries a FrameSet's Frames.
@@ -181,5 +181,26 @@ class ConvertTest {
         assertEquals(0.5, cvt.tran1(1, new double[] {1.0}, true)[0]);
         assertEquals(1, fs.getBase());
         assertEquals(2, fs.getCurrent());
+    }
+
+    /**
+     * Converting between two Regions gives a Mapping between their Frames that does not clip, as
+     * region.c's {@code Convert} and {@code ConvertX} replace each Region by its Frame: the centre
+     * of a Galactic Circle well outside an ICRS Circle still converts, to C's value (to the six
+     * figures the Rust test records).
+     */
+    @Test
+    void convertBetweenRegionsDoesNotClip() {
+        SkyFrame icrs = new SkyFrame();
+        icrs.setSystem("ICRS");
+        SkyFrame gal = new SkyFrame();
+        gal.setSystem("Galactic");
+        Circle par = new Circle(icrs, new double[] {1.0, 0.5}, 0.01, null);
+        Circle err = new Circle(gal, new double[] {2.0, -0.3}, 0.0001, null);
+        FrameSet fs = err.convert(par, "");
+        assertNotNull(fs, "the Circles convert");
+        double[][] out = fs.tran2(1, new double[] {2.0}, new double[] {-0.3}, true);
+        assertEquals(0.0273624, out[0][0], 1e-6);
+        assertEquals(0.784531, out[1][0], 1e-6);
     }
 }

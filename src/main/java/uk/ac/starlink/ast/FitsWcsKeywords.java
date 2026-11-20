@@ -86,11 +86,6 @@ final class FitsWcsKeywords {
         store.mjdobs = mjd;
     }
 
-    /** C's {@code round}: to the nearest integer, halfway cases away from zero. */
-    private static double roundHalfAway(double x) {
-        return x < 0.0 ? -Math.floor(-x + 0.5) : Math.floor(x + 0.5);
-    }
-
     /**
      * The FITS-WCS keywords of axis description {@code s} in {@code cards}: a space for the primary
      * description, which reads keywords without a letter, or {@code 'A'} to {@code 'Z'} for an
@@ -113,9 +108,9 @@ final class FitsWcsKeywords {
      * {@code fitsrnd}, which shapes the text of a floating value stored as a string.
      */
     static FitsStore extractWcsKeywords(FitsCardList cards, char s, int npix, int fitsrnd) {
-        // C reads WCSAXES as a floating value and rounds it (fitschan.c:38276-38281).
+        // C reads WCSAXES as a floating value and rounds it with round() (fitschan.c:38276-38281).
         Double wcsaxesValue = cards.getStoredFloat(keyFor("WCSAXES", 0, s));
-        Integer wcsaxes = wcsaxesValue == null ? null : (int) Math.max(0.0, roundHalfAway(wcsaxesValue));
+        Integer wcsaxes = wcsaxesValue == null ? null : (int) Math.max(0.0, CMath.roundHalfAway(wcsaxesValue));
         int naxis = wcsaxes != null ? wcsaxes : npix;
         if (naxis == 0) {
             throw Ast.err(AstException.AST__BDFTS, "WCSAXES is zero");

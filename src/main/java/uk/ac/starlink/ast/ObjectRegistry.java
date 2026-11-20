@@ -28,16 +28,24 @@ final class ObjectRegistry {
         switch (className) {
             case "Axis":
                 return Axis::new;
+            case "Box":
+                return Box::new;
             case "Channel":
                 return Channel::new;
+            case "Circle":
+                return Circle::new;
             case "CmpFrame":
                 return CmpFrame::new;
             case "CmpMap":
                 return CmpMap::new;
+            case "CmpRegion":
+                return CmpRegion::new;
             case "DSBSpecFrame":
                 return DSBSpecFrame::new;
             case "DssMap":
                 return DssMap::new;
+            case "Ellipse":
+                return Ellipse::new;
             case "FitsChan":
                 return FitsChan::new;
             case "FluxFrame":
@@ -48,6 +56,8 @@ final class ObjectRegistry {
                 return FrameSet::new;
             case "GrismMap":
                 return GrismMap::new;
+            case "Interval":
+                return Interval::new;
             case "IntraMap":
                 return IntraMap::new;
             case "KeyMap":
@@ -58,12 +68,22 @@ final class ObjectRegistry {
                 return MathMap::new;
             case "MatrixMap":
                 return MatrixMap::new;
+            case "NullRegion":
+                return NullRegion::new;
             case "PcdMap":
                 return PcdMap::new;
             case "PermMap":
                 return PermMap::new;
+            case "PointList":
+                return PointList::new;
+            case "PointSet":
+                return PointSet::new;
             case "PolyMap":
                 return PolyMap::new;
+            case "Polygon":
+                return Polygon::new;
+            case "Prism":
+                return Prism::new;
             case "RateMap":
                 return RateMap::new;
             case "ShiftMap":
