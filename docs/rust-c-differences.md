@@ -1211,7 +1211,7 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: `astIsAFrame` is true of a FrameSet, so tranmap.c `RemoveRegions` turns a FrameSet component of a TranMap into a UnitMap whenever either component changed, and ratemap.c and switchmap.c turn a FrameSet component that held a Region into a UnitMap, dropping the FrameSet's Mapping: a TranMap of a FrameSet holding a ZoomMap and a Box becomes a UnitMap. **C quirk.**
   A CmpMap is not affected, since `astInitCmpMap` holds a FrameSet's Mapping in its place.
 - Rust: keeps a FrameSet component, with its own Regions removed.
-- Java: as C (`Mapping.frameToUnitMap`); `RemoveRegionsTest.aTranMapTurnsAFrameSetIntoAUnitMap` pins it.
+- Java: as C (`Mapping.frameToUnitMap`); `RemoveRegionsTest.aTranMapTurnsAFrameSetIntoAUnitMap`, `aSwitchMapTurnsAChangedFrameSetRouteIntoAUnitMap` and `aRateMapTurnsAChangedFrameSetIntoAUnitMap` pin it.
 
 ## FitsChan
 

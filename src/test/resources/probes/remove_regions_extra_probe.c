@@ -7,8 +7,9 @@
  * container replaces a component that comes back as a Frame with a
  * UnitMap: cmpmap.c and tranmap.c every such component, so also a plain
  * Frame or a FrameSet component that was already there when the other
- * component changed; switchmap.c and frameset.c only a component that
- * changed. A CmpFrame (cmpframe.c) and a FrameSet (frameset.c) are copies
+ * component changed; switchmap.c (routes and both selectors), ratemap.c
+ * and frameset.c only a component that changed, which includes a FrameSet
+ * holding a Region, since astIsAFrame is true of a FrameSet. A CmpFrame (cmpframe.c) and a FrameSet (frameset.c) are copies
  * whose unchanged components are the original's own Objects, so that a
  * change made through one is seen in the other. A SelectorMap installs no
  * RemoveRegions, so its Regions stay.
@@ -138,12 +139,21 @@ static AstSwitchMap *switch2( AstMapping *fs, AstMapping *r1, AstMapping *r2 ) {
    return astSwitchMap( fs, NULL, 2, (void **) rm, " " );
 }
 
+/* A FrameSet from PIX to SKY whose Mapping is a Box. */
+static AstFrameSet *frameset_with_region( void ) {
+   AstFrameSet *fs = astFrameSet( frame( 2, "PIX" ), " " );
+   astAddFrame( fs, AST__BASE, box2( 0.0, 10.0 ), frame( 2, "SKY" ) );
+   return fs;
+}
+
 int main( void ) {
    AstCmpFrame *cf;
    AstFrameSet *fs;
-   AstMapping *result;
+   AstMapping *result, *rm[ 2 ];
+   AstPermMap *inv;
    AstRegion *sel[ 2 ];
    double lb1[ 1 ] = { 0.0 }, ub1[ 1 ] = { 1.0 };
+   double lb10[ 1 ] = { 0.0 }, ub10[ 1 ] = { 10.0 };
    double shift[ 2 ] = { 100.0, 100.0 };
    int status = 0;
    astWatch( &status );
@@ -187,6 +197,26 @@ int main( void ) {
    emit( "switchmap_no_regions",
          (AstMapping *) switch2( (AstMapping *) pick_first(), (AstMapping *) astZoomMap( 2, 2.0, " " ),
                                  (AstMapping *) astZoomMap( 2, 3.0, " " ) ) );
+
+   inv = pick_first();
+   astInvert( inv );
+   rm[ 0 ] = (AstMapping *) astZoomMap( 2, 2.0, " " );
+   rm[ 1 ] = (AstMapping *) astZoomMap( 2, 3.0, " " );
+   emit( "switchmap_inverse_selector_region",
+         (AstMapping *) astSwitchMap( NULL, astCmpMap( inv, box2( 0.0, 10.0 ), 1, " " ), 2,
+                                      (void **) rm, " " ) );
+
+   rm[ 0 ] = (AstMapping *) astZoomMap( 1, 2.0, " " );
+   rm[ 1 ] = (AstMapping *) astZoomMap( 1, 3.0, " " );
+   emit( "switchmap_inverse_selector_is_region",
+         (AstMapping *) astSwitchMap( NULL, astInterval( frame( 1, NULL ), lb10, ub10, NULL, " " ), 2,
+                                      (void **) rm, " " ) );
+
+   emit( "switchmap_frameset_route",
+         (AstMapping *) switch2( (AstMapping *) pick_first(), (AstMapping *) astZoomMap( 2, 2.0, " " ),
+                                 (AstMapping *) frameset_with_region() ) );
+
+   emit( "ratemap_frameset", (AstMapping *) astRateMap( frameset_with_region(), 1, 1, " " ) );
 
    fs = astFrameSet( frame( 2, "PIX" ), " " );
    astAddFrame( fs, AST__BASE, astZoomMap( 2, 2.0, " " ), box2( 0.0, 10.0 ) );

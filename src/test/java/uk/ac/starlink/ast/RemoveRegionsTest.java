@@ -16,8 +16,9 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * holding no Region gives itself (mapping.c, C's {@code astClone}). A container replaces a
  * component that comes back as a Frame with a UnitMap: a CmpMap and a TranMap every such
  * component, so also a plain Frame or a FrameSet component that was already there when the other
- * component changed (cmpmap.c, tranmap.c); a SwitchMap and a FrameSet only a component that
- * changed (switchmap.c, frameset.c). A CmpFrame or a FrameSet that changed is a copy whose
+ * component changed (cmpmap.c, tranmap.c); a SwitchMap (its routes and both selectors), a RateMap
+ * and a FrameSet only a component that changed (switchmap.c, ratemap.c, frameset.c), which includes
+ * a FrameSet holding a Region, since C's {@code astIsAFrame} is true of a FrameSet. A CmpFrame or a FrameSet that changed is a copy whose
  * unchanged components are the original's own Objects (cmpframe.c, frameset.c), so that an
  * attribute set through the result is seen in the original.
  *
@@ -207,6 +208,46 @@ class RemoveRegionsTest {
     }
 
     @Test
+    void aSwitchMapRemovesRegionsFromItsInverseSelector() {
+        Mapping inv = pickFirst();
+        inv.invert();
+        check(
+                "switchmap_inverse_selector_region",
+                new SwitchMap(null, new CmpMap(inv, box2(0.0, 10.0), true), new Mapping[] {
+                    new ZoomMap(2, 2.0), new ZoomMap(2, 3.0)
+                }));
+    }
+
+    @Test
+    void aSwitchMapTurnsAnInverseSelectorRegionIntoAUnitMap() {
+        check(
+                "switchmap_inverse_selector_is_region",
+                new SwitchMap(
+                        null,
+                        new Interval(frame(1, null), new double[] {0.0}, new double[] {10.0}, null),
+                        new Mapping[] {new ZoomMap(1, 2.0), new ZoomMap(1, 3.0)}));
+    }
+
+    /** A FrameSet from PIX to SKY whose Mapping is a Box. */
+    private static FrameSet frameSetWithRegion() {
+        FrameSet fs = new FrameSet(frame(2, "PIX"));
+        fs.addFrame(FrameSet.AST__BASE, box2(0.0, 10.0), frame(2, "SKY"));
+        return fs;
+    }
+
+    /** C's {@code astIsAFrame} is true of a FrameSet, so its Mapping is lost: a C quirk, kept. */
+    @Test
+    void aSwitchMapTurnsAChangedFrameSetRouteIntoAUnitMap() {
+        check("switchmap_frameset_route", switch2(pickFirst(), new ZoomMap(2, 2.0), frameSetWithRegion()));
+    }
+
+    /** C's {@code astIsAFrame} is true of a FrameSet, so its Mapping is lost: a C quirk, kept. */
+    @Test
+    void aRateMapTurnsAChangedFrameSetIntoAUnitMap() {
+        check("ratemap_frameset", new RateMap(frameSetWithRegion(), 1, 1));
+    }
+
+    @Test
     void aRegionAsAFrameOfAFrameSetBecomesItsFrame() {
         FrameSet fs = new FrameSet(frame(2, "PIX"));
         fs.addFrame(FrameSet.AST__BASE, new ZoomMap(2, 2.0), box2(0.0, 10.0));
@@ -274,6 +315,6 @@ class RemoveRegionsTest {
 
     @Test
     void probeCasesAreAllCovered() {
-        assertEquals(19, PROBE.size(), PROBE.keySet().toString());
+        assertEquals(23, PROBE.size(), PROBE.keySet().toString());
     }
 }
