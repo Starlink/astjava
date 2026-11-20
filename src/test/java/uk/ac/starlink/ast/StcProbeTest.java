@@ -3,6 +3,7 @@ package uk.ac.starlink.ast;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,7 +24,19 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * bad AstroCoords; Frame attributes, Negated, Closed, MeshSize and FillFactor set on and cleared
  * from an Stc, and the read-only RegionClass; testregions.c's {@code checkStcNegated}; and dumps
  * edited by hand: {@code Begin Stc}, which C reads as an Stc of the abstract class and Java refuses,
- * and {@code Ncoord} below zero, which both read as no AstroCoords elements.
+ * and {@code Ncoord} below zero, which both read as no AstroCoords elements; testregions.c's {@code
+ * checkStcObsDump}, an StcObsDataLocation's observatory position, set as C's protected {@code
+ * astStcSetObs} sets it (holding the PointList given), dumped, copied, compared and removed, and
+ * one of another class read from a dump; and Stcs of different classes compared, and aligned with
+ * {@code findFrame} and {@code convert}.
+ *
+ * <p>Casting an Stc into the class of another Region ({@link Region#cast}) gives a copy for a Region
+ * of its own class and null for any other. No call of {@code astFindFrame} or {@code astConvert}
+ * between two Stcs reaches region.c's {@code Cast} in C: {@code astFindFrame} matches with {@code
+ * matchsub} 0, and region.c's {@code ConvertX} aligns the Regions' current Frames. A CmpFrame whose
+ * component Region fails to match does reach it, and C then crashes (region.c {@code Cast} compares
+ * the class of its own uninitialised vtab), so that case is tested here alone ({@link
+ * #aCmpFrameOfStcsInOtherDomainsDoesNotConvert}).
  *
  * <p>An Stc dump without its {@code Region}, or with fewer {@code Coord<n>} items than {@code
  * Ncoord}, is refused here with {@code AST__LDERR}: C's {@code astLoadStc} stores a null for the
@@ -383,6 +396,176 @@ class StcProbeTest {
         stc.negate();
         got += tran2(stc, 0.0, 0.0, 5.0, 0.0) + "Bounded " + stc.getI("Bounded") + "\n";
         assertEquals(probe("check_stc_negated"), got);
+    }
+
+    // ------------------------------------------------------------------
+    // StcObsDataLocation's observatory position
+    // ------------------------------------------------------------------
+
+    /** The probe's {@code read_back}: the dump of {@code obj}, then that dump read back. */
+    private static AstObject readBack(AstObject obj, StringBuilder sb) {
+        String text = show(obj);
+        AstObject back = ChannelText.read(text);
+        sb.append("-- text\n")
+                .append(text)
+                .append("-- end text\n-- read ")
+                .append(back.astClass())
+                .append('\n');
+        return back;
+    }
+
+    private static StcObsDataLocation obsData() {
+        return new StcObsDataLocation(circle2(0.0, 0.0, 1.0), (KeyMap[]) null);
+    }
+
+    /** testregions.c {@code checkStcObsDump}. */
+    @Test
+    void checkStcObsDump() {
+        StcObsDataLocation noobs = obsData();
+        StringBuilder sb = new StringBuilder();
+        AstObject back = readBack(noobs, sb);
+        sb.append("equal ").append(flag(back.astEqual(noobs))).append('\n').append(show(back));
+        assertEquals(probe("check_stc_obs_dump"), sb.toString());
+    }
+
+    /**
+     * The observatory position: written as {@code ObsLoc}, held as given (so that a change to the
+     * PointList shows in the next dump) and copied in a copy, not compared, and removed.
+     */
+    @Test
+    void anObservatoryPosition() {
+        StcObsDataLocation noobs = obsData();
+        StcObsDataLocation obsdata = obsData();
+        Frame geo = new Frame(3);
+        geo.setDomain("GEO");
+        PointList obs = new PointList(geo, 1, new double[][] {{1.0}, {2.0}, {3.0}}, null);
+        obsdata.setObs(obs);
+        StringBuilder sb = new StringBuilder("set obs status 0\n").append(show(obsdata));
+        AstObject obscopy = obsdata.copy();
+        obs.setIdent("given");
+        sb.append("-- Ident=given set on the PointList given\n")
+                .append(show(obsdata))
+                .append("-- the copy\n")
+                .append(show(obscopy))
+                .append("equal without obs ")
+                .append(flag(obsdata.astEqual(noobs)))
+                .append("\nequal without obs reversed ")
+                .append(flag(noobs.astEqual(obsdata)))
+                .append("\nequal copy ")
+                .append(flag(obsdata.astEqual(obscopy)))
+                .append("\n-- removed\nset obs status 0\n");
+        obsdata.setObs(null);
+        sb.append(show(obsdata)).append("-- the copy read back\n");
+        AstObject back = readBack(obscopy, sb);
+        sb.append("equal ").append(flag(back.astEqual(obscopy))).append('\n').append(show(back));
+        assertEquals(probe("obs_loc"), sb.toString());
+    }
+
+    /** An {@code ObsLoc} of another class than PointList, a ZoomMap, is read as it is, as C reads it. */
+    @Test
+    void anObservatoryPositionOfAnyClassIsRead() {
+        String text = textRead("obs_loc_any_class");
+        AstObject back = ChannelText.read(text);
+        String got = "set obs status 0\n-- text\n" + text + "-- end text\n-- read " + back.astClass() + "\n"
+                + show(back) + "-- copy\n" + show(back.copy());
+        assertEquals(probe("obs_loc_any_class"), got);
+    }
+
+    // ------------------------------------------------------------------
+    // Stcs of different classes
+    // ------------------------------------------------------------------
+
+    /** The probe's {@code show_fs}. */
+    private static String showFs(String what, FrameSet fs) {
+        if (fs == null) {
+            return what + " 0\n";
+        }
+        return what + " 1 " + fs.getFrame(FrameSet.AST__BASE).astClass() + " "
+                + fs.getFrame(FrameSet.AST__CURRENT).astClass() + " "
+                + fs.getMapping(FrameSet.AST__BASE, FrameSet.AST__CURRENT)
+                        .simplify()
+                        .astClass() + "\n";
+    }
+
+    /** The probe's {@code find_and_convert}. */
+    private static String findAndConvert(String what, Region a, Region b) {
+        return "-- " + what + "\n" + showFs("findframe", a.findFrame(b, "")) + showFs("convert", a.convert(b, ""));
+    }
+
+    private static Circle circleIn(String domain, double r) {
+        Frame f = new Frame(2);
+        f.setDomain(domain);
+        return new Circle(f, 1, new double[] {0.0, 0.0}, new double[] {r}, null);
+    }
+
+    /** A CmpFrame of {@code reg} and a 1-D Frame in the Domain C. */
+    private static CmpFrame cmpFrameC(Region reg) {
+        Frame c = new Frame(1);
+        c.setDomain("C");
+        return new CmpFrame(reg, c);
+    }
+
+    @Test
+    void stcsOfDifferentClasses() {
+        StcSearchLocation search = new StcSearchLocation(circle2(0.0, 0.0, 1.0), (KeyMap[]) null);
+        StcCatalogEntryLocation entry = new StcCatalogEntryLocation(circle2(0.0, 0.0, 1.0), (KeyMap[]) null);
+        StcObsDataLocation obsdata = obsData();
+        StcResourceProfile profile = plain();
+        StcSearchLocation search2 = new StcSearchLocation(circle2(0.0, 0.0, 1.0), (KeyMap[]) null);
+        StcSearchLocation searcha = new StcSearchLocation(circleIn("A", 1.0), (KeyMap[]) null);
+        StcSearchLocation searchb = new StcSearchLocation(circleIn("B", 1.0), (KeyMap[]) null);
+        StcObsDataLocation obsb = new StcObsDataLocation(circleIn("B", 1.0), (KeyMap[]) null);
+        StcCatalogEntryLocation entryb = new StcCatalogEntryLocation(circleIn("B", 1.0), (KeyMap[]) null);
+        String got = "equal search search " + flag(search.astEqual(search2)) + "\nequal search entry "
+                + flag(search.astEqual(entry)) + "\nequal search obsdata " + flag(search.astEqual(obsdata))
+                + "\nequal obsdata profile " + flag(obsdata.astEqual(profile)) + "\n"
+                + findAndConvert("search, search", search, search2)
+                + findAndConvert("search, obsdata", search, obsdata)
+                + findAndConvert("obsdata, search", obsdata, search)
+                + findAndConvert("entry, profile", entry, profile)
+                + findAndConvert("search A, search B", searcha, searchb)
+                + findAndConvert("search A, obsdata B", searcha, obsb)
+                + findAndConvert("obsdata B, search A", obsb, searcha)
+                + findAndConvert("search A, entry B", searcha, entryb)
+                + "-- CmpFrames of search B and search A\n"
+                + showFs("findframe", cmpFrameC(searchb).findFrame(cmpFrameC(searcha), ""));
+        assertEquals(probe("stc_classes"), got);
+    }
+
+    /**
+     * {@link Region#cast}: an Stc cast into the class of a Region is a copy if the Stc is an
+     * instance of that class, and null otherwise, so that two Stc classes, which are siblings, do not
+     * cast into each other; cast into the class of a plain Frame, it is its current Frame cast.
+     */
+    @Test
+    void castWithinTheStcClasses() {
+        StcSearchLocation search = new StcSearchLocation(circle2(0.0, 0.0, 1.0), (KeyMap[]) null);
+        StcSearchLocation search2 = new StcSearchLocation(circle2(1.0, 0.0, 2.0), (KeyMap[]) null);
+        StcObsDataLocation obsdata = obsData();
+        Frame same = search.cast(search2);
+        assertNotSame(search, same);
+        assertSame(StcSearchLocation.class, same.getClass());
+        assertTrue(search.astEqual(same));
+        assertNull(search.cast(obsdata));
+        assertNull(obsdata.cast(search));
+        assertNull(search.cast(plain()));
+        assertNull(search.cast(circle2(0.0, 0.0, 1.0)));
+        assertNull(circle2(0.0, 0.0, 1.0).cast(search));
+        assertSame(Frame.class, search.cast(new Frame(2)).getClass());
+    }
+
+    /**
+     * Two CmpFrames, each of an Stc and a Frame, whose Stcs are in different Domains, do not convert,
+     * as {@code findFrame} finds no match between them ({@link #stcsOfDifferentClasses}). C crashes
+     * here: the CmpFrame's match casts the template's Stc into the class of the target's component
+     * (frame.c {@code astMatch}), and region.c's {@code Cast} compares the target's class with that
+     * of its own vtab, which is initialised only when an Object of the class Region itself is made.
+     */
+    @Test
+    void aCmpFrameOfStcsInOtherDomainsDoesNotConvert() {
+        CmpFrame ca = cmpFrameC(new StcSearchLocation(circleIn("A", 1.0), (KeyMap[]) null));
+        CmpFrame cb = cmpFrameC(new StcSearchLocation(circleIn("B", 1.0), (KeyMap[]) null));
+        assertNull(cb.convert(ca, ""));
     }
 
     // ------------------------------------------------------------------

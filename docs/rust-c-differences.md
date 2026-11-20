@@ -882,10 +882,13 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 
 ### Casting a Region into the class of another Region (`Cast`)
 
-- C: region.c `Cast` copies a Region as an instance of the class of any Region given to it, with `astCastCopy`, which changes the class of the copy without checking that the Region is of that class or of a subclass of it: a Box cast into the class of a Circle is a Circle holding a Box's values. **C bug.**
+- C: as written, region.c `Cast` copies a Region as an instance of the class of any Region given to it, with `astCastCopy`, which changes the class of the copy without checking that the Region is of that class or of a subclass of it: a Box cast into the class of a Circle is a Circle holding a Box's values, and between the Stc classes, which are siblings, the copy of a smaller StcSearchLocation, StcCatalogEntryLocation or StcResourceProfile cast into an StcObsDataLocation reads past its end, where the observatory position would be. **C bug.**
+  It does not get that far: `Cast` first compares the class of its own vtab (`class_vtab`) with that of the Object given (`astClassCompare`), and that vtab is initialised only when an Object of the class Region itself is made, which the public interface never does, so the comparison follows a null class identifier and the program crashes. **C bug.**
+  `astFindFrame` matches with `matchsub` 0, and region.c's `ConvertX` aligns the current Frames of Regions, so neither reaches `Cast` with a Region; a CmpFrame holding a Region does: `astConvert` between two CmpFrames, each of an Stc (or a Circle) and a Frame, whose Regions are in different Domains, crashes in `astClassCompare` under `Cast` (`frame.c` `astMatch`, from cmpframe.c `PartMatch`).
+  Probe `src/test/resources/probes/stc_probe.c`, case `stc_classes`, holds `astFindFrame` and `astConvert` between Stcs of the same and of different classes, and `astFindFrame` between those CmpFrames, none of which reaches `Cast`.
 - Rust: not examined.
-- Java: a copy when the Region is of the class of the Region given, and null for any other class (`Region.cast`).
-  C's cast into the class of a parent is defined, and is not followed; no Region class of this library is a parent of another (the Stc classes, which are, are not yet ported).
+- Java: a copy when the Region is an instance of the class of the Region given, and null for any other class (`Region.cast`), so an Stc is not cast into the class of another Stc; the CmpFrames above do not convert (`StcProbeTest`).
+  C's cast into the class of a parent is defined, and is not followed: the copy keeps its own class; jniast's Stc is abstract, so no concrete Region class of this library is a parent of another, and the copy is always of the class of the Region given.
 
 ### An Stc's transformation sets Negated on its encapsulated Region
 

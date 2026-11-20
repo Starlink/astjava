@@ -7,6 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -16,28 +20,34 @@ import uk.ac.starlink.ast.testsupport.CValues;
 import uk.ac.starlink.ast.testsupport.ProbeData;
 
 /**
- * Translation of Rust {@code tests/test_region_stc_oracle.rs}: StcResourceProfile against C (stc.c,
- * stcresourceprofile.c), from {@code oracle/region_stc.json} ({@code
- * tools/oracle_fixtures/region_stc_probe.c}): the dumps of a plain, a negated and a sky Stc whose
- * AstroCoords Error Region is given in another SkyFrame, of an Stc made from an Stc whose
- * base->current Mapping is a ZoomMap, and of that mapped Stc simplified; two test points
- * transformed by each and whether it is bounded; its overlap with a Circle each way round; the
- * AstroCoords element {@code astGetStcCoord} gives; and the errors for an AstroCoords index out of
- * range and an unknown key. C's probe transforms the points before it writes the dump, as {@link
- * #stcMatchesC} does, since the transformation leaves Negated set on the encapsulated Region.
+ * Translation of Rust {@code tests/test_region_stc_oracle.rs}: the Stc classes against C (stc.c,
+ * stcresourceprofile.c, stcsearchlocation.c, stccatalogentrylocation.c, stcobsdatalocation.c), from
+ * {@code oracle/region_stc.json} ({@code tools/oracle_fixtures/region_stc_probe.c}): the dumps of a
+ * plain, a negated and a sky StcResourceProfile whose AstroCoords Error Region is given in another
+ * SkyFrame, of an Stc made from an Stc whose base->current Mapping is a ZoomMap, of that mapped Stc
+ * simplified, of an StcSearchLocation, of an StcCatalogEntryLocation with the sky AstroCoords, and
+ * of an StcObsDataLocation without and with an observatory position; two test points transformed
+ * by each and whether it is bounded; each dump written with Full = 1; each of C's dumps read back
+ * and written again; the overlap of the plain Stc with a Circle each way round; the AstroCoords
+ * element {@code astGetStcCoord} gives; and the errors for an AstroCoords index out of range and an
+ * unknown key. C's probe transforms the points before it writes the dumps, as {@link #stcMatchesC}
+ * and {@link #fullDumpsMatchC} do, since the transformation leaves Negated set on the encapsulated
+ * Region. The probe gives the {@code obs_data} case its position with the protected {@code
+ * astStcSetObs}, as {@link #built} does with {@link StcObsDataLocation#setObs}.
  *
- * <p>Only the cases of the StcResourceProfile class are run ({@link #CASES_RUN}); the others, and
- * {@code full_dumps_match_c} and {@code c_dumps_read_back_as_c_reads_them}, need the other Stc
- * classes. {@code error_ellipse_licence_is_still_needed} checks a licence of the Rust port's own
- * and is not translated.
+ * <p>{@code error_ellipse_licence_is_still_needed} checks a licence of the Rust port's own and is
+ * not translated.
  *
- * <p>The values in a plain Frame are exact. In the SkyFrame of the {@code sky} case, the second
- * defining point of each Circle comes from {@code SkyFrame.offset2}, whose difference from C's
- * {@code astOffset2} {@code RegionEllipseOracleTest} bounds by {@code 3e-14} for a centre at
- * latitude 0.8 and an offset of 0.2 radians; the chain here is the same with smaller offsets, so
- * the numbers in that dump are compared to within {@link #SKY_TOL}, {@code 1e-12}.
+ * <p>The values in a plain Frame are exact. In the SkyFrame of the {@code sky} and {@code
+ * catalog_entry} cases, the second defining point of each Circle comes from {@code
+ * SkyFrame.offset2}, whose difference from C's {@code astOffset2} {@code RegionEllipseOracleTest}
+ * bounds by {@code 3e-14} for a centre at latitude 0.8 and an offset of 0.2 radians; the chain here
+ * is the same with smaller offsets, so the numbers in those dumps are compared to within {@link
+ * #SKY_TOL}, {@code 1e-12}. A dump C wrote and Java reads back holds C's numbers, and is compared
+ * exactly.
  *
- * <p>The AstroCoords Error Region of the {@code sky} case, and so {@code SKY_COORD}, is a Galactic
+ * <p>The AstroCoords Error Region of the {@code sky} and {@code catalog_entry} cases, and so {@code
+ * SKY_COORD}, is a Galactic
  * Circle of radius {@code R = 1e-4} that the Stc re-expresses in ICRS as the Ellipse that best fits
  * its mapped boundary mesh of {@code N = 200} points (ellipse.c {@code astBestEllipse}, {@link
  * Ellipse#bestEllipse}; {@code ERROR_ELLIPSE_LICENSED} in the Rust test). The Ellipse's three defining
@@ -123,10 +133,6 @@ class RegionStcOracleTest {
     /** The tolerance on the numbers of a dump in a SkyFrame (see the class description). */
     private static final double SKY_TOL = 1.0e-12;
 
-    /** The cases of {@code CASES} run here: those of the StcResourceProfile class. */
-    private static final List<String> CASES_RUN =
-            Arrays.asList("plain", "negated", "sky", "mapped", "from_mapped", "mapped_simplified");
-
     /** The radius of the Error Circle, {@code R} in the class description. */
     private static final double ERROR_RADIUS = 1.0e-4;
 
@@ -144,6 +150,9 @@ class RegionStcOracleTest {
 
     /** The cases whose dump holds the fitted Error Ellipse (see the class description). */
     private static final List<String> ERROR_ELLIPSE_CASES = Arrays.asList("sky", "catalog_entry", "sky_coord");
+
+    /** The cases whose dump is in a SkyFrame (see the class description). */
+    private static final List<String> SKY_CASES = ERROR_ELLIPSE_CASES;
 
     private static final double[] C0 = {0.0, 0.0};
 
@@ -174,6 +183,10 @@ class RegionStcOracleTest {
         return circle(sky(null), new double[] {1.0, 0.5}, 0.01);
     }
 
+    private static Circle plainCircle() {
+        return circle(new Frame(2), C0, 1.0);
+    }
+
     private static StcResourceProfile skyStc() {
         return new StcResourceProfile(skyCircle(), new KeyMap[] {skyCoord()});
     }
@@ -202,6 +215,18 @@ class RegionStcOracleTest {
                 return new StcResourceProfile(mapped(), (AstroCoords[]) null);
             case "mapped_simplified":
                 return (Region) mapped().simplify();
+            case "search":
+                return new StcSearchLocation(plainCircle(), (AstroCoords[]) null);
+            case "catalog_entry":
+                return new StcCatalogEntryLocation(skyCircle(), new KeyMap[] {skyCoord()});
+            case "obs_data_without_obs":
+                return new StcObsDataLocation(plainCircle(), (AstroCoords[]) null);
+            case "obs_data":
+                StcObsDataLocation obsData = new StcObsDataLocation(plainCircle(), (AstroCoords[]) null);
+                Frame geo = new Frame(3);
+                geo.setDomain("GEO");
+                obsData.setObs(new PointList(geo, 1, new double[][] {{1.0}, {2.0}, {3.0}}, null));
+                return obsData;
             default:
                 throw new IllegalArgumentException("no case " + name);
         }
@@ -489,11 +514,53 @@ class RegionStcOracleTest {
             g = withoutEllipseAxisEnds(g);
             w = withoutEllipseAxisEnds(w);
         }
-        if (name.startsWith("sky")) {
+        if (SKY_CASES.contains(name)) {
             assertTrue(CValues.nativeStringsWithin(g, w, SKY_TOL), name + ": dump\n--- got\n" + g + "--- C\n" + w);
         } else {
             assertEquals(w, g, name + ": dump");
         }
+    }
+
+    /** The case of {@code CASES} called {@code name}. */
+    private static JsonNode testCase(String name) {
+        for (JsonNode c : DATA.get("CASES")) {
+            if (c.get(0).textValue().equals(name)) {
+                return c;
+            }
+        }
+        throw new IllegalArgumentException("no case " + name);
+    }
+
+    /** Transforms the two test points of case {@code c} with {@code stc} and compares them with C's. */
+    private static void assertPoints(String name, Region stc, JsonNode c) {
+        JsonNode points = c.get(3);
+        int n = points.size();
+        double[][] in = new double[2][n];
+        for (int i = 0; i < n; i++) {
+            in[0][i] = ProbeData.toDouble(points.get(i).get(0));
+            in[1][i] = ProbeData.toDouble(points.get(i).get(1));
+        }
+        double[][] out = stc.transform(in, n, true);
+        for (int i = 0; i < n; i++) {
+            double[] want = {
+                ProbeData.toDouble(points.get(i).get(2)),
+                ProbeData.toDouble(points.get(i).get(3))
+            };
+            CValues.assertCValues(new double[] {out[0][i], out[1][i]}, want, name + ": point " + i);
+        }
+    }
+
+    /** The text a Channel with Full = 1 writes for {@code obj}. */
+    private static String fullDump(AstObject obj) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Channel ch = new Channel(null, out);
+        ch.setFull(1);
+        try {
+            ch.write(obj);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
 
     @Test
@@ -501,30 +568,38 @@ class RegionStcOracleTest {
         int run = 0;
         for (JsonNode c : DATA.get("CASES")) {
             String name = c.get(0).textValue();
-            if (!CASES_RUN.contains(name)) {
-                continue;
-            }
             run++;
             Region stc = built(name);
-            JsonNode points = c.get(3);
-            int n = points.size();
-            double[][] in = new double[2][n];
-            for (int i = 0; i < n; i++) {
-                in[0][i] = ProbeData.toDouble(points.get(i).get(0));
-                in[1][i] = ProbeData.toDouble(points.get(i).get(1));
-            }
-            double[][] out = stc.transform(in, n, true);
-            for (int i = 0; i < n; i++) {
-                double[] want = {
-                    ProbeData.toDouble(points.get(i).get(2)),
-                    ProbeData.toDouble(points.get(i).get(3))
-                };
-                CValues.assertCValues(new double[] {out[0][i], out[1][i]}, want, name + ": point " + i);
-            }
+            assertPoints(name, stc, c);
             assertDump(name, ChannelText.dump(stc), c.get(1).textValue());
             assertEquals(c.get(4).booleanValue(), stc.getBounded(), name + ": bounded");
         }
-        assertEquals(CASES_RUN.size(), run, "cases run");
+        assertEquals(10, run, "cases run");
+    }
+
+    @Test
+    void fullDumpsMatchC() {
+        int run = 0;
+        for (JsonNode c : DATA.get("FULL_DUMPS")) {
+            String name = c.get(0).textValue();
+            run++;
+            Region stc = built(name);
+            assertPoints(name, stc, testCase(name));
+            assertDump(name, fullDump(stc), c.get(1).textValue());
+        }
+        assertEquals(10, run, "cases run");
+    }
+
+    @Test
+    void cDumpsReadBackAsCReadsThem() {
+        int run = 0;
+        for (JsonNode c : DATA.get("CASES")) {
+            String name = c.get(0).textValue();
+            run++;
+            Region region = (Region) ChannelText.read(c.get(1).textValue());
+            assertEquals(c.get(2).textValue(), ChannelText.dump(region), name);
+        }
+        assertEquals(10, run, "cases run");
     }
 
     @Test

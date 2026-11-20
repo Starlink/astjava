@@ -13,7 +13,19 @@
  *     and astGetStcCoord then show them, and the read-only RegionClass;
  *   - testregions.c's checkStcNegated;
  *   - dumps edited by hand and read: "Begin Stc", the abstract class, which
- *     C reads, and Ncoord below zero.
+ *     C reads, and Ncoord below zero;
+ *   - testregions.c's checkStcObsDump, and an StcObsDataLocation given an
+ *     observatory position with the protected astStcSetObs (which stores a
+ *     clone): its dump, a copy, a change to the PointList given, astEqual
+ *     with one without a position, and the position removed; an ObsLoc of
+ *     another class (a ZoomMap) written and read back;
+ *   - astEqual between Stcs of different classes, and astFindFrame and
+ *     astConvert between Stcs of the same and of different classes, in the
+ *     same Domain and in different Domains (neither reaches region.c's Cast:
+ *     astFindFrame matches with matchsub 0, and region.c's ConvertX uses the
+ *     current Frames), and astFindFrame between CmpFrames holding Stcs in
+ *     different Domains (astConvert between them crashes in region.c's Cast,
+ *     whose own vtab is not initialised, so it is not called).
  *
  * Each case starts with a line "== <name>"; error reports, which the error
  * module writes to standard error, are merged in order (stdout unbuffered).
@@ -32,6 +44,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ast.h"
+
+extern void astStcSetObs_( AstStcObsDataLocation *, AstPointList *, int * );
 
 /* The lines a Channel writes. */
 #define MAXLINES 4000
@@ -147,6 +161,47 @@ static void show_attrs( const char *what, AstObject *obj ) {
            astGetI( obj, "MeshSize" ), astTest( obj, "MeshSize" ),
            astGetD( obj, "FillFactor" ), astTest( obj, "FillFactor" ) );
    failed();
+}
+
+/* astStcSetObs( stc, obs ), through the protected interface. */
+static void set_obs( AstStcObsDataLocation *stc, AstObject *obs ) {
+   int status = 0;
+   astStcSetObs_( astMakePointer( stc ), obs ? astMakePointer( obs ) : NULL, &status );
+   printf( "set obs status %d\n", status );
+}
+
+/* Prints the dump of "obj", then reads that dump back as read_text does. */
+static AstObject *read_back( AstObject *obj ) {
+   int i;
+   dump_lines( obj );
+   for( i = 0; i < nline; i++ ) text[ i ] = lines[ i ];
+   text[ i ] = NULL;
+   return read_text();
+}
+
+/* astFindFrame( target, template, "" ) and astConvert( from, to, "" ),
+   whether each finds a FrameSet, and if so the classes of its Frames and
+   of its simplified Mapping. */
+static void show_fs( const char *what, AstFrameSet *fs ) {
+   printf( "%s %d", what, fs != NULL );
+   if( fs ) {
+      AstMapping *map = astSimplify( astGetMapping( fs, AST__BASE, AST__CURRENT ) );
+      printf( " %s %s %s", astGetC( astGetFrame( fs, AST__BASE ), "Class" ),
+              astGetC( astGetFrame( fs, AST__CURRENT ), "Class" ), astGetC( map, "Class" ) );
+   }
+   printf( "\n" );
+   failed();
+}
+
+static void find_and_convert( const char *what, AstObject *a, AstObject *b ) {
+   printf( "-- %s\n", what );
+   show_fs( "findframe", astFindFrame( a, b, "" ) );
+   show_fs( "convert", astConvert( a, b, "" ) );
+}
+
+static AstCircle *circle_in( const char *domain, double r ) {
+   double c[ 2 ] = { 0.0, 0.0 };
+   return astCircle( astFrame( 2, "Domain=%s", domain ), 1, c, &r, NULL, " " );
 }
 
 /* An Stc made with one AstroCoords KeyMap, or the status. */
@@ -410,6 +465,92 @@ int main( void ) {
       printf( "ncoord %d\n", astGetStcNCoord( obj ) );
       astShow( obj );
       failed();
+   }
+
+   /* testregions.c checkStcObsDump. */
+   head( "check_stc_obs_dump" );
+   {
+      AstStcObsDataLocation *noobs = astStcObsDataLocation( circle2( 0.0, 0.0, 1.0 ), 0, NULL, " " );
+      obj = read_back( (AstObject *) noobs );
+      if( obj ) {
+         printf( "equal %d\n", astEqual( obj, noobs ) );
+         astShow( obj );
+         failed();
+      }
+   }
+
+   head( "obs_loc" );
+   {
+      double obspt[ 3 ] = { 1.0, 2.0, 3.0 };
+      AstStcObsDataLocation *noobs = astStcObsDataLocation( circle2( 0.0, 0.0, 1.0 ), 0, NULL, " " );
+      AstStcObsDataLocation *obsdata = astStcObsDataLocation( circle2( 0.0, 0.0, 1.0 ), 0, NULL, " " );
+      AstStcObsDataLocation *obscopy;
+      AstPointList *obs = astPointList( astFrame( 3, "Domain=GEO" ), 1, 3, 1, obspt, NULL, " " );
+      set_obs( obsdata, (AstObject *) obs );
+      astShow( obsdata );
+      obscopy = astCopy( obsdata );
+      printf( "-- Ident=given set on the PointList given\n" );
+      astSet( obs, "Ident=given" );
+      astShow( obsdata );
+      printf( "-- the copy\n" );
+      astShow( obscopy );
+      printf( "equal without obs %d\n", astEqual( obsdata, noobs ) );
+      printf( "equal without obs reversed %d\n", astEqual( noobs, obsdata ) );
+      printf( "equal copy %d\n", astEqual( obsdata, obscopy ) );
+      printf( "-- removed\n" );
+      set_obs( obsdata, NULL );
+      astShow( obsdata );
+      printf( "-- the copy read back\n" );
+      obj = read_back( (AstObject *) obscopy );
+      if( obj ) {
+         printf( "equal %d\n", astEqual( obj, obscopy ) );
+         astShow( obj );
+      }
+      failed();
+   }
+
+   head( "obs_loc_any_class" );
+   {
+      AstStcObsDataLocation *obsdata = astStcObsDataLocation( circle2( 0.0, 0.0, 1.0 ), 0, NULL, " " );
+      set_obs( obsdata, (AstObject *) astZoomMap( 2, 4.0, " " ) );
+      obj = read_back( (AstObject *) obsdata );
+      if( obj ) {
+         astShow( obj );
+         printf( "-- copy\n" );
+         astShow( astCopy( obj ) );
+      }
+      failed();
+   }
+
+   head( "stc_classes" );
+   {
+      AstObject *search = (AstObject *) astStcSearchLocation( circle2( 0.0, 0.0, 1.0 ), 0, NULL, " " );
+      AstObject *entry = (AstObject *) astStcCatalogEntryLocation( circle2( 0.0, 0.0, 1.0 ), 0, NULL, " " );
+      AstObject *obsdata = (AstObject *) astStcObsDataLocation( circle2( 0.0, 0.0, 1.0 ), 0, NULL, " " );
+      AstObject *profile = (AstObject *) plain();
+      AstObject *search2 = (AstObject *) astStcSearchLocation( circle2( 0.0, 0.0, 1.0 ), 0, NULL, " " );
+      AstObject *searcha = (AstObject *) astStcSearchLocation( circle_in( "A", 1.0 ), 0, NULL, " " );
+      AstObject *searchb = (AstObject *) astStcSearchLocation( circle_in( "B", 1.0 ), 0, NULL, " " );
+      AstObject *obsb = (AstObject *) astStcObsDataLocation( circle_in( "B", 1.0 ), 0, NULL, " " );
+      AstObject *entryb = (AstObject *) astStcCatalogEntryLocation( circle_in( "B", 1.0 ), 0, NULL, " " );
+      printf( "equal search search %d\n", astEqual( search, search2 ) );
+      printf( "equal search entry %d\n", astEqual( search, entry ) );
+      printf( "equal search obsdata %d\n", astEqual( search, obsdata ) );
+      printf( "equal obsdata profile %d\n", astEqual( obsdata, profile ) );
+      failed();
+      find_and_convert( "search, search", search, search2 );
+      find_and_convert( "search, obsdata", search, obsdata );
+      find_and_convert( "obsdata, search", obsdata, search );
+      find_and_convert( "entry, profile", entry, profile );
+      find_and_convert( "search A, search B", searcha, searchb );
+      find_and_convert( "search A, obsdata B", searcha, obsb );
+      find_and_convert( "obsdata B, search A", obsb, searcha );
+      find_and_convert( "search A, entry B", searcha, entryb );
+      /* astConvert between these CmpFrames crashes (region.c Cast), so
+         only astFindFrame is called. */
+      printf( "-- CmpFrames of search B and search A\n" );
+      show_fs( "findframe", astFindFrame( astCmpFrame( searchb, astFrame( 1, "Domain=C" ), " " ),
+                                          astCmpFrame( searcha, astFrame( 1, "Domain=C" ), " " ), "" ) );
    }
 
    astEnd;

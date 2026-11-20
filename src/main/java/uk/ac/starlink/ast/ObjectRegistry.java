@@ -104,8 +104,14 @@ final class ObjectRegistry {
                 return SpecMap::new;
             case "SphMap":
                 return SphMap::new;
+            case "StcCatalogEntryLocation":
+                return StcCatalogEntryLocation::new;
+            case "StcObsDataLocation":
+                return StcObsDataLocation::new;
             case "StcResourceProfile":
                 return StcResourceProfile::new;
+            case "StcSearchLocation":
+                return StcSearchLocation::new;
             case "SwitchMap":
                 return SwitchMap::new;
             case "TimeFrame":
