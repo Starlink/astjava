@@ -9,9 +9,10 @@
  * Frame or a FrameSet component that was already there when the other
  * component changed; switchmap.c (routes and both selectors), ratemap.c
  * and frameset.c only a component that changed, which includes a FrameSet
- * holding a Region, since astIsAFrame is true of a FrameSet. A CmpFrame (cmpframe.c) and a FrameSet (frameset.c) are copies
- * whose unchanged components are the original's own Objects, so that a
- * change made through one is seen in the other. A SelectorMap installs no
+ * holding a Region, since astIsAFrame is true of a FrameSet. A CmpFrame
+ * (cmpframe.c) and a FrameSet (frameset.c) are copies whose unchanged
+ * components are the original's own Objects, so that a change made through
+ * one is seen in the other. A SelectorMap installs no
  * RemoveRegions, so its Regions stay.
  *
  * Each case starts with a line "== <name>". "in" lines give the dump of the

@@ -20,9 +20,9 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
  * component, so also a plain Frame or a FrameSet component that was already there when the other
  * component changed (cmpmap.c, tranmap.c); a SwitchMap (its routes and both selectors), a RateMap
  * and a FrameSet only a component that changed (switchmap.c, ratemap.c, frameset.c), which includes
- * a FrameSet holding a Region, since C's {@code astIsAFrame} is true of a FrameSet. A CmpFrame or a FrameSet that changed is a copy whose
- * unchanged components are the original's own Objects (cmpframe.c, frameset.c), so that an
- * attribute set through the result is seen in the original.
+ * a FrameSet holding a Region, since C's {@code astIsAFrame} is true of a FrameSet. A CmpFrame or a
+ * FrameSet that changed is a copy whose unchanged components are the original's own Objects
+ * (cmpframe.c, frameset.c), so that an attribute set through the result is seen in the original.
  *
  * <p>Each case writes the lines the probe writes and compares them with C's exactly: the dump of
  * the Mapping ({@code in}), the dump of the result ({@code out}), whether the result is the Mapping
@@ -35,7 +35,7 @@ class RemoveRegionsTest {
 
     private static final Map<String, String> PROBE = ProbeOutput.load("remove_regions_extra_probe");
 
-    /** The names of the probe's cases in the probe's order, each made by one test below. */
+    /** The names of the probe's cases, in the probe's order. */
     private static final List<String> CASES = Arrays.asList(
             "region_alone",
             "frame_alone",
