@@ -123,31 +123,6 @@ class MappingAttributeTest {
     }
 
     @Test
-    void resamplingIsUnavailable() {
-        UnitMap map = new UnitMap(1);
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> map.resampleD(
-                        1,
-                        new int[] {1},
-                        new int[] {2},
-                        new double[2],
-                        null,
-                        Mapping.LINEAR_INTERPOLATOR,
-                        new ResampleFlags(),
-                        0.0,
-                        100,
-                        AstObject.AST__BAD,
-                        1,
-                        new int[] {1},
-                        new int[] {2},
-                        new int[] {1},
-                        new int[] {2},
-                        new double[2],
-                        null));
-    }
-
-    @Test
     void resampleFlagsCombineAsC() {
         ResampleFlags f = new ResampleFlags();
         assertEquals(0, f.getFlagsInt());

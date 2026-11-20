@@ -3,8 +3,8 @@ package uk.ac.starlink.ast;
 /**
  * An interpolation function supplied by the caller, for resampling with {@link
  * Mapping.Interpolator#uinterp}: C's {@code AST__UINTERP} scheme. A subclass overrides the method
- * for each data type it handles; the others throw {@link UnsupportedOperationException}.
- * Resampling is not available in this version, so the methods are never called.
+ * for each data type it handles; the others throw {@link UnsupportedOperationException}. The
+ * method for the type of the data is called once for each block of output pixels.
  *
  * <p>Each method is given the input grid and the positions at which to interpolate, and returns
  * the number of output pixels it set to the bad value. Its parameters are:
@@ -13,19 +13,28 @@ package uk.ac.starlink.ast;
  *   <li>{@code ndimIn}: the number of dimensions of the input grid.
  *   <li>{@code lbndIn}, {@code ubndIn}: the pixel index bounds of the input grid in each
  *       dimension.
- *   <li>{@code in}, {@code inVar}: the input data and their variances (or null), with the first
- *       dimension varying fastest.
+ *   <li>{@code in}, {@code inVar}: the input data and their variances, the arrays given to the
+ *       resampling method, with the first dimension varying fastest; {@code inVar} is null
+ *       unless both input and output variances were given.
  *   <li>{@code npoint}: the number of points at which to interpolate.
  *   <li>{@code offset}: for each point, the index in {@code out} at which to store its value.
  *   <li>{@code coords}: {@code ndimIn} arrays of {@code npoint} input-grid coordinates of the
  *       points, bad where a point's position is unknown.
- *   <li>{@code flags}: the resampling flags.
+ *   <li>{@code flags}: the flags object given to the resampling method.
  *   <li>{@code badval}: the bad value of the data.
- *   <li>{@code out}, {@code outVar}: where the interpolated values and their variances (if
- *       {@code outVar} is not null) are stored.
+ *   <li>{@code out}, {@code outVar}: the output arrays given to the resampling method, where the
+ *       interpolated values and their variances (if {@code outVar} is not null) are stored; an
+ *       element no point names should be left as it is.
  * </ul>
  *
- * <p>A method may throw any exception, which ends the resampling with an exception.
+ * <p>A point whose position is bad should be given {@code badval}, or left as it is when the NoBad
+ * flag is set, and an input pixel equal to {@code badval} treated as bad only when the UseBad flag
+ * is set. The number returned is of the points given no value.
+ *
+ * <p>An exception a method throws ends the resampling with an {@link AstException} whose status is
+ * {@link AstException#AST__UINER} and whose cause is that exception; an {@link Error} it throws
+ * passes through unchanged. Either way, the output holds what the earlier blocks and the failing
+ * call left in it.
  */
 // Abstract, as jniast's is, so that only a subclass that handles some data type is made.
 @SuppressWarnings("PMD.AbstractClassWithoutAbstractMethod")
@@ -43,7 +52,8 @@ public abstract class UinterpCalculator {
      * UnsupportedOperationException}.
      *
      * @return the number of output pixels set to the bad value
-     * @throws Exception if the interpolation fails
+     * @throws Exception if the interpolation fails, which ends the resampling with an {@link
+     *     AstException} with status {@code AST__UINER} and this exception as its cause
      */
     public int uinterpB(
             int ndimIn,
@@ -67,7 +77,8 @@ public abstract class UinterpCalculator {
      * UnsupportedOperationException}.
      *
      * @return the number of output pixels set to the bad value
-     * @throws Exception if the interpolation fails
+     * @throws Exception if the interpolation fails, which ends the resampling with an {@link
+     *     AstException} with status {@code AST__UINER} and this exception as its cause
      */
     public int uinterpS(
             int ndimIn,
@@ -91,7 +102,8 @@ public abstract class UinterpCalculator {
      * UnsupportedOperationException}.
      *
      * @return the number of output pixels set to the bad value
-     * @throws Exception if the interpolation fails
+     * @throws Exception if the interpolation fails, which ends the resampling with an {@link
+     *     AstException} with status {@code AST__UINER} and this exception as its cause
      */
     public int uinterpI(
             int ndimIn,
@@ -115,7 +127,8 @@ public abstract class UinterpCalculator {
      * UnsupportedOperationException}.
      *
      * @return the number of output pixels set to the bad value
-     * @throws Exception if the interpolation fails
+     * @throws Exception if the interpolation fails, which ends the resampling with an {@link
+     *     AstException} with status {@code AST__UINER} and this exception as its cause
      */
     public int uinterpL(
             int ndimIn,
@@ -139,7 +152,8 @@ public abstract class UinterpCalculator {
      * UnsupportedOperationException}.
      *
      * @return the number of output pixels set to the bad value
-     * @throws Exception if the interpolation fails
+     * @throws Exception if the interpolation fails, which ends the resampling with an {@link
+     *     AstException} with status {@code AST__UINER} and this exception as its cause
      */
     public int uinterpF(
             int ndimIn,
@@ -163,7 +177,8 @@ public abstract class UinterpCalculator {
      * UnsupportedOperationException}.
      *
      * @return the number of output pixels set to the bad value
-     * @throws Exception if the interpolation fails
+     * @throws Exception if the interpolation fails, which ends the resampling with an {@link
+     *     AstException} with status {@code AST__UINER} and this exception as its cause
      */
     public int uinterpD(
             int ndimIn,

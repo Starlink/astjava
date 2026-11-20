@@ -327,7 +327,11 @@ public class IntraMap extends Mapping implements NeedsChannelizing {
      * attribute makes of {@code forward}, as jniast's {@code tranWrap} (jni/IntraMap.c) calls it,
      * with copies of the input coordinates. An exception from the Transformer, or a result that is
      * null or holds fewer than the needed arrays or values, is AST__ITFER, whose cause is that
-     * exception or one describing the result.
+     * exception or one describing the result. A NaN in the result becomes {@link #AST__BAD}, as the
+     * Mapping class requires of every transformation. C and jniast pass a NaN on; resampling and
+     * rebinning take only {@link #AST__BAD} to be a bad position, and find no pixel for a NaN one.
+     * An infinite value is kept, as other Mappings keep one: it lies outside every
+     * grid.
      */
     @Override
     // Transformer.tranP is declared to throw any Exception; each one is the function's failure.
@@ -351,7 +355,12 @@ public class IntraMap extends Mapping implements NeedsChannelizing {
             throw functionError(bad);
         }
         for (int c = 0; c < ncoordOut; c++) {
-            System.arraycopy(result[c], 0, out[c], 0, npoint);
+            double[] values = result[c];
+            double[] axis = out[c];
+            for (int p = 0; p < npoint; p++) {
+                double v = values[p];
+                axis[p] = Double.isNaN(v) ? AST__BAD : v;
+            }
         }
     }
 

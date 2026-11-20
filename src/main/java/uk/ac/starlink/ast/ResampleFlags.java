@@ -3,7 +3,7 @@ package uk.ac.starlink.ast;
 /**
  * The flags that control resampling, which C combines into one {@code int} by OR-ing the values
  * of {@code AST__NOBAD}, {@code AST__USEBAD} and {@code AST__CONSERVEFLUX}. Each flag is false
- * unless set. Resampling is not available in this version.
+ * unless set.
  */
 public class ResampleFlags {
 

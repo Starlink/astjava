@@ -1,0 +1,64 @@
+== F_nearest_nan_nousebad
+nbad 1
+out 1 2 3 nan 5 -999 7 nan 9 10
+var 0.25 nan 1.25 1.75 2.25 2.75 3.25 3.75 nan 4.75
+== D_nearest_nan_nousebad
+nbad 1
+out 1 2 3 nan 5 -999 7 nan 9 10
+var 0.25 nan 1.25 1.75 2.25 2.75 3.25 3.75 nan 4.75
+== F_nearest_nan_usebad
+nbad 1
+out 1 2 3 nan 5 -999 7 nan 9 10
+var 0.25 nan 1.25 1.75 2.25 2.75 3.25 3.75 nan 4.75
+== D_nearest_nan_usebad
+nbad 1
+out 1 2 3 nan 5 -999 7 nan 9 10
+var 0.25 nan 1.25 1.75 2.25 2.75 3.25 3.75 nan 4.75
+== F_nearest_m999_nousebad
+nbad 1
+out 1 2 3 nan 5 -999 7 nan 9 10
+var 0.25 nan 1.25 1.75 2.25 2.75 3.25 3.75 -999 4.75
+== D_nearest_m999_nousebad
+nbad 1
+out 1 2 3 nan 5 -999 7 nan 9 10
+var 0.25 nan 1.25 1.75 2.25 2.75 3.25 3.75 -999 4.75
+== F_nearest_m999_usebad
+nbad 2
+out 1 2 3 nan 5 -999 7 nan 9 10
+var 0.25 nan 1.25 1.75 2.25 -999 3.25 3.75 -999 4.75
+== D_nearest_m999_usebad
+nbad 2
+out 1 2 3 nan 5 -999 7 nan 9 10
+var 0.25 nan 1.25 1.75 2.25 -999 3.25 3.75 -999 4.75
+== F_linear_nan_nousebad
+nbad 2
+out 1 1.5 2.5 nan nan -497 -496 nan nan 9.5
+var 0.25 nan nan 0.75 1 1.25 1.5 1.75 nan nan
+== D_linear_nan_nousebad
+nbad 2
+out 1 1.5 2.5 nan nan -497 -496 nan nan 9.5
+var 0.25 nan nan 0.75 1 1.25 1.5 1.75 nan nan
+== F_linear_nan_usebad
+nbad 2
+out 1 1.5 2.5 nan nan -497 -496 nan nan 9.5
+var 0.25 nan nan 0.75 1 1.25 1.5 1.75 nan nan
+== D_linear_nan_usebad
+nbad 2
+out 1 1.5 2.5 nan nan -497 -496 nan nan 9.5
+var 0.25 nan nan 0.75 1 1.25 1.5 1.75 nan nan
+== F_linear_m999_nousebad
+nbad 2
+out 1 1.5 2.5 nan nan -497 -496 nan nan 9.5
+var 0.25 nan nan 0.75 1 1.25 1.5 1.75 -999 -999
+== D_linear_m999_nousebad
+nbad 2
+out 1 1.5 2.5 nan nan -497 -496 nan nan 9.5
+var 0.25 nan nan 0.75 1 1.25 1.5 1.75 -999 -999
+== F_linear_m999_usebad
+nbad 3
+out 1 1.5 2.5 nan nan -999 7 nan nan 9.5
+var 0.25 nan nan 0.75 1 -999 3.25 1.75 -999 -999
+== D_linear_m999_usebad
+nbad 3
+out 1 1.5 2.5 nan nan -999 7 nan nan 9.5
+var 0.25 nan nan 0.75 1 -999 3.25 1.75 -999 -999

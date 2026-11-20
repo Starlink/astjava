@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -78,6 +79,16 @@ class LinearApproxTest {
         AstException e = assertThrows(
                 AstException.class, () -> zm.linearApprox(new double[] {0.0}, new double[] {1.0, 2.0}, 1e-3));
         assertEquals(AstException.AST__NCPIN, e.getStatus());
+    }
+
+    @Test
+    void inverseDimensionMismatchNamesTheOutputs() {
+        MatrixMap mm = new MatrixMap(2, 3, new double[][] {{1.0, 2.0}, {3.0, 4.0}, {5.0, 6.0}});
+        AstException e = assertThrows(
+                AstException.class,
+                () -> LinearApprox.linearApprox(mm, new double[] {0.0, 0.0}, new double[] {1.0, 1.0}, 1e-3, false));
+        assertEquals(AstException.AST__NCPIN, e.getStatus());
+        assertTrue(e.getMessage().contains("the MatrixMap has 3 outputs."), e.getMessage());
     }
 
     @Test

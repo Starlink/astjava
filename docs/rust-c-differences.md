@@ -574,6 +574,14 @@ The entries are grouped by area, in the order the Java classes were ported.
 - Rust: keeps the code of the error the transformation returns.
 - Java: AST__ITFER, as jniast, with the Transformer's exception as the cause.
 
+### A NaN from an IntraMap's transformation function
+
+- C: `Transform` (`intramap.c`) and jniast's `tranWrap` (`jni/IntraMap.c`) return the function's values as they are, so a NaN it gives is kept unless the environment variable `AST_REPLACE_NAN` is set (`astTransform`, `pointset.c` `astReplaceNaN`).
+  Resampling and rebinning take only AST__BAD to be a bad position, so in C a NaN position reaches the conversion of a coordinate to a pixel index.
+- Rust: `IntraMap::transform_into` returns the transformation's values as they are.
+- Java: `IntraMap` turns a NaN in the Transformer's result into AST__BAD, as the Mapping class's contract requires of every transformation (no transformation gives a NaN output), so resampling and rebinning treat the position as bad.
+  An infinite value is kept, as other Mappings keep one (an overflow in a ZoomMap gives an infinity through `transform`, as C does by default); it lies outside every grid.
+
 ### The value of two pi in `platepos`
 
 - C: `platepos` (`dssmap.c`) adds its own `twopi`, 6.28318530717959, to a negative right ascension; it is a little more than the double nearest to two pi, so a wrapped right ascension is about four units in the last place larger (probe `src/test/resources/probes/dssmap_probe.c`, case `tran_pltra_small`, where the round trip through `platepix` comes back 2.4e-10 pixels short).
@@ -1274,6 +1282,122 @@ Rust's `src/units/` departs from C's `unit.c` in the following ways; Java follow
 - C: `LogAxis` makes the MathMap `logs=log(s)`, inverse `s=exp(logs)`, with SimpFI and SimpIF set, tests the axis with it and puts the same MathMap in the `-LOG` Mapping it returns; it tests neither the axis index nor whether the reference value is finite (`fitschan.c` `LogAxis`).
 - Rust: `log_axis` in `fitschan/fset_to_store/log_axis.rs` makes the MathMap without SimpFI and SimpIF, and returns `None` for an axis index out of range or a reference value that is not finite.
 - Java: as C (`FitsOtherAxes.logAxis`).
+
+## Resampling
+
+### Fitting the inverse of the Mapping while resampling
+
+- C: `ResampleAdaptively` inverts the Mapping in place with `astInvert`, calls `astLinearApprox`, and inverts it back; the Mapping is the caller's own when the output region has 1024 pixels or fewer, or the Mapping is already simplified, since `astSimplify` then returns it.
+- Rust: `Resampler::adaptively` in `mappings/resample/mod.rs` copies the Mapping and inverts the copy before each fit.
+- Java: `Resample.adaptively` fits the inverse transformation directly (`LinearApprox.linearApprox` with `forward` false), which gives C's fit without inverting or copying the Mapping.
+
+### Array lengths in resampling
+
+- C: cannot check the lengths of the arrays it is given.
+- jniast: throws `IllegalArgumentException` ("bound arrays too short", "data/variance arrays too short") when a bound array has fewer elements than its number of dimensions or a data or variance array fewer than its grid has pixels.
+- Rust: `resample` reports AST__DIMIN when a data or variance array has a length other than its grid's number of pixels, or bound arrays differ in length.
+- Java: AST__DIMIN with Rust's messages when a data or variance array has fewer elements than its grid has pixels, or a bound array fewer than the number of dimensions given; a longer array is accepted and its leading elements used, as in C and jniast (see "Array arguments longer than needed").
+
+### The bad value NaN in resampling
+
+- C: an input pixel is bad when it equals `badval` in the data type, so with `badval` NaN (as SPLAT and astgui pass it) no pixel is ever bad, even with `AST__USEBAD`, and NaN data reaches the output through the interpolation; output pixels with no value are still set to NaN and counted (`InterpolateNearest<X>`, `InterpolateLinear<X>`). **C quirk.**
+- Rust: as C.
+- Java: as C; probe `src/test/resources/probes/resample_nan_probe.c` (`ResampleNanTest`).
+
+### The `SombCos` resampling kernel is half `Somb` except at zero offset
+
+- C: `SombCos` forms its first factor as `J1(x) / x`, where `Somb` uses `2.0 * J1(x) / x`, but takes it as 1 at zero offset, so the pixel at the interpolation point counts twice as heavily as the documented kernel `somb(pi*x)*cos(k*pi*x)` would make it. **C quirk.**
+- Rust: as C (`kernels::somb_cos`).
+- Java: as C (`ResampleKernels.sombCos`); the oracle case `sombcos_unit` pins it.
+
+### Block averaging keeps one bad-variance flag per block
+
+- C: `InterpolateBlockAverage<X>` resets `bad_var` only when it starts a block, so for a signed type without `AST__USEBAD` a negative variance leaves out the rest of the block, and with `AST__USEBAD` the output variance is bad exactly when the variance of the block's last good pixel was. **C quirk.**
+- Rust: as C (`interp::block_average`).
+- Java: as C (`ResampleInterpolators.blockAverage`); the oracle cases `blockave_novarbad` and `blockave_win3` fail if the flag is reset for each pixel.
+
+### Block averaging with a zero variance
+
+- C: `InterpolateBlockAverage<X>` weights each pixel by `1.0 / var` and leaves out only negative variances (and, with `AST__USEBAD`, bad ones), so a zero variance gives an infinite weight, and the value `sum / wtsum` and the variance `sum_var / (wtsum * wtsum)` are NaN.
+  A NaN passes `CALC_AND_ASSIGN_OUTPUT`'s range test (`val <= LO_<X> || val >= HI_<X>` is false), so it is assigned and not counted as bad: a `double` or `float` output and its variance are NaN, and for `long`, `int`, `short` and `byte` C converts the NaN to the type, which is undefined (UBSan reports it).
+  The pinned library on AArch64 gives 0; other platforms need not (x86-64's conversion instructions give `INT_MIN` for `int` and `LONG_MIN` for `long`). **C quirk.**
+- Rust: as C, with Rust's `as`, which gives 0 for a NaN (`interp::block_average`, `PixelValue::from_sum`).
+- Java: as the pinned library on AArch64: `PixelArray.overflows` is false for a NaN, and Java's casts give 0 for a NaN (`short` and `byte` through `int`), so an integer output and its variance are 0 (`ResampleInterpolators.blockAverage`, `PixelArray.setResampled`); the differential run against C found the outputs identical.
+
+### Block averaging at a position far outside the input grid
+
+- C: `InterpolateBlockAverage<X>` takes the pixel index of a position as `(int) floor(x)` and the block's bounds as `ix - neighb + 1` and `ix + neighb` in `int`, with no test that the position lies in the grid; for a position beyond the range of an `int` the conversion is undefined, and so is an overflow of the bounds, so with `npix` of zero or less, whose block is empty, a position that far outside need not give a bad output. **C bug.**
+- Rust: `x.floor() as i64` saturates, and the bounds are formed in `i64`, which overflows (a panic in a debug build) for a position at or beyond 2^63 with `npix` of zero or less.
+- Java: an empty block, and so a bad output, wherever the position lies: `ResampleInterpolators.blockIndex` holds the index within 2^32 of the grid, which leaves every block the same since a block reaches less than 2^31 pixels, and keeps its bounds within a `long` (`ResampleArgumentsTest.anEmptyBlockIsBadAtAnyPosition`).
+
+### Flux conservation of an integer output beyond its type's range
+
+- C: `ConserveFlux<X>` scales each output with `out[off] *= factor`, converting the product back to the type with no range check, which is undefined when it lies outside the type's range (UBSan reports it for `short` and `signed char`); the pinned library on AArch64 converts to a 32-bit (or, for `long`, 64-bit) integer, saturating, and keeps the low 16 or 8 bits for `short` and `signed char`.
+  It also leaves alone any output equal to the bad value, so a good integer output that equals it is not scaled. **C quirk.**
+- Rust: converts with `as`, which saturates to the type's own range (`PixelValue::from_f64`), so a `short` or `byte` product beyond the range differs from the pinned library.
+- Java: as the pinned library on AArch64 (`Resample.conserveFlux`, `PixelArray.set`: Java's `(int)` and `(long)` casts saturate, and `short` and `byte` go through `int`); the differential run against C found the outputs identical.
+
+### A caller's kernel or interpolation function that fails
+
+- C: the caller's function reports a failure by setting the status, and `InterpolateKernel1<X>` or `ResampleSection` adds a message and passes that status on; the output keeps what was set before the failure, and `ConserveFlux<X>` does not scale the failing block.
+- jniast: `fukern1` and `fuinterp<X>` set `AST__UK1ER` and `AST__UINER` when the Java method throws.
+- Rust: the caller's function returns an error, which `resample` returns with C's message added.
+- Java: an `Exception` thrown by a `Ukern1Calculator` or `UinterpCalculator` becomes an `AstException` with jniast's status, C's message and the exception as its cause; an `Error` passes through unchanged; the output is C's (probe `src/test/resources/probes/resample_callback_probe.c`, `ResampleCallbackTest`).
+
+### Elementary functions in the resampling kernels
+
+- C: the kernels call the C library's `sin`, `cos` and `exp`.
+- Rust: as C (the `f64` methods, which call the platform's library).
+- Java: the kernels call `java.lang.Math`, which can differ from C's library in the last bit; eight `double` cases of the resample oracle miss their hash on AArch64 macOS by at most 7.1e-15.
+  `ResampleOracleTest` compares every case whose kernel calls these functions value by value with probe `src/test/resources/probes/resample_kernel_probe.c`, within a bound worked out for each output pixel from its weights (about 1e-12 for `double`; one for an integer type, whose value must also lie clear of the type's range limits).
+
+### Resampling with the `AST__GAUSS` scheme
+
+- C: `astResample<X>` accepts `AST__GAUSS`.
+- jniast: `Mapping.Interpolator` has no factory for it, though `Mapping.Spreader` has `gauss`.
+- Java: as jniast for the public API; resampling accepts the scheme, which the tests reach through the package-private `Interpolator` constructor.
+
+## Rebinning
+
+### Variances in `rebin`
+
+- C: `astRebin<X>` rebins variances only with the flag `AST__USEVAR` and both variance arrays; given an output variance array without it, C sets the array to zero (and bad where `wlim` sets the data bad).
+- jniast: `rebin` and `rebinI/F/D` pass `AST__USEBAD` alone, and the output variance array only with the input one, so C zeroed the output variances and never filled them, though jniast's documentation promises them.
+- Rust: `rebin` takes `use_var` as a flag of its own.
+- Java: `AST__USEVAR` is added when both variance arrays are given, so the variances are rebinned; with either array absent the flags are jniast's and the result is unchanged, the output variances, if given without input ones, being left as they are, as jniast leaves them (probe `src/test/resources/probes/rebin_jniast_probe.c`, `RebinJniastTest`).
+
+### Array lengths in rebinning
+
+- C: cannot check the lengths of the arrays it is given.
+- jniast: throws `IllegalArgumentException` ("bound arrays too short", "data/variance arrays too short") before calling C.
+- Rust: `rebin` reports AST__DIMIN before C's checks, when bound arrays differ in length or a data or variance array has a length other than its grid's number of pixels, and leaves the output alone.
+- Java: AST__DIMIN with Rust's messages, before C's checks and leaving the output alone, when a bound array has fewer values than the number of dimensions given or a data or variance array fewer elements than its grid has pixels; a longer array is accepted and its leading elements used, as in C and jniast (see "Array arguments longer than needed").
+
+### `astRebin<X>` zeroes only the first output value after an argument error
+
+- C: `Rebin<X>` reports an error in its arguments and carries on to zero the output, whose number of pixels it counts only once its checks have passed, so after an error in the axis counts, bounds, tolerance, initial scale size or region only the first output value (and variance) is zeroed; after a later error, such as a Mapping with no forward transformation, the whole output is. **C quirk.**
+- Rust: as C.
+- Java: as C, as far as the output array goes (an empty array is left alone); `RebinOracleTest.errorsMatchC` records the first two output values after each error.
+
+### Adding a contribution to an `int` output pixel
+
+- C: `SpreadNearest<X>` and `SpreadLinear<X>` add `CONV(IntType, c)`, an `int` for `int` data, so the sum is `int` arithmetic, as `SpreadKernel1<X>`'s `out[off] += c` is; overflow is undefined (UBSan reports it in `SpreadKernel1I`), and the pinned library wraps.
+  Each contribution `c = CONV(IntType, pfac * in)` is converted to `int` with no range check, and each variance contribution `CONV(IntType, in_var * pfac * pfac)` is a `double` (the conditional in `CONV` takes the type of its `double` branch), so `out_var` is summed in `double` and converted back to `int`; both conversions are undefined beyond the range of `int` (UBSan reports the second in `SpreadNearestI`), and the pinned library on AArch64 saturates. **C quirk.**
+- Rust: `SpreadNearest<X>` and `SpreadLinear<X>` add through a `double` and convert the sum, which saturates on overflow (`spread::Accum::deposit`).
+- Java: as the pinned library on AArch64: `PixelArray.add` wraps, and `PixelArray.conv` and the variance sum use Java's saturating `(int)` cast (`RebinSpreaders.deposit`); two contributions of `INT_MAX - 5` to one pixel give C's -12 for the value and `INT_MAX` for the variance with the nearest, linear and sinc spreaders; no oracle case overflows.
+
+### Rebinning with the `AST__SOMB` and `AST__SOMBCOS` schemes
+
+- C: `astRebin<X>` accepts both schemes.
+- jniast: `Mapping.Spreader` has no factory for either.
+- Java: as jniast for the public API; rebinning accepts the schemes, which the tests reach through the package-private `Spreader` constructor.
+
+### Elementary functions in the rebinning kernels
+
+- C: the kernels call the C library's `sin`, `cos` and `exp`.
+- Rust: as C.
+- Java: the kernels call `java.lang.Math`, which can differ from C's library in the last bit; seven `double` cases of the rebin oracle miss their hash on AArch64 macOS.
+  `RebinOracleTest` compares every case whose kernel calls these functions value by value with probe `src/test/resources/probes/rebin_kernel_probe.c`, within a bound worked out for each output pixel from the contributions it receives (about 1e-14 to 1e-12 for `double`; for `int`, one for each contribution lying within its bound of a half-integer), and checks that each sum of weights lies clear of the weight limit.
 
 ## Test harness
 
