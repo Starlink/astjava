@@ -31,10 +31,11 @@ import java.util.Objects;
  *
  * <p>A SelectorMap holds copies of the Regions it is given. As C's does, it tests a position
  * against each Region by negating the Region and reversing its Closed attribute for the duration,
- * so transforming points changes its own Regions while it runs, and afterwards leaves each with
- * the Negated and Closed attributes set (to the values they had), which its description then
- * shows. Like every Object, a SelectorMap is not safe for use by two threads at once, even to
- * transform points.
+ * so transforming points changes its own Regions while it runs, and afterwards leaves each with the
+ * Negated and Closed attributes set (to the values they had). Its description then shows the Closed
+ * value of every Region, but Negated only for a Region that is negated, since a Region's
+ * description shows Negated only when it is true. Like every Object, a SelectorMap is not safe for
+ * use by two threads at once, even to transform points.
  *
  * <p>Ported from Rust {@code mappings/selectormap.rs} and C {@code selectormap.c}.
  */
