@@ -1,8 +1,10 @@
 package uk.ac.starlink.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,32 @@ import uk.ac.starlink.ast.testsupport.ProbeOutput;
 class RemoveRegionsTest {
 
     private static final Map<String, String> PROBE = ProbeOutput.load("remove_regions_extra_probe");
+
+    /** The names of the probe's cases in the probe's order, each made by one test below. */
+    private static final List<String> CASES = Arrays.asList(
+            "region_alone",
+            "frame_alone",
+            "no_regions_cmpmap",
+            "no_regions_frameset",
+            "cmpmap_frame_beside_region",
+            "tranmap_frame_beside_region",
+            "tranmap_frameset_beside_region",
+            "switchmap_region_route",
+            "switchmap_frame_route",
+            "switchmap_no_regions",
+            "switchmap_inverse_selector_region",
+            "switchmap_inverse_selector_is_region",
+            "switchmap_frameset_route",
+            "ratemap_frameset",
+            "frameset_region_frame",
+            "frameset_region_in_cmpmap",
+            "frameset_region_map",
+            "frameset_frame_map",
+            "cmpframe_two_regions",
+            "cmpframe_shared_component",
+            "cmpframe_no_regions",
+            "selectormap_alone",
+            "selectormap_switchmap");
 
     private static final double[] SHIFT = {100.0, 100.0};
 
@@ -98,6 +126,7 @@ class RemoveRegionsTest {
     }
 
     private static void check(String name, Out out) {
+        assertTrue(CASES.contains(name), name + " is not in CASES");
         assertEquals(PROBE.get(name), out.toString(), name);
     }
 
@@ -315,6 +344,6 @@ class RemoveRegionsTest {
 
     @Test
     void probeCasesAreAllCovered() {
-        assertEquals(23, PROBE.size(), PROBE.keySet().toString());
+        assertEquals(CASES, new ArrayList<>(PROBE.keySet()));
     }
 }
